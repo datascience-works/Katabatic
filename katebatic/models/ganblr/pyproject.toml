@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "ganblr"
+version = "0.1.0"
+description = ""
+authors = ["Vikum Dabare <vikumdabare@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pandas = "^2.3.0"
+tensorflow = "^2.19.0"
+pgmpy = "^1.0.0"
+scikit-learn = "^1.7.0"
+scipy = "^1.16.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
