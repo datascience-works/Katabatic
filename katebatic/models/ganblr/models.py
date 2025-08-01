@@ -24,6 +24,8 @@ class GANBLR(Model):
     """
 
     def __init__(self) -> None:
+        super().__init__()
+        self.check_dependencies()  # Check dependencies on initialization
         self._d = None
         self.__gen_weights = None
         self.batch_size = None
@@ -33,6 +35,11 @@ class GANBLR(Model):
         self._ordinal_encoder = OrdinalEncoder(
             dtype=int, handle_unknown='use_encoded_value', unknown_value=-1)
         self._label_encoder = LabelEncoder()
+
+    @classmethod
+    def get_required_dependencies(cls) -> list[str]:
+        """Return a list of required dependencies for this model."""
+        return ['tensorflow', 'pgmpy', 'sklearn', 'scipy']
 
     def fit(self, x, y, k=0, batch_size=32, epochs=10, warmup_epochs=1, verbose=1):
         '''

@@ -1,18 +1,23 @@
 [tool.poetry]
-name = "ganblr"
+name = "katebatic-ganblr"
 version = "0.1.0"
-description = ""
+description = "GANBLR model dependencies for Katebatic development"
 authors = ["Vikum Dabare <vikumdabare@gmail.com>"]
-readme = "README.md"
+license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.11"
-pandas = "^2.3.0"
+python = ">=3.11,<3.12"
+# Core dependencies (link to parent)
+katebatic = {path = "../../..", develop = true}
+# GANBLR-specific dependencies
 tensorflow = "^2.19.0"
 pgmpy = "^1.0.0"
-scikit-learn = "^1.7.0"
+pyitlib = "^0.3.1"
+tf-keras = "^2.19.0"
 scipy = "^1.16.0"
 
+[tool.poetry.group.dev.dependencies]
+# Development dependencies are inherited from main project
 
 [build-system]
 requires = ["poetry-core"]
