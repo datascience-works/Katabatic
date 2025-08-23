@@ -12,20 +12,20 @@ import zero
 import lib
 
 # Import from local modules
-from utils_train import make_dataset, get_model as get_model_arch  # main model builder
-from lib.data import (
+from .utils_train import make_dataset, get_model as get_model_arch  # main model builder
+from .lib.data import (
     Transformations,
     prepare_fast_dataloader,
     cat_encode,
     normalize,
     round_columns
 )
-from lib.util import dump_json
+from .lib.util import dump_json
 
 # Core training and sampling functions
-from train import train as train_fn
-from sample import sample as sample_fn
-from tab_ddpm import GaussianMultinomialDiffusion
+from .train import train as train_fn
+from .sample import sample as sample_fn
+from .tab_ddpm import GaussianMultinomialDiffusion
 class TabDDPM:
     """
     A sklearn-style wrapper for the Tabular DDPM model.
@@ -181,7 +181,7 @@ class TabDDPM:
             info["is_multiclass"] = True
             info["n_classes"] = self.num_classes
 
-        lib.dump_json(info, os.path.join(output_dir, "info.json"))
+        dump_json(info, os.path.join(output_dir, "info.json"))
 
         # 🔁 Create val and test files by copying train
         for key in ["X_num", "X_cat", "y"]:

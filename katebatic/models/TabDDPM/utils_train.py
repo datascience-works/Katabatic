@@ -1,7 +1,9 @@
 import numpy as np
 import os
 import lib
-from tab_ddpm.modules import MLPDiffusion, ResNetDiffusion
+from .lib.data import Transformations, read_pure_data, Dataset, change_val as chvl, transform_dataset
+from .tab_ddpm.modules import MLPDiffusion, ResNetDiffusion
+from .lib.util import load_json, TaskType
 
 def get_model(
     model_name,
@@ -36,7 +38,7 @@ def concat_y_to_X(X, y):
 
 def make_dataset(
     data_path: str,
-    T: lib.Transformations,
+    T: Transformations,
     num_classes: int,
     is_y_cond: bool,
     change_val: bool
@@ -48,7 +50,7 @@ def make_dataset(
         y = {} 
 
         for split in ['train', 'val', 'test']:
-            X_num_t, X_cat_t, y_t = lib.read_pure_data(data_path, split)
+            X_num_t, X_cat_t, y_t = read_pure_data(data_path, split)
             if X_num is not None:
                 X_num[split] = X_num_t
             if not is_y_cond:
@@ -63,7 +65,7 @@ def make_dataset(
         y = {}
 
         for split in ['train', 'val', 'test']:
-            X_num_t, X_cat_t, y_t = lib.read_pure_data(data_path, split)
+            X_num_t, X_cat_t, y_t = read_pure_data(data_path, split)
             if not is_y_cond:
                 X_num_t = concat_y_to_X(X_num_t, y_t)
             if X_num is not None:
@@ -72,18 +74,18 @@ def make_dataset(
                 X_cat[split] = X_cat_t
             y[split] = y_t
 
-    info = lib.load_json(os.path.join(data_path, 'info.json'))
+    info = load_json(os.path.join(data_path, 'info.json'))
 
-    D = lib.Dataset(
+    D = Dataset(
         X_num,
         X_cat,
         y,
         y_info={},
-        task_type=lib.TaskType(info['task_type']),
+        task_type=TaskType(info['task_type']),
         n_classes=info.get('n_classes')
     )
 
     if change_val:
-        D = lib.change_val(D)
+        D = chvl(D)
     
-    return lib.transform_dataset(D, T, None)
+    return transform_dataset(D, T, None)

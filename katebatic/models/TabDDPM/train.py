@@ -15,9 +15,10 @@ if project_root not in sys.path:
 ###
 
 
-from tab_ddpm import GaussianMultinomialDiffusion
-from utils_train import get_model, make_dataset, update_ema
+from .tab_ddpm import GaussianMultinomialDiffusion
+from .utils_train import get_model, make_dataset, update_ema
 import lib
+from .lib.data import Transformations, prepare_fast_dataloader
 import pandas as pd
 
 class Trainer:
@@ -109,7 +110,7 @@ def train(
 
     zero.improve_reproducibility(seed)
 
-    T = lib.Transformations(**T_dict)
+    T = Transformations(**T_dict)
 
     dataset = make_dataset(
         real_data_path,
@@ -139,7 +140,7 @@ def train(
     model.to(device)
 
     # train_loader = lib.prepare_beton_loader(dataset, split='train', batch_size=batch_size)
-    train_loader = lib.prepare_fast_dataloader(dataset, split='train', batch_size=batch_size)
+    train_loader = prepare_fast_dataloader(dataset, split='train', batch_size=batch_size)
 
 
 

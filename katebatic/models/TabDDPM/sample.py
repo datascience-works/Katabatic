@@ -2,10 +2,10 @@ import torch
 import numpy as np
 import zero
 import os
-from tab_ddpm.gaussian_multinomial_diffsuion import GaussianMultinomialDiffusion
-from tab_ddpm.utils import FoundNANsError
-from utils_train import get_model, make_dataset
-from lib import round_columns
+from .tab_ddpm.gaussian_multinomial_diffsuion import GaussianMultinomialDiffusion
+from .tab_ddpm.utils import FoundNANsError
+from .utils_train import get_model, make_dataset
+from .lib.data import round_columns, Transformations
 import lib
 
 def to_good_ohe(ohe, X):
@@ -37,7 +37,7 @@ def sample(
 ):
     zero.improve_reproducibility(seed)
 
-    T = lib.Transformations(**T_dict)
+    T = Transformations(**T_dict)
     D = make_dataset(
         real_data_path,
         T,
