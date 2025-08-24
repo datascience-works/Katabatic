@@ -2,11 +2,11 @@ import tomli
 import shutil
 import os
 import argparse
-from train import train
-from sample import sample
-from eval_catboost import train_catboost
-from eval_mlp import train_mlp
-from eval_simple import train_simple
+from .train import train
+from .sample import sample
+from .eval_catboost import train_catboost
+from .eval_mlp import train_mlp
+from .eval_simple import train_simple
 import pandas as pd
 import matplotlib.pyplot as plt
 import zero

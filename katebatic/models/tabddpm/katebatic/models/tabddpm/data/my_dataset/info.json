@@ -1,0 +1,12 @@
+{
+  "name": "my_dataset",
+  "task_type": "multiclass",
+  "n_num_features": 3,
+  "n_cat_features": 4,
+  "train_size": 13182,
+  "val_size": 2825,
+  "test_size": 2825,
+  "normalization": "quantile",
+  "n_classes": 3,
+  "num_classes": 3
+}
