@@ -1,0 +1,35 @@
+{
+  "name": "melbourne_house",
+  "task_type": "regression",
+  "n_num_features": 11,
+  "n_cat_features": 7,
+  "train_size": 19072,
+  "val_size": 4087,
+  "test_size": 4088,
+  "normalization": "quantile",
+  "num_columns": [
+    "Rooms",
+    "Distance",
+    "Postcode",
+    "Bedroom2",
+    "Car",
+    "Landsize",
+    "BuildingArea",
+    "YearBuilt",
+    "Lattitude",
+    "Longtitude",
+    "Propertycount"
+  ],
+  "cat_columns": [
+    "Suburb",
+    "Type",
+    "Method",
+    "SellerG",
+    "Bathroom",
+    "CouncilArea",
+    "Regionname"
+  ],
+  "target_column": "Price",
+  "n_classes": 0,
+  "num_classes": 0
+}

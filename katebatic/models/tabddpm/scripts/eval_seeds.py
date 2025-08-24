@@ -95,7 +95,8 @@ def eval_seeds(
                         change_val=change_val
                     )
                 elif model_type == "mlp":
-                    T_dict["normalization"] = "quantile"
+                    T_dict["normalization"] = "standard"
+                    # T_dict["normalization"] = "quantile"
                     T_dict["cat_encoding"] = "one-hot"
                     metric_report = train_mlp(
                         parent_dir=temp_config['parent_dir'],
