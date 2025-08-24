@@ -1,0 +1,24 @@
+{
+  "name": "diabetes",
+  "task_type": "binclass",
+  "n_num_features": 8,
+  "n_cat_features": 0,
+  "train_size": 536,
+  "val_size": 116,
+  "test_size": 116,
+  "normalization": "quantile",
+  "num_columns": [
+    "Pregnancies",
+    "Glucose",
+    "BloodPressure",
+    "SkinThickness",
+    "Insulin",
+    "BMI",
+    "DiabetesPedigreeFunction",
+    "Age"
+  ],
+  "cat_columns": [],
+  "target_column": "Outcome",
+  "n_classes": 2,
+  "num_classes": 2
+}
