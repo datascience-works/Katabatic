@@ -1,0 +1,20 @@
+catboost
+category-encoders
+dython
+icecream
+libzero
+numpy
+optuna
+pandas
+pyarrow
+rtdl
+scikit-learn
+scipy
+skorch
+tomli-w
+tomli
+tqdm
+ipykernel
+
+# smote
+imbalanced-learn
