@@ -1,4 +1,4 @@
-# A light sklearn-style wrapper around your existing TabDDPM pipeline.
+# A light sklearn-style wrapper around TabDDPM pipeline.
 
 from __future__ import annotations
 from dataclasses import dataclass, field
@@ -6,28 +6,38 @@ from typing import Optional, Dict, Any, Literal
 
 import os
 import pandas as pd
+import re
 
 from katebatic.models.tabddpm.scripts.TabDDPM import load_cfg, run_train, run_sample, run_eval
 from katebatic.models.tabddpm.scripts.data_processing import prepare_dataset_for_tabddpm
 from katebatic.models.tabddpm.scripts.analyze_synthetic_data import load_synthetic_data
 
+def _stem_from_path(path: str) -> str:
+    stem = os.path.splitext(os.path.basename(path))[0]
+    # normalize: lower, replace non-alnum with _, collapse repeats, trim _ edges
+    stem = re.sub(r'[^0-9a-zA-Z]+', '_', stem).strip('_').lower()
+    return stem or "dataset"
 
 @dataclass
 class TabDDPMPipeline:
     csv_path: str
-    dataset_name: str
     target_column: str
+    dataset_name: Optional[str] = None
 
     # Optional knobs
     normalization: Literal["quantile", "standard", "none"] = "quantile"
     exp_name: str = "ddpm_cb_best" 
     train_overrides: Dict[str, Any] = field(default_factory=dict)  # e.g., {"epochs": 200}
-    sample_overrides: Dict[str, Any] = field(default_factory=dict)  # e.g., {"batch_size": 1024, "num_samples": 5000}
-
+    
     # Internals (filled during fit)
     _prepared: bool = field(default=False, init=False, repr=False)
     _cfg: Optional[dict] = field(default=None, init=False, repr=False)
     _config_path: Optional[str] = field(default=None, init=False, repr=False)
+    
+    def __post_init__(self):
+        # Infer dataset_name if not supplied
+        if not self.dataset_name:
+            self.dataset_name = _stem_from_path(self.csv_path)
 
     # --- sklearn-like API ---
 
@@ -74,7 +84,6 @@ class TabDDPMPipeline:
 
         # Merge defaults with any user-provided sample_overrides
         so = {"num_samples": num_samples, "batch_size": batch_size}
-        so.update(self.sample_overrides or {})
 
         _ = run_sample(self._cfg, sample_overrides=so)
 
