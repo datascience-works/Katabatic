@@ -9,14 +9,23 @@ conda env create --file environment.yaml
 ```
 
 ## Usage
-`example.ipynb` shows how to generate synthetic data using CoDi architecture.
-```python
-synthetic_data = codi(
-    csv_path='raw_data/iris.csv',
-    test_split=0.2,
-    total_epochs_both=20,
-    training_batch_size=1024,
-    num_samples=500,
-)
+* Train and evaluate CoDi through `main.py`:
+```sh
+main.py:
+  --data: tabular dataset
+  --eval : train or eval
+  --logdir: Working directory
 ```
-Just need to pass in the dataset. Number of generated data is controlled by `num_sample`. 
+
+## Training
+* You can train our CoDi from scratch by run:
+```bash
+python main.py --data heart --logdir CoDi_exp
+```
+
+## Evaluation
+* By run the following script, you can reproduce our experimental result: 
+    binary classification result of CoDi on Heart in Table 10. 
+```bash
+python main.py --data heart --eval True --logdir exp_heart
+```

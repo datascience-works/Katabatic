@@ -9,6 +9,8 @@ import pickle
 from typing import Tuple, List, Dict, Any, Optional, Union
 import tempfile
 import warnings
+import glob
+import time
 
 class DatasetProcessor:
     """Complete dataset processor for CoDi with automatic fixes and validation"""
@@ -256,6 +258,7 @@ def codi(csv_path: str,
          categorical_columns: Optional[List[str]] = None,
          logdir: str = './CoDi_exp',
          verbose: bool = False,
+         force_new_training: bool = True,
          cleanup_temp_files: bool = True) -> pd.DataFrame:
     """
     Plug-and-play synthetic data generation using CoDi.
@@ -270,6 +273,7 @@ def codi(csv_path: str,
         categorical_columns: List of columns to force as categorical (optional)
         logdir: Directory for CoDi experiment logs (default: './CoDi_exp')
         verbose: Whether to print detailed processing information (default: False)
+        force_new_training: Whether to start fresh training (recommended for new datasets)
         cleanup_temp_files: Whether to clean up temporary files after generation (default: True)
     
     Returns:
@@ -285,13 +289,18 @@ def codi(csv_path: str,
         ... )
     """
     
-    # Generate unique dataset name to avoid conflicts
-    import time
-    dataset_name = f"temp_dataset_{int(time.time())}"
+    # Generate unique dataset name and logdir to avoid conflicts
+    timestamp = int(time.time())
+    dataset_name = f"temp_dataset_{timestamp}"
+    
+    # Auto-generate unique logdir if not provided
+    if logdir is None:
+        logdir = f'./CoDi_exp_{timestamp}'
     
     try:
         if verbose:
             print(f"🔄 Processing dataset: {csv_path}")
+            print(f"📁 Using logdir: {logdir}")
         
         # Step 1: Process the dataset
         processor = DatasetProcessor()
@@ -307,7 +316,17 @@ def codi(csv_path: str,
         if verbose:
             print(f"✅ Dataset processed: {result['shape']} -> {result['problem_type']}")
         
-        # Step 2: Run CoDi training and generation
+        # Step 2: Ensure clean logdir
+        os.makedirs(logdir, exist_ok=True)
+        
+        # Remove any existing checkpoint in this specific logdir
+        # checkpoint_path = os.path.join(logdir, 'ckpt.pt')
+        # if os.path.exists(checkpoint_path):
+        #     if verbose:
+        #         print(f"🗑️  Removing existing checkpoint: {checkpoint_path}")
+        #     os.remove(checkpoint_path)
+        
+        # Step 3: Run CoDi training and generation
         if verbose:
             print(f"🚀 Running CoDi training...")
         
@@ -337,7 +356,7 @@ def codi(csv_path: str,
         if verbose:
             print(f"✅ CoDi training completed")
         
-        # Step 3: Load and process synthetic data
+        # Step 4: Load and process synthetic data
         if verbose:
             print(f"📊 Loading synthetic data...")
         
@@ -390,6 +409,12 @@ def codi(csv_path: str,
                     os.remove(f'tabular_datasets/{dataset_name}.npz')
                 if os.path.exists(f'tabular_datasets/{dataset_name}.json'):
                     os.remove(f'tabular_datasets/{dataset_name}.json')
+                
+                # Remove the entire logdir if it was auto-generated
+                if logdir and logdir.startswith('./CoDi_exp_') and os.path.exists(logdir):
+                    shutil.rmtree(logdir)
+                    if verbose:
+                        print(f"🧹 Cleaned up logdir: {logdir}")
                 
                 if verbose:
                     print(f"🧹 Cleaned up temporary files")
