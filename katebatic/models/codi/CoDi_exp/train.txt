@@ -1,68 +1,39 @@
-INFO - main.py - 2025-09-02 21:28:28,051 - Co-evolving Conditional Diffusion models
-INFO - co_evolving_condition.py - 2025-09-02 21:28:33,393 - Continuous model params: 450829
-INFO - co_evolving_condition.py - 2025-09-02 21:28:33,393 - Discrete model params: 675285
-INFO - co_evolving_condition.py - 2025-09-02 21:28:33,393 - Total steps: 20
-INFO - co_evolving_condition.py - 2025-09-02 21:28:33,394 - Sample steps: 2000
-INFO - co_evolving_condition.py - 2025-09-02 21:28:33,394 - Continuous: 120, 5
-INFO - co_evolving_condition.py - 2025-09-02 21:28:33,394 - Discrete: 120, 3
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,057 - Epoch :0, diffusion continuous loss: 0.924, discrete loss: 0.325
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,058 - Epoch :0, CL continuous loss: 0.993, discrete loss: 1.000
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,058 - Epoch :0, Total continuous loss: 1.123, discrete loss: 0.525
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,098 - Epoch :1, diffusion continuous loss: 0.960, discrete loss: 0.463
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,098 - Epoch :1, CL continuous loss: 1.000, discrete loss: 1.000
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,099 - Epoch :1, Total continuous loss: 1.160, discrete loss: 0.663
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,137 - Epoch :2, diffusion continuous loss: 1.102, discrete loss: 0.359
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,138 - Epoch :2, CL continuous loss: 1.003, discrete loss: 1.000
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,138 - Epoch :2, Total continuous loss: 1.303, discrete loss: 0.559
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,169 - Epoch :3, diffusion continuous loss: 1.014, discrete loss: 0.343
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,170 - Epoch :3, CL continuous loss: 1.003, discrete loss: 1.000
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,170 - Epoch :3, Total continuous loss: 1.215, discrete loss: 0.544
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,207 - Epoch :4, diffusion continuous loss: 1.057, discrete loss: 0.444
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,208 - Epoch :4, CL continuous loss: 1.008, discrete loss: 1.000
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,208 - Epoch :4, Total continuous loss: 1.259, discrete loss: 0.644
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,239 - Epoch :5, diffusion continuous loss: 0.987, discrete loss: 0.247
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,240 - Epoch :5, CL continuous loss: 0.997, discrete loss: 1.000
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,240 - Epoch :5, Total continuous loss: 1.186, discrete loss: 0.447
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,273 - Epoch :6, diffusion continuous loss: 0.959, discrete loss: 0.376
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,273 - Epoch :6, CL continuous loss: 0.997, discrete loss: 1.000
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,274 - Epoch :6, Total continuous loss: 1.159, discrete loss: 0.576
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,305 - Epoch :7, diffusion continuous loss: 1.063, discrete loss: 0.331
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,306 - Epoch :7, CL continuous loss: 1.002, discrete loss: 1.000
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,306 - Epoch :7, Total continuous loss: 1.264, discrete loss: 0.531
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,336 - Epoch :8, diffusion continuous loss: 1.039, discrete loss: 0.384
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,336 - Epoch :8, CL continuous loss: 0.993, discrete loss: 1.000
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,337 - Epoch :8, Total continuous loss: 1.237, discrete loss: 0.584
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,366 - Epoch :9, diffusion continuous loss: 1.033, discrete loss: 0.448
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,367 - Epoch :9, CL continuous loss: 1.000, discrete loss: 1.000
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,367 - Epoch :9, Total continuous loss: 1.233, discrete loss: 0.648
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,423 - Epoch :10, diffusion continuous loss: 1.004, discrete loss: 0.431
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,424 - Epoch :10, CL continuous loss: 1.008, discrete loss: 1.000
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,424 - Epoch :10, Total continuous loss: 1.205, discrete loss: 0.631
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,455 - Epoch :11, diffusion continuous loss: 0.971, discrete loss: 0.278
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,456 - Epoch :11, CL continuous loss: 0.999, discrete loss: 1.000
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,456 - Epoch :11, Total continuous loss: 1.170, discrete loss: 0.478
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,488 - Epoch :12, diffusion continuous loss: 0.961, discrete loss: 0.316
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,488 - Epoch :12, CL continuous loss: 1.002, discrete loss: 1.000
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,489 - Epoch :12, Total continuous loss: 1.161, discrete loss: 0.516
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,519 - Epoch :13, diffusion continuous loss: 1.056, discrete loss: 0.350
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,519 - Epoch :13, CL continuous loss: 0.998, discrete loss: 1.000
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,520 - Epoch :13, Total continuous loss: 1.256, discrete loss: 0.550
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,555 - Epoch :14, diffusion continuous loss: 0.955, discrete loss: 0.309
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,555 - Epoch :14, CL continuous loss: 0.998, discrete loss: 1.000
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,555 - Epoch :14, Total continuous loss: 1.154, discrete loss: 0.509
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,593 - Epoch :15, diffusion continuous loss: 1.026, discrete loss: 0.321
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,594 - Epoch :15, CL continuous loss: 0.999, discrete loss: 1.000
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,594 - Epoch :15, Total continuous loss: 1.225, discrete loss: 0.521
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,624 - Epoch :16, diffusion continuous loss: 1.105, discrete loss: 0.340
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,624 - Epoch :16, CL continuous loss: 1.002, discrete loss: 1.000
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,624 - Epoch :16, Total continuous loss: 1.305, discrete loss: 0.540
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,656 - Epoch :17, diffusion continuous loss: 0.940, discrete loss: 0.380
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,656 - Epoch :17, CL continuous loss: 0.999, discrete loss: 1.000
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,657 - Epoch :17, Total continuous loss: 1.140, discrete loss: 0.580
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,688 - Epoch :18, diffusion continuous loss: 0.960, discrete loss: 0.292
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,689 - Epoch :18, CL continuous loss: 1.000, discrete loss: 1.000
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,690 - Epoch :18, Total continuous loss: 1.160, discrete loss: 0.492
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,727 - Epoch :19, diffusion continuous loss: 1.018, discrete loss: 0.318
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,728 - Epoch :19, CL continuous loss: 0.996, discrete loss: 1.000
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,729 - Epoch :19, Total continuous loss: 1.217, discrete loss: 0.518
-INFO - co_evolving_condition.py - 2025-09-02 21:28:35,890 - sampling 500 samples
+INFO - main.py - 2025-09-02 22:10:13,387 - Co-evolving Conditional Diffusion models
+INFO - co_evolving_condition.py - 2025-09-02 22:10:16,953 - Continuous model params: 450829
+INFO - co_evolving_condition.py - 2025-09-02 22:10:16,954 - Discrete model params: 675285
+INFO - co_evolving_condition.py - 2025-09-02 22:10:16,954 - Total steps: 10
+INFO - co_evolving_condition.py - 2025-09-02 22:10:16,955 - Sample steps: 2000
+INFO - co_evolving_condition.py - 2025-09-02 22:10:16,955 - Continuous: 120, 5
+INFO - co_evolving_condition.py - 2025-09-02 22:10:16,955 - Discrete: 120, 3
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,155 - Epoch :0, diffusion continuous loss: 0.924, discrete loss: 0.325
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,156 - Epoch :0, CL continuous loss: 0.993, discrete loss: 1.000
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,156 - Epoch :0, Total continuous loss: 1.123, discrete loss: 0.525
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,213 - Epoch :1, diffusion continuous loss: 0.960, discrete loss: 0.463
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,213 - Epoch :1, CL continuous loss: 1.000, discrete loss: 1.000
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,214 - Epoch :1, Total continuous loss: 1.160, discrete loss: 0.663
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,260 - Epoch :2, diffusion continuous loss: 1.102, discrete loss: 0.359
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,260 - Epoch :2, CL continuous loss: 1.003, discrete loss: 1.000
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,260 - Epoch :2, Total continuous loss: 1.303, discrete loss: 0.559
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,303 - Epoch :3, diffusion continuous loss: 1.014, discrete loss: 0.343
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,304 - Epoch :3, CL continuous loss: 1.003, discrete loss: 1.000
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,304 - Epoch :3, Total continuous loss: 1.215, discrete loss: 0.544
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,348 - Epoch :4, diffusion continuous loss: 1.057, discrete loss: 0.444
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,349 - Epoch :4, CL continuous loss: 1.008, discrete loss: 1.000
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,349 - Epoch :4, Total continuous loss: 1.259, discrete loss: 0.644
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,382 - Epoch :5, diffusion continuous loss: 0.987, discrete loss: 0.247
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,383 - Epoch :5, CL continuous loss: 0.997, discrete loss: 1.000
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,383 - Epoch :5, Total continuous loss: 1.186, discrete loss: 0.447
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,421 - Epoch :6, diffusion continuous loss: 0.959, discrete loss: 0.376
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,421 - Epoch :6, CL continuous loss: 0.997, discrete loss: 1.000
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,422 - Epoch :6, Total continuous loss: 1.159, discrete loss: 0.576
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,456 - Epoch :7, diffusion continuous loss: 1.063, discrete loss: 0.331
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,456 - Epoch :7, CL continuous loss: 1.002, discrete loss: 1.000
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,457 - Epoch :7, Total continuous loss: 1.264, discrete loss: 0.531
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,492 - Epoch :8, diffusion continuous loss: 1.039, discrete loss: 0.384
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,494 - Epoch :8, CL continuous loss: 0.993, discrete loss: 1.000
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,495 - Epoch :8, Total continuous loss: 1.237, discrete loss: 0.584
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,531 - Epoch :9, diffusion continuous loss: 1.033, discrete loss: 0.448
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,532 - Epoch :9, CL continuous loss: 1.000, discrete loss: 1.000
+INFO - co_evolving_condition.py - 2025-09-02 22:10:18,532 - Epoch :9, Total continuous loss: 1.233, discrete loss: 0.648
+INFO - co_evolving_condition.py - 2025-09-02 22:10:19,409 - Save model!
+INFO - co_evolving_condition.py - 2025-09-02 22:10:19,514 - sampling 500 samples

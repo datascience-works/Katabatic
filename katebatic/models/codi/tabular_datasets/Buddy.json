@@ -1,0 +1,155 @@
+{
+  "columns": [
+    {
+      "name": "condition",
+      "type": "categorical",
+      "size": 3,
+      "i2s": [
+        "0",
+        "1",
+        "2"
+      ]
+    },
+    {
+      "name": "color_type",
+      "type": "categorical",
+      "size": 56,
+      "i2s": [
+        "Agouti",
+        "Apricot",
+        "Black",
+        "Black Brindle",
+        "Black Smoke",
+        "Black Tabby",
+        "Black Tiger",
+        "Blue",
+        "Blue Cream",
+        "Blue Merle",
+        "Blue Point",
+        "Blue Smoke",
+        "Blue Tabby",
+        "Blue Tick",
+        "Blue Tiger",
+        "Brown",
+        "Brown Brindle",
+        "Brown Merle",
+        "Brown Tabby",
+        "Brown Tiger",
+        "Buff",
+        "Calico",
+        "Calico Point",
+        "Chocolate",
+        "Chocolate Point",
+        "Cream",
+        "Cream Tabby",
+        "Fawn",
+        "Flame Point",
+        "Gold",
+        "Gray",
+        "Gray Tabby",
+        "Green",
+        "Lilac Point",
+        "Liver",
+        "Liver Tick",
+        "Lynx Point",
+        "Orange",
+        "Orange Tabby",
+        "Pink",
+        "Red",
+        "Red Merle",
+        "Red Tick",
+        "Sable",
+        "Seal Point",
+        "Silver",
+        "Silver Lynx Point",
+        "Silver Tabby",
+        "Tan",
+        "Torbie",
+        "Tortie",
+        "Tortie Point",
+        "Tricolor",
+        "White",
+        "Yellow",
+        "Yellow Brindle"
+      ]
+    },
+    {
+      "name": "length_m",
+      "type": "continuous",
+      "min": 0.0,
+      "max": 1.0
+    },
+    {
+      "name": "height_cm",
+      "type": "continuous",
+      "min": 5.0,
+      "max": 50.0
+    },
+    {
+      "name": "x1",
+      "type": "categorical",
+      "size": 20,
+      "i2s": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19"
+      ]
+    },
+    {
+      "name": "x2",
+      "type": "categorical",
+      "size": 10,
+      "i2s": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+      ]
+    },
+    {
+      "name": "breed_category",
+      "type": "categorical",
+      "size": 3,
+      "i2s": [
+        "0",
+        "1",
+        "2"
+      ]
+    },
+    {
+      "name": "pet_category",
+      "type": "categorical",
+      "size": 4,
+      "i2s": [
+        "0",
+        "1",
+        "2",
+        "4"
+      ]
+    }
+  ],
+  "problem_type": "multiclass_classification"
+}

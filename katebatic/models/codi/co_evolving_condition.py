@@ -128,56 +128,59 @@ def train(FLAGS):
                 logging.info(f"Epoch :{epoch}, Total continuous loss: {loss_con:.3f}, discrete loss: {loss_dis:.3f}")
                 epoch +=1
 
-        #     if step > 0 and sample_step > 0 and step % sample_step == 0 or step==(total_steps_both-1):
-        #         model_con.eval()
-        #         model_dis.eval()
-        #         with torch.no_grad():
-        #             x_T_con = torch.randn(train_con_data.shape[0], train_con_data.shape[1]).to(device)
-        #             log_x_T_dis = log_sample_categorical(torch.zeros(train_dis_data.shape, device=device), num_class).to(device)
-        #             x_con, x_dis = sampling_with(x_T_con, log_x_T_dis, net_sampler, trainer_dis, transformer_con, FLAGS)
-        #         x_dis = apply_activate(x_dis, transformer_dis.output_info)
-        #         sample_con = transformer_con.inverse_transform(x_con.detach().cpu().numpy())
-        #         sample_dis = transformer_dis.inverse_transform(x_dis.detach().cpu().numpy())
-        #         sample = np.zeros([train_con_data.shape[0], len(con_idx+dis_idx)])
-        #         for i in range(len(con_idx)):
-        #             sample[:,con_idx[i]]=sample_con[:,i]
-        #         for i in range(len(dis_idx)):
-        #             sample[:,dis_idx[i]]=sample_dis[:,i]
-        #         sample = np.array(pd.DataFrame(sample).dropna())
-        #         scores, std, param = evaluation.compute_scores(train=train, test = None, synthesized_data=[sample], metadata=meta, eval=None)
-        #         div_mean, div_std = evaluation.compute_diversity(train=train, fake=[sample])
-        #         scores['coverage'] = div_mean['coverage']
-        #         std['coverage'] = div_std['coverage']
-        #         scores['density'] = div_mean['density']
-        #         std['density'] = div_std['density']
-        #         f1 = scores[metric]
-        #         logging.info(f"---------Epoch {epoch} Evaluation----------")
-        #         logging.info(scores)
-        #         logging.info(std)
+            if step > 0 and sample_step > 0 and step % sample_step == 0 or step==(total_steps_both-1):
+                model_con.eval()
+                model_dis.eval()
+                with torch.no_grad():
+                    x_T_con = torch.randn(train_con_data.shape[0], train_con_data.shape[1]).to(device)
+                    log_x_T_dis = log_sample_categorical(torch.zeros(train_dis_data.shape, device=device), num_class).to(device)
+                    x_con, x_dis = sampling_with(x_T_con, log_x_T_dis, net_sampler, trainer_dis, transformer_con, FLAGS)
+                x_dis = apply_activate(x_dis, transformer_dis.output_info)
+                sample_con = transformer_con.inverse_transform(x_con.detach().cpu().numpy())
+                sample_dis = transformer_dis.inverse_transform(x_dis.detach().cpu().numpy())
+                sample = np.zeros([train_con_data.shape[0], len(con_idx+dis_idx)])
+                for i in range(len(con_idx)):
+                    sample[:,con_idx[i]]=sample_con[:,i]
+                for i in range(len(dis_idx)):
+                    sample[:,dis_idx[i]]=sample_dis[:,i]
+                sample = np.array(pd.DataFrame(sample).dropna())
+                scores, std, param = evaluation.compute_scores(train=train, test = None, synthesized_data=[sample], metadata=meta, eval=None)
+                div_mean, div_std = evaluation.compute_diversity(train=train, fake=[sample])
+                scores['coverage'] = div_mean['coverage']
+                std['coverage'] = div_std['coverage']
+                scores['density'] = div_mean['density']
+                std['density'] = div_std['density']
+                f1 = scores[metric]
+                # logging.info(f"---------Epoch {epoch} Evaluation----------")
+                # logging.info(scores)
+                # logging.info(std)
 
-        #         if scores_max_eval < torch.tensor(f1):
-        #             scores_max_eval = torch.tensor(f1)
-        #             logging.info(f"Save model!")
-        #             ckpt = {
-        #                 'model_con': model_con.state_dict(),
-        #                 'model_dis': model_dis.state_dict(),
-        #                 'sched_con': sched_con.state_dict(),
-        #                 'sched_dis': sched_dis.state_dict(),
-        #                 'optim_con': optim_con.state_dict(),
-        #                 'optim_dis': optim_dis.state_dict(),
-        #                 'step': step,
-        #                 'sample': sample, 
-        #                 'ml_param': param
-        #             }
-        #             torch.save(ckpt, os.path.join(FLAGS.logdir, 'ckpt.pt'))
+                if scores_max_eval < torch.tensor(f1):
+                    scores_max_eval = torch.tensor(f1)
+                    logging.info(f"Save model!")
+                    ckpt = {
+                        'model_con': model_con.state_dict(),
+                        'model_dis': model_dis.state_dict(),
+                        'sched_con': sched_con.state_dict(),
+                        'sched_dis': sched_dis.state_dict(),
+                        'optim_con': optim_con.state_dict(),
+                        'optim_dis': optim_dis.state_dict(),
+                        'step': step,
+                        'sample': sample, 
+                        'ml_param': param
+                    }
+                    torch.save(ckpt, os.path.join(FLAGS.logdir, 'ckpt.pt'))
         # logging.info(f"Evaluation best : {scores_max_eval}")
 
-        #final test
-        ckpt = torch.load(os.path.join(FLAGS.logdir, 'ckpt.pt'))
-        model_con.load_state_dict(ckpt['model_con'])
-        model_dis.load_state_dict(ckpt['model_dis'])
-        model_con.eval()
-        model_dis.eval()
+        # #final test
+        # ckpt = torch.load(os.path.join(FLAGS.logdir, 'ckpt.pt'))
+        # if os.path.exists(ckpt):
+        #     model_con.load_state_dict(ckpt['model_con'])
+        #     model_dis.load_state_dict(ckpt['model_dis'])
+        #     model_con.eval()
+        #     model_dis.eval()
+        # else:
+        #     print("No checkpoint found, using trained model")
         # fake_sample=[]
         # for i in range(10):
         #     logging.info(f"sampling {i}")
