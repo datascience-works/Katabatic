@@ -20,6 +20,12 @@ class ModelRegistry:
             'class': 'GReaT',
             'dependencies': ['transformers', 'torch'],
             'extra': 'great'
+        },
+        'pategan': {
+            'module': 'katebatic.models.pategan.models',
+            'class': 'PATEGANSynthesizer',
+            'dependencies': ['tensorflow', 'numpy', 'pandas'],
+            'extra': 'pategan'
         }
     }
 
