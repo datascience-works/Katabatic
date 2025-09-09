@@ -26,13 +26,20 @@ class ModelRegistry:
             'class': 'Tabsyn',
             'dependencies': [],
             'extra': 'tabsyn'
+        },
         'tabddpm': {
             'module': 'katebatic.models.tabddpm.models',
             'class': 'Tabddpm',
             'dependencies': [],
             'extra': 'tabddpm'
+        },
+        'pategan': {
+            'module': 'katebatic.models.pategan.models',
+            'class': 'PATEGANSynthesizer',
+            'dependencies': ['tensorflow', 'numpy', 'pandas'],
+            'extra': 'pategan'
         }
-}
+    }
 
     @classmethod
     def get_available_models(cls) -> list[str]:
