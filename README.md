@@ -1,4 +1,4 @@
-# Katebatic
+# Katabatic
 
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -195,7 +195,7 @@ See `example.ipynb` for a complete walkthrough.
 
 ### Data Preprocessing
 
-Katebatic requires discrete/categorical data. Use the built-in preprocessing utilities:
+Katabatic requires discrete/categorical data. Use the built-in preprocessing utilities:
 
 ```python
 from utils import discretize_preprocess
