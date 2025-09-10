@@ -1,0 +1,17 @@
+{
+    "n_num_features": 7,
+    "n_cat_features": 0,
+    "y_dim": 1,
+    "is_y_cond": false,
+    "y_policy": "default",
+    "num_classes": 0,
+    "train_size": 4177,
+    "val_size": 4177,
+    "test_size": 4177,
+    "is_registered": false,
+    "task_type": "regression",
+    "is_regression": true,
+    "is_multiclass": false,
+    "is_binclass": false,
+    "n_classes": null
+}

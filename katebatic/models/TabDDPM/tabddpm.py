@@ -12,20 +12,20 @@ import zero
 import lib
 
 # Import from local modules
-from .utils_train import make_dataset, get_model as get_model_arch  # main model builder
-from .lib.data import (
+from .utils import make_dataset, get_model as get_model_arch  # main model builder
+from .utils import (
     Transformations,
     prepare_fast_dataloader,
     cat_encode,
     normalize,
     round_columns
 )
-from .lib.util import dump_json
+from .utils import dump_json
 
 # Core training and sampling functions
-from .train import train as train_fn
-from .sample import sample as sample_fn
-from .tab_ddpm import GaussianMultinomialDiffusion
+from .utils import train as train_fn
+from .utils import sample as sample_fn
+from .utils import GaussianMultinomialDiffusion
 class TabDDPM:
     """
     A sklearn-style wrapper for the Tabular DDPM model.
