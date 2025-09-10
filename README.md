@@ -256,7 +256,7 @@ synthetic_data = model.sample(
 
 ### Pipeline Usage
 
-Katebatic provides automated pipelines for complete workflows:
+Katabatic provides automated pipelines for complete workflows:
 
 ```python
 from katebatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
