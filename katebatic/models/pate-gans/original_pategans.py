@@ -6,7 +6,7 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 import os
 import sys
 import importlib.util
-from pate_gans.original.original_api import PG_ORIGINAL
+from utils import *
 
 class PateGans:
     def __init__(self, epsilon=1.0, delta=1e-5, num_teachers=10):
@@ -34,8 +34,8 @@ class PateGans:
         
         Args:
             data: pandas DataFrame or path to CSV file
-            n_samples: Number of samples to generate (if None, same as training data)
-            target_column: name of target column (if None, assumes last column)
+            n_samples: Number of samples to generate
+            target_column: name of target column
             
         Returns:
             pandas DataFrame with synthetic data
@@ -51,11 +51,6 @@ class PateGans:
         
         print(f"Training on dataset with shape: {df.shape}")
         print(f"Columns: {df.columns.tolist()}")
-        
-        # Remove ID column if present
-        if 'Id' in df.columns:
-            df = df.drop('Id', axis=1)
-            print("Removed 'Id' column")
         
         # Store original column names and dtypes for later reconstruction
         self.original_columns = df.columns.tolist()
@@ -93,7 +88,7 @@ class PateGans:
         
         # Train the model
         print("Training PATE-GAN...")
-        self.model.fit(df_numeric)  # Pass the numeric DataFrame
+        self.model.fit(df_numeric) 
         print("Training completed!")
         
         # Generate synthetic data

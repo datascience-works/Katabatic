@@ -11,243 +11,7 @@ import tempfile
 import warnings
 import glob
 import time
-
-class DatasetProcessor:
-    """Complete dataset processor for CoDi with automatic fixes and validation"""
-    
-    def __init__(self, categorical_threshold: int = 20, numeric_categorical_threshold: float = 0.05):
-        self.categorical_threshold = categorical_threshold
-        self.numeric_categorical_threshold = numeric_categorical_threshold
-    
-    def auto_detect_column_types(self, df: pd.DataFrame) -> Tuple[List[str], List[str]]:
-        """Automatically detect continuous and categorical columns with improved logic"""
-        continuous_cols = []
-        categorical_cols = []
-        
-        for col in df.columns:
-            col_data = df[col].dropna()  # Remove NaN for analysis
-            unique_count = col_data.nunique()
-            total_count = len(col_data)
-            unique_ratio = unique_count / total_count if total_count > 0 else 0
-            
-            # Check if column contains only integers (potential categorical)
-            is_integer_like = False
-            if pd.api.types.is_numeric_dtype(col_data):
-                is_integer_like = col_data.apply(lambda x: float(x).is_integer()).all()
-            
-            # Enhanced decision logic
-            if pd.api.types.is_numeric_dtype(col_data):
-                # Special case: floating point values that are actually discrete
-                if is_integer_like and (unique_count <= self.categorical_threshold or unique_ratio < self.numeric_categorical_threshold):
-                    categorical_cols.append(col)
-                # Special case: many decimal values suggest continuous
-                elif not is_integer_like and unique_count > self.categorical_threshold:
-                    continuous_cols.append(col)
-                # Default numeric logic
-                elif unique_count <= self.categorical_threshold or unique_ratio < self.numeric_categorical_threshold:
-                    categorical_cols.append(col)
-                else:
-                    continuous_cols.append(col)
-            else:
-                # Non-numeric -> categorical
-                categorical_cols.append(col)
-        
-        return continuous_cols, categorical_cols
-    
-    def preprocess_data(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict]:
-        """Enhanced preprocessing with better missing value handling"""
-        df_processed = df.copy()
-        categorical_mappings = {}
-        
-        # Handle missing values
-        for col in df_processed.columns:
-            if df_processed[col].isnull().any():
-                if pd.api.types.is_numeric_dtype(df_processed[col]):
-                    df_processed[col].fillna(df_processed[col].median(), inplace=True)
-                else:
-                    mode_val = df_processed[col].mode()
-                    if len(mode_val) > 0:
-                        df_processed[col].fillna(mode_val[0], inplace=True)
-                    else:
-                        df_processed[col].fillna('unknown', inplace=True)
-        
-        # Encode categorical variables with proper indexing
-        for col in df_processed.columns:
-            if not pd.api.types.is_numeric_dtype(df_processed[col]):
-                unique_vals = sorted(df_processed[col].unique())
-                mapping = {val: idx for idx, val in enumerate(unique_vals)}
-                categorical_mappings[col] = {
-                    'mapping': mapping,
-                    'reverse_mapping': {idx: val for val, idx in mapping.items()}
-                }
-                df_processed[col] = df_processed[col].map(mapping)
-        
-        return df_processed, categorical_mappings
-    
-    def validate_and_fix_categorical_data(self, data: np.ndarray, columns: List[Dict]) -> Tuple[np.ndarray, List[Dict]]:
-        """Validate and fix categorical columns to ensure proper 0-based indexing"""
-        fixed_data = data.copy()
-        fixed_columns = [col.copy() for col in columns]
-        
-        for i, col in enumerate(fixed_columns):
-            if col['type'] == 'categorical':
-                col_data = fixed_data[:, i].astype(int)
-                unique_vals = sorted(np.unique(col_data))
-                
-                # Check if values are properly 0-based
-                expected_range = list(range(len(unique_vals)))
-                if unique_vals != expected_range:
-                    # Create mapping to fix indexing
-                    mapping = {old_val: new_val for new_val, old_val in enumerate(unique_vals)}
-                    
-                    # Apply mapping
-                    for old_val, new_val in mapping.items():
-                        fixed_data[fixed_data[:, i] == old_val, i] = new_val
-                    
-                    # Update column metadata
-                    col['size'] = len(unique_vals)
-                    col['i2s'] = [str(val) for val in unique_vals]
-        
-        return fixed_data, fixed_columns
-    
-    def create_codi_format(self, dataset_name: str, train_data: np.ndarray, test_data: np.ndarray, 
-                          column_names: List[str], con_idx: List[int], dis_idx: List[int], 
-                          categorical_mappings: Dict) -> Dict:
-        """Create CoDi-compatible format with validation"""
-        
-        # Validate and fix categorical data
-        all_data = np.vstack([train_data, test_data])
-        
-        # Create initial columns structure
-        columns = []
-        for i, col_name in enumerate(column_names):
-            if i in con_idx:
-                col_data = all_data[:, i]
-                columns.append({
-                    "name": col_name,
-                    "type": "continuous",
-                    "min": float(np.min(col_data)),
-                    "max": float(np.max(col_data))
-                })
-            else:
-                col_data = all_data[:, i].astype(int)
-                unique_vals = sorted(np.unique(col_data))
-                
-                # Create i2s mapping
-                if col_name in categorical_mappings:
-                    reverse_mapping = categorical_mappings[col_name]['reverse_mapping']
-                    i2s = [str(reverse_mapping.get(idx, str(idx))) for idx in unique_vals]
-                else:
-                    i2s = [str(val) for val in unique_vals]
-                
-                columns.append({
-                    "name": col_name,
-                    "type": "categorical",
-                    "size": len(unique_vals),
-                    "i2s": i2s
-                })
-        
-        # Fix categorical data indexing
-        fixed_train, fixed_columns = self.validate_and_fix_categorical_data(train_data, columns)
-        fixed_test, _ = self.validate_and_fix_categorical_data(test_data, columns)
-        
-        # Determine problem type
-        last_col_idx = len(column_names) - 1
-        if last_col_idx in dis_idx:
-            last_col_name = column_names[last_col_idx]
-            if last_col_name in categorical_mappings:
-                num_classes = len(categorical_mappings[last_col_name]['mapping'])
-            else:
-                num_classes = len(np.unique(all_data[:, last_col_idx]))
-            
-            problem_type = "binary_classification" if num_classes == 2 else "multiclass_classification"
-        else:
-            problem_type = "regression"
-        
-        # Save fixed data
-        os.makedirs('tabular_datasets', exist_ok=True)
-        np.savez(f'tabular_datasets/{dataset_name}.npz', train=fixed_train, test=fixed_test)
-        
-        # Create metadata
-        codi_meta = {
-            "columns": fixed_columns,
-            "problem_type": problem_type
-        }
-        
-        with open(f'tabular_datasets/{dataset_name}.json', 'w') as f:
-            json.dump(codi_meta, f, indent=2)
-        
-        return codi_meta
-    
-    def process_dataset(self, csv_path: str, dataset_name: str, 
-                       force_continuous: Optional[List[str]] = None,
-                       force_categorical: Optional[List[str]] = None,
-                       test_split: float = 0.2,
-                       verbose: bool = False) -> Dict[str, Any]:
-        """Complete dataset processing pipeline"""
-        
-        force_continuous = force_continuous or []
-        force_categorical = force_categorical or []
-        
-        # Load and analyze data
-        df = pd.read_csv(csv_path)
-        
-        # Auto-detect column types
-        continuous_cols, categorical_cols = self.auto_detect_column_types(df)
-        
-        # Apply manual overrides
-        for col in force_continuous:
-            if col in categorical_cols:
-                categorical_cols.remove(col)
-            if col not in continuous_cols:
-                continuous_cols.append(col)
-        
-        for col in force_categorical:
-            if col in continuous_cols:
-                continuous_cols.remove(col)
-            if col not in categorical_cols:
-                categorical_cols.append(col)
-        
-        if verbose:
-            print(f"Continuous columns: {continuous_cols}")
-            print(f"Categorical columns: {categorical_cols}")
-        
-        # Preprocess data
-        df_processed, categorical_mappings = self.preprocess_data(df)
-        
-        # Get indices
-        con_idx = [df_processed.columns.get_loc(col) for col in continuous_cols]
-        dis_idx = [df_processed.columns.get_loc(col) for col in categorical_cols]
-        
-        # Split data
-        data = df_processed.values.astype(np.float32)
-        n_samples, n_features = data.shape
-        n_test = int(n_samples * test_split)
-        
-        # Shuffle and split
-        np.random.seed(42)  # For reproducibility
-        indices = np.random.permutation(n_samples)
-        test_data = data[indices[:n_test]]
-        train_data = data[indices[n_test:]]
-        
-        # Create CoDi format with validation and fixes
-        codi_meta = self.create_codi_format(
-            dataset_name, train_data, test_data, 
-            df_processed.columns.tolist(), con_idx, dis_idx, categorical_mappings
-        )
-        
-        return {
-            'dataset_name': dataset_name,
-            'shape': (n_samples, n_features),
-            'problem_type': codi_meta['problem_type'],
-            'continuous_columns': continuous_cols,
-            'categorical_columns': categorical_cols,
-            'train_samples': len(train_data),
-            'test_samples': len(test_data),
-            'metadata': codi_meta,
-            'categorical_mappings': categorical_mappings
-        }
-
+from utils import * 
 
 def codi(csv_path: str,
          test_split: float = 0.2,
@@ -319,20 +83,13 @@ def codi(csv_path: str,
         # Step 2: Ensure clean logdir
         os.makedirs(logdir, exist_ok=True)
         
-        # Remove any existing checkpoint in this specific logdir
-        # checkpoint_path = os.path.join(logdir, 'ckpt.pt')
-        # if os.path.exists(checkpoint_path):
-        #     if verbose:
-        #         print(f"🗑️  Removing existing checkpoint: {checkpoint_path}")
-        #     os.remove(checkpoint_path)
-        
         # Step 3: Run CoDi training and generation
         if verbose:
             print(f"🚀 Running CoDi training...")
         
         # Prepare command
         cmd = [
-            sys.executable, 'main.py',
+            sys.executable, 'utils.py',
             '--data', dataset_name,
             '--total_epochs_both', str(total_epochs_both),
             '--training_batch_size', str(training_batch_size),
@@ -410,13 +167,34 @@ def codi(csv_path: str,
                 if os.path.exists(f'tabular_datasets/{dataset_name}.json'):
                     os.remove(f'tabular_datasets/{dataset_name}.json')
                 
+                # Remove the entire tabular_datasets folder if it's empty or only contains temp files
+                if os.path.exists('tabular_datasets'):
+                    # Check if folder is empty or only contains temporary files
+                    remaining_files = os.listdir('tabular_datasets')
+                    temp_files = [f for f in remaining_files if f.startswith('temp_dataset_')]
+                    
+                    # If only temp files remain, remove them and the folder
+                    if len(remaining_files) == len(temp_files):
+                        for temp_file in temp_files:
+                            temp_path = os.path.join('tabular_datasets', temp_file)
+                            if os.path.isfile(temp_path):
+                                os.remove(temp_path)
+                        
+                        # Remove the empty folder
+                        if not os.listdir('tabular_datasets'):
+                            os.rmdir('tabular_datasets')
+                            if verbose:
+                                print(f"🧹 Cleaned up tabular_datasets folder")
+                
                 # Remove the entire logdir if it was auto-generated
-                if logdir and logdir.startswith('./CoDi_exp_') and os.path.exists(logdir):
+                if logdir and logdir.startswith('./CoDi_exp') and os.path.exists(logdir):
                     shutil.rmtree(logdir)
                     if verbose:
                         print(f"🧹 Cleaned up logdir: {logdir}")
                 
                 if verbose:
                     print(f"🧹 Cleaned up temporary files")
-            except:
+            except Exception as cleanup_error:
+                if verbose:
+                    print(f"⚠️ Warning: Could not clean up some files: {cleanup_error}")
                 pass  # Ignore cleanup errors
