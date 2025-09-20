@@ -42,15 +42,6 @@ def codi(csv_path: str,
     
     Returns:
         pd.DataFrame: Generated synthetic data with original column names and types
-    
-    Example:
-        >>> synthetic_data = codi(
-        ...     csv_path='raw_data/iris.csv',
-        ...     test_split=0.2,
-        ...     total_epochs_both=20,
-        ...     training_batch_size=1024,
-        ...     num_samples=500,
-        ... )
     """
     
     # Generate unique dataset name and logdir to avoid conflicts
@@ -63,8 +54,8 @@ def codi(csv_path: str,
     
     try:
         if verbose:
-            print(f"🔄 Processing dataset: {csv_path}")
-            print(f"📁 Using logdir: {logdir}")
+            print(f"Processing dataset: {csv_path}")
+            print(f"Using logdir: {logdir}")
         
         # Step 1: Process the dataset
         processor = DatasetProcessor()
@@ -78,14 +69,14 @@ def codi(csv_path: str,
         )
         
         if verbose:
-            print(f"✅ Dataset processed: {result['shape']} -> {result['problem_type']}")
+            print(f"Dataset processed: {result['shape']} -> {result['problem_type']}")
         
         # Step 2: Ensure clean logdir
         os.makedirs(logdir, exist_ok=True)
         
         # Step 3: Run CoDi training and generation
         if verbose:
-            print(f"🚀 Running CoDi training...")
+            print(f"Running CoDi training...")
         
         # Prepare command
         cmd = [
@@ -111,11 +102,11 @@ def codi(csv_path: str,
             raise RuntimeError(f"CoDi training failed: {result_cmd.stderr}")
         
         if verbose:
-            print(f"✅ CoDi training completed")
+            print(f"CoDi training completed")
         
         # Step 4: Load and process synthetic data
         if verbose:
-            print(f"📊 Loading synthetic data...")
+            print(f"Loading synthetic data...")
         
         # Load synthetic data
         synthetic_pkl_path = os.path.join(logdir, 'synthetic_data.pkl')
@@ -148,13 +139,13 @@ def codi(csv_path: str,
                 )
         
         if verbose:
-            print(f"✅ Synthetic data generated: {synthetic_df.shape}")
-            print(f"📈 Data types preserved and mapped back to original format")
+            print(f"Synthetic data generated: {synthetic_df.shape}")
+            print(f"Data types preserved and mapped back to original format")
         
         return synthetic_df
         
     except Exception as e:
-        print(f"❌ Error in codi(): {str(e)}")
+        print(f"Error in codi(): {str(e)}")
         raise
     
     finally:
@@ -184,17 +175,17 @@ def codi(csv_path: str,
                         if not os.listdir('tabular_datasets'):
                             os.rmdir('tabular_datasets')
                             if verbose:
-                                print(f"🧹 Cleaned up tabular_datasets folder")
+                                print(f"Cleaned up tabular_datasets folder")
                 
                 # Remove the entire logdir if it was auto-generated
                 if logdir and logdir.startswith('./CoDi_exp') and os.path.exists(logdir):
                     shutil.rmtree(logdir)
                     if verbose:
-                        print(f"🧹 Cleaned up logdir: {logdir}")
+                        print(f"Cleaned up logdir: {logdir}")
                 
                 if verbose:
-                    print(f"🧹 Cleaned up temporary files")
+                    print(f"Cleaned up temporary files")
             except Exception as cleanup_error:
                 if verbose:
-                    print(f"⚠️ Warning: Could not clean up some files: {cleanup_error}")
+                    print(f"Warning: Could not clean up some files: {cleanup_error}")
                 pass  # Ignore cleanup errors
