@@ -2,4 +2,4 @@
 
 from .model import TableGan
 
-__all__ = ["TableGan"]
+__all__ = ["TableGAN"]
