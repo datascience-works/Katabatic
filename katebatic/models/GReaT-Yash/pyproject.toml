@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "great-plugin"
+version = "0.1.0"
+description = "Katebatic plugin wrapping be_great.GReaT"
+authors = ["Your Name <you@example.com>"]
+packages = [{include = "great"}]
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.12"
+pandas = "^2.0"
+numpy = "^1.24"
+# Your stack below (uncomment as needed)
+# torch = "^2.3"
+# transformers = "^4.44"
+# datasets = "^2.20"
+# peft = "^0.9.0"
+
+[build-system]
+requires = ["poetry-core>=1.5.0"]
+build-backend = "poetry.core.masonry.api"
