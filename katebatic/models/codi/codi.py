@@ -69,10 +69,9 @@ def codi(csv_path: str,
         if verbose:
             print(f"Dataset processed: {result['shape']} -> {result['problem_type']}")
         
-        # Ensure clean logdir
         os.makedirs(logdir, exist_ok=True)
         
-        # Run CoDi training and generation
+        # Training and generation
         if verbose:
             print(f"Running CoDi training...")
         
@@ -106,7 +105,6 @@ def codi(csv_path: str,
         if verbose:
             print(f"Loading synthetic data...")
         
-        # Load synthetic data
         synthetic_pkl_path = os.path.join(logdir, 'synthetic_data.pkl')
         if not os.path.exists(synthetic_pkl_path):
             raise FileNotFoundError(f"Synthetic data not found at {synthetic_pkl_path}")
@@ -114,11 +112,9 @@ def codi(csv_path: str,
         with open(synthetic_pkl_path, 'rb') as f:
             synthetic_datasets = pickle.load(f)
         
-        # Load metadata
         metadata = result['metadata']
         categorical_mappings = result['categorical_mappings']
              
-        # Create DataFrame
         column_names = [col['name'] for col in metadata['columns']]
         combined_raw_data = np.vstack(synthetic_datasets)
         synthetic_df = pd.DataFrame(combined_raw_data, columns=column_names)
@@ -152,7 +148,7 @@ def codi(csv_path: str,
                 if os.path.exists(f'tabular_datasets/{dataset_name}.json'):
                     os.remove(f'tabular_datasets/{dataset_name}.json')
                 
-                # Remove the entire tabular_datasets folder if it's empty or only contains temp files
+                # Remove the entire tabular_datasets folder 
                 if os.path.exists('tabular_datasets'):
                     # Check if folder is empty or only contains temporary files
                     remaining_files = os.listdir('tabular_datasets')
