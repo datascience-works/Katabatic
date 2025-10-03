@@ -70,15 +70,14 @@ class PateGans:
         
         kwargs = {
             "epsilon": self.epsilon,
-            "delta": int(-np.log10(self.delta)),  # Original wants -log10(delta)
+            "delta": int(-np.log10(self.delta)), 
             "num_teachers": self.num_teachers,
-            "X_shape": (n_records, n_features)  # Add the required X_shape parameter
+            "X_shape": (n_records, n_features)  
         }
         
         print("Initializing PATE-GAN...")
         self.model = PG_ORIGINAL(**kwargs)
         
-        # Train the model and get generate synthetic data
         print("Training PATE-GAN...")
         self.model.fit(df_numeric) 
         print("Training completed!")
@@ -90,10 +89,8 @@ class PateGans:
         synthetic_data = self.model.generate(n_samples)
         print("Generation completed!")
         
-        # Convert back to DataFrame with original column names
         synthetic_df = pd.DataFrame(synthetic_data, columns=self.original_columns)
         
-        # Decode categorical columns back to original values
         for column, encoder in self.label_encoders.items():
             synthetic_df[column] = np.round(synthetic_df[column]).astype(int)
             min_val, max_val = 0, len(encoder.classes_) - 1
