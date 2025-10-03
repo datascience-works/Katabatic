@@ -28,27 +28,25 @@ def codi(csv_path: str,
     Plug-and-play synthetic data generation using CoDi.
     
     Args:
-        csv_path: Path to input CSV file
-        test_split: Fraction of data to use for testing (default: 0.2)
-        total_epochs_both: Number of training epochs (default: 20)
-        training_batch_size: Batch size for training (default: 1024)
-        num_samples: Number of synthetic samples to generate (default: 500)
-        continuous_columns: List of columns to force as continuous (optional)
-        categorical_columns: List of columns to force as categorical (optional)
-        logdir: Directory for CoDi experiment logs (default: './CoDi_exp')
-        verbose: Whether to print detailed processing information (default: False)
-        force_new_training: Whether to start fresh training (recommended for new datasets)
-        cleanup_temp_files: Whether to clean up temporary files after generation (default: True)
+        csv_path: csv path
+        test_split: split for testing (default: 0.2)
+        total_epochs_both: training epochs (default: 20)
+        training_batch_size: batch size (default: 1024)
+        num_samples: samples generated (default: 500)
+        continuous_columns: continuous columns (optional)
+        categorical_columns: categorical columns (optional)
+        logdir: experiment logs (default: './CoDi_exp')
+        verbose: print detailed processing information (default: False)
+        force_new_training: start fresh training (recommended for new datasets)
+        cleanup_temp_files: clean up temporary files after generation (default: True)
     
     Returns:
-        pd.DataFrame: Generated synthetic data with original column names and types
+        pd.DataFrame: Generated synthetic data 
     """
     
-    # Generate unique dataset name and logdir to avoid conflicts
     timestamp = int(time.time())
     dataset_name = f"temp_dataset_{timestamp}"
     
-    # Auto-generate unique logdir if not provided
     if logdir is None:
         logdir = f'./CoDi_exp_{timestamp}'
     
@@ -57,7 +55,7 @@ def codi(csv_path: str,
             print(f"Processing dataset: {csv_path}")
             print(f"Using logdir: {logdir}")
         
-        # Step 1: Process the dataset
+        # Process the dataset
         processor = DatasetProcessor()
         result = processor.process_dataset(
             csv_path=csv_path,
@@ -71,10 +69,10 @@ def codi(csv_path: str,
         if verbose:
             print(f"Dataset processed: {result['shape']} -> {result['problem_type']}")
         
-        # Step 2: Ensure clean logdir
+        # Ensure clean logdir
         os.makedirs(logdir, exist_ok=True)
         
-        # Step 3: Run CoDi training and generation
+        # Run CoDi training and generation
         if verbose:
             print(f"Running CoDi training...")
         
@@ -104,7 +102,7 @@ def codi(csv_path: str,
         if verbose:
             print(f"CoDi training completed")
         
-        # Step 4: Load and process synthetic data
+        # Load and process synthetic data
         if verbose:
             print(f"Loading synthetic data...")
         
@@ -119,14 +117,10 @@ def codi(csv_path: str,
         # Load metadata
         metadata = result['metadata']
         categorical_mappings = result['categorical_mappings']
-        
-        # Get column names
-        column_names = [col['name'] for col in metadata['columns']]
-        
-        # Combine all synthetic datasets
-        combined_raw_data = np.vstack(synthetic_datasets)
-        
+             
         # Create DataFrame
+        column_names = [col['name'] for col in metadata['columns']]
+        combined_raw_data = np.vstack(synthetic_datasets)
         synthetic_df = pd.DataFrame(combined_raw_data, columns=column_names)
         
         # Map categorical values back to original strings
@@ -149,7 +143,7 @@ def codi(csv_path: str,
         raise
     
     finally:
-        # Cleanup temporary files if requested
+        # Cleanup temporary files
         if cleanup_temp_files:
             try:
                 # Remove dataset files
@@ -164,20 +158,18 @@ def codi(csv_path: str,
                     remaining_files = os.listdir('tabular_datasets')
                     temp_files = [f for f in remaining_files if f.startswith('temp_dataset_')]
                     
-                    # If only temp files remain, remove them and the folder
                     if len(remaining_files) == len(temp_files):
                         for temp_file in temp_files:
                             temp_path = os.path.join('tabular_datasets', temp_file)
                             if os.path.isfile(temp_path):
                                 os.remove(temp_path)
                         
-                        # Remove the empty folder
                         if not os.listdir('tabular_datasets'):
                             os.rmdir('tabular_datasets')
                             if verbose:
                                 print(f"Cleaned up tabular_datasets folder")
                 
-                # Remove the entire logdir if it was auto-generated
+                # Remove the entire logdir
                 if logdir and logdir.startswith('./CoDi_exp') and os.path.exists(logdir):
                     shutil.rmtree(logdir)
                     if verbose:
@@ -188,4 +180,4 @@ def codi(csv_path: str,
             except Exception as cleanup_error:
                 if verbose:
                     print(f"Warning: Could not clean up some files: {cleanup_error}")
-                pass  # Ignore cleanup errors
+                pass 
