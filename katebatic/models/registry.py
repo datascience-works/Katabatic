@@ -20,8 +20,14 @@ class ModelRegistry:
             'class': 'GReaT',
             'dependencies': ['transformers', 'torch'],
             'extra': 'great'
+        },
+        'tabddpm': {
+            'module': 'katebatic.models.tabddpm.models',
+            'class': 'Tabddpm',
+            'dependencies': [],
+            'extra': 'tabddpm'
         }
-    }
+}
 
     @classmethod
     def get_available_models(cls) -> list[str]:
