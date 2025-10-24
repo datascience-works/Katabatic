@@ -21,6 +21,11 @@ class ModelRegistry:
             'dependencies': ['transformers', 'torch'],
             'extra': 'great'
         },
+        'tabsyn': {
+            'module': 'katebatic.models.tabsyn.models',
+            'class': 'Tabsyn',
+            'dependencies': [],
+            'extra': 'tabsyn'
         'tabddpm': {
             'module': 'katebatic.models.tabddpm.models',
             'class': 'Tabddpm',
