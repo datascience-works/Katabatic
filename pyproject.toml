@@ -28,9 +28,12 @@ xgboost = {version = "^3.0.2", optional = true}
 
 # --- TabSyn-specific optional deps ---
 tqdm = {version = "^4.66.0", optional = true}
-category-encoders = {version = "^2.8.1", optional = true}
 tomli = {version = "^2.0.1", optional = true}
 tomli-w = {version = "^1.0.0", optional = true}
+# === Added for TabDDPM / modern RTDL stack ===
+category-encoders = {version = "^2.8.1", optional = true}
+rtdl_revisiting_models = {version = "0.0.2", optional = true}
+libzero = {version = "0.0.8", optional = true}
 
 # Development and testing dependencies (only in dev installs)
 ipykernel = {version = "^6.29.5", optional = true}
@@ -41,6 +44,7 @@ pytest-mock = {version = "^3.11.0", optional = true}
 [tool.poetry.extras]
 ganblr = ["tensorflow", "pgmpy", "pyitlib", "tf-keras", "scipy"]
 great = ["transformers", "torch", "datasets"]
+tabddpm = ["torch", "scipy", "rtdl_revisiting_models", "libzero", "category-encoders"]
 dev = ["ipykernel", "pytest", "pytest-cov", "pytest-mock"]
 
 # TabSyn stack
@@ -61,6 +65,8 @@ all = [
   "category-encoders",
   "tomli",
   "tomli-w"
+  "rtdl_revisiting_models",
+  "libzero"
 ]
 
 [tool.poetry.group.dev.dependencies]

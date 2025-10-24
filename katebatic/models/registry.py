@@ -26,6 +26,11 @@ class ModelRegistry:
             'class': 'Tabsyn',
             'dependencies': [],
             'extra': 'tabsyn'
+        'tabddpm': {
+            'module': 'katebatic.models.tabddpm.models',
+            'class': 'Tabddpm',
+            'dependencies': [],
+            'extra': 'tabddpm'
         }
 }
 
