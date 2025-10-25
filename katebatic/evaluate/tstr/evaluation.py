@@ -27,7 +27,7 @@ def load_data(synthetic_dir, real_test_dir):
 
 
 class TSTREvaluation(Evaluation):
-    def __init__(self, synthetic_dir, real_test_dir, *args, **kwargs):
+    def __init__(self, synthetic_dir, real_test_dir):
         self.synthetic_dir = synthetic_dir
         self.real_test_dir = real_test_dir
 
@@ -36,26 +36,21 @@ class TSTREvaluation(Evaluation):
 
     def evaluate(self):
         results = {}
-
-        # Detect if binary or multi-class
-        n_classes = len(np.unique(self.y_train))
-        is_binary = n_classes == 2
-
-        # Calculate class imbalance ratio for XGBoost (only for binary)
-        if is_binary:
-            num_neg = np.sum(self.y_train == 0)
-            num_pos = np.sum(self.y_train == 1)
-            scale_pos_weight = num_neg / num_pos if num_pos > 0 else 1.0
-        else:
-            scale_pos_weight = 1.0
+        # Calculate class imbalance ratio for XGBoost
+        num_neg = np.sum(self.y_train == 0)
+        num_pos = np.sum(self.y_train == 1)
+        scale_pos_weight = num_neg / num_pos if num_pos > 0 else 1.0
 
         models = {
+            # "LR": LogisticRegression(max_iter=1000, random_state=42),
+            # "MLP": MLPClassifier(hidden_layer_sizes=(100,), early_stopping=True, random_state=42),
+            # "RF": RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=42),
+            # "XGBoost": XGBClassifier(scale_pos_weight=scale_pos_weight, random_state=42)
             "LR": LogisticRegression(),
             "MLP": MLPClassifier(),
             "RF": RandomForestClassifier(),
             "XGBoost": XGBClassifier(scale_pos_weight=scale_pos_weight)
         }
-
         for name, model in models.items():
             if name in ["LR", "MLP"]:
                 scaler = StandardScaler()
@@ -63,13 +58,11 @@ class TSTREvaluation(Evaluation):
                 x_test_scaled = scaler.transform(self.x_test)
                 model.fit(x_train_scaled, self.y_train)
                 y_pred = model.predict(x_test_scaled)
-                if is_binary:
-                    y_prob = model.predict_proba(x_test_scaled)[:, 1]
+                y_prob = model.predict_proba(x_test_scaled)[:, 1]
             else:
                 model.fit(self.x_train, self.y_train)
                 y_pred = model.predict(self.x_test)
-                if is_binary:
-                    y_prob = model.predict_proba(self.x_test)[:, 1]
+                y_prob = model.predict_proba(self.x_test)[:, 1]
 
             metrics = {
                 'Accuracy': accuracy_score(self.y_test, y_pred),
@@ -77,7 +70,7 @@ class TSTREvaluation(Evaluation):
             }
 
             # Add AUC for binary classification
-            if is_binary:
+            if len(np.unique(self.y_test)) == 2:
                 metrics['AUC'] = roc_auc_score(self.y_test, y_prob)
 
             results[name] = metrics
