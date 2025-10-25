@@ -1,79 +1,73 @@
-MedGAN
+# MedGAN: Medical Generative Adversarial Network
 
-This folder contains the implementation of MedGAN (Choi et al., 2017) integrated into the Katabatic framework for benchmarking tabular generative models.
+Production-level implementation of MedGAN for the Katabatic framework.
 
-MedGAN is a Generative Adversarial Network (GAN) designed to generate multi-label discrete records, originally developed for healthcare data (e.g., diagnosis and procedure codes). Within Katabatic, it has been adapted for general tabular datasets such as the Adult dataset.
+## Paper
 
-Key Features
+**Generating Multi-label Discrete Patient Records using Generative Adversarial Networks**  
+Edward Choi et al., MLHC 2017  
+[arXiv:1703.06490](https://arxiv.org/abs/1703.06490)
 
-Supports training on tabular datasets processed into patient-by-code–like matrices (binary/count representations).
+## Overview
 
-Integrated with Katabatic’s fit(), sample(), and evaluate() workflow.
+MedGAN uses a three-component architecture:
 
-Produces synthetic data aligned with Katabatic’s benchmarking and evaluation pipeline.
+1. **Autoencoder** - Compresses high-dimensional binary/count data
+2. **Generator** - Generates synthetic data in the latent space
+3. **Discriminator** - Distinguishes real from synthetic representations
 
-Includes example notebooks for both Adult dataset and general usage.
+## Installation
 
-File Structure
+```bash
+poetry install --extras medgan
+```
 
-medgan.py – Core model implementation.
+## Usage
 
-preprocess.py – Data preprocessing utilities.
-
-driver.py – Driver script for standalone runs.
-
-example.ipynb – General example notebook (training, sampling, evaluation).
-
-Adult Example.ipynb – Demonstration notebook using the sample_data/adult dataset.
-
-sample_data/ – Example dataset (Adult).
-
-##Usage
-###1. Import & Initialize
 ```python
-from katebatic.models.medgan.medgan import Medgan
+from katebatic.models.medgan import MEDGAN
+from katebatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
 
-medgan = Medgan(
-    repo_root=".",  # Path to the repository root
-    epochs=100,
-    batch_size=64,
-    latent_dim=128
+pipeline = TrainTestSplitPipeline(model=MEDGAN)
+pipeline.run(
+    input_csv='data/adult.csv',
+    output_dir='sample_data/adult',
+    synthetic_dir='synthetic/adult/medgan',
+    real_test_dir='sample_data/adult'
 )
-2. Fit the model
-X_train, y_train = ... # Load processed training data
-medgan.fit(X_train, y_train)
+```
 
-3. Generate synthetic samples
-synthetic_data = medgan.sample(n=1000)
+See `examples/medgan.ipynb` for more examples.
 
-4. Evaluate via Katabatic
+## Key Features
 
-from katebatic.evaluate import evaluate_model
+- 🏥 Designed for binary/count medical records
+- 🎯 Works with any high-dimensional tabular data
+- 🚀 Two-phase training (AE pretraining + GAN)
+- 📊 Excellent for sparse, high-dimensional data
 
-results = evaluate_model(real_data=X_train, synthetic_data=synthetic_data)
-print(results)
+## Architecture
 
+```
+Input Data
+    ↓
+Autoencoder (Pretrained)
+    ↓ (encode to latent space)
+Latent Representation
+    ↑
+Generator ← Noise
+    ↓
+Discriminator (Real vs Fake)
+```
 
-Example Notebooks
+## Citation
 
-Adult Example.ipynb → Run MedGAN on the Adult dataset provided in sample_data/adult.
-
-example.ipynb → General template notebook for running MedGAN on any new dataset.
-
-Integration Notes
-
-MedGAN here is integrated within Katabatic’s model registry (registry.py).
-
-To add a new dataset:
-
-Place the dataset in sample_data/your_dataset.
-
-Preprocess into matrix form (binary/count).
-
-Update paths in your notebook or driver script.
-
-Reference
-
-Edward Choi, Siddharth Biswal, Bradley Malin, Jon Duke, Walter F. Stewart, Jimeng Sun.
-Generating Multi-label Discrete Patient Records using Generative Adversarial Networks.
-MLHC 2017.[link](https://arxiv.org/abs/1703.06490)
+```bibtex
+@inproceedings{choi2017generating,
+  title={Generating multi-label discrete patient records using generative adversarial networks},
+  author={Choi, Edward and Biswal, Siddharth and Malin, Bradley and Duke, Jon and Stewart, Walter F and Sun, Jimeng},
+  booktitle={Machine Learning for Healthcare Conference},
+  pages={286--305},
+  year={2017}
+}
+```
