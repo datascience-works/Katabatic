@@ -467,32 +467,34 @@ class PATEGAN(Model):
             y_synth = None
 
         # Also remap y_test.csv to match the synthetic data's class encoding
-        y_test_path = os.path.join(kwargs.get(
-            'real_test_dir', dataset_dir.replace('train', 'test')), "y_test.csv")
-        if y_label_encoder is not None and os.path.exists(y_test_path):
-            y_test = pd.read_csv(y_test_path)
-            if isinstance(y_test, pd.DataFrame) and len(y_test.columns) == 1:
-                y_test = y_test.iloc[:, 0]
+        # Get real_test_dir from kwargs (passed by pipeline)
+        real_test_dir = kwargs.get('real_test_dir')
+        if y_label_encoder is not None and real_test_dir is not None:
+            y_test_path = os.path.join(real_test_dir, "y_test.csv")
+            if os.path.exists(y_test_path):
+                y_test = pd.read_csv(y_test_path)
+                if isinstance(y_test, pd.DataFrame) and len(y_test.columns) == 1:
+                    y_test = y_test.iloc[:, 0]
 
-            # Only keep test samples with classes seen in training
-            test_mask = y_test.isin(y_label_encoder.classes_)
-            if not test_mask.all():
-                print(
-                    f"Warning: Filtering {(~test_mask).sum()} test samples with unseen classes")
-                y_test = y_test[test_mask]
-                # Also filter x_test
-                x_test_path = y_test_path.replace('y_test.csv', 'x_test.csv')
-                if os.path.exists(x_test_path):
-                    x_test = pd.read_csv(x_test_path)
-                    x_test = x_test[test_mask]
-                    x_test.to_csv(x_test_path, index=False)
+                # Only keep test samples with classes seen in training
+                test_mask = y_test.isin(y_label_encoder.classes_)
+                if not test_mask.all():
+                    print(
+                        f"Warning: Filtering {(~test_mask).sum()} test samples with unseen classes")
+                    # Also filter x_test
+                    x_test_path = os.path.join(real_test_dir, "x_test.csv")
+                    if os.path.exists(x_test_path):
+                        x_test = pd.read_csv(x_test_path)
+                        x_test = x_test[test_mask]
+                        x_test.to_csv(x_test_path, index=False)
+                    y_test = y_test[test_mask]
 
-            # Transform y_test with same encoder
-            y_test_remapped = y_label_encoder.transform(y_test)
-            y_test = pd.DataFrame(y_test_remapped, columns=y_test.columns if isinstance(
-                y_test, pd.DataFrame) else [y_test.name])
-            y_test.to_csv(y_test_path, index=False)
-            print(f"Remapped y_test.csv to match synthetic data encoding")
+                # Transform y_test with same encoder
+                y_test_remapped = y_label_encoder.transform(y_test)
+                y_test = pd.DataFrame(y_test_remapped, columns=y_test.columns if isinstance(
+                    y_test, pd.DataFrame) else [y_test.name])
+                y_test.to_csv(y_test_path, index=False)
+                print(f"Remapped y_test.csv to match synthetic data encoding")
 
         # Save synthetic data
         if synthetic_dir is not None:
