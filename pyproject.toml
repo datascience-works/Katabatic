@@ -47,6 +47,7 @@ ganblr = ["tensorflow", "pgmpy", "pyitlib", "tf-keras", "scipy"]
 great = ["transformers", "torch", "datasets"]
 tabddpm = ["torch", "scipy", "rtdl_revisiting_models", "libzero", "category-encoders"]
 pategan = ["tensorflow", "scipy"]
+codi = ["torch"]
 dev = ["ipykernel", "pytest", "pytest-cov", "pytest-mock"]
 
 # TabSyn stack
