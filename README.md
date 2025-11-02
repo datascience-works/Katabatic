@@ -1,4 +1,4 @@
-# Katabatic
+# Katebatic
 
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -195,7 +195,7 @@ See `example.ipynb` for a complete walkthrough.
 
 ### Data Preprocessing
 
-Katabatic requires discrete/categorical data. Use the built-in preprocessing utilities:
+Katebatic requires discrete/categorical data. Use the built-in preprocessing utilities:
 
 ```python
 from utils import discretize_preprocess
@@ -256,7 +256,7 @@ synthetic_data = model.sample(
 
 ### Pipeline Usage
 
-Katabatic provides automated pipelines for complete workflows:
+Katebatic provides automated pipelines for complete workflows:
 
 ```python
 from katebatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline

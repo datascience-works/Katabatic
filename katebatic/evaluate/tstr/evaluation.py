@@ -27,7 +27,7 @@ def load_data(synthetic_dir, real_test_dir):
 
 
 class TSTREvaluation(Evaluation):
-    def __init__(self, synthetic_dir, real_test_dir, *args, **kwargs):
+    def __init__(self, synthetic_dir, real_test_dir):
         self.synthetic_dir = synthetic_dir
         self.real_test_dir = real_test_dir
 
