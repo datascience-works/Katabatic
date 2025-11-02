@@ -49,6 +49,7 @@ pategan = ["tensorflow", "scipy"]
 codi = ["torch"]
 medgan = ["torch"]
 dev = ["ipykernel", "pytest", "pytest-cov", "pytest-mock"]
+ctgan = ["torch"]
 
 # TabSyn stack
 tabsyn = ["torch", "scipy", "tqdm", "category-encoders", "tomli", "tomli-w"]
