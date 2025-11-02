@@ -460,6 +460,48 @@ class PATEGAN(Model):
             x_synth = df_synth.drop(columns=target_cols)
             y_synth = df_synth[target_cols]
 
+            # Ensure all training classes are present in synthetic data (robustness for TSTR)
+            y_col = target_cols[0]
+            df_train = pd.concat([
+                X_train.copy(),
+                (y_train if isinstance(y_train, pd.DataFrame)
+                 else y_train.to_frame(name=y_col))
+            ], axis=1)
+
+            unique_train = np.unique(df_train[y_col].values)
+            unique_synth = np.unique(y_synth[y_col].values)
+            missing_classes = set(unique_train) - set(unique_synth)
+
+            if missing_classes:
+                print(
+                    f"[PATEGAN] Adding {len(missing_classes)} dummy samples to cover classes: {sorted(missing_classes)}")
+                for cls in missing_classes:
+                    idx = np.where(df_train[y_col].values == cls)[0]
+                    if idx.size == 0:
+                        continue
+                    row = df_train.iloc[idx[0]:idx[0]+1]
+                    x_dummy = row.drop(columns=[y_col])
+                    y_dummy = row[[y_col]]
+                    x_synth = pd.concat([x_synth, x_dummy], ignore_index=True)
+                    y_synth = pd.concat([y_synth, y_dummy], ignore_index=True)
+
+            # Final guard: ensure at least 2 classes
+            if np.unique(y_synth[y_col].values).size < 2 and unique_train.size >= 2:
+                alt_classes = [c for c in unique_train if c !=
+                               y_synth[y_col].iloc[0]]
+                if alt_classes:
+                    y_synth.loc[y_synth.index[0], y_col] = alt_classes[0]
+                    print(
+                        f"[PATEGAN] Forced presence of a second class: {alt_classes[0]}")
+
+            # Cast to integers to ensure proper class labels and discrete features
+            for col in x_synth.columns:
+                try:
+                    x_synth[col] = x_synth[col].astype(int)
+                except Exception:
+                    pass
+            y_synth[y_col] = y_synth[y_col].astype(int)
+
             # y_synth already has remapped classes [0, 1, 2, ...] since model was trained on remapped data
             # This is what evaluation expects
         else:

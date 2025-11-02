@@ -298,7 +298,13 @@ class GANBLR(Model):
         model_name = "ganblr"
         dataset_name = dataset
         data_dir = f"{dataset_name}"
-        save_dir = os.path.join("synthetic", dataset_name, model_name)
+
+        # Honor explicit synthetic_dir if provided (pipeline passes this)
+        explicit_synth_dir = kwargs.get('synthetic_dir')
+        if explicit_synth_dir and isinstance(explicit_synth_dir, str):
+            save_dir = explicit_synth_dir
+        else:
+            save_dir = os.path.join("synthetic", dataset_name, model_name)
         os.makedirs(save_dir, exist_ok=True)
 
         x_train_path = os.path.join(data_dir, "x_train.csv")

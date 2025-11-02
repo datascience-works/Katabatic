@@ -80,8 +80,8 @@
     "6"
   ],
   "training_config": {
-    "niter": 1000,
-    "batch_size": 64,
+    "niter": 10000,
+    "batch_size": 128,
     "learning_rate": 0.0001,
     "lambda_gp": 10.0,
     "z_dim": 2
@@ -89,7 +89,7 @@
   "privacy_config": {
     "epsilon": 1.0,
     "delta": 1e-05,
-    "num_teachers": 5,
+    "num_teachers": 10,
     "lambda_noise": 4.844805262605389
   },
   "seed": 42,
