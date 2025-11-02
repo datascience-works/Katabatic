@@ -1,4 +1,7 @@
-"""Katebatic Models Package."""
+# katebatic/models/__init__.py
+"""
+Models package: exposes all implemented models (GANs, MedGAN, etc).
+"""
 
 from .base_model import Model
 from .registry import ModelRegistry, get_model, list_models

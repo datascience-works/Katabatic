@@ -48,6 +48,7 @@ great = ["transformers", "torch", "datasets"]
 tabddpm = ["torch", "scipy", "rtdl_revisiting_models", "libzero", "category-encoders"]
 pategan = ["tensorflow", "scipy"]
 codi = ["torch"]
+medgan = ["torch"]
 dev = ["ipykernel", "pytest", "pytest-cov", "pytest-mock"]
 
 # TabSyn stack
