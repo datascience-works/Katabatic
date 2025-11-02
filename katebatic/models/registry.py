@@ -38,6 +38,12 @@ class ModelRegistry:
             'class': 'PATEGANSynthesizer',
             'dependencies': ['tensorflow', 'numpy', 'pandas'],
             'extra': 'pategan'
+        },
+        'ctgan': {
+            'module': 'katebatic.models.ctgan.models',
+            'class': 'CTGANModel',
+            'dependencies': ['torch', 'sklearn'],
+            'extra': 'ctgan'
         }
     }
 
