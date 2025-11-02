@@ -13,6 +13,7 @@ from tqdm import tqdm
 
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments
+import os
 
 from .great_dataset import GReaTDataset, GReaTDataCollator
 from .great_start import (
@@ -145,7 +146,78 @@ class GReaT(Model):
         return ['transformers', 'torch']
 
     def train(self, *args, **kwargs):
-        """Train the model. Alias for fit method to match base class interface."""
+        """Train the model.
+
+        Supports two modes:
+        1) Array/DataFrame mode: train(df, ...)
+        2) Pipeline mode:       train(dataset_dir: str, synthetic_dir: str)
+        """
+        # Pipeline mode: dataset_dir path
+        if len(args) >= 1 and isinstance(args[0], str):
+            dataset_dir = args[0]
+            synthetic_dir = kwargs.get("synthetic_dir")
+
+            x_train_path = os.path.join(dataset_dir, "x_train.csv")
+            y_train_path = os.path.join(dataset_dir, "y_train.csv")
+
+            if not os.path.exists(x_train_path) or not os.path.exists(y_train_path):
+                raise FileNotFoundError(
+                    f"Expected x_train.csv and y_train.csv in {dataset_dir}")
+
+            X_train = pd.read_csv(x_train_path)
+            y_train = pd.read_csv(y_train_path)
+            if isinstance(y_train, pd.DataFrame) and y_train.shape[1] == 1:
+                y_train = y_train.iloc[:, 0]
+
+            # Combine features and label; assume label is last column for conditioning
+            df_train = pd.concat([X_train, y_train], axis=1)
+
+            # Lighten training for notebook stability if user didn't already
+            # choose small settings at init
+            if self.epochs > 5:
+                self.epochs = 2
+            if self.batch_size > 4:
+                self.batch_size = 2
+
+            # Fit model
+            self.fit(df_train)
+
+            # Generate synthetic data of equal size on CPU to avoid GPU issues
+            n_rows = len(df_train)
+            df_synth = self.sample(n_rows, device="cpu",
+                                   k=max(1, min(8, n_rows)))
+
+            # Split into X / y (last column assumed to be label)
+            if df_synth.shape[1] >= 2:
+                x_synth = df_synth.iloc[:, :-1]
+                y_synth = df_synth.iloc[:, -1]
+            else:
+                # Degenerate case: single column; treat as X only
+                x_synth = df_synth.copy()
+                y_synth = pd.Series(
+                    [0] * len(x_synth), name=y_train.name if hasattr(y_train, 'name') else 'target')
+
+            # Align feature names to X_train if counts match
+            real_cols = X_train.columns.tolist()
+            if len(real_cols) == x_synth.shape[1]:
+                x_synth.columns = real_cols
+                x_synth = x_synth.reindex(columns=real_cols)
+
+            # Write CSVs expected by TSTR
+            if synthetic_dir is None:
+                synthetic_dir = os.path.join("synthetic", os.path.basename(
+                    os.path.normpath(dataset_dir)), "great")
+            os.makedirs(synthetic_dir, exist_ok=True)
+            x_path = os.path.join(synthetic_dir, "x_synth.csv")
+            y_path = os.path.join(synthetic_dir, "y_synth.csv")
+            x_synth.to_csv(x_path, index=False)
+            y_name = y_train.name if hasattr(
+                y_train, 'name') and y_train.name else 'target'
+            pd.DataFrame(y_synth, columns=[y_name]).to_csv(y_path, index=False)
+
+            return self
+
+        # Array/DataFrame mode: fallback to fit
         return self.fit(*args, **kwargs)
 
     def evaluate(self, *args, **kwargs) -> float:

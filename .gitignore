@@ -1,3 +1,11 @@
+# GReaT trainer artifacts
+**/trainer_great/**
+**/checkpoint-*/
+
+# Common large training outputs (safety)
+**/runs/**
+**/events.out.tfevents.*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
