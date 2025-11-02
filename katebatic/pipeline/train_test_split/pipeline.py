@@ -34,10 +34,15 @@ class TrainTestSplitPipeline(Pipeline):
 
         split_dataset(input_csv, output_dir, *args, **kwargs)
 
+        # Train the model (may consume extra kwargs like 'config')
         current_model.train(output_dir, *args, **kwargs)
 
+        # Filter kwargs for evaluations to avoid unexpected params (e.g., 'config')
+        eval_kwargs = dict(kwargs)
+        eval_kwargs.pop('config', None)
+
         for evaluation in self._evaluations:
-            eval_instance = evaluation(*args, **kwargs)
+            eval_instance = evaluation(*args, **eval_kwargs)
             eval_instance.evaluate()
 
         # Implement the specific logic for version 1 pipeline here
@@ -45,4 +50,3 @@ class TrainTestSplitPipeline(Pipeline):
 
     def __repr__(self):
         return f"TrainTestSplitPipeline(name={self.model})"
- 
