@@ -44,6 +44,12 @@ class ModelRegistry:
             'class': 'CTGANModel',
             'dependencies': ['torch', 'sklearn'],
             'extra': 'ctgan'
+        },
+        'cwgan': {
+            'module': 'katabatic.models.cwgan.models',
+            'class': 'CWGAN',
+            'dependencies': ['tensorflow', 'sklearn', 'numpy', 'pandas'],
+            'extra': 'cwgan'
         }
     }
 

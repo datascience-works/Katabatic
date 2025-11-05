@@ -50,6 +50,7 @@ codi = ["torch"]
 medgan = ["torch"]
 dev = ["ipykernel", "pytest", "pytest-cov", "pytest-mock"]
 ctgan = ["torch"]
+cwgan = ["tensorflow", "tf-keras", "scipy", "tqdm"]
 
 # TabSyn stack
 tabsyn = ["torch", "scipy", "tqdm", "category-encoders", "tomli", "tomli-w"]
