@@ -22,25 +22,25 @@ Replace `<model_name>` with the actual name of your model (e.g., `ganblr_plus`).
 
 ## 🗂 Step 2: Add Your Model
 
-Inside the `katebatic/models/` directory:
+Inside the `katabatic/models/` directory:
 
 1. Create a new folder for your model:
 
    ```
-   katebatic/models/<model_name>/
+   katabatic/models/<model_name>/
    ```
 
 2. Within that folder, follow the format used in existing models (like `ganblr` or `great`). Typically, this includes:
 
    - `__init__.py`
    - `models.py`
-   - `utils.py` *(if needed)*
-   - `pyproject.toml` and `poetry.lock` *(if dependencies are isolated)*
+   - `utils.py` _(if needed)_
+   - `pyproject.toml` and `poetry.lock` _(if dependencies are isolated)_
 
 3. Your model class should **extend** the `Model` base class defined in:
 
    ```python
-   from katebatic.models.base_model import Model
+   from katabatic.models.base_model import Model
    ```
 
    This ensures consistency across all models and compatibility with the evaluation and pipeline systems.
@@ -86,7 +86,6 @@ Create a **Pull Request (PR)** from your feature branch into the `development` b
 
 Keep contributions modular and follow the code style used in the repo for smooth integration.
 
-
 ---
 
 ## 🧹 Code Formatting
@@ -98,4 +97,3 @@ autopep8 --in-place --recursive .
 ```
 
 This helps maintain consistent code style across the project and makes code reviews smoother.
-

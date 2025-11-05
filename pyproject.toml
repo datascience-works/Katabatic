@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "katebatic"
+name = "katabatic"
 version = "0.1.0"
 description = ""
 authors = ["Vikum Dabare <vikumdabare@gmail.com>"]

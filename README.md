@@ -1,4 +1,4 @@
-# Katebatic
+# Katabatic
 
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -108,8 +108,8 @@ poetry --version
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/katebatic.git
-cd katebatic
+git clone https://github.com/your-username/katabatic.git
+cd katabatic
 ```
 
 ### 2. Set Python Version
@@ -143,10 +143,10 @@ poetry add torch torchvision torchaudio --index-url https://download.pytorch.org
 ```bash
 # Run a quick test
 python -c "
-import katebatic
-from katebatic.models.ganblr.models import GANBLR
-from katebatic.models.great.models import GReaT
-print('Katebatic installation successful!')
+import katabatic
+from katabatic.models.ganblr.models import GANBLR
+from katabatic.models.great.models import GReaT
+print('Katabatic installation successful!')
 "
 ```
 
@@ -155,8 +155,8 @@ print('Katebatic installation successful!')
 ### Basic Example
 
 ```python
-from katebatic.models.ganblr.models import GANBLR
-from katebatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
+from katabatic.models.ganblr.models import GANBLR
+from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
 from utils import discretize_preprocess
 
 # 1. Preprocess your data
@@ -195,7 +195,7 @@ See `example.ipynb` for a complete walkthrough.
 
 ### Data Preprocessing
 
-Katebatic requires discrete/categorical data. Use the built-in preprocessing utilities:
+Katabatic requires discrete/categorical data. Use the built-in preprocessing utilities:
 
 ```python
 from utils import discretize_preprocess
@@ -214,7 +214,7 @@ discretize_preprocess(
 #### GANBLR Model
 
 ```python
-from katebatic.models.ganblr.models import GANBLR
+from katabatic.models.ganblr.models import GANBLR
 import pandas as pd
 
 # Load your data
@@ -232,7 +232,7 @@ synthetic_data = model.sample(size=1000)
 #### GReaT Model
 
 ```python
-from katebatic.models.great.models import GReaT
+from katabatic.models.great.models import GReaT
 import pandas as pd
 
 # Load your data
@@ -256,11 +256,11 @@ synthetic_data = model.sample(
 
 ### Pipeline Usage
 
-Katebatic provides automated pipelines for complete workflows:
+Katabatic provides automated pipelines for complete workflows:
 
 ```python
-from katebatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
-from katebatic.models.ganblr.models import GANBLR
+from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
+from katabatic.models.ganblr.models import GANBLR
 
 # Create pipeline with GANBLR
 pipeline = TrainTestSplitPipeline(model=GANBLR)
@@ -298,10 +298,10 @@ results = pipeline.run(
 
 ### TSTR (Train on Synthetic, Test on Real)
 
-Katebatic includes comprehensive evaluation using the TSTR methodology:
+Katabatic includes comprehensive evaluation using the TSTR methodology:
 
 ```python
-from katebatic.evaluate.tstr.evaluation import TSTREvaluation
+from katabatic.evaluate.tstr.evaluation import TSTREvaluation
 
 # Initialize evaluator
 evaluator = TSTREvaluation(
@@ -343,8 +343,8 @@ code --install-extension ms-python.isort
 
 ```bash
 # Clone repository
-git clone https://github.com/your-username/katebatic.git
-cd katebatic
+git clone https://github.com/your-username/katabatic.git
+cd katabatic
 
 # Install development dependencies
 poetry install --group dev
@@ -360,14 +360,14 @@ poetry run black .
 poetry run isort .
 
 # Type checking
-poetry run mypy katebatic/
+poetry run mypy katabatic/
 ```
 
 ### Project Structure
 
 ```
-katebatic/
-├── katebatic/                    # Main package
+katabatic/
+├── katabatic/                    # Main package
 │   ├── models/                   # Generative models
 │   │   ├── ganblr/              # GANBLR implementation
 │   │   └── great/               # GReaT implementation
@@ -391,7 +391,7 @@ katebatic/
 poetry build
 
 # Install locally
-pip install dist/katebatic-*.whl
+pip install dist/katabatic-*.whl
 ```
 
 ## 🤝 Contributing
@@ -461,10 +461,10 @@ poetry run isort .
 poetry run black .
 
 # flake8 for linting
-poetry run flake8 katebatic/
+poetry run flake8 katabatic/
 
 # mypy for static type checking
-poetry run mypy katebatic/
+poetry run mypy katabatic/
 ```
 
 #### Pre-commit Hooks
@@ -538,8 +538,8 @@ Before submitting code, ensure:
 
 - [ ] Code is formatted with autopep8: `poetry run autopep8 --diff --aggressive --aggressive --recursive .`
 - [ ] Imports are sorted: `poetry run isort --check-only .`
-- [ ] No linting errors: `poetry run flake8 katebatic/`
-- [ ] Type hints pass checking: `poetry run mypy katebatic/`
+- [ ] No linting errors: `poetry run flake8 katabatic/`
+- [ ] Type hints pass checking: `poetry run mypy katabatic/`
 - [ ] All tests pass: `poetry run pytest`
 - [ ] Documentation is updated if needed
 - [ ] Commit messages follow conventional commit format
@@ -607,8 +607,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/your-username/katebatic/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-username/katebatic/discussions)
+- **Issues**: [GitHub Issues](https://github.com/your-username/katabatic/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/your-username/katabatic/discussions)
 - **Email**: vikumdabare@gmail.com
 
 ## 🔗 Related Projects
