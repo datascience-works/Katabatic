@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Katebatic Development Dependency Manager
+Katabatic Development Dependency Manager
 
 This script helps manage model-specific dependencies for development
 while keeping the main package clean for PyPI distribution.
@@ -27,10 +27,10 @@ def run_command(cmd, cwd=None):
 
 def install_model_deps(model_name):
     """Install dependencies for a specific model."""
-    model_path = Path(f"katebatic/models/{model_name}")
+    model_path = Path(f"katabatic/models/{model_name}")
 
     if not model_path.exists():
-        print(f"Model '{model_name}' not found in katebatic/models/")
+        print(f"Model '{model_name}' not found in katabatic/models/")
         return False
 
     if not (model_path / "pyproject.toml").exists():
@@ -50,7 +50,7 @@ def install_model_deps(model_name):
 
 def install_all_models():
     """Install dependencies for all models."""
-    models_dir = Path("katebatic/models")
+    models_dir = Path("katabatic/models")
     success = True
 
     for model_dir in models_dir.iterdir():
@@ -64,7 +64,7 @@ def install_all_models():
 def create_dev_environment(model_name=None):
     """Create a development environment for a specific model or all models."""
     # First install the main package in development mode
-    print("Installing main katebatic package in development mode...")
+    print("Installing main katabatic package in development mode...")
     if not run_command("poetry install"):
         return False
 
@@ -77,7 +77,7 @@ def create_dev_environment(model_name=None):
 
 def list_models():
     """List available models."""
-    models_dir = Path("katebatic/models")
+    models_dir = Path("katabatic/models")
     models = []
 
     for model_dir in models_dir.iterdir():
@@ -90,7 +90,7 @@ def list_models():
 def main():
     """Main CLI interface."""
     if len(sys.argv) < 2:
-        print("Katebatic Development Dependency Manager")
+        print("Katabatic Development Dependency Manager")
         print("\nUsage:")
         print(
             "  python dev_deps.py install <model_name>  # Install deps for specific model")

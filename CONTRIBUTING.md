@@ -1,10 +1,10 @@
-# Katebatic Development Guide
+# Katabatic Development Guide
 
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Poetry](https://img.shields.io/badge/dependency-poetry-blue)](https://python-poetry.org/)
 
-This guide provides comprehensive documentation for internal development teams working on the Katebatic framework for synthetic tabular data generation.
+This guide provides comprehensive documentation for internal development teams working on the Katabatic framework for synthetic tabular data generation.
 
 ## 📋 Table of Contents
 
@@ -21,7 +21,7 @@ This guide provides comprehensive documentation for internal development teams w
 
 ## 🏗️ Architecture Overview
 
-Katebatic follows a modular architecture with three main components:
+Katabatic follows a modular architecture with three main components:
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -43,8 +43,8 @@ Katebatic follows a modular architecture with three main components:
 ## 📁 Codebase Structure
 
 ```
-katebatic/
-├── katebatic/                    # Main package
+katabatic/
+├── katabatic/                    # Main package
 │   ├── __init__.py
 │   ├── models/                   # Model implementations
 │   │   ├── __init__.py
@@ -102,9 +102,9 @@ katebatic/
 
 #### 1. Abstract Base Classes
 
-- **Models**: All models inherit from `katebatic.models.base_model.Model`
-- **Pipelines**: All pipelines inherit from `katebatic.pipeline.base_pipeline.Pipeline`
-- **Evaluations**: All evaluations inherit from `katebatic.evaluate.base_evaluation.Evaluation`
+- **Models**: All models inherit from `katabatic.models.base_model.Model`
+- **Pipelines**: All pipelines inherit from `katabatic.pipeline.base_pipeline.Pipeline`
+- **Evaluations**: All evaluations inherit from `katabatic.evaluate.base_evaluation.Evaluation`
 
 #### 2. Factory Pattern
 
@@ -124,13 +124,13 @@ Raw Data → Preprocessing → Train/Test Split → Model Training → Synthetic
 ```bash
 # Clone and setup
 git clone <repository-url>
-cd katebatic
+cd katabatic
 pyenv local 3.11.9
 poetry install
 poetry shell
 
 # Verify installation
-python -c "from katebatic.models.ganblr.models import GANBLR; print('Setup successful')"
+python -c "from katabatic.models.ganblr.models import GANBLR; print('Setup successful')"
 ```
 
 ### 2. Development Process
@@ -166,8 +166,8 @@ python -c "from katebatic.models.ganblr.models import GANBLR; print('Setup succe
 ### Step 1: Create Model Directory Structure
 
 ```bash
-mkdir -p katebatic/models/your_model_name
-cd katebatic/models/your_model_name
+mkdir -p katabatic/models/your_model_name
+cd katabatic/models/your_model_name
 ```
 
 ### Step 2: Create Required Files
@@ -181,10 +181,10 @@ touch README.md  # Model-specific documentation
 
 ### Step 3: Implement Base Model Interface
 
-Create `katebatic/models/your_model_name/models.py`:
+Create `katabatic/models/your_model_name/models.py`:
 
 ```python
-from katebatic.models.base_model import Model
+from katabatic.models.base_model import Model
 import pandas as pd
 import numpy as np
 from typing import Union, Optional, Any
@@ -315,7 +315,7 @@ class YourModelName(Model):
 
 ### Step 4: Update Model **init**.py
 
-`katebatic/models/your_model_name/__init__.py`:
+`katabatic/models/your_model_name/__init__.py`:
 
 ```python
 from .models import YourModelName
@@ -325,7 +325,7 @@ __all__ = ['YourModelName']
 
 ### Step 5: Update Main Models **init**.py
 
-Add to `katebatic/models/__init__.py`:
+Add to `katabatic/models/__init__.py`:
 
 ```python
 from .your_model_name import YourModelName
@@ -335,13 +335,13 @@ from .your_model_name import YourModelName
 
 If your model requires specific dependencies, create:
 
-`katebatic/models/your_model_name/pyproject.toml`:
+`katabatic/models/your_model_name/pyproject.toml`:
 
 ```toml
 [tool.poetry]
-name = "katebatic-your-model"
+name = "katabatic-your-model"
 version = "0.1.0"
-description = "Your model implementation for Katebatic"
+description = "Your model implementation for Katabatic"
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.12"
@@ -359,8 +359,8 @@ build-backend = "poetry.core.masonry.api"
 Create a test script:
 
 ```python
-from katebatic.models.your_model_name.models import YourModelName
-from katebatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
+from katabatic.models.your_model_name.models import YourModelName
+from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
 
 # Test with existing pipeline
 pipeline = TrainTestSplitPipeline(model=YourModelName)
@@ -377,20 +377,20 @@ pipeline.run(
 ### Step 1: Create Pipeline Directory
 
 ```bash
-mkdir -p katebatic/pipeline/your_pipeline_name
-touch katebatic/pipeline/your_pipeline_name/__init__.py
-touch katebatic/pipeline/your_pipeline_name/pipeline.py
+mkdir -p katabatic/pipeline/your_pipeline_name
+touch katabatic/pipeline/your_pipeline_name/__init__.py
+touch katabatic/pipeline/your_pipeline_name/pipeline.py
 ```
 
 ### Step 2: Implement Pipeline Class
 
-`katebatic/pipeline/your_pipeline_name/pipeline.py`:
+`katabatic/pipeline/your_pipeline_name/pipeline.py`:
 
 ```python
-from katebatic.pipeline.base_pipeline import Pipeline
-from katebatic.models.base_model import Model
-from katebatic.evaluate.tstr.evaluation import TSTREvaluation
-from katebatic.utils.split_dataset import split_dataset
+from katabatic.pipeline.base_pipeline import Pipeline
+from katabatic.models.base_model import Model
+from katabatic.evaluate.tstr.evaluation import TSTREvaluation
+from katabatic.utils.split_dataset import split_dataset
 from typing import List, Type, Optional
 
 
@@ -480,7 +480,7 @@ class YourPipelineName(Pipeline):
 
 ### Step 3: Update Pipeline **init**.py
 
-`katebatic/pipeline/your_pipeline_name/__init__.py`:
+`katabatic/pipeline/your_pipeline_name/__init__.py`:
 
 ```python
 from .pipeline import YourPipelineName
@@ -491,8 +491,8 @@ __all__ = ['YourPipelineName']
 ### Step 4: Test Your Pipeline
 
 ```python
-from katebatic.models.ganblr.models import GANBLR
-from katebatic.pipeline.your_pipeline_name.pipeline import YourPipelineName
+from katabatic.models.ganblr.models import GANBLR
+from katabatic.pipeline.your_pipeline_name.pipeline import YourPipelineName
 
 pipeline = YourPipelineName(model=GANBLR)
 result = pipeline.run(
@@ -509,21 +509,21 @@ print(result)
 ### Step 1: Create Evaluation Directory
 
 ```bash
-mkdir -p katebatic/evaluate/your_evaluation_name
-touch katebatic/evaluate/your_evaluation_name/__init__.py
-touch katebatic/evaluate/your_evaluation_name/evaluation.py
+mkdir -p katabatic/evaluate/your_evaluation_name
+touch katabatic/evaluate/your_evaluation_name/__init__.py
+touch katabatic/evaluate/your_evaluation_name/evaluation.py
 ```
 
 ### Step 2: Implement Evaluation Class
 
-`katebatic/evaluate/your_evaluation_name/evaluation.py`:
+`katabatic/evaluate/your_evaluation_name/evaluation.py`:
 
 ```python
 import os
 import pandas as pd
 import numpy as np
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
-from katebatic.evaluate.base_evaluation import Evaluation
+from katabatic.evaluate.base_evaluation import Evaluation
 from typing import Dict, Any, Optional
 
 
@@ -655,7 +655,7 @@ class YourEvaluationName(Evaluation):
 
 ### Step 3: Update Evaluation **init**.py
 
-`katebatic/evaluate/your_evaluation_name/__init__.py`:
+`katabatic/evaluate/your_evaluation_name/__init__.py`:
 
 ```python
 from .evaluation import YourEvaluationName
@@ -666,7 +666,7 @@ __all__ = ['YourEvaluationName']
 ### Step 4: Test Your Evaluation
 
 ```python
-from katebatic.evaluate.your_evaluation_name.evaluation import YourEvaluationName
+from katabatic.evaluate.your_evaluation_name.evaluation import YourEvaluationName
 
 # Test evaluation
 evaluation = YourEvaluationName(
@@ -682,7 +682,7 @@ print(results)
 
 ### Test Infrastructure
 
-Katebatic includes a comprehensive test suite with:
+Katabatic includes a comprehensive test suite with:
 
 - **Unit Tests**: Test individual components in isolation
 - **Integration Tests**: Test component interactions and workflows
@@ -740,7 +740,7 @@ pytest -m "models"              # Model tests only
 pytest -m "not slow"            # Exclude slow tests
 
 # Run with coverage
-pytest --cov=katebatic --cov-report=html tests/
+pytest --cov=katabatic --cov-report=html tests/
 
 # Run specific test method
 pytest tests/unit/test_base_model.py::TestBaseModel::test_model_is_abstract
@@ -768,7 +768,7 @@ tests/
 
 ```python
 import pytest
-from katebatic.models.your_model import YourModel
+from katabatic.models.your_model import YourModel
 
 @pytest.mark.unit
 @pytest.mark.models
@@ -866,10 +866,10 @@ def test_with_fixtures(sample_binary_dataset, sample_dataset_files, temp_dir, mo
 make test-quality
 
 # Or individually
-black --check katebatic/ tests/      # Code formatting
-isort --check-only katebatic/ tests/ # Import sorting
-flake8 katebatic/                    # Linting
-mypy katebatic/                      # Type checking
+black --check katabatic/ tests/      # Code formatting
+isort --check-only katabatic/ tests/ # Import sorting
+flake8 katabatic/                    # Linting
+mypy katabatic/                      # Type checking
 ```
 
 **Quality Standards:**
@@ -882,15 +882,15 @@ mypy katebatic/                      # Type checking
 
 ```bash
 # Format code
-black katebatic/
-isort katebatic/
+black katabatic/
+isort katabatic/
 
 # Lint code
-flake8 katebatic/
-pylint katebatic/
+flake8 katabatic/
+pylint katabatic/
 
 # Type checking
-mypy katebatic/
+mypy katabatic/
 ```
 
 ### Integration Testing
@@ -902,8 +902,8 @@ Create integration tests for new components:
 import pytest
 import tempfile
 import os
-from katebatic.models.your_model_name.models import YourModelName
-from katebatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
+from katabatic.models.your_model_name.models import YourModelName
+from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
 
 
 def test_new_model_integration():
@@ -930,8 +930,8 @@ def test_new_model_integration():
 ### Example 1: Basic Model Usage
 
 ```python
-from katebatic.models.ganblr.models import GANBLR
-from katebatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
+from katabatic.models.ganblr.models import GANBLR
+from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
 from utils import discretize_preprocess
 
 # Step 1: Preprocess raw data
@@ -957,9 +957,9 @@ print(result)
 ### Example 2: Custom Evaluation Pipeline
 
 ```python
-from katebatic.models.great.models import GReaT
-from katebatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
-from katebatic.evaluate.your_evaluation_name.evaluation import YourEvaluationName
+from katabatic.models.great.models import GReaT
+from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
+from katabatic.evaluate.your_evaluation_name.evaluation import YourEvaluationName
 
 # Create pipeline with custom evaluation
 pipeline = TrainTestSplitPipeline(
@@ -980,7 +980,7 @@ result = pipeline.run(
 
 ```python
 import pandas as pd
-from katebatic.models.ganblr.models import GANBLR
+from katabatic.models.ganblr.models import GANBLR
 
 # Load preprocessed data
 X = pd.read_csv("sample_data/car/x_train.csv")
@@ -1004,8 +1004,8 @@ print(f"TSTR Accuracy: {accuracy:.4f}")
 ### Example 4: Advanced Configuration
 
 ```python
-from katebatic.models.great.models import GReaT
-from katebatic.pipeline.cross_validation.pipeline import CrossValidationPipeline
+from katabatic.models.great.models import GReaT
+from katabatic.pipeline.cross_validation.pipeline import CrossValidationPipeline
 
 # Configure GReaT model with custom parameters
 class CustomGReaT(GReaT):
@@ -1034,9 +1034,9 @@ results = cv_pipeline.run(
 
 ```python
 # Cell 1: Setup and imports
-from katebatic.models.ganblr.models import GANBLR
-from katebatic.models.great.models import GReaT
-from katebatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
+from katabatic.models.ganblr.models import GANBLR
+from katabatic.models.great.models import GReaT
+from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
 from utils import discretize_preprocess
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -1130,17 +1130,17 @@ plt.show()
 
 ```python
 # Wrong way
-from katebatic.models.ganblr import GANBLR
+from katabatic.models.ganblr import GANBLR
 
 # Correct way
-from katebatic.models.ganblr.models import GANBLR
+from katabatic.models.ganblr.models import GANBLR
 ```
 
 #### 2. Missing Dependencies
 
 ```bash
 # Install missing model-specific dependencies
-cd katebatic/models/your_model_name
+cd katabatic/models/your_model_name
 poetry install
 ```
 
@@ -1229,11 +1229,11 @@ import wandb
 
 class TrackedModel(Model):
     def train(self, *args, **kwargs):
-        wandb.init(project="katebatic-experiments")
+        wandb.init(project="katabatic-experiments")
         # Log parameters and metrics
         wandb.log({"epoch": epoch, "loss": loss})
 ```
 
 ---
 
-This development guide should serve as your comprehensive reference for contributing to the Katebatic framework. For questions or clarifications, please reach out to the development team or create an issue in the repository.
+This development guide should serve as your comprehensive reference for contributing to the Katabatic framework. For questions or clarifications, please reach out to the development team or create an issue in the repository.

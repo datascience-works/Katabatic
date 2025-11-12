@@ -2,7 +2,7 @@
 
 # Core installation (minimal dependencies)
 install-core:
-	@echo "Installing core Katebatic dependencies..."
+	@echo "Installing core Katabatic dependencies..."
 	poetry install
 
 # Install GANBLR model dependencies
@@ -46,7 +46,7 @@ clear-cache:
 
 # Show help
 help:
-	@echo "Katebatic Development Commands:"
+	@echo "Katabatic Development Commands:"
 	@echo ""
 	@echo "Installation:"
 	@echo "  make install-core       Install core dependencies only"
