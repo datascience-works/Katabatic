@@ -1,0 +1,248 @@
+{
+  "continuous_columns": [
+    "native-country"
+  ],
+  "categorical_columns": [
+    "age",
+    "workclass",
+    "fnlwgt",
+    "education",
+    "education-num",
+    "marital-status",
+    "occupation",
+    "relationship",
+    "race",
+    "sex",
+    "capital-gain",
+    "capital-loss",
+    "hours-per-week",
+    "class"
+  ],
+  "column_order": [
+    "age",
+    "workclass",
+    "fnlwgt",
+    "education",
+    "education-num",
+    "marital-status",
+    "occupation",
+    "relationship",
+    "race",
+    "sex",
+    "capital-gain",
+    "capital-loss",
+    "hours-per-week",
+    "native-country",
+    "class"
+  ],
+  "column_info": {
+    "age": {
+      "type": "categorical",
+      "size": 10,
+      "values": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+      ]
+    },
+    "workclass": {
+      "type": "categorical",
+      "size": 9,
+      "values": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8"
+      ]
+    },
+    "fnlwgt": {
+      "type": "categorical",
+      "size": 10,
+      "values": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+      ]
+    },
+    "education": {
+      "type": "categorical",
+      "size": 16,
+      "values": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15"
+      ]
+    },
+    "education-num": {
+      "type": "categorical",
+      "size": 10,
+      "values": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+      ]
+    },
+    "marital-status": {
+      "type": "categorical",
+      "size": 7,
+      "values": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ]
+    },
+    "occupation": {
+      "type": "categorical",
+      "size": 15,
+      "values": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14"
+      ]
+    },
+    "relationship": {
+      "type": "categorical",
+      "size": 6,
+      "values": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ]
+    },
+    "race": {
+      "type": "categorical",
+      "size": 5,
+      "values": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4"
+      ]
+    },
+    "sex": {
+      "type": "categorical",
+      "size": 2,
+      "values": [
+        "0",
+        "1"
+      ]
+    },
+    "capital-gain": {
+      "type": "categorical",
+      "size": 6,
+      "values": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "9"
+      ]
+    },
+    "capital-loss": {
+      "type": "categorical",
+      "size": 9,
+      "values": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "8",
+        "9"
+      ]
+    },
+    "hours-per-week": {
+      "type": "categorical",
+      "size": 10,
+      "values": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+      ]
+    },
+    "native-country": {
+      "type": "continuous",
+      "min": 0.0,
+      "max": 41.0,
+      "mean": 36.718903562653566,
+      "std": 7.813981727290882
+    },
+    "class": {
+      "type": "categorical",
+      "size": 2,
+      "values": [
+        "0",
+        "1"
+      ]
+    }
+  }
+}

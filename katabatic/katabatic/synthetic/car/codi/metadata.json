@@ -1,0 +1,46 @@
+{
+  "hyperparameters": {
+    "n_steps": 50,
+    "beta_1": 1e-05,
+    "beta_T": 0.02,
+    "encoder_dim_con": [
+      64,
+      128,
+      256
+    ],
+    "encoder_dim_dis": [
+      64,
+      128,
+      256
+    ],
+    "nf_con": 16,
+    "nf_dis": 64,
+    "activation": "relu",
+    "epochs": 30,
+    "batch_size": 512,
+    "lr_con": 0.002,
+    "lr_dis": 0.002,
+    "random_state": 42
+  },
+  "schema": {
+    "continuous_columns": [],
+    "categorical_columns": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "column_order": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ]
+  }
+}

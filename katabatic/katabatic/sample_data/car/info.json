@@ -1,0 +1,6 @@
+{
+  "task_type": "multiclass",
+  "num_col_idx": [],
+  "cat_col_idx": [0, 1, 2, 3, 4, 5],
+  "target_col_idx": [6]
+}

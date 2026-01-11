@@ -1,0 +1,58 @@
+{
+  "schema": {
+    "columns": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "label": "6",
+    "dtypes": {
+      "0": "int64",
+      "1": "int64",
+      "2": "int64",
+      "3": "int64",
+      "4": "int64",
+      "5": "int64",
+      "6": "int64"
+    },
+    "categorical_columns": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ]
+  },
+  "training": {
+    "epochs": 1,
+    "batch_size": 64,
+    "noise_dim": 128,
+    "generator_hidden": [
+      256,
+      256
+    ],
+    "discriminator_hidden": [
+      256,
+      256
+    ],
+    "lr": 0.0002,
+    "betas": [
+      0.5,
+      0.9
+    ],
+    "lambda_gp": 10.0,
+    "use_gradient_penalty": false,
+    "clip_value": 0.01,
+    "n_critic": 1,
+    "gumbel_tau": 0.2,
+    "seed": 42,
+    "device": "cpu",
+    "backend": "numpy"
+  }
+}

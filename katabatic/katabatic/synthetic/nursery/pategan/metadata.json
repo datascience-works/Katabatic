@@ -1,0 +1,155 @@
+{
+  "schema": {
+    "columns": [
+      "time",
+      "a1",
+      "a2",
+      "a3",
+      "a4",
+      "a5",
+      "a6",
+      "a7",
+      "a8",
+      "class"
+    ],
+    "dtypes": {
+      "time": "int64",
+      "a1": "int64",
+      "a2": "int64",
+      "a3": "int64",
+      "a4": "int64",
+      "a5": "int64",
+      "a6": "int64",
+      "a7": "int64",
+      "a8": "int64",
+      "class": "int64"
+    },
+    "column_info": {
+      "time": {
+        "type": "discrete",
+        "metadata": {
+          "min": 0,
+          "max": 9
+        }
+      },
+      "a1": {
+        "type": "discrete",
+        "metadata": {
+          "min": 0,
+          "max": 9
+        }
+      },
+      "a2": {
+        "type": "discrete",
+        "metadata": {
+          "min": 0,
+          "max": 9
+        }
+      },
+      "a3": {
+        "type": "discrete",
+        "metadata": {
+          "min": 0,
+          "max": 9
+        }
+      },
+      "a4": {
+        "type": "discrete",
+        "metadata": {
+          "min": 0,
+          "max": 9
+        }
+      },
+      "a5": {
+        "type": "discrete",
+        "metadata": {
+          "min": 0,
+          "max": 9
+        }
+      },
+      "a6": {
+        "type": "discrete",
+        "metadata": {
+          "min": 0,
+          "max": 9
+        }
+      },
+      "a7": {
+        "type": "discrete",
+        "metadata": {
+          "min": 0,
+          "max": 9
+        }
+      },
+      "a8": {
+        "type": "discrete",
+        "metadata": {
+          "min": 0,
+          "max": 9
+        }
+      },
+      "class": {
+        "type": "discrete",
+        "metadata": {
+          "min": 0,
+          "max": 6
+        }
+      }
+    }
+  },
+  "column_order": [
+    "time",
+    "a1",
+    "a2",
+    "a3",
+    "a4",
+    "a5",
+    "a6",
+    "a7",
+    "a8",
+    "class"
+  ],
+  "training_config": {
+    "niter": 20000,
+    "batch_size": 64,
+    "learning_rate": 0.0005,
+    "lambda_gp": 5.0,
+    "z_dim": 2
+  },
+  "privacy_config": {
+    "epsilon": 5.0,
+    "delta": 1e-05,
+    "num_teachers": 5,
+    "lambda_noise": 0.9689610525210778
+  },
+  "seed": 42,
+  "label_encoders": {},
+  "normalization": {
+    "min_vals": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "max_vals": [
+      9.0,
+      9.0,
+      9.0,
+      9.0,
+      9.0,
+      9.0,
+      9.0,
+      9.0,
+      9.0,
+      6.0
+    ]
+  },
+  "model_type": "PATEGAN",
+  "framework_version": "0.1.0"
+}

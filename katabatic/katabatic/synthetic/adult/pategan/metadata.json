@@ -1,0 +1,215 @@
+{
+  "schema": {
+    "columns": [
+      "age",
+      "workclass",
+      "fnlwgt",
+      "education",
+      "education-num",
+      "marital-status",
+      "occupation",
+      "relationship",
+      "race",
+      "sex",
+      "capital-gain",
+      "capital-loss",
+      "hours-per-week",
+      "native-country",
+      "class"
+    ],
+    "dtypes": {
+      "age": "int64",
+      "workclass": "int64",
+      "fnlwgt": "int64",
+      "education": "int64",
+      "education-num": "int64",
+      "marital-status": "int64",
+      "occupation": "int64",
+      "relationship": "int64",
+      "race": "int64",
+      "sex": "int64",
+      "capital-gain": "int64",
+      "capital-loss": "int64",
+      "hours-per-week": "int64",
+      "native-country": "int64",
+      "class": "int64"
+    },
+    "column_info": {
+      "age": {
+        "type": "discrete",
+        "metadata": {
+          "min": 0,
+          "max": 9
+        }
+      },
+      "workclass": {
+        "type": "discrete",
+        "metadata": {
+          "min": 0,
+          "max": 8
+        }
+      },
+      "fnlwgt": {
+        "type": "discrete",
+        "metadata": {
+          "min": 0,
+          "max": 9
+        }
+      },
+      "education": {
+        "type": "discrete",
+        "metadata": {
+          "min": 0,
+          "max": 15
+        }
+      },
+      "education-num": {
+        "type": "discrete",
+        "metadata": {
+          "min": 0,
+          "max": 9
+        }
+      },
+      "marital-status": {
+        "type": "discrete",
+        "metadata": {
+          "min": 0,
+          "max": 6
+        }
+      },
+      "occupation": {
+        "type": "discrete",
+        "metadata": {
+          "min": 0,
+          "max": 14
+        }
+      },
+      "relationship": {
+        "type": "discrete",
+        "metadata": {
+          "min": 0,
+          "max": 5
+        }
+      },
+      "race": {
+        "type": "discrete",
+        "metadata": {
+          "min": 0,
+          "max": 4
+        }
+      },
+      "sex": {
+        "type": "discrete",
+        "metadata": {
+          "min": 0,
+          "max": 1
+        }
+      },
+      "capital-gain": {
+        "type": "discrete",
+        "metadata": {
+          "min": 0,
+          "max": 9
+        }
+      },
+      "capital-loss": {
+        "type": "discrete",
+        "metadata": {
+          "min": 0,
+          "max": 9
+        }
+      },
+      "hours-per-week": {
+        "type": "discrete",
+        "metadata": {
+          "min": 0,
+          "max": 9
+        }
+      },
+      "native-country": {
+        "type": "discrete",
+        "metadata": {
+          "min": 0,
+          "max": 41
+        }
+      },
+      "class": {
+        "type": "discrete",
+        "metadata": {
+          "min": 0,
+          "max": 1
+        }
+      }
+    }
+  },
+  "column_order": [
+    "age",
+    "workclass",
+    "fnlwgt",
+    "education",
+    "education-num",
+    "marital-status",
+    "occupation",
+    "relationship",
+    "race",
+    "sex",
+    "capital-gain",
+    "capital-loss",
+    "hours-per-week",
+    "native-country",
+    "class"
+  ],
+  "training_config": {
+    "niter": 6000,
+    "batch_size": 64,
+    "learning_rate": 0.0005,
+    "lambda_gp": 5.0,
+    "z_dim": 3
+  },
+  "privacy_config": {
+    "epsilon": 5.0,
+    "delta": 1e-05,
+    "num_teachers": 5,
+    "lambda_noise": 0.9689610525210778
+  },
+  "seed": 42,
+  "label_encoders": {},
+  "normalization": {
+    "min_vals": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "max_vals": [
+      9.0,
+      8.0,
+      9.0,
+      15.0,
+      9.0,
+      6.0,
+      14.0,
+      5.0,
+      4.0,
+      1.0,
+      9.0,
+      9.0,
+      9.0,
+      41.0,
+      1.0
+    ]
+  },
+  "model_type": "PATEGAN",
+  "framework_version": "0.1.0"
+}
