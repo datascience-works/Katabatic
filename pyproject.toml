@@ -1,0 +1,85 @@
+[tool.poetry]
+name = "katabatic"
+version = "0.1.0"
+description = ""
+authors = ["Vikum Dabare <vikumdabare@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.12"
+
+# Core dependencies - always installed
+pandas = "^2.3.1"
+scikit-learn = "^1.3.0"
+numpy = "^1.24.0"
+
+# Optional dependencies for specific models
+tensorflow = "==2.19.*"
+pgmpy = ">=0.1.25"
+pyitlib = "0.3.1"
+tf-keras = {version = "^2.19.0", optional = true}
+scipy = {version = "^1.13.0,<1.15.0", optional = true}
+statsmodels = {version = "^0.14.4", optional = true}
+transformers = {version = "^4.53.2", optional = true}
+torch = {version = "^2.7.1", optional = true}
+datasets = {version = "^4.0.0", optional = true}
+xgboost = {version = "^3.0.2", optional = true}
+
+# --- TabSyn-specific optional deps ---
+tqdm = {version = "^4.66.0", optional = true}
+tomli = {version = "^2.0.1", optional = true}
+tomli-w = {version = "^1.0.0", optional = true}
+# === Added for TabDDPM / modern RTDL stack ===
+category-encoders = {version = "^2.8.1", optional = true}
+rtdl_revisiting_models = {version = "0.0.2", optional = true}
+
+# Development and testing dependencies (only in dev installs)
+ipykernel = {version = "^6.29.5"}
+pytest = {version = "^7.4.0", optional = true}
+pytest-cov = {version = "^4.1.0", optional = true}
+pytest-mock = {version = "^3.11.0", optional = true}
+accelerate = ">=0.26.0"
+tensorflow-io = "0.31.0"
+
+[tool.poetry.extras]
+ganblr = ["tensorflow", "pgmpy", "pyitlib", "tf-keras", "scipy"]
+great = ["transformers", "torch", "datasets"]
+tabddpm = ["torch", "scipy", "rtdl_revisiting_models", "libzero", "category-encoders"]
+pategan = ["tensorflow", "scipy"]
+codi = ["torch"]
+medgan = ["torch"]
+dev = ["ipykernel", "pytest", "pytest-cov", "pytest-mock"]
+ctgan = ["torch"]
+
+# TabSyn stack
+tabsyn = ["torch", "scipy", "tqdm", "category-encoders", "tomli", "tomli-w"]
+
+# Keep "all" in sync (without 'delu')
+all = [
+  "tensorflow",
+  "pgmpy",
+  "pyitlib",
+  "tf-keras",
+  "scipy",
+  "transformers",
+  "torch",
+  "datasets",
+  "xgboost",
+  "tqdm",
+  "category-encoders",
+  "tomli",
+  "tomli-w",
+  "rtdl_revisiting_models",
+  "libzero"
+]
+
+[tool.poetry.group.dev.dependencies]
+autopep8 = "^2.0.0"
+isort = "^5.12.0"
+mypy = "^1.5.0"
+ruff = "^0.12.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

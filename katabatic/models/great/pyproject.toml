@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "katabatic-great"
+version = "0.1.0"
+description = "GReaT model dependencies for Katabatic development"
+authors = ["Vikum Dabare <vikumdabare@gmail.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.12"
+# Core dependencies (link to parent)
+katabatic = {path = "../../..", develop = true}
+# GReaT-specific dependencies
+transformers = "^4.53.2"
+torch = "^2.7.1"
+datasets = "^4.0.0"
+
+[tool.poetry.group.dev.dependencies]
+# Development dependencies are inherited from main project
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

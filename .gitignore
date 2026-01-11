@@ -1,0 +1,24 @@
+# --- Python ---
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# --- Outputs / generated artifacts ---
+Results/
+outputs/
+trainer_great/
+synthetic/
+sample_data/
+raw_data/
+discretized_data/
+encoded_data/
+
+# --- Large model/checkpoint binaries ---
+*.safetensors
+*.pt
+*.pth
+*.bin
+
+# --- OS ---
+.DS_Store
+Thumbs.db
