@@ -1,0 +1,174 @@
+{
+  "continuous_columns": [],
+  "categorical_columns": [
+    "fLength",
+    "fWidth",
+    "fSize",
+    "fConc",
+    "fConc1",
+    "fAsym",
+    "fM3Long",
+    "fM3Trans",
+    "fAlpha",
+    "fDist",
+    "class"
+  ],
+  "column_order": [
+    "fLength",
+    "fWidth",
+    "fSize",
+    "fConc",
+    "fConc1",
+    "fAsym",
+    "fM3Long",
+    "fM3Trans",
+    "fAlpha",
+    "fDist",
+    "class"
+  ],
+  "column_info": {
+    "fLength": {
+      "type": "categorical",
+      "size": 10,
+      "values": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+      ]
+    },
+    "fWidth": {
+      "type": "categorical",
+      "size": 10,
+      "values": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+      ]
+    },
+    "fSize": {
+      "type": "categorical",
+      "size": 4,
+      "values": [
+        "0",
+        "3",
+        "6",
+        "9"
+      ]
+    },
+    "fConc": {
+      "type": "categorical",
+      "size": 7,
+      "values": [
+        "0",
+        "1",
+        "3",
+        "5",
+        "6",
+        "8",
+        "9"
+      ]
+    },
+    "fConc1": {
+      "type": "categorical",
+      "size": 5,
+      "values": [
+        "0",
+        "2",
+        "5",
+        "7",
+        "9"
+      ]
+    },
+    "fAsym": {
+      "type": "categorical",
+      "size": 7,
+      "values": [
+        "0",
+        "1",
+        "3",
+        "5",
+        "6",
+        "8",
+        "9"
+      ]
+    },
+    "fM3Long": {
+      "type": "categorical",
+      "size": 10,
+      "values": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+      ]
+    },
+    "fM3Trans": {
+      "type": "categorical",
+      "size": 9,
+      "values": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+      ]
+    },
+    "fAlpha": {
+      "type": "categorical",
+      "size": 8,
+      "values": [
+        "0",
+        "1",
+        "2",
+        "4",
+        "5",
+        "7",
+        "8",
+        "9"
+      ]
+    },
+    "fDist": {
+      "type": "categorical",
+      "size": 5,
+      "values": [
+        "0",
+        "2",
+        "5",
+        "7",
+        "9"
+      ]
+    },
+    "class": {
+      "type": "categorical",
+      "size": 2,
+      "values": [
+        "0",
+        "1"
+      ]
+    }
+  }
+}

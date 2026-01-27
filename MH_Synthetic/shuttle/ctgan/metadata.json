@@ -1,0 +1,67 @@
+{
+  "schema": {
+    "columns": [
+      "time",
+      "a1",
+      "a2",
+      "a3",
+      "a4",
+      "a5",
+      "a6",
+      "a7",
+      "a8",
+      "class"
+    ],
+    "label": "class",
+    "dtypes": {
+      "time": "int64",
+      "a1": "int64",
+      "a2": "int64",
+      "a3": "int64",
+      "a4": "int64",
+      "a5": "int64",
+      "a6": "int64",
+      "a7": "int64",
+      "a8": "int64",
+      "class": "int64"
+    },
+    "categorical_columns": [
+      "time",
+      "a1",
+      "a2",
+      "a3",
+      "a4",
+      "a5",
+      "a6",
+      "a7",
+      "a8",
+      "class"
+    ]
+  },
+  "training": {
+    "epochs": 100,
+    "batch_size": 512,
+    "noise_dim": 128,
+    "generator_hidden": [
+      256,
+      256
+    ],
+    "discriminator_hidden": [
+      256,
+      256
+    ],
+    "lr": 0.0002,
+    "betas": [
+      0.5,
+      0.9
+    ],
+    "lambda_gp": 10.0,
+    "use_gradient_penalty": false,
+    "clip_value": 0.01,
+    "n_critic": 5,
+    "gumbel_tau": 0.2,
+    "seed": 42,
+    "device": "cpu",
+    "backend": "torch"
+  }
+}
