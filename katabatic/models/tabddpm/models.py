@@ -83,6 +83,7 @@ class Tabddpm(Model):
         self._y_le: Optional[LabelEncoder] = None
 
         # feature schema for roundtripping to DataFrame on sample()
+        self._target_col_name: str = 'label'
         self._feature_names_num: List[str] = []
         self._feature_names_cat: List[str] = []
         self._cat_label_encoders: Dict[str, LabelEncoder] = {}
@@ -206,8 +207,11 @@ class Tabddpm(Model):
             if isinstance(y_train, pd.DataFrame) and y_train.shape[1] == 1:
                 y_train = y_train.iloc[:, 0]
 
-            # Train using array mode
-            self.train(X_train, y_train, config=config)
+            # Accept categorical_cols (Katabatic convention) as alias for cat_cols
+            cat_cols = kwargs.get("cat_cols") or kwargs.get("categorical_cols")
+
+            # Train using array mode, forwarding categorical columns if provided
+            self.train(X_train, y_train, cat_cols=cat_cols, config=config)
 
             # Generate synthetic data and write CSVs for TSTR
             n_rows = len(X_train)
@@ -291,6 +295,7 @@ class Tabddpm(Model):
             raise TypeError(
                 "train() missing required positional arguments: X, y")
         X, y = args[0], args[1]
+        self._target_col_name = y.name if isinstance(y, pd.Series) and y.name else 'label'
         cat_cols: Optional[Sequence[Union[int, str]]] = kwargs.get("cat_cols")
         config: Optional[Dict[str, Any]] = kwargs.get("config")
 
@@ -613,7 +618,7 @@ class Tabddpm(Model):
                 if self._y_le is not None
                 else Yn.astype(int)
             )
-            X_df.insert(len(X_df.columns), "label", y_out)
+            X_df.insert(len(X_df.columns), self._target_col_name, y_out)
 
         return X_df
 

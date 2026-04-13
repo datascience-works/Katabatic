@@ -10,8 +10,7 @@ def load_and_clean_data(file_path):
     return df
 
 
-def is_numerical(col):
-    return pd.api.types.is_numeric_dtype(col) and not pd.api.types.is_bool_dtype(col)
+from katabatic.utils.column_types import is_numerical, get_column_types
 
 
 def discretize_numerical_columns(df, n_bins=10, strategy='uniform'):
@@ -129,18 +128,23 @@ def encode_categorical_columns_encode(df):
     return df_copy
 
 
-def encode_preprocess(file_path, output_path):
+def encode_preprocess(file_path, output_path, target_col=None):
     print(f"Preprocessing: {file_path}")
     df = load_and_clean_data(file_path)
 
-    # Separate target column (assumed to be last)
-    X = df.iloc[:, :-1]
-    y = df.iloc[:, -1]
+    # Separate target column use provided name or fall back to last column
+    if target_col is not None:
+        if target_col not in df.columns:
+            raise ValueError(f"target_col '{target_col}' not found in dataset. Available columns: {list(df.columns)}")
+        y = df[target_col]
+        X = df.drop(columns=[target_col])
+    else:
+        X = df.iloc[:, :-1]
+        y = df.iloc[:, -1]
 
     # Process features
     X = process_numerical_columns(X)
     X = encode_categorical_columns_encode(X)
-    X = X.astype(int)
 
     # Encode target
     y = y.fillna('Missing').astype(str)
@@ -150,7 +154,7 @@ def encode_preprocess(file_path, output_path):
 
     # Combine and save
     df_processed = pd.concat([X, y_encoded], axis=1)
-    df_processed.columns = [str(i) for i in range(df_processed.shape[1])]
+    df_processed.columns = [str(i) for i in range(df_processed.shape[1])] # is there any reason behind this ? why not keep the original names of the columns
     df_processed.to_csv(output_path, index=False)
     print(f"Saved preprocessed discrete dataset to: {output_path}")
 

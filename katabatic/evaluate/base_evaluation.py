@@ -1,17 +1,23 @@
+from abc import ABC, abstractmethod
+import pandas as pd
 
 
-class Evaluation:
+class Evaluation(ABC):
     """
-    Base class for evaluation.
+    Abstract base class for all evaluation dimensions.
+
+    Each evaluator receives the real and synthetic datasets as DataFrames
+    and returns a structured result dict from evaluate().
     """
 
-    def __init__(self, model, dataset, **kwargs):
-        self.model = model
-        self.dataset = dataset
-        self.kwargs = kwargs
+    def __init__(self, real_data: pd.DataFrame, synthetic_data: pd.DataFrame = None, **kwargs):
+        self.real_data = real_data
+        self.synthetic_data = synthetic_data
 
-    def evaluate(self):
+    @abstractmethod
+    def evaluate(self) -> dict:
         """
-        Evaluate the model on the dataset.
+        Run the evaluation and return a structured result dict.
+        Must include a normalized score key
         """
-        raise NotImplementedError("Subclasses should implement this method.")
+        raise NotImplementedError("Subclasses must implement evaluate().")

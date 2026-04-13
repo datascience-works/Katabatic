@@ -172,7 +172,14 @@ class CODI(Model):
         logger.info(f"Loaded training data: {df_train.shape}")
 
         # Infer schema and encode data
-        self.schema_ = infer_schema(df_train)
+        # Accept categorical_cols / continuous_cols (Katabatic convention)
+        categorical_cols = kwargs.get('categorical_cols')
+        continuous_cols  = kwargs.get('continuous_cols')
+        self.schema_ = infer_schema(
+            df_train,
+            categorical_cols=categorical_cols,
+            continuous_cols=continuous_cols,
+        )
         encoded_data, self.schema_ = encode_dataframe(df_train, self.schema_)
 
         logger.info(f"Schema: {len(self.schema_['continuous_columns'])} continuous, "
@@ -415,17 +422,20 @@ class CODI(Model):
 
         # === Continuous diffusion loss (if we have continuous features) ===
         if self.has_continuous_:
+            # One-hot encode x_cat so it matches cond_dim of model_con_
+            x_cat_onehot_cond = self._to_onehot(x_cat).float()
+
             noise_con = torch.randn_like(x_con)
             x_t_con = self.trainer_con_.make_x_t(x_con, t, noise_con)
-            eps_pred = self.model_con_(x_t_con, t, x_cat)
+            eps_pred = self.model_con_(x_t_con, t, x_cat_onehot_cond)
             loss_con_diff = F.mse_loss(eps_pred, noise_con)
 
             # Contrastive learning (simplified)
             neg_indices = torch.randperm(batch_size)
-            x_cat_neg = x_cat[neg_indices]
+            x_cat_neg_onehot = self._to_onehot(x_cat[neg_indices]).float()
 
-            eps_pos = self.model_con_(x_t_con, t, x_cat)
-            eps_neg = self.model_con_(x_t_con, t, x_cat_neg)
+            eps_pos = self.model_con_(x_t_con, t, x_cat_onehot_cond)
+            eps_neg = self.model_con_(x_t_con, t, x_cat_neg_onehot)
 
             loss_con_contrast = torch.relu(
                 F.mse_loss(eps_neg, noise_con, reduction='none').mean() -

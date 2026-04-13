@@ -14,8 +14,30 @@ from typing import Dict, Any, Tuple, List, Optional
 from sklearn.preprocessing import LabelEncoder
 
 
-def infer_schema(df: pd.DataFrame, categorical_threshold: int = 20) -> Dict[str, Any]:
-    """Infer schema from DataFrame."""
+def infer_schema(
+    df: pd.DataFrame,
+    categorical_threshold: int = 20,
+    categorical_cols: list = None,
+    continuous_cols: list = None,
+) -> Dict[str, Any]:
+    """Infer schema from DataFrame.
+
+    If categorical_cols / continuous_cols are provided they take priority
+    over the cardinality heuristic. Falls back to heuristic with a warning
+    for any column not explicitly listed.
+    """
+    explicit_cats = set(categorical_cols or [])
+    explicit_conts = set(continuous_cols or [])
+    use_explicit = bool(explicit_cats or explicit_conts)
+
+    if not use_explicit:
+        print(
+            "[WARNING] categorical_cols and continuous_cols not provided to CoDi. "
+            "Auto-detecting from cardinality heuristic — integer-encoded categorical "
+            "columns with > 20 unique values will be misclassified as continuous. "
+            "Pass column types explicitly for accurate results."
+        )
+
     schema = {
         'continuous_columns': [],
         'categorical_columns': [],
@@ -27,31 +49,32 @@ def infer_schema(df: pd.DataFrame, categorical_threshold: int = 20) -> Dict[str,
         col_data = df[col].dropna()
         n_unique = col_data.nunique()
 
-        if pd.api.types.is_numeric_dtype(col_data):
-            if n_unique <= categorical_threshold:
-                schema['categorical_columns'].append(col)
-                unique_vals = sorted(col_data.unique())
-                schema['column_info'][col] = {
-                    'type': 'categorical',
-                    'size': len(unique_vals),
-                    'values': unique_vals
-                }
-            else:
-                schema['continuous_columns'].append(col)
-                schema['column_info'][col] = {
-                    'type': 'continuous',
-                    'min': float(col_data.min()),
-                    'max': float(col_data.max()),
-                    'mean': float(col_data.mean()),
-                    'std': float(col_data.std())
-                }
+        # Explicit override takes priority
+        if col in explicit_cats:
+            is_categorical = True
+        elif col in explicit_conts:
+            is_categorical = False
+        elif pd.api.types.is_numeric_dtype(col_data):
+            is_categorical = n_unique <= categorical_threshold
         else:
+            is_categorical = True
+
+        if is_categorical:
             schema['categorical_columns'].append(col)
             unique_vals = sorted(col_data.unique())
             schema['column_info'][col] = {
                 'type': 'categorical',
                 'size': len(unique_vals),
                 'values': unique_vals
+            }
+        else:
+            schema['continuous_columns'].append(col)
+            schema['column_info'][col] = {
+                'type': 'continuous',
+                'min': float(col_data.min()),
+                'max': float(col_data.max()),
+                'mean': float(col_data.mean()),
+                'std': float(col_data.std())
             }
 
     return schema
@@ -298,13 +321,17 @@ class GaussianDiffusionTrainer(nn.Module):
         self.register_buffer('sqrt_one_minus_alphas_bar',
                              torch.sqrt(1 - alphas_bar))
 
-    def forward(self, x_0, t, cond):
-        """Training step."""
-        noise = torch.randn_like(x_0)
-        x_t = (
+    def make_x_t(self, x_0, t, noise):
+        """Compute noisy sample x_t given x_0, timestep t and external noise."""
+        return (
             extract(self.sqrt_alphas_bar, t, x_0.shape) * x_0 +
             extract(self.sqrt_one_minus_alphas_bar, t, x_0.shape) * noise
         )
+
+    def forward(self, x_0, t, cond):
+        """Training step."""
+        noise = torch.randn_like(x_0)
+        x_t = self.make_x_t(x_0, t, noise)
         noise_pred = self.model(x_t, t, cond)
         return F.mse_loss(noise_pred, noise)
 
@@ -342,8 +369,8 @@ class GaussianDiffusionSampler(nn.Module):
         self.register_buffer('posterior_mean_coef2', posterior_mean_coef2)
         self.register_buffer('posterior_log_variance', posterior_log_variance)
 
-    def p_sample(self, x_t, t, cond):
-        """Single sampling step."""
+    def p_mean_variance(self, x_t, t, cond):
+        """Compute posterior mean and log variance without sampling."""
         eps = self.model(x_t, t, cond)
         x_0_pred = (
             extract(self.sqrt_recip_alphas_bar, t, x_t.shape) * x_t -
@@ -356,10 +383,13 @@ class GaussianDiffusionSampler(nn.Module):
             extract(self.posterior_mean_coef2, t, x_t.shape) * x_t
         )
         log_variance = extract(self.posterior_log_variance, t, x_t.shape)
+        return mean, log_variance
 
+    def p_sample(self, x_t, t, cond):
+        """Single sampling step."""
+        mean, log_variance = self.p_mean_variance(x_t, t, cond)
         noise = torch.randn_like(x_t)
         noise[t == 0] = 0
-
         return mean + torch.exp(0.5 * log_variance) * noise
 
     def forward(self, x_T, cond):

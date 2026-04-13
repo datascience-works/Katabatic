@@ -13,6 +13,18 @@ raw_data/
 discretized_data/
 encoded_data/
 
+# --- Datasets ---
+datasets/*.csv
+
+# --- Test-run generated artifacts ---
+test-runs/processed/
+test-runs/splits/
+test-runs/synthetic/
+test-runs/results/
+
+# --- Internal documents ---
+reference-documents/
+
 # --- Large model/checkpoint binaries ---
 *.safetensors
 *.pt

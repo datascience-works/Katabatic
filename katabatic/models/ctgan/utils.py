@@ -40,15 +40,34 @@ class ColumnMeta:
     qt: QuantileTransformer | None = None
 
 
-def infer_schema(df: pd.DataFrame) -> List[ColumnMeta]:
+def infer_schema(
+    df: pd.DataFrame,
+    categorical_cols: List[str] = None,
+    continuous_cols: List[str] = None,
+) -> List[ColumnMeta]:
+    """
+    Build a column schema for the given DataFrame.
+
+    If categorical_cols and continuous_cols are provided they are used directly.
+    Otherwise falls back to infer_categorical_columns() heuristic with a warning.
+    """
+    if categorical_cols is not None or continuous_cols is not None:
+        cat_cols = set(categorical_cols or [])
+    else:
+        print(
+            "[WARNING] categorical_cols and continuous_cols not provided to CTGAN. "
+            "Falling back to cardinality-based heuristic — integer-encoded categorical "
+            "columns may be misclassified. Pass column types explicitly for accurate results."
+        )
+        cat_cols = set(infer_categorical_columns(df))
+
     schema: List[ColumnMeta] = []
-    cat_cols = set(infer_categorical_columns(df))
     for c in df.columns:
         if c in cat_cols:
             cats = sorted([str(v) for v in df[c].dropna().unique().tolist()])
-            schema.append(ColumnMeta(
-                name=c, kind='categorical', categories=cats))
+            schema.append(ColumnMeta(name=c, kind='categorical', categories=cats))
         else:
+            # continuous or unlisted columns — default to continuous
             schema.append(ColumnMeta(name=c, kind='continuous'))
     return schema
 
@@ -58,7 +77,9 @@ def fit_transformers(df: pd.DataFrame, schema: List[ColumnMeta]) -> None:
         if col.kind == 'continuous':
             qt = QuantileTransformer(
                 output_distribution='normal', n_quantiles=min(1000, max(len(df), 10)))
-            vals = df[[col.name]].astype(float)
+            # Use .values to pass a numpy array — avoids sklearn feature name warnings
+            # when the transformer is later called with arrays during sampling
+            vals = df[col.name].astype(float).values.reshape(-1, 1)
             qt.fit(vals)
             col.qt = qt
         else:
@@ -122,7 +143,15 @@ def decode_batch(enc: np.ndarray, schema: List[ColumnMeta]) -> pd.DataFrame:
                 block = enc[i, col_ptr:col_ptr+size]
                 idx = int(np.argmax(block)) if size > 0 else -1
                 cats = col.categories or []
-                row[col.name] = cats[idx] if 0 <= idx < len(cats) else None
+                val = cats[idx] if 0 <= idx < len(cats) else None
+                # Try to cast back to int if the category is a numeric string
+                # (e.g. label-encoded integers stored as "3" -> 3)
+                if val is not None:
+                    try:
+                        val = int(val)
+                    except (ValueError, TypeError):
+                        pass
+                row[col.name] = val
                 col_ptr += size
         rows.append(row)
     return pd.DataFrame(rows)

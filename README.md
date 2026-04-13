@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Poetry](https://img.shields.io/badge/dependency-poetry-blue)](https://python-poetry.org/)
 
-A comprehensive framework for synthetic tabular data generation using state-of-the-art machine learning models including GANBLR and GReaT (Generation of Realistic Tabular data).
+A comprehensive framework for synthetic tabular data generation and evaluation. Includes 8 generative models (CTGAN, CoDi, TabDDPM, GANBLR, GReaT, Tabsyn, MedGAN, PATEGAN) and a 6-dimension evaluation pipeline that scores every model on Fidelity, Utility, Diversity, Privacy, Consistency and Stability.
 
 ## 🚀 Features
 
@@ -26,6 +26,10 @@ A comprehensive framework for synthetic tabular data generation using state-of-t
 - [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
+
+## 🗺 Architecture
+
+For a full overview of the project structure, data flow, and component relationships see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## 🔧 Prerequisites
 
@@ -114,82 +118,120 @@ cd katabatic
 
 ### 2. Set Python Version
 
+This project requires **Python 3.11.9 strictly**. Other versions will not work due to TensorFlow and dependency constraints.
+
+**Check your Python version:**
 ```bash
-# Set local Python version for this project
+python --version
+```
+
+**If you have pyenv (Mac/Linux):**
+```bash
+pyenv install 3.11.9
 pyenv local 3.11.9
+python --version  # Should output: Python 3.11.9
+```
+
+**If you have Python 3.11.9 installed directly (Windows):**
+```bash
+# Tell Poetry to use it explicitly
+poetry env use 3.11.9
+
+# Verify Poetry picked it up
+poetry env info
 ```
 
 ### 3. Install Dependencies
 
 ```bash
-# Install dependencies using Poetry
+# Core dependencies (always required — includes the evaluation pipeline)
 poetry install
 
-# Activate the virtual environment
-poetry shell
+# Add extras for the models you want to use
+poetry install -E ctgan       # CTGAN, CoDi, MedGAN
+poetry install -E tabddpm     # TabDDPM
+poetry install -E ganblr      # GANBLR
+poetry install -E great       # GReaT
+poetry install -E all         # install everything
 ```
 
-### 4. GPU Support (Optional)
-
-If you have an NVIDIA GPU and want to use it for GReaT model training:
+### 4. Activate the Virtual Environment
 
 ```bash
-# Install CUDA-compatible versions
+# Get the activation path
+poetry env activate
+
+# Copy the path it returns and run it, for example:
+# Mac/Linux:
+source /path/to/virtualenvs/katabatic-xxx-py3.11/bin/activate
+
+# Windows:
+C:\path\to\virtualenvs\katabatic-xxx-py3.11\Scripts\activate
+```
+
+### 5. GPU Support (Optional)
+
+If you have an NVIDIA GPU and want to use it for GReaT or other torch-based models:
+
+```bash
 poetry add torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 ```
 
-### 5. Verify Installation
+### 6. Verify Installation
 
 ```bash
-# Run a quick test
 python -c "
-import katabatic
-from katabatic.models.ganblr.models import GANBLR
-from katabatic.models.great.models import GReaT
+import pandas, numpy, scipy, sklearn
+from katabatic.pipeline.evaluation_pipeline import SyntheticEvaluationPipeline
 print('Katabatic installation successful!')
 "
 ```
 
 ## 🚀 Quick Start
 
-### Basic Example
+### Run an existing test script
 
-```python
-from katabatic.models.ganblr.models import GANBLR
-from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
-from utils import discretize_preprocess
+Ready-to-run scripts are available in `test-runs/` for two datasets:
 
-# 1. Preprocess your data
-dataset_path = "raw_data/car.csv"
-output_path = "discretized_data/car.csv"
-discretize_preprocess(dataset_path, output_path)
+| Script | Model | Dataset |
+|---|---|---|
+| `test-runs/run_ctgan_adult.py` | CTGAN | Adult Income |
+| `test-runs/run_codi_adult.py` | CoDi | Adult Income |
+| `test-runs/run_tabddpm_adult.py` | TabDDPM | Adult Income |
+| `test-runs/run_ctgan_bank_marketing.py` | CTGAN | Bank Marketing |
 
-# 2. Create and run pipeline
-input_csv = 'discretized_data/car.csv'
-output_dir = 'sample_data/car'
-
-pipeline = TrainTestSplitPipeline(model=GANBLR)
-pipeline.run(
-    input_csv=input_csv,
-    output_dir=output_dir,
-    synthetic_dir='synthetic/car/ganblr',
-    real_test_dir='sample_data/car'
-)
-```
-
-### Jupyter Notebook
-
-For interactive development, launch Jupyter:
+Each script runs the full pipeline: preprocess → split → train → generate → evaluate → save report.
 
 ```bash
-# Start Jupyter Lab
-poetry run jupyter lab
-
-# Or Jupyter Notebook
-poetry run jupyter notebook
+# place your dataset CSV in datasets/ then run
+python test-runs/run_ctgan_adult.py
 ```
 
-See `example.ipynb` for a complete walkthrough.
+### Add a new dataset and model
+
+```python
+from test_runs.runner import RunConfig, preprocess_and_split, save_synthetic, evaluate
+from katabatic.models.ctgan.models import CTGANModel
+
+config = RunConfig(
+    dataset_name     = "your_dataset",        # matches datasets/your_dataset.csv
+    model_name       = "ctgan",
+    categorical_cols = ['1', '3'],            # column indices after preprocessing
+    continuous_cols  = ['0', '2'],
+    target_col_raw   = "target",              # original target column name
+    constraints      = {'0': (0, 100)},       # optional logical bounds per column
+)
+
+train_df, test_df, target_col, paths = preprocess_and_split(config)
+
+model = CTGANModel(epochs=100, batch_size=512, seed=42)
+model.train(paths["split_dir"], categorical_cols=config.categorical_cols,
+                                continuous_cols=config.continuous_cols)
+
+synthetic_df = model.sample(len(train_df))
+synthetic_df = save_synthetic(synthetic_df, train_df, paths)
+evaluate(model, config, train_df, synthetic_df, target_col, paths)
+```
 
 ## 📖 Usage
 

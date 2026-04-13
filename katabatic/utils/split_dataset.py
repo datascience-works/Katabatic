@@ -12,12 +12,8 @@ def split_dataset(input_csv, output_dir, test_size=0.2, seed=42, *args, **kwargs
     random.seed(seed)
 
     os.makedirs(output_dir, exist_ok=True)
-
-    # Load data
     df = pd.read_csv(input_csv)
-    print(f"Loaded data with shape: {df.shape}")
 
-    # Split just once
     train_idx, test_idx = train_test_split(
         df.index,
         test_size=test_size,
@@ -27,7 +23,6 @@ def split_dataset(input_csv, output_dir, test_size=0.2, seed=42, *args, **kwargs
 
     # Create all splits from the same indices
     df_train, df_test = df.loc[train_idx], df.loc[test_idx]
-    # df_train, df_test = df, df
 
     # Save full datasets
     df_train.to_csv(os.path.join(output_dir, 'train_full.csv'), index=False)

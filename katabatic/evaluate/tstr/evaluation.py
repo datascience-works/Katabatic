@@ -1,19 +1,22 @@
+"""
+Deprecated: TSTREvaluation is kept for backward compatibility with the
+TrainTestSplitPipeline. For new code use UtilityEvaluation instead:
+
+    from katabatic.evaluate.utility import UtilityEvaluation
+"""
 import os
-import argparse
 import pandas as pd
 import numpy as np
 import csv
-import random
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
-from xgboost import XGBClassifier
+try:
+    from xgboost import XGBClassifier
+except ImportError:
+    XGBClassifier = None
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
-
-from katabatic.evaluate.base_evaluation import Evaluation
-
-# Need to change this prolly
 
 
 def load_data(synthetic_dir, real_test_dir):
@@ -26,7 +29,7 @@ def load_data(synthetic_dir, real_test_dir):
     return x_synth, y_synth, x_test, y_test
 
 
-class TSTREvaluation(Evaluation):
+class TSTREvaluation:
     def __init__(self, synthetic_dir, real_test_dir, **kwargs):
         self.synthetic_dir = synthetic_dir
         self.real_test_dir = real_test_dir

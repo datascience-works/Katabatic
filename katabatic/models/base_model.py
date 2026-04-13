@@ -11,8 +11,19 @@ class Model(ABC):
         self.is_fitted = False
 
     @abstractmethod
-    def train(self, *args, **kwargs) -> 'Model':
-        """Train the model on the given data."""
+    def train(self, *args, categorical_cols: list = None, continuous_cols: list = None, **kwargs) -> 'Model':
+        """
+        Train the model on the given data.
+
+        Parameters
+        ----------
+        categorical_cols : list[str], optional
+            Column names to treat as categorical. When provided, the model
+            uses these instead of its own internal type detection heuristic.
+        continuous_cols : list[str], optional
+            Column names to treat as continuous. When provided, the model
+            uses these instead of its own internal type detection heuristic.
+        """
         ...
 
     @abstractmethod

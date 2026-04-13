@@ -146,6 +146,8 @@ class CTGANModel(BaseModel):
         data_dir: str,
         synthetic_dir: Optional[str] = None,
         *args,
+        categorical_cols: Optional[List[str]] = None,
+        continuous_cols: Optional[List[str]] = None,
         **kwargs,
     ) -> "CTGANModel":
         # Load data
@@ -170,7 +172,7 @@ class CTGANModel(BaseModel):
         self._train_df = df.copy()
 
         # Schema & encoders
-        self.schema = infer_schema(df)
+        self.schema = infer_schema(df, categorical_cols=categorical_cols, continuous_cols=continuous_cols)
         fit_transformers(df, self.schema)
 
         backend = (self.cfg.get("backend") or "torch").lower()
