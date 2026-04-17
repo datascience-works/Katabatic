@@ -16,20 +16,26 @@ poetry install --extras codi
 
 ## Usage
 
-```python
-from katabatic.models.codi import CODI
-from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
+Use the ready-made example script as a starting point:
 
-pipeline = TrainTestSplitPipeline(model=CODI)
-pipeline.run(
-    input_csv='data/my_dataset.csv',
-    output_dir='sample_data/my_dataset',
-    synthetic_dir='synthetic/my_dataset/codi',
-    real_test_dir='sample_data/my_dataset'
-)
+```bash
+python benchmarks/examples/run_codi_adult.py
 ```
 
-See `examples/codi.ipynb` for more examples.
+Or integrate directly:
+
+```python
+from katabatic.models.codi.models import CODI
+
+model = CODI(n_steps=50, epochs=100, batch_size=256)
+model.train(
+    data_dir="benchmarks/splits/my_dataset",
+    synthetic_dir="benchmarks/synthetic/my_dataset/codi",
+    categorical_cols=["workclass", "education"],
+    continuous_cols=["age", "fnlwgt"],
+)
+synthetic_df = model.sample(n_samples=1000)
+```
 
 ## Key Features
 

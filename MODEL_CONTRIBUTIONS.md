@@ -22,28 +22,27 @@ Replace `<model_name>` with the actual name of your model (e.g., `ganblr_plus`).
 
 ## 🗂 Step 2: Add Your Model
 
-Inside the `katabatic/models/` directory:
+Use the scaffold tool to generate the boilerplate automatically:
 
-1. Create a new folder for your model:
+```bash
+python scaffold.py init-model <model_name> dep1 dep2
+```
 
-   ```
-   katabatic/models/<model_name>/
-   ```
+This creates `katabatic/models/<model_name>/` with `__init__.py`, `models.py`, and `utils.py` pre-filled, and registers the model in `katabatic/models/registry.py`.
 
-2. Within that folder, follow the format used in existing models (like `ganblr` or `great`). Typically, this includes:
+Then:
 
-   - `__init__.py`
-   - `models.py`
-   - `utils.py` _(if needed)_
-   - `pyproject.toml` and `poetry.lock` _(if dependencies are isolated)_
-
-3. Your model class should **extend** the `Model` base class defined in:
+1. Implement `train()`, `sample()`, and `evaluate()` in `models.py`
+2. Add your model's dependencies to the root `pyproject.toml`:
+   - Under `[tool.poetry.dependencies]` as optional
+   - Under `[tool.poetry.extras]` with the model name as the key
+3. Your model class extends the `Model` base class defined in:
 
    ```python
    from katabatic.models.base_model import Model
    ```
 
-   This ensures consistency across all models and compatibility with the evaluation and pipeline systems.
+   This ensures consistency across all models and compatibility with the evaluation pipeline.
 
 ---
 
@@ -65,7 +64,7 @@ Create a **Pull Request (PR)** from your feature branch into the `development` b
 
 - Include a summary of your model
 - Mention any new dependencies
-- Add evaluation results if applicable (see `Results/` for examples)
+- Add evaluation results if applicable (see `benchmarks/results/` for examples)
 
 ---
 
@@ -73,11 +72,11 @@ Create a **Pull Request (PR)** from your feature branch into the `development` b
 
 - Place **synthetic data outputs** under:
   ```
-  synthetic/<dataset>/<model_name>/
+  benchmarks/synthetic/<dataset>/<model_name>/
   ```
 - Evaluation results go into:
   ```
-  Results/<dataset>/<model_name>_tstr.csv
+  benchmarks/results/<dataset>/<model_name>/
   ```
 
 ---

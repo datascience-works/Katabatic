@@ -1,7 +1,7 @@
 import traceback
 import pandas as pd
 
-from katabatic.evaluate.report.composite import EvaluationReport, DEFAULT_WEIGHTS
+from katabatic.evaluate.report.composite import EvaluationReport
 from katabatic.evaluate.fidelity import FidelityEvaluation
 from katabatic.evaluate.utility import UtilityEvaluation
 from katabatic.evaluate.diversity import DiversityEvaluation

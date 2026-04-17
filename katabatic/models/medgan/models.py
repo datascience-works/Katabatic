@@ -388,5 +388,5 @@ class MEDGAN(Model):
         return synthetic_data
 
     def evaluate(self):
-        """Evaluate is handled by the pipeline's TSTREvaluation."""
+        """Evaluate is handled by the SyntheticEvaluationPipeline."""
         pass

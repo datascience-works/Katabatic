@@ -11,7 +11,7 @@ Katabatic is a library of tabular data generative models with a 6-dimension eval
 ```mermaid
 flowchart TD
     %% ── Data Preparation ──────────────────────────────────────
-    A[(Raw Dataset\nCSV)] -->|encode_preprocess| B[Preprocessed Data\nlabel-encoded, cols renamed 0..N]
+    A[(Raw Dataset\nCSV)] -->|encode_preprocess| B[Preprocessed Data\nlabel-encoded, original col names preserved]
     B -->|split_dataset\nstratified 80/20| C[Train Split] & D[Test Split]
 
     %% ── Model Training ────────────────────────────────────────
@@ -60,8 +60,8 @@ flowchart TD
     W --> OUT2[CSV Summary]
     W --> OUT3[Console Output]
 
-    %% ── Runner helper (test-runs only) ───────────────────────
-    subgraph runner [test-runs/runner.py]
+    %% ── Runner helper (benchmarks only) ───────────────────────
+    subgraph runner [benchmarks/runner.py]
         RC[RunConfig\ndataset · model · columns · constraints]
         RC --> PPS[preprocess_and_split]
         RC --> SS[save_synthetic]
@@ -112,7 +112,6 @@ classDiagram
     Evaluation <|-- StabilityEvaluation
 
     Pipeline <|-- SyntheticEvaluationPipeline
-    Pipeline <|-- TrainTestSplitPipeline
 
     SyntheticEvaluationPipeline --> Evaluation : orchestrates
     SyntheticEvaluationPipeline --> EvaluationReport : returns
@@ -163,20 +162,20 @@ katabatic/
 │
 ├── pipeline/
 │   ├── base_pipeline.py       # Abstract Pipeline base class
-│   ├── evaluation_pipeline.py # SyntheticEvaluationPipeline (main)
-│   └── train_test_split/      # Legacy pipeline (deprecated)
+│   └── evaluation_pipeline.py # SyntheticEvaluationPipeline (main)
 │
 └── utils/
     ├── column_types.py        # Categorical/continuous auto-detection
-    └── split_dataset.py       # Stratified train/test split
+    ├── split_dataset.py       # Stratified train/test split
+    └── preprocess.py          # encode_preprocess + data cleaning
 
-utils.py                       # encode_preprocess + data cleaning
-test-runs/
+benchmarks/
 ├── runner.py                  # RunConfig + shared pipeline helpers
-├── run_ctgan_adult.py
-├── run_codi_adult.py
-├── run_tabddpm_adult.py
-└── run_ctgan_bank_marketing.py
+└── examples/                  # reference run scripts — copy and adapt for your model
+    ├── run_ctgan_adult.py
+    ├── run_codi_adult.py
+    ├── run_tabddpm_adult.py
+    └── run_ctgan_bank_marketing.py
 datasets/
 ├── adult.csv
 └── bank_marketing.csv

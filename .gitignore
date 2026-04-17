@@ -16,11 +16,11 @@ encoded_data/
 # --- Datasets ---
 datasets/*.csv
 
-# --- Test-run generated artifacts ---
-test-runs/processed/
-test-runs/splits/
-test-runs/synthetic/
-test-runs/results/
+# --- Benchmark generated artifacts ---
+benchmarks/processed/
+benchmarks/splits/
+benchmarks/synthetic/
+benchmarks/results/
 
 # --- Internal documents ---
 reference-documents/

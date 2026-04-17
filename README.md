@@ -8,12 +8,12 @@ A comprehensive framework for synthetic tabular data generation and evaluation. 
 
 ## 🚀 Features
 
-- **Multiple Generative Models**: Support for GANBLR (GAN-based Bayesian Learning Rules) and GReaT (transformer-based generation)
-- **Automated Pipeline**: End-to-end training, generation, and evaluation workflows
-- **TSTR Evaluation**: Train on Synthetic, Test on Real data evaluation methodology
-- **Data Preprocessing**: Automated discretization and encoding for tabular data
-- **Cross-Validation Support**: Robust model validation capabilities
-- **Extensible Architecture**: Easy to add new models and evaluation metrics
+- **8 Generative Models**: CTGAN, CoDi, TabDDPM, GANBLR, GReaT, Tabsyn, MedGAN, PATEGAN
+- **6-Dimension Evaluation**: Fidelity, Utility, Diversity, Privacy, Consistency, Stability — combined into a single weighted composite score
+- **Automated Benchmark Runner**: End-to-end pipeline — preprocess → split → train → generate → evaluate → save report
+- **Data Preprocessing**: Automated encoding for mixed-type tabular data (numerical + categorical)
+- **Model Registry**: Dynamic model loading with optional per-model extra dependencies
+- **Extensible Architecture**: Easy to add new models via `python scaffold.py init-model <name>`
 
 ## 📋 Table of Contents
 
@@ -189,37 +189,40 @@ print('Katabatic installation successful!')
 
 ## 🚀 Quick Start
 
-### Run an existing test script
+### Run an existing example script
 
-Ready-to-run scripts are available in `test-runs/` for two datasets:
+Ready-to-run scripts are available in `benchmarks/examples/` for two datasets:
 
 | Script | Model | Dataset |
 |---|---|---|
-| `test-runs/run_ctgan_adult.py` | CTGAN | Adult Income |
-| `test-runs/run_codi_adult.py` | CoDi | Adult Income |
-| `test-runs/run_tabddpm_adult.py` | TabDDPM | Adult Income |
-| `test-runs/run_ctgan_bank_marketing.py` | CTGAN | Bank Marketing |
+| `benchmarks/examples/run_ctgan_adult.py` | CTGAN | Adult Income |
+| `benchmarks/examples/run_codi_adult.py` | CoDi | Adult Income |
+| `benchmarks/examples/run_tabddpm_adult.py` | TabDDPM | Adult Income |
+| `benchmarks/examples/run_ctgan_bank_marketing.py` | CTGAN | Bank Marketing |
 
 Each script runs the full pipeline: preprocess → split → train → generate → evaluate → save report.
 
 ```bash
 # place your dataset CSV in datasets/ then run
-python test-runs/run_ctgan_adult.py
+python benchmarks/examples/run_ctgan_adult.py
 ```
 
 ### Add a new dataset and model
 
 ```python
-from test_runs.runner import RunConfig, preprocess_and_split, save_synthetic, evaluate
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))  # add benchmarks/ to path
+
+from runner import RunConfig, preprocess_and_split, save_synthetic, evaluate
 from katabatic.models.ctgan.models import CTGANModel
 
 config = RunConfig(
     dataset_name     = "your_dataset",        # matches datasets/your_dataset.csv
     model_name       = "ctgan",
-    categorical_cols = ['1', '3'],            # column indices after preprocessing
-    continuous_cols  = ['0', '2'],
-    target_col_raw   = "target",              # original target column name
-    constraints      = {'0': (0, 100)},       # optional logical bounds per column
+    categorical_cols = ['workclass', 'education'],   # actual column names
+    continuous_cols  = ['age', 'fnlwgt'],
+    target_col_raw   = "income",              # original target column name
+    constraints      = {'age': (17, 90)},     # optional logical bounds per column
 )
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)
@@ -237,17 +240,15 @@ evaluate(model, config, train_df, synthetic_df, target_col, paths)
 
 ### Data Preprocessing
 
-Katabatic requires discrete/categorical data. Use the built-in preprocessing utilities:
+Katabatic provides a preprocessing utility that cleans and encodes a raw CSV while preserving original column names. Numerical columns are NaN-filled with their median; categorical columns are label-encoded. A companion `_mappings.json` is saved so synthetic outputs can be decoded back to readable string labels:
 
 ```python
-from utils import discretize_preprocess
+from katabatic.utils.preprocess import encode_preprocess
 
-# Discretize numerical features and encode categorical ones
-discretize_preprocess(
-    file_path="raw_data/your_dataset.csv",
-    output_path="discretized_data/your_dataset.csv",
-    bins=10,  # Number of bins for numerical discretization
-    strategy='uniform'  # 'uniform', 'quantile', or 'kmeans'
+encode_preprocess(
+    file_path="datasets/your_dataset.csv",
+    output_path="benchmarks/processed/your_dataset_processed.csv",
+    target_col="income",   # optional — moved to last column if provided
 )
 ```
 
@@ -298,75 +299,87 @@ synthetic_data = model.sample(
 
 ### Pipeline Usage
 
-Katabatic provides automated pipelines for complete workflows:
+Evaluate any synthetic dataset with the 6-dimension evaluation pipeline:
 
 ```python
-from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
-from katabatic.models.ganblr.models import GANBLR
+from katabatic.pipeline.evaluation_pipeline import SyntheticEvaluationPipeline
 
-# Create pipeline with GANBLR
-pipeline = TrainTestSplitPipeline(model=GANBLR)
-
-# Run complete workflow: split data -> train model -> evaluate
-results = pipeline.run(
-    input_csv='path/to/data.csv',
-    output_dir='output/directory',
-    synthetic_dir='synthetic/data/location',
-    real_test_dir='test/data/location'
+pipeline = SyntheticEvaluationPipeline(
+    categorical_cols=['workclass', 'education', 'occupation'],
+    continuous_cols=['age', 'fnlwgt', 'capital-gain'],
 )
+
+report = pipeline.run(
+    real_data=train_df,
+    synthetic_data=synthetic_df,
+    target_col='income',
+    constraints={'age': (17, None)},    # optional logical bounds — (min, max)
+    output_dir='benchmarks/results/my_run/',
+)
+
+print(report.composite_score)          # weighted composite 0–1
+print(report.dimension_scores)         # per-dimension breakdown
 ```
 
 ## 🤖 Models
 
-### GANBLR (GAN-based Bayesian Learning Rules)
+| Model | Extra | Type | Best for |
+|---|---|---|---|
+| **CTGAN** | `ctgan` | GAN | Mixed tabular data |
+| **CoDi** | `codi` | Diffusion + GAN | Mixed tabular data |
+| **TabDDPM** | `tabddpm` | Diffusion | Numerical + categorical |
+| **GANBLR** | `ganblr` | GAN + Bayesian network | Discrete/categorical data |
+| **GReaT** | `great` | Transformer (LLM) | Mixed data types |
+| **Tabsyn** | `tabsyn` | VAE + Diffusion | High-fidelity mixed data |
+| **MedGAN** | `medgan` | GAN | Medical / binary data |
+| **PATEGAN** | `pategan` | GAN + PATE | Privacy-preserving synthesis |
 
-- **Type**: GAN-based generative model
-- **Best for**: Discrete/categorical tabular data
-- **Features**:
-  - k-dependence Bayesian Networks
-  - Adversarial training
-  - High-quality discrete data generation
+Install extras as needed:
 
-### GReaT (Generation of Realistic Tabular Data)
+```bash
+poetry install -E ctgan       # CTGAN, CoDi, MedGAN
+poetry install -E tabddpm     # TabDDPM
+poetry install -E ganblr      # GANBLR
+poetry install -E great       # GReaT
+poetry install -E all         # all models
+```
 
-- **Type**: Transformer-based generative model
-- **Best for**: Mixed data types (numerical + categorical)
-- **Features**:
-  - Pre-trained language model fine-tuning
-  - Conditional generation
-  - Data imputation capabilities
+### Adding a new model
+
+Use the scaffold tool to generate a boilerplate model stub:
+
+```bash
+python scaffold.py init-model mymodel dep1 dep2
+```
+
+This creates `katabatic/models/mymodel/` with the standard `Model` interface pre-filled.
 
 ## 📊 Evaluation
 
-### TSTR (Train on Synthetic, Test on Real)
+Katabatic evaluates synthetic data across 6 dimensions, each producing a score between 0 and 1. They are combined into a single **composite score** using fixed weights:
 
-Katabatic includes comprehensive evaluation using the TSTR methodology:
+| Dimension | Weight | What it measures |
+|---|---|---|
+| **Utility** | 40% | TSTR vs TRTR accuracy gap — how useful the synthetic data is for ML |
+| **Fidelity** | 30% | Statistical similarity to real data (distributions, correlations) |
+| **Privacy** | 15% | Nearest-neighbour distance ratio — protection against re-identification |
+| **Diversity** | 10% | Coverage of the feature space (bin coverage + Gower distance spread) |
+| **Consistency** | 3% | Label coherence + constraint satisfaction |
+| **Stability** | 2% | Reproducibility of the model across different random seeds |
 
 ```python
-from katabatic.evaluate.tstr.evaluation import TSTREvaluation
+from katabatic.pipeline.evaluation_pipeline import SyntheticEvaluationPipeline
 
-# Initialize evaluator
-evaluator = TSTREvaluation(
-    synthetic_dir="path/to/synthetic/data",
-    real_test_dir="path/to/real/test/data"
+pipeline = SyntheticEvaluationPipeline(
+    dimensions=['fidelity', 'utility', 'diversity', 'privacy', 'consistency'],
+    categorical_cols=['workclass', 'education'],
+    continuous_cols=['age', 'fnlwgt', 'capital-gain'],
 )
-
-# Run evaluation with multiple ML models
-results = evaluator.evaluate()
+report = pipeline.run(real_data=train_df, synthetic_data=synth_df, target_col='income')
+print(f"Composite score: {report.composite_score:.4f}")
 ```
 
-**Supported Evaluation Models:**
-
-- Logistic Regression
-- Multi-layer Perceptron (MLP)
-- Random Forest
-- XGBoost
-
-**Metrics:**
-
-- Accuracy
-- F1 Score
-- AUC-ROC (for binary classification)
+Reports are saved as JSON + CSV to the `output_dir` you specify.
 
 ## 🛠 Development
 
@@ -410,20 +423,46 @@ poetry run mypy katabatic/
 ```
 katabatic/
 ├── katabatic/                    # Main package
-│   ├── models/                   # Generative models
-│   │   ├── ganblr/              # GANBLR implementation
-│   │   └── great/               # GReaT implementation
-│   ├── pipeline/                # Training pipelines
-│   ├── evaluate/                # Evaluation methods
-│   └── utils/                   # Utility functions
-├── raw_data/                    # Raw datasets
-├── sample_data/                 # Processed sample data
-├── synthetic/                   # Generated synthetic data
-├── Results/                     # Evaluation results
-├── example.ipynb               # Usage examples
-├── utils.py                    # Data preprocessing utilities
-├── pyproject.toml              # Project configuration
-└── README.md                   # This file
+│   ├── models/                   # Generative models (8 implementations)
+│   │   ├── base_model.py        # Abstract Model interface
+│   │   ├── registry.py          # Dynamic model loader
+│   │   ├── ctgan/
+│   │   ├── codi/
+│   │   ├── tabddpm/
+│   │   ├── ganblr/
+│   │   ├── great/
+│   │   ├── tabsyn/
+│   │   ├── medgan/
+│   │   └── pategan/
+│   ├── pipeline/
+│   │   └── evaluation_pipeline.py   # SyntheticEvaluationPipeline
+│   ├── evaluate/                # One subpackage per dimension
+│   │   ├── fidelity/
+│   │   ├── utility/
+│   │   ├── diversity/
+│   │   ├── privacy/
+│   │   ├── consistency/
+│   │   ├── stability/
+│   │   └── report/              # EvaluationReport + composite score
+│   └── utils/
+│       ├── preprocess.py        # encode_preprocess + mappings
+│       ├── split_dataset.py     # stratified train/test split
+│       └── column_types.py      # categorical/continuous auto-detection
+├── benchmarks/
+│   ├── runner.py                # RunConfig + pipeline orchestration helpers
+│   ├── examples/                # Ready-to-run benchmark scripts
+│   │   ├── run_ctgan_adult.py
+│   │   ├── run_codi_adult.py
+│   │   ├── run_tabddpm_adult.py
+│   │   └── run_ctgan_bank_marketing.py
+│   ├── processed/               # Preprocessed CSVs (git-ignored)
+│   ├── splits/                  # Train/test splits (git-ignored)
+│   ├── synthetic/               # Generated synthetic data (git-ignored)
+│   └── results/                 # Evaluation reports (git-ignored)
+├── datasets/                    # Raw dataset CSVs (git-ignored)
+├── scaffold.py                  # CLI — scaffold new model stubs
+├── pyproject.toml
+└── README.md
 ```
 
 ### Building from Source

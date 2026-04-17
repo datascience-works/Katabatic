@@ -9,6 +9,18 @@ class ModelRegistry:
     """Registry for managing available models and their dependencies."""
 
     _models: Dict[str, Dict] = {
+        'codi': {
+            'module': 'katabatic.models.codi.models',
+            'class': 'CODI',
+            'dependencies': ['torch', 'sklearn'],
+            'extra': 'codi'
+        },
+        'medgan': {
+            'module': 'katabatic.models.medgan.models',
+            'class': 'MEDGAN',
+            'dependencies': ['torch'],
+            'extra': 'medgan'
+        },
         'ganblr': {
             'module': 'katabatic.models.ganblr.models',
             'class': 'GANBLR',
@@ -45,7 +57,7 @@ class ModelRegistry:
             'dependencies': ['torch', 'sklearn'],
             'extra': 'ctgan'
         }
-    }
+}
 
     @classmethod
     def get_available_models(cls) -> list[str]:

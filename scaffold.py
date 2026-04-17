@@ -1,10 +1,9 @@
 import sys
-from katabatic.cli import init_model
 
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python main.py <command> [args...]")
+        print("Usage: python scaffold.py <command> [args...]")
         sys.exit(1)
 
     command = sys.argv[1]
@@ -12,7 +11,7 @@ def main():
     if command == "init-model":
         if len(sys.argv) < 3:
             print(
-                "Usage: python main.py init-model <model_name> [dependency1 dependency2 ...]")
+                "Usage: python scaffold.py init-model <model_name> [dependency1 dependency2 ...]")
             sys.exit(1)
         model_name = sys.argv[2]
         dependencies = sys.argv[3:] if len(sys.argv) > 3 else None

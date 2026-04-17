@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 import pandas as pd
@@ -8,7 +9,7 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
-from utils import encode_preprocess
+from katabatic.utils.preprocess import encode_preprocess
 from katabatic.utils.split_dataset import split_dataset
 from katabatic.pipeline.evaluation_pipeline import SyntheticEvaluationPipeline
 
@@ -30,13 +31,13 @@ class RunConfig:
 
 
 def build_paths(config: RunConfig) -> dict:
-    test_runs_dir = os.path.join(REPO_ROOT, "test-runs")
+    benchmarks_dir = os.path.join(REPO_ROOT, "benchmarks")
     return {
         "raw_data":       os.path.join(REPO_ROOT, "datasets", f"{config.dataset_name}.csv"),
-        "processed_data": os.path.join(test_runs_dir, "processed", f"{config.dataset_name}_processed.csv"),
-        "split_dir":      os.path.join(test_runs_dir, "splits", config.dataset_name),
-        "synthetic_dir":  os.path.join(test_runs_dir, "synthetic", config.dataset_name, config.model_name),
-        "results_dir":    os.path.join(test_runs_dir, "results", config.dataset_name, config.model_name),
+        "processed_data": os.path.join(benchmarks_dir, "processed", f"{config.dataset_name}_processed.csv"),
+        "split_dir":      os.path.join(benchmarks_dir, "splits", config.dataset_name),
+        "synthetic_dir":  os.path.join(benchmarks_dir, "synthetic", config.dataset_name, config.model_name),
+        "results_dir":    os.path.join(benchmarks_dir, "results", config.dataset_name, config.model_name),
     }
 
 
@@ -54,14 +55,18 @@ def preprocess_and_split(config: RunConfig):
     print("STEP 1 — Preprocess")
     print("=" * 60)
     os.makedirs(os.path.dirname(paths["processed_data"]), exist_ok=True)
-    encode_preprocess(paths["raw_data"], paths["processed_data"], config.target_col_raw)
+    mappings_path = paths["processed_data"].replace(".csv", "_mappings.json")
+    if os.path.exists(paths["processed_data"]) and os.path.exists(mappings_path):
+        print("Processed data and mappings already exist, skipping preprocessing.")
+    else:
+        encode_preprocess(paths["raw_data"], paths["processed_data"], config.target_col_raw)
 
     processed_df = pd.read_csv(paths["processed_data"])
     target_col = processed_df.columns[-1]
     n_features = processed_df.shape[1] - 1
     print(f"\nProcessed shape : {processed_df.shape}")
-    print(f"Feature columns : {n_features}  (named 0 .. {n_features - 1})")
-    print(f"Target column   : '{config.target_col_raw}' -> renamed to '{target_col}'")
+    print(f"Feature columns : {n_features}")
+    print(f"Target column   : '{target_col}'")
     print(f"Target classes  : {sorted(processed_df[target_col].unique())}")
 
     print("\n" + "=" * 60)
@@ -89,7 +94,7 @@ def preprocess_and_split(config: RunConfig):
 
 
 def save_synthetic(synthetic_df: pd.DataFrame, train_df: pd.DataFrame, paths: dict) -> pd.DataFrame:
-    """Align columns to training data and save synthetic CSV."""
+    """Align columns to training data, save synthetic CSV, and save a human-readable decoded version."""
     shared_cols = [c for c in train_df.columns if c in synthetic_df.columns]
     synthetic_df = synthetic_df[shared_cols]
     os.makedirs(paths["synthetic_dir"], exist_ok=True)
@@ -99,6 +104,25 @@ def save_synthetic(synthetic_df: pd.DataFrame, train_df: pd.DataFrame, paths: di
     print(f"Saved to  : {synthetic_path}")
     print(f"Shape     : {synthetic_df.shape}")
     print(f"\nSample (first 3 rows):\n{synthetic_df.head(3).to_string()}")
+
+    # Decode to human-readable form using mappings saved by encode_preprocess
+    mappings_path = paths["processed_data"].replace(".csv", "_mappings.json")
+    if os.path.exists(mappings_path):
+        with open(mappings_path) as f:
+            mappings = json.load(f)
+
+        readable = synthetic_df.copy()
+
+        for col, encoding in mappings["categorical_encodings"].items():
+            if col in readable.columns:
+                readable[col] = readable[col].astype(int).astype(str).map(encoding)
+
+
+        readable_path = os.path.join(paths["synthetic_dir"], "synthetic_readable.csv")
+        readable.to_csv(readable_path, index=False)
+        print(f"\nReadable version saved to: {readable_path}")
+        print(f"\nReadable sample (first 3 rows):\n{readable.head(3).to_string()}")
+
     return synthetic_df
 
 
