@@ -18,7 +18,7 @@ def get_column_types(df: pd.DataFrame, exclude_last: bool = True):
     Parameters
     ----------
     df : pd.DataFrame
-        DataFrame to inspect. Pass the raw DataFrame before encode_preprocess
+        DataFrame to inspect. Pass the raw DataFrame before preprocess_dataset
         so that original string/numeric dtypes are preserved.
     exclude_last : bool
         If True (default), the last column is treated as the target and excluded
@@ -27,10 +27,9 @@ def get_column_types(df: pd.DataFrame, exclude_last: bool = True):
     Returns
     -------
     categorical_cols : list[str]
-        Column indices (as strings) matching the renamed 0..N-1 feature columns
-        produced by encode_preprocess.
+        Original column names whose dtype is non-numeric.
     continuous_cols : list[str]
-        Column indices (as strings) for numeric columns.
+        Original column names whose dtype is numeric.
 
     Warnings
     --------

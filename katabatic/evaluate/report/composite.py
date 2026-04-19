@@ -14,12 +14,12 @@ SCORE_KEYS = {
 }
 
 DEFAULT_WEIGHTS = {
-    'utility':     0.40,
-    'fidelity':    0.30,
+    'utility':     0.35,
+    'fidelity':    0.25,
     'privacy':     0.15,
     'diversity':   0.10,
-    'consistency': 0.03,
-    'stability':   0.02,
+    'consistency': 0.10,
+    'stability':   0.05,
 }
 
 
@@ -84,12 +84,16 @@ class EvaluationReport:
         self._save_csv(output_dir, prefix)
 
     def _save_json(self, output_dir: str, prefix: str):
+        active_weights = {d: self.weights.get(d, 0.0) for d in self.dimension_scores}
+        total_weight = sum(active_weights.values())
+        normalised_weights = {
+            d: round(w / total_weight, 4) if total_weight else 0.0
+            for d, w in active_weights.items()
+        }
         payload = {
             'composite_score': self.composite_score,
             'dimension_scores': self.dimension_scores,
-            'weights_used': {
-                d: self.weights.get(d, 0.0) for d in self.dimension_scores
-            },
+            'weights_used': normalised_weights,
             'full_results': self._serialisable(self.dimension_results),
         }
         path = os.path.join(output_dir, f'{prefix}evaluation_report.json')

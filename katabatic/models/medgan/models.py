@@ -387,6 +387,3 @@ class MEDGAN(Model):
 
         return synthetic_data
 
-    def evaluate(self):
-        """Evaluate is handled by the SyntheticEvaluationPipeline."""
-        pass

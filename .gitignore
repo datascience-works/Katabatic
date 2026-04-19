@@ -4,7 +4,7 @@ __pycache__/
 .ipynb_checkpoints/
 
 # --- Outputs / generated artifacts ---
-Results/
+/Results/
 outputs/
 trainer_great/
 synthetic/
@@ -20,7 +20,8 @@ datasets/*.csv
 benchmarks/processed/
 benchmarks/splits/
 benchmarks/synthetic/
-benchmarks/results/
+benchmarks/results/*
+!benchmarks/results/*.md
 
 # --- Internal documents ---
 reference-documents/

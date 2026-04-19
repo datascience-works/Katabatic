@@ -150,16 +150,20 @@ class CTGANModel(BaseModel):
         continuous_cols: Optional[List[str]] = None,
         **kwargs,
     ) -> "CTGANModel":
-        # Load data
-        train_full = os.path.join(data_dir, "train_full.csv")
+        # Load data — prefer train_sample.csv (stratified sample) when available,
+        # fall back to train_full.csv, then x_train.csv / y_train.csv.
+        train_sample = os.path.join(data_dir, "train_sample.csv")
+        train_full   = os.path.join(data_dir, "train_full.csv")
         x_path = os.path.join(data_dir, "x_train.csv")
         y_path = os.path.join(data_dir, "y_train.csv")
-        if os.path.exists(train_full):
+        if os.path.exists(train_sample):
+            df = pd.read_csv(train_sample)
+        elif os.path.exists(train_full):
             df = pd.read_csv(train_full)
         else:
             if not (os.path.exists(x_path) and os.path.exists(y_path)):
                 raise FileNotFoundError(
-                    f"Could not find training data in {data_dir}. Expected train_full.csv or x_train.csv/y_train.csv.")
+                    f"Could not find training data in {data_dir}. Expected train_sample.csv, train_full.csv or x_train.csv/y_train.csv.")
             X = pd.read_csv(x_path)
             y = pd.read_csv(y_path)
             if y.shape[1] != 1:
@@ -345,11 +349,6 @@ class CTGANModel(BaseModel):
         print(
             f"[CTGAN] Synthetic data saved:\n  X -> {x_path_out}\n  y -> {y_path_out}")
         return self
-
-    def evaluate(self, *args, **kwargs) -> float:
-        if not self.is_fitted:
-            raise RuntimeError("Call train() before evaluate().")
-        return 0.0
 
     def sample(
         self,

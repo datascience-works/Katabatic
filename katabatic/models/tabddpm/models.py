@@ -486,61 +486,6 @@ class Tabddpm(Model):
 
     # -------------------------------- evaluation ----------------------------------
 
-    def evaluate(
-        self,
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
-        *,
-        batches: Optional[int] = None,
-    ) -> float:
-        """Return a single scalar score (higher is better).
-
-        By default, averages the negative diffusion training loss over a small
-        number of batches (uses the cached train loader if X/y are not given).
-
-        Args:
-            X, y: optional evaluation data. If omitted, uses a few train batches.
-            batches: number of mini-batches to average (defaults to config.eval_batches)
-
-        Returns:
-            float score (higher is better).
-        """
-        if not self.is_fitted or self._diffusion is None:
-            raise RuntimeError("Call train() before evaluate().")
-
-        self._diffusion.eval()
-
-        if X is None or y is None:
-            if self._train_loader_infinite is None:
-                raise ValueError(
-                    "No cached loader; provide X and y to evaluate().")
-            loader = self._train_loader_infinite
-        else:
-            # build a quick loader from provided X/y
-            X_np = self._ensure_2d(self._as_numpy(X)).astype(np.float32)
-            y_np = self._as_numpy(y).ravel()
-            if self._is_classification and self._y_le is not None and not np.issubdtype(y_np.dtype, np.integer):
-                y_np = self._y_le.transform(y_np)
-            X_tensor = torch.as_tensor(X_np, dtype=torch.float32)
-            y_tensor = torch.as_tensor(
-                y_np, dtype=torch.long if self._is_classification else torch.float32)
-            dl = DataLoader(TensorDataset(X_tensor, y_tensor), batch_size=int(
-                self._cfg["batch_size"]), shuffle=False, num_workers=0)
-            loader = self._infinite_batches(dl)
-
-        n_batches = int(self._cfg["eval_batches"]
-                        if batches is None else batches)
-        losses: List[float] = []
-        with torch.no_grad():
-            for _ in range(n_batches):
-                xb, out = next(loader)
-                xb = xb.to(self.device, non_blocking=True)
-                out = {"y": out["y"].to(self.device, non_blocking=True)}
-                lm, lg = self._diffusion.mixed_loss(xb, out)
-                losses.append(float((lm + lg).item()))
-        # We return negative loss as a "score" so higher is better.
-        return -float(np.mean(losses))
-
     # ---------------------------------- sampling ----------------------------------
 
     def sample(

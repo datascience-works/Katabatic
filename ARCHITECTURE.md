@@ -11,7 +11,7 @@ Katabatic is a library of tabular data generative models with a 6-dimension eval
 ```mermaid
 flowchart TD
     %% ── Data Preparation ──────────────────────────────────────
-    A[(Raw Dataset\nCSV)] -->|encode_preprocess| B[Preprocessed Data\nlabel-encoded, original col names preserved]
+    A[(Raw Dataset\nCSV)] -->|encode_preprocess| B[Preprocessed Data\ncleaned, original col names + types preserved]
     B -->|split_dataset\nstratified 80/20| C[Train Split] & D[Test Split]
 
     %% ── Model Training ────────────────────────────────────────
@@ -35,7 +35,7 @@ flowchart TD
     E -->|model.sample| F[(Synthetic\nDataFrame)]
 
     %% ── Evaluation Pipeline ───────────────────────────────────
-    C & F -->|real + synthetic| G
+    C & D & F -->|train + test + synthetic| G
 
     subgraph pipeline [katabatic/pipeline/evaluation_pipeline.py]
         G[SyntheticEvaluationPipeline]
@@ -53,7 +53,7 @@ flowchart TD
 
     subgraph report [katabatic/evaluate/report/composite.py]
         R[EvaluationReport]
-        R --> W["Weighted Composite Score [0–1]\nUtility 40% · Fidelity 30% · Privacy 15%\nDiversity 10% · Consistency 3% · Stability 2%"]
+        R --> W["Weighted Composite Score [0–1]\nUtility 35% · Fidelity 25% · Privacy 15%\nDiversity 10% · Consistency 10% · Stability 5%"]
     end
 
     W --> OUT1[JSON Report]
@@ -123,12 +123,12 @@ classDiagram
 
 ```mermaid
 flowchart LR
-    A[raw CSV] --> B[encode_preprocess]
-    B --> C[train_full.csv\nx_train.csv · y_train.csv]
+    A[raw CSV] --> B[encode_preprocess\ncleaned CSV]
+    B --> C[train_full.csv] & T[test_full.csv]
     C --> D[model.train]
     D --> E[model.sample]
     E --> F[synthetic DataFrame]
-    C & F --> G[SyntheticEvaluationPipeline]
+    C & T & F --> G[SyntheticEvaluationPipeline]
     G --> H[EvaluationReport\ncomposite_score\ndimension_scores]
 ```
 

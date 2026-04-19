@@ -93,6 +93,7 @@ class SyntheticEvaluationPipeline:
         real_data: pd.DataFrame,
         synthetic_data: pd.DataFrame,
         target_col: str = None,
+        test_data: pd.DataFrame = None,
         constraints: dict = None,
         model=None,
         output_dir: str = None,
@@ -108,6 +109,9 @@ class SyntheticEvaluationPipeline:
             The synthetic dataset to evaluate.
         target_col : str, optional
             Target column name. Required for Utility and Consistency dimensions.
+        test_data : pd.DataFrame, optional
+            Held-out test split. When provided, both TSTR and TRTR in the
+            Utility dimension test on this set for a fair comparison.
         constraints : dict[str, tuple], optional
             Per-column bounds for Consistency constraint checking.
             Format: {'col': (min_val, max_val)}. Use None for unbounded side.
@@ -142,14 +146,15 @@ class SyntheticEvaluationPipeline:
         for dim in self.dimensions:
             print(f"\nRunning {dim} evaluation...")
             try:
-                # Fidelity, diversity and privacy operate on features only
-                # (no target column) — utility and consistency need the full data
-                if dim in ('fidelity', 'diversity', 'privacy'):
+                # These dimensions operate on features only (no target column).
+                # Stability generates its own synthetic data internally so it
+                # also receives real_features — the target is not needed.
+                if dim in ('fidelity', 'diversity', 'privacy', 'stability'):
                     r, s = real_features, synth_features
                 else:
                     r, s = real_data, synthetic_data
 
-                evaluator = self._build_evaluator(dim, r, s, target_col, constraints, model)
+                evaluator = self._build_evaluator(dim, r, s, target_col, constraints, model, test_data)
                 dimension_results[dim] = evaluator.evaluate()
             except Exception as e:
                 print(f"  [ERROR] {dim} evaluation failed: {e}")
@@ -168,7 +173,7 @@ class SyntheticEvaluationPipeline:
         return report
 
 
-    def _build_evaluator(self, dim, real_data, synthetic_data, target_col, constraints, model=None):
+    def _build_evaluator(self, dim, real_data, synthetic_data, target_col, constraints, model=None, test_data=None):
         shared = dict(real_data=real_data, synthetic_data=synthetic_data)
 
         if dim == 'fidelity':
@@ -184,6 +189,7 @@ class SyntheticEvaluationPipeline:
             return UtilityEvaluation(
                 **shared,
                 target_col=target_col,
+                test_data=test_data,
                 n_folds=self.n_folds,
             )
 

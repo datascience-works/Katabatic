@@ -6,7 +6,7 @@ import random
 from sklearn.model_selection import train_test_split
 
 
-def split_dataset(input_csv, output_dir, test_size=0.2, seed=42, *args, **kwargs):
+def split_dataset(input_csv, output_dir, test_size=0.2, seed=42):
     # Set seed globally
     np.random.seed(seed)
     random.seed(seed)

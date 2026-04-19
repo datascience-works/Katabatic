@@ -33,6 +33,6 @@ print("\n" + "=" * 60)
 print("STEP 4 — Generate synthetic data")
 print("=" * 60)
 synthetic_df = model.sample(len(train_df))
-synthetic_df = save_synthetic(synthetic_df, train_df, paths)
+synthetic_df = save_synthetic(synthetic_df, train_df, paths, categorical_cols=config.categorical_cols)
 
-evaluate(model, config, train_df, synthetic_df, target_col, paths)
+evaluate(model, config, train_df, synthetic_df, target_col, paths, test_df)

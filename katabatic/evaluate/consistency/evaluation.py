@@ -1,10 +1,7 @@
-import os
-import csv
-
 import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import StratifiedKFold, cross_val_score
 from sklearn.preprocessing import LabelEncoder
 
@@ -63,9 +60,8 @@ class ConsistencyEvaluation(Evaluation):
         target_col: str,
         constraints: dict = None,
         n_folds: int = 5,
-        **kwargs,
     ):
-        super().__init__(real_data, synthetic_data, **kwargs)
+        super().__init__(real_data, synthetic_data)
         self.target_col = target_col
         self.constraints = constraints or {}
         self.n_folds = n_folds
@@ -76,8 +72,11 @@ class ConsistencyEvaluation(Evaluation):
         constraint_results = self._compute_constraint_violations()
         spearman_score = self._compute_feature_importance_spearman()
 
-        # Component scores in [0, 1]
-        disc_score = round(max(0.0, 1.0 - max(0.0, discriminator_acc - 0.5) * 2), 4)
+        # Component scores in [0, 1].
+        # abs() is required: accuracy below 0.5 means the RF distinguishes real from
+        # synthetic but with inverted labels — still a detectable model. Without abs,
+        # acc=0.1 gives a perfect 1.0 instead of the correct 0.2.
+        disc_score = round(max(0.0, 1.0 - abs(discriminator_acc - 0.5) * 2), 4)
         constraint_score = round(1.0 - constraint_results['overall_violation_rate'], 4) if constraint_results else None
         spearman_val = spearman_score if spearman_score is not None else None
 
@@ -96,40 +95,25 @@ class ConsistencyEvaluation(Evaluation):
         self._print_summary(results)
         return results
 
-    def save_results(self, results: dict, output_dir: str):
-        os.makedirs(output_dir, exist_ok=True)
-        path = os.path.join(output_dir, 'consistency_evaluation.csv')
-
-        with open(path, mode='w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(['Metric', 'Detail', 'Value'])
-            writer.writerow(['Discriminator Accuracy', '', results['discriminator_accuracy']])
-            writer.writerow(['Discriminator Score', '', results['discriminator_score']])
-            if results['constraint_violations']:
-                for col, rate in results['constraint_violations'].items():
-                    writer.writerow(['Constraint Violation Rate', col, rate])
-            writer.writerow(['Feature Importance Spearman', '', results['feature_importance_spearman']])
-            writer.writerow([])
-            writer.writerow(['consistency_score', '', results['consistency_score']])
-
-        print(f"Consistency results saved to: {path}")
-
-
     def _compute_discriminator(self) -> float:
         """
         Combine real (1) and synthetic (0) rows, run k-fold CV with RF.
         Returns mean accuracy across folds.
         """
-        real_enc = self._encode_dataframe(self.real_data.copy())
-        synth_enc = self._encode_dataframe(self.synthetic_data.copy())
+        real_enc  = self._encode_dataframe(self.real_data.copy(),  reference_df=self.synthetic_data)
+        synth_enc = self._encode_dataframe(self.synthetic_data.copy(), reference_df=self.real_data)
 
         real_enc['_label'] = 1
         synth_enc['_label'] = 0
 
         combined = pd.concat([real_enc, synth_enc], ignore_index=True)
 
-        # Align columns use only shared feature columns
-        feature_cols = [c for c in real_enc.columns if c != '_label']
+        # Feature columns only — exclude the label marker AND the target column.
+        # Including the target lets the discriminator trivially distinguish real from
+        # synthetic via target-distribution differences, which are already captured by
+        # the Utility dimension and would unfairly penalise Consistency.
+        feature_cols = [c for c in real_enc.columns
+                        if c != '_label' and c != self.target_col]
         X = combined[feature_cols].values
         y = combined['_label'].values
 
@@ -179,20 +163,20 @@ class ConsistencyEvaluation(Evaluation):
         if not feature_cols:
             return None
 
-        X_real = self._encode_dataframe(self.real_data[feature_cols].copy()).values
-        y_real = self.real_data[self.target_col].values
+        X_real  = self._encode_dataframe(
+            self.real_data[feature_cols].copy(),
+            reference_df=self.synthetic_data[feature_cols],
+        ).values
+        y_real  = self.real_data[self.target_col].values
 
-        X_synth = self._encode_dataframe(self.synthetic_data[feature_cols].copy()).values
+        X_synth = self._encode_dataframe(
+            self.synthetic_data[feature_cols].copy(),
+            reference_df=self.real_data[feature_cols],
+        ).values
         y_synth = self.synthetic_data[self.target_col].values
 
-        is_classification = self._is_classification(y_real)
-
-        if is_classification:
-            clf_real = RandomForestClassifier(n_estimators=100, random_state=42)
-            clf_synth = RandomForestClassifier(n_estimators=100, random_state=42)
-        else:
-            clf_real = RandomForestRegressor(n_estimators=100, random_state=42)
-            clf_synth = RandomForestRegressor(n_estimators=100, random_state=42)
+        clf_real  = RandomForestClassifier(n_estimators=100, random_state=42)
+        clf_synth = RandomForestClassifier(n_estimators=100, random_state=42)
 
         clf_real.fit(X_real, y_real)
         clf_synth.fit(X_synth, y_synth)
@@ -209,19 +193,24 @@ class ConsistencyEvaluation(Evaluation):
         return float(max(0.0, corr))
 
 
-    def _encode_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Label-encode non-numeric columns so RF can consume the data."""
+    def _encode_dataframe(self, df: pd.DataFrame, reference_df: pd.DataFrame = None) -> pd.DataFrame:
+        """Label-encode non-numeric columns so RF can consume the data.
+
+        When reference_df is provided the encoder is fitted on the union of
+        both DataFrames' values, guaranteeing that the same category string
+        gets the same integer code in both — required for the discriminator.
+        """
         df = df.copy()
         for col in df.columns:
             if not pd.api.types.is_numeric_dtype(df[col]):
                 le = LabelEncoder()
-                df[col] = le.fit_transform(df[col].astype(str))
+                if reference_df is not None and col in reference_df.columns:
+                    combined = pd.concat([df[col], reference_df[col]]).astype(str)
+                    le.fit(combined)
+                else:
+                    le.fit(df[col].astype(str))
+                df[col] = le.transform(df[col].astype(str))
         return df
-
-    def _is_classification(self, y) -> bool:
-        """Heuristic: treat as classification if fewer than 20 unique values."""
-        return len(np.unique(y)) < 20
-
 
     def _print_summary(self, results):
         print("\n=== Consistency Evaluation ===")

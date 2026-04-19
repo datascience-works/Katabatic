@@ -1,6 +1,3 @@
-import os
-import csv
-
 import numpy as np
 import pandas as pd
 
@@ -49,9 +46,8 @@ class StabilityEvaluation(Evaluation):
         seeds: list = None,
         categorical_cols: list = None,
         continuous_cols: list = None,
-        **kwargs,
     ):
-        super().__init__(real_data=real_data, synthetic_data=None, **kwargs)
+        super().__init__(real_data=real_data, synthetic_data=None)
         self.model = model
         self.n_samples = n_samples or len(real_data)
         self.n_runs = n_runs
@@ -119,31 +115,6 @@ class StabilityEvaluation(Evaluation):
         self._print_summary(results)
         return results
 
-    def save_results(self, results: dict, output_dir: str):
-        os.makedirs(output_dir, exist_ok=True)
-        path = os.path.join(output_dir, 'stability_evaluation.csv')
-
-        with open(path, mode='w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(['Run', 'Seed', 'Fidelity Score', 'Diversity Score'])
-            for r in results['per_run_scores']:
-                writer.writerow([
-                    results['per_run_scores'].index(r) + 1,
-                    r['seed'],
-                    r['fidelity_score'],
-                    r['diversity_score'],
-                ])
-            writer.writerow([])
-            writer.writerow(['Dimension', 'Mean', 'Std'])
-            for dim in results['mean_scores']:
-                writer.writerow([dim, results['mean_scores'][dim], results['std_scores'][dim]])
-            writer.writerow([])
-            writer.writerow(['avg_std', results['avg_std']])
-            writer.writerow(['stability_score', results['stability_score']])
-
-        print(f"Stability results saved to: {path}")
-
-
     def _sample(self, seed: int):
         """
         Call model.sample(n_samples, seed=seed) and return a DataFrame
@@ -152,7 +123,17 @@ class StabilityEvaluation(Evaluation):
         try:
             result = self.model.sample(self.n_samples, seed=seed)
         except TypeError:
-            # Model does not support seed argument — fall back to unseeded call
+            # Model does not support seed argument — fall back to unseeded call.
+            # All runs will be identical on deterministic models, producing std=0
+            # and a misleadingly perfect stability score. A warning is printed once.
+            if not getattr(self, '_unseeded_warned', False):
+                print(
+                    "  [Stability] WARNING: model.sample() does not accept a 'seed' argument. "
+                    "All stability runs will use unseeded sampling. On deterministic models this "
+                    "produces std=0 and a stability_score=1.0 that does not reflect true stability. "
+                    "Implement sample(n, seed=int) in your model for meaningful stability results."
+                )
+                self._unseeded_warned = True
             try:
                 result = self.model.sample(self.n_samples)
             except Exception as e:
@@ -165,16 +146,13 @@ class StabilityEvaluation(Evaluation):
         if result is None:
             return None
 
-        # Normalise to DataFrame
-        if isinstance(result, pd.DataFrame):
-            synth = result.reset_index(drop=True)
-        else:
-            arr = np.array(result)
-            n_cols = arr.shape[1] if arr.ndim == 2 else len(self.real_data.columns)
-            cols = self.real_data.columns[:n_cols]
-            synth = pd.DataFrame(arr, columns=cols)
+        if not isinstance(result, pd.DataFrame):
+            raise TypeError(
+                f"model.sample() must return a pandas DataFrame (got {type(result).__name__}). "
+                "Ensure the model fulfils the base Model contract."
+            )
 
-        # Keep only columns present in real_data
+        synth = result.reset_index(drop=True)
         shared = [c for c in synth.columns if c in self.real_data.columns]
         return synth[shared]
 

@@ -6,7 +6,7 @@
 
 A comprehensive framework for synthetic tabular data generation and evaluation. Includes 8 generative models (CTGAN, CoDi, TabDDPM, GANBLR, GReaT, Tabsyn, MedGAN, PATEGAN) and a 6-dimension evaluation pipeline that scores every model on Fidelity, Utility, Diversity, Privacy, Consistency and Stability.
 
-## 🚀 Features
+## Features
 
 - **8 Generative Models**: CTGAN, CoDi, TabDDPM, GANBLR, GReaT, Tabsyn, MedGAN, PATEGAN
 - **6-Dimension Evaluation**: Fidelity, Utility, Diversity, Privacy, Consistency, Stability — combined into a single weighted composite score
@@ -15,7 +15,7 @@ A comprehensive framework for synthetic tabular data generation and evaluation. 
 - **Model Registry**: Dynamic model loading with optional per-model extra dependencies
 - **Extensible Architecture**: Easy to add new models via `python scaffold.py init-model <name>`
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
@@ -27,18 +27,18 @@ A comprehensive framework for synthetic tabular data generation and evaluation. 
 - [Contributing](#contributing)
 - [License](#license)
 
-## 🗺 Architecture
+## Architecture
 
 For a full overview of the project structure, data flow, and component relationships see [ARCHITECTURE.md](ARCHITECTURE.md).
 
-## 🔧 Prerequisites
+## Prerequisites
 
 ### System Requirements
 
 - **Operating System**: macOS, Linux, or Windows
 - **Python**: 3.11.x (strictly required due to TensorFlow compatibility)
 - **Memory**: Minimum 8GB RAM (16GB+ recommended for large datasets)
-- **GPU**: NVIDIA GPU with CUDA support (optional but recommended for GReaT model)
+- **GPU**: NVIDIA GPU with CUDA support (optional but recommended)
 
 ### Required Tools
 
@@ -107,7 +107,7 @@ export PATH="$HOME/.local/bin:$PATH"
 poetry --version
 ```
 
-## 📦 Installation
+## Installation
 
 ### 1. Clone the Repository
 
@@ -187,7 +187,7 @@ print('Katabatic installation successful!')
 "
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Run an existing example script
 
@@ -233,14 +233,14 @@ model.train(paths["split_dir"], categorical_cols=config.categorical_cols,
 
 synthetic_df = model.sample(len(train_df))
 synthetic_df = save_synthetic(synthetic_df, train_df, paths)
-evaluate(model, config, train_df, synthetic_df, target_col, paths)
+evaluate(model, config, train_df, synthetic_df, target_col, paths, test_df)
 ```
 
-## 📖 Usage
+## Usage
 
 ### Data Preprocessing
 
-Katabatic provides a preprocessing utility that cleans and encodes a raw CSV while preserving original column names. Numerical columns are NaN-filled with their median; categorical columns are label-encoded. A companion `_mappings.json` is saved so synthetic outputs can be decoded back to readable string labels:
+Katabatic provides a preprocessing utility that cleans a raw CSV while preserving original column names and data types. It fills numerical NaN values with the column median, drops constant/all-NaN columns, and moves the target column to the last position. Categorical columns are **not** encoded — each model receives the cleaned data and handles its own encoding internally:
 
 ```python
 from katabatic.utils.preprocess import encode_preprocess
@@ -313,6 +313,7 @@ report = pipeline.run(
     real_data=train_df,
     synthetic_data=synthetic_df,
     target_col='income',
+    test_data=test_df,                  # held-out set — used by Utility for fair TSTR/TRTR comparison
     constraints={'age': (17, None)},    # optional logical bounds — (min, max)
     output_dir='benchmarks/results/my_run/',
 )
@@ -321,7 +322,7 @@ print(report.composite_score)          # weighted composite 0–1
 print(report.dimension_scores)         # per-dimension breakdown
 ```
 
-## 🤖 Models
+## Models
 
 | Model | Extra | Type | Best for |
 |---|---|---|---|
@@ -354,18 +355,18 @@ python scaffold.py init-model mymodel dep1 dep2
 
 This creates `katabatic/models/mymodel/` with the standard `Model` interface pre-filled.
 
-## 📊 Evaluation
+## Evaluation
 
 Katabatic evaluates synthetic data across 6 dimensions, each producing a score between 0 and 1. They are combined into a single **composite score** using fixed weights:
 
 | Dimension | Weight | What it measures |
 |---|---|---|
-| **Utility** | 40% | TSTR vs TRTR accuracy gap — how useful the synthetic data is for ML |
-| **Fidelity** | 30% | Statistical similarity to real data (distributions, correlations) |
+| **Utility** | 35% | TSTR vs TRTR accuracy gap — how useful the synthetic data is for ML |
+| **Fidelity** | 25% | Statistical similarity to real data (distributions, correlations) |
 | **Privacy** | 15% | Nearest-neighbour distance ratio — protection against re-identification |
 | **Diversity** | 10% | Coverage of the feature space (bin coverage + Gower distance spread) |
-| **Consistency** | 3% | Label coherence + constraint satisfaction |
-| **Stability** | 2% | Reproducibility of the model across different random seeds |
+| **Consistency** | 10% | Label coherence + constraint satisfaction across folds |
+| **Stability** | 5% | Reproducibility of the model across different random seeds |
 
 ```python
 from katabatic.pipeline.evaluation_pipeline import SyntheticEvaluationPipeline
@@ -381,7 +382,7 @@ print(f"Composite score: {report.composite_score:.4f}")
 
 Reports are saved as JSON + CSV to the `output_dir` you specify.
 
-## 🛠 Development
+## Development
 
 ### Recommended VS Code Extensions
 
@@ -475,7 +476,7 @@ poetry build
 pip install dist/katabatic-*.whl
 ```
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
 
@@ -676,23 +677,23 @@ def generate_synthetic_data(
 - Include edge case testing
 - Mock external dependencies
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **GANBLR**: Based on the GAN-based Bayesian Learning Rules methodology
 - **GReaT**: Implements Generation of Realistic Tabular data using transformer models
 - **Contributors**: Thanks to all contributors who have helped improve this project
 
-## 📞 Support
+## Support
 
 - **Issues**: [GitHub Issues](https://github.com/your-username/katabatic/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/your-username/katabatic/discussions)
 - **Email**: vikumdabare@gmail.com
 
-## 🔗 Related Projects
+## Related Projects
 
 - [GANBLR Original Paper](https://link-to-paper)
 - [GReaT Repository](https://github.com/kathrinse/be_great)
@@ -700,4 +701,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Happy generating!** 🎯
+**Happy generating!**

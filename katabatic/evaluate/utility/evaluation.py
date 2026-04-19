@@ -1,6 +1,3 @@
-import os
-import csv
-
 import numpy as np
 import pandas as pd
 import sklearn.base as skbase
@@ -46,9 +43,13 @@ class UtilityEvaluation(Evaluation):
 
     Runs two protocols:
       - TSTR (Train on Synthetic, Test on Real): trains each classifier on
-        k folds of synthetic data, evaluates on the full real dataset each time.
-      - TRTR (Train on Real, Test on Real): standard k-fold CV on real data,
-        used as the performance ceiling.
+        k folds of synthetic data, evaluates on the held-out test set.
+      - TRTR (Train on Real, Test on Real): trains on real CV folds, evaluates
+        on the held-out test set. Used as the performance ceiling.
+
+    When test_data is provided both protocols evaluate on the same held-out rows,
+    making the TRTR - TSTR delta a clean apples-to-apples comparison. Without
+    test_data both fall back to evaluating on folds of real_data.
 
     The utility score is 1 - average(TRTR - TSTR delta). A score of 1.0
     means synthetic data performs identically to real data.
@@ -56,11 +57,14 @@ class UtilityEvaluation(Evaluation):
     Parameters
     ----------
     real_data : pd.DataFrame
-        Full real dataset including the target column.
+        Training split of the real dataset, including the target column.
     synthetic_data : pd.DataFrame
         Synthetic dataset with the same schema as real_data.
     target_col : str
         Name of the target (label) column.
+    test_data : pd.DataFrame, optional
+        Held-out test split. When provided, both TSTR and TRTR test on this
+        set instead of on folds of real_data.
     n_folds : int
         Number of stratified CV folds (default: 5).
     """
@@ -70,22 +74,40 @@ class UtilityEvaluation(Evaluation):
         real_data: pd.DataFrame,
         synthetic_data: pd.DataFrame,
         target_col: str,
+        test_data: pd.DataFrame = None,
         n_folds: int = 5,
-        **kwargs,
     ):
-        super().__init__(real_data, synthetic_data, **kwargs)
+        super().__init__(real_data, synthetic_data)
         self.target_col = target_col
+        self.test_data = test_data
         self.n_folds = n_folds
 
     def evaluate(self) -> dict:
-        # If the data went through our encode_preprocess this is still fine, its just a safe measure in case the users feeds raw data
         X_synth = self._encode(self.synthetic_data.drop(columns=[self.target_col])).values
-        X_real = self._encode(self.real_data.drop(columns=[self.target_col])).values
+        X_real  = self._encode(self.real_data.drop(columns=[self.target_col])).values
 
-        # Cast targets to the same numeric dtype to avoid type mismatches when
-        # models (e.g. CTGAN) return the target column as strings
-        y_real  = pd.to_numeric(self.real_data[self.target_col],  errors='coerce').values
-        y_synth = pd.to_numeric(self.synthetic_data[self.target_col], errors='coerce').values
+        y_real_raw  = self.real_data[self.target_col]
+        y_synth_raw = self.synthetic_data[self.target_col]
+        y_test_raw  = self.test_data[self.target_col] if self.test_data is not None else y_real_raw
+
+        if pd.api.types.is_numeric_dtype(y_real_raw):
+            y_real  = y_real_raw.values
+            y_synth = pd.to_numeric(y_synth_raw, errors='coerce').values
+            y_test  = pd.to_numeric(y_test_raw,  errors='coerce').values
+        else:
+            le = LabelEncoder()
+            sources = [y_real_raw, y_synth_raw]
+            if self.test_data is not None:
+                sources.append(y_test_raw)
+            le.fit(pd.concat(sources).astype(str))
+            y_real  = le.transform(y_real_raw.astype(str))
+            y_synth = le.transform(y_synth_raw.astype(str))
+            y_test  = le.transform(y_test_raw.astype(str))
+
+        if self.test_data is not None:
+            X_test = self._encode(self.test_data.drop(columns=[self.target_col])).values
+        else:
+            X_test = X_real
 
         is_binary = len(np.unique(y_real)) == 2
         cv = StratifiedKFold(n_splits=self.n_folds, shuffle=True, random_state=42)
@@ -94,10 +116,10 @@ class UtilityEvaluation(Evaluation):
         trtr_results = {}
 
         for name, clf in _make_classifiers().items():
-            tstr_results[name] = self._tstr(clf, X_synth, y_synth, X_real, y_real, cv, is_binary)
+            tstr_results[name] = self._tstr(clf, X_synth, y_synth, X_test, y_test, cv, is_binary)
 
         for name, clf in _make_classifiers().items():
-            trtr_results[name] = self._trtr(clf, X_real, y_real, cv, is_binary)
+            trtr_results[name] = self._trtr(clf, X_real, y_real, X_test, y_test, cv, is_binary)
 
         delta = self._compute_delta(tstr_results, trtr_results)
         utility_score = self._compute_score(delta)
@@ -119,15 +141,15 @@ class UtilityEvaluation(Evaluation):
         for col in df.columns:
             if not pd.api.types.is_numeric_dtype(df[col]):
                 le = LabelEncoder()
-                combined = pd.concat([
-                    self.real_data[col], self.synthetic_data[col]
-                ]).astype(str)
-                le.fit(combined)
+                sources = [self.real_data[col], self.synthetic_data[col]]
+                if self.test_data is not None and col in self.test_data.columns:
+                    sources.append(self.test_data[col])
+                le.fit(pd.concat(sources).astype(str))
                 df[col] = le.transform(df[col].astype(str))
         return df
 
-    def _tstr(self, clf, X_synth, y_synth, X_real, y_real, cv, is_binary):
-        """Train on each synthetic CV fold, test on ALL real data."""
+    def _tstr(self, clf, X_synth, y_synth, X_test, y_test, cv, is_binary):
+        """Train on each synthetic CV fold, test on the held-out test set."""
         fold_metrics = {'accuracy': [], 'f1': [], 'auc': []}
         skipped = 0
 
@@ -137,7 +159,7 @@ class UtilityEvaluation(Evaluation):
                 continue
             clf_copy = skbase.clone(clf)
             clf_copy.fit(X_synth[train_idx], y_synth[train_idx])
-            scores = self._score(clf_copy, X_real, y_real, is_binary)
+            scores = self._score(clf_copy, X_test, y_test, is_binary)
             for k, v in scores.items():
                 fold_metrics[k].append(v)
 
@@ -149,14 +171,18 @@ class UtilityEvaluation(Evaluation):
 
         return self._aggregate(fold_metrics)
 
-    def _trtr(self, clf, X_real, y_real, cv, is_binary):
-        """Standard k-fold CV entirely on real data."""
+    def _trtr(self, clf, X_real, y_real, X_test, y_test, cv, is_binary):
+        """Train on real CV folds, test on the held-out test set."""
         fold_metrics = {'accuracy': [], 'f1': [], 'auc': []}
 
+        use_held_out = self.test_data is not None
         for train_idx, test_idx in cv.split(X_real, y_real):
             clf_copy = skbase.clone(clf)
             clf_copy.fit(X_real[train_idx], y_real[train_idx])
-            scores = self._score(clf_copy, X_real[test_idx], y_real[test_idx], is_binary)
+            # Use held-out test set when available; fall back to the CV fold
+            X_eval = X_test if use_held_out else X_real[test_idx]
+            y_eval = y_test if use_held_out else y_real[test_idx]
+            scores = self._score(clf_copy, X_eval, y_eval, is_binary)
             for k, v in scores.items():
                 fold_metrics[k].append(v)
 
@@ -171,8 +197,8 @@ class UtilityEvaluation(Evaluation):
             try:
                 y_prob = clf.predict_proba(X)[:, 1]
                 metrics['auc'] = roc_auc_score(y, y_prob)
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"  [WARNING] AUC could not be computed: {e}")
         return metrics
 
     def _aggregate(self, fold_metrics):
@@ -217,24 +243,3 @@ class UtilityEvaluation(Evaluation):
                 d = results['delta'][clf].get(metric, '-')
                 print(f"{clf:<12} {metric:<10} {tstr_m:<12.4f} {trtr_m:<12.4f} {d}")
 
-    def save_results(self, results: dict, output_dir: str):
-        os.makedirs(output_dir, exist_ok=True)
-        path = os.path.join(output_dir, 'utility_evaluation.csv')
-
-        with open(path, mode='w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(['Mode', 'Classifier', 'Metric', 'Mean', 'Std'])
-            for mode, key in [('TSTR', 'tstr'), ('TRTR', 'trtr')]:
-                for clf, metrics in results[key].items():
-                    for metric, vals in metrics.items():
-                        writer.writerow([mode, clf, metric, vals['mean'], vals['std']])
-            writer.writerow([])
-            writer.writerow(['Delta (TRTR - TSTR)'])
-            writer.writerow(['Classifier', 'Metric', 'Delta'])
-            for clf, metrics in results['delta'].items():
-                for metric, val in metrics.items():
-                    writer.writerow([clf, metric, val])
-            writer.writerow([])
-            writer.writerow(['utility_score', results['utility_score']])
-
-        print(f"Utility results saved to: {path}")

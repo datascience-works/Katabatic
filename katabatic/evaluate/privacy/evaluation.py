@@ -1,6 +1,3 @@
-import os
-import csv
-
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
@@ -59,9 +56,8 @@ class PrivacyEvaluation(Evaluation):
         sample_size: int = 2000,
         categorical_cols: list = None,
         continuous_cols: list = None,
-        **kwargs,
     ):
-        super().__init__(real_data, synthetic_data, **kwargs)
+        super().__init__(real_data, synthetic_data)
         self.near_dup_threshold = near_dup_threshold
         self.sample_size = sample_size
         self.categorical_cols = categorical_cols or []
@@ -71,9 +67,19 @@ class PrivacyEvaluation(Evaluation):
     def evaluate(self) -> dict:
         real_norm, synth_norm, cat_mask = self._normalise()
 
-        mean_nndr = self._compute_nndr(real_norm, synth_norm, cat_mask)
-        exact_dup_rate = self._compute_exact_duplicates(real_norm, synth_norm, cat_mask)
-        near_dup_rate = self._compute_near_duplicates(real_norm, synth_norm, cat_mask)
+        # Sample once — all three metrics operate on the same subset so their
+        # scores are comparable when averaged into privacy_score.
+        synth_eval = synth_norm
+        if self.sample_size and len(synth_norm) > self.sample_size:
+            rng = np.random.default_rng(42)
+            idx = rng.choice(len(synth_norm), self.sample_size, replace=False)
+            synth_eval = synth_norm[idx]
+
+        dist = self._gower_matrix(synth_eval, real_norm, cat_mask)
+
+        mean_nndr = self._compute_nndr(dist)
+        exact_dup_rate = self._compute_exact_duplicates(dist, synth_eval)
+        near_dup_rate = self._compute_near_duplicates(dist, synth_eval)
 
         nndr_score = round(mean_nndr, 4)
         exact_dup_score = round(1.0 - exact_dup_rate, 4)
@@ -92,25 +98,6 @@ class PrivacyEvaluation(Evaluation):
 
         self._print_summary(results)
         return results
-
-    def save_results(self, results: dict, output_dir: str):
-        os.makedirs(output_dir, exist_ok=True)
-        path = os.path.join(output_dir, 'privacy_evaluation.csv')
-
-        with open(path, mode='w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(['Metric', 'Value'])
-            writer.writerow(['Mean NNDR', results['mean_nndr']])
-            writer.writerow(['Exact Duplicate Rate', results['exact_duplicate_rate']])
-            writer.writerow(['Near-Duplicate Rate', results['near_duplicate_rate']])
-            writer.writerow([])
-            writer.writerow(['NNDR Score', results['nndr_score']])
-            writer.writerow(['Exact Dup Score', results['exact_dup_score']])
-            writer.writerow(['Near Dup Score', results['near_dup_score']])
-            writer.writerow(['privacy_score', results['privacy_score']])
-
-        print(f"Privacy results saved to: {path}")
-
 
     def _normalise(self):
         """
@@ -207,20 +194,18 @@ class PrivacyEvaluation(Evaluation):
         return dist
 
 
-    def _compute_nndr(self, real_norm, synth_norm, cat_mask) -> float:
+    def _compute_nndr(self, dist: np.ndarray) -> float:
         """
         For each synthetic row find the 2 nearest real rows using Gower distance.
         NNDR = d1 / d2. Mean across all synthetic rows.
+        Sampling and matrix computation are handled by the caller.
         """
-        synth_eval = synth_norm
-        if self.sample_size and len(synth_norm) > self.sample_size:
-            rng = np.random.default_rng(42)
-            idx = rng.choice(len(synth_norm), self.sample_size, replace=False)
-            synth_eval = synth_norm[idx]
-
-        dist = self._gower_matrix(synth_eval, real_norm, cat_mask)
-
-        # Two smallest distances per row
+        if dist.shape[1] < 2:
+            raise ValueError(
+                f"NNDR requires at least 2 real rows to compute a nearest-neighbour ratio, "
+                f"but real_data only has {dist.shape[1]} row(s). "
+                "Ensure the training split contains sufficient data."
+            )
         partitioned = np.partition(dist, kth=1, axis=1)
         d1 = partitioned[:, 0]
         d2 = partitioned[:, 1]
@@ -231,22 +216,22 @@ class PrivacyEvaluation(Evaluation):
         return float(np.mean(ratios))
 
 
-    def _compute_exact_duplicates(self, real_norm, synth_norm, cat_mask) -> float:
+    def _compute_exact_duplicates(self, dist: np.ndarray, synth_norm: np.ndarray) -> float:
         """
         % of synthetic rows with Gower distance == 0 to any real row.
         """
-        dist = self._gower_matrix(synth_norm, real_norm, cat_mask)
         exact = np.sum(dist.min(axis=1) == 0.0)
         return float(exact) / len(synth_norm)
 
 
-    def _compute_near_duplicates(self, real_norm, synth_norm, cat_mask) -> float:
+    def _compute_near_duplicates(self, dist: np.ndarray, synth_norm: np.ndarray) -> float:
         """
-        % of synthetic rows whose nearest real neighbour Gower distance
-        is below `near_dup_threshold`.
+        % of synthetic rows whose nearest real neighbour Gower distance is in
+        (0, near_dup_threshold). Exact duplicates (distance == 0) are excluded
+        so they are not double-counted with the exact duplicate metric.
         """
-        dist = self._gower_matrix(synth_norm, real_norm, cat_mask)
-        near = np.sum(dist.min(axis=1) < self.near_dup_threshold)
+        min_dists = dist.min(axis=1)
+        near = np.sum((min_dists > 0) & (min_dists < self.near_dup_threshold))
         return float(near) / len(synth_norm)
 
 

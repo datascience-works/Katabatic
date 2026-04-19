@@ -61,13 +61,16 @@ def infer_schema(
         )
         cat_cols = set(infer_categorical_columns(df))
 
+    explicit_cont = set(continuous_cols or [])
+
     schema: List[ColumnMeta] = []
     for c in df.columns:
-        if c in cat_cols:
+        if c in cat_cols or (
+            c not in explicit_cont and not pd.api.types.is_numeric_dtype(df[c])
+        ):
             cats = sorted([str(v) for v in df[c].dropna().unique().tolist()])
             schema.append(ColumnMeta(name=c, kind='categorical', categories=cats))
         else:
-            # continuous or unlisted columns — default to continuous
             schema.append(ColumnMeta(name=c, kind='continuous'))
     return schema
 

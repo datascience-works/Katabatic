@@ -10,7 +10,7 @@ class Evaluation(ABC):
     and returns a structured result dict from evaluate().
     """
 
-    def __init__(self, real_data: pd.DataFrame, synthetic_data: pd.DataFrame = None, **kwargs):
+    def __init__(self, real_data: pd.DataFrame, synthetic_data: pd.DataFrame = None):
         self.real_data = real_data
         self.synthetic_data = synthetic_data
 

@@ -158,17 +158,6 @@ class TabSyn(BaseModel):
 
         return self
 
-    def evaluate(
-        self,
-        *,
-        data_dir: str,
-        split: str = "test",
-    ) -> float:
-        """Return a scalar loss on the given split (lower is better)."""
-        if not self.is_fitted or self.state is None:
-            raise RuntimeError("Call train() before evaluate().")
-        return evaluate_tabsyn(self.state, data_dir=data_dir, split=split)
-
     def sample(
         self,
         n_samples: Optional[int] = None,

@@ -1,6 +1,3 @@
-import os
-import csv
-
 import numpy as np
 import pandas as pd
 from scipy.spatial.distance import jensenshannon
@@ -49,9 +46,8 @@ class FidelityEvaluation(Evaluation):
         synthetic_data: pd.DataFrame,
         categorical_cols: list = None,
         continuous_cols: list = None,
-        **kwargs,
     ):
-        super().__init__(real_data, synthetic_data, **kwargs)
+        super().__init__(real_data, synthetic_data)
 
         if categorical_cols is None and continuous_cols is None:
             self.categorical_cols, self.continuous_cols = get_column_types(self.real_data, exclude_last=False)
@@ -70,9 +66,11 @@ class FidelityEvaluation(Evaluation):
         wd_results = self._compute_wasserstein()
         corr_diff = self._compute_correlation_diff()
 
-        # Component scores in [0, 1] — higher is better
-        cat_score = round(1.0 - jsd_results['avg'], 4) if jsd_results else None
-        cont_score = round(1.0 - wd_results['avg'], 4) if wd_results else None
+        # Component scores in [0, 1] — higher is better.
+        # Check for actual per-column entries, not just the 'avg' sentinel key,
+        # to avoid a spurious 1.0 score when all columns were skipped.
+        cat_score = round(1.0 - jsd_results['avg'], 4) if len(jsd_results) > 1 else None
+        cont_score = round(1.0 - wd_results['avg'], 4) if len(wd_results) > 1 else None
         corr_score = round(1.0 - corr_diff, 4) if corr_diff is not None else None
 
         active = [s for s in [cat_score, cont_score, corr_score] if s is not None]
@@ -90,29 +88,6 @@ class FidelityEvaluation(Evaluation):
 
         self._print_summary(results)
         return results
-
-    def save_results(self, results: dict, output_dir: str):
-        os.makedirs(output_dir, exist_ok=True)
-        path = os.path.join(output_dir, 'fidelity_evaluation.csv')
-
-        with open(path, mode='w', newline='') as f:
-            writer = csv.writer(f)
-
-            writer.writerow(['Metric', 'Column', 'Value'])
-            for col, val in results['categorical_jsd'].items():
-                writer.writerow(['JSD', col, val])
-            for col, val in results['continuous_wasserstein'].items():
-                writer.writerow(['Wasserstein (normalised)', col, val])
-            writer.writerow(['Correlation matrix avg diff', '', results['correlation_diff']])
-
-            writer.writerow([])
-            writer.writerow(['Component', 'Score'])
-            writer.writerow(['categorical_score', results['categorical_score']])
-            writer.writerow(['continuous_score', results['continuous_score']])
-            writer.writerow(['correlation_score', results['correlation_score']])
-            writer.writerow(['fidelity_score', results['fidelity_score']])
-
-        print(f"Fidelity results saved to: {path}")
 
     def _compute_jsd(self) -> dict:
         if not self.categorical_cols:

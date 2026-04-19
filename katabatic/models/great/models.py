@@ -220,13 +220,6 @@ class GReaT(Model):
         # Array/DataFrame mode: fallback to fit
         return self.fit(*args, **kwargs)
 
-    def evaluate(self, *args, **kwargs) -> float:
-        """Evaluate the model performance."""
-        # GReaT doesn't have a built-in evaluation method
-        # This could be extended to implement specific evaluation metrics
-        raise NotImplementedError(
-            "GReaT evaluation not implemented. Use external evaluation metrics.")
-
     def fit(
         self,
         data: tp.Union[pd.DataFrame, np.ndarray],

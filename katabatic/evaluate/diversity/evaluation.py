@@ -1,6 +1,3 @@
-import os
-import csv
-
 import numpy as np
 import pandas as pd
 from scipy.stats import wasserstein_distance
@@ -56,9 +53,8 @@ class DiversityEvaluation(Evaluation):
         continuous_cols: list = None,
         n_bins: int = 10,
         gower_sample_size: int = 200,
-        **kwargs,
     ):
-        super().__init__(real_data, synthetic_data, **kwargs)
+        super().__init__(real_data, synthetic_data)
         self.n_bins = n_bins
         self.gower_sample_size = gower_sample_size
 
@@ -78,10 +74,13 @@ class DiversityEvaluation(Evaluation):
         bin_coverage = self._compute_bin_coverage()
         gower_similarity = self._compute_gower_similarity()
 
-        # All three component scores are already in [0, 1]
+        # All three component scores are already in [0, 1].
+        # Use len > 1 (not truthiness) to guard against dicts that only contain
+        # the 'avg' sentinel when all columns were skipped — that would be truthy
+        # but would incorrectly contribute a 1.0 score.
         active = [s for s in [
-            cat_coverage.get('avg') if cat_coverage else None,
-            bin_coverage.get('avg') if bin_coverage else None,
+            cat_coverage.get('avg') if len(cat_coverage) > 1 else None,
+            bin_coverage.get('avg') if len(bin_coverage) > 1 else None,
             gower_similarity,
         ] if s is not None]
 
@@ -96,24 +95,6 @@ class DiversityEvaluation(Evaluation):
 
         self._print_summary(results)
         return results
-
-    def save_results(self, results: dict, output_dir: str):
-        os.makedirs(output_dir, exist_ok=True)
-        path = os.path.join(output_dir, 'diversity_evaluation.csv')
-
-        with open(path, mode='w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(['Metric', 'Column', 'Value'])
-            for col, val in results['category_coverage'].items():
-                writer.writerow(['Category Coverage', col, val])
-            for col, val in results['bin_coverage'].items():
-                writer.writerow(['Bin Coverage', col, val])
-            writer.writerow(['Gower Similarity', '', results['gower_similarity']])
-            writer.writerow([])
-            writer.writerow(['diversity_score', '', results['diversity_score']])
-
-        print(f"Diversity results saved to: {path}")
-
 
     def _compute_category_coverage(self) -> dict:
         if not self.categorical_cols:
@@ -175,9 +156,13 @@ class DiversityEvaluation(Evaluation):
         if len(shared) == 0:
             return None
 
-        n = min(self.gower_sample_size, len(self.real_data), len(self.synthetic_data))
-        real_sample = self.real_data[shared].dropna().sample(n=n, random_state=42)
-        synth_sample = self.synthetic_data[shared].dropna().sample(n=n, random_state=42)
+        real_clean  = self.real_data[shared].dropna()
+        synth_clean = self.synthetic_data[shared].dropna()
+        n = min(self.gower_sample_size, len(real_clean), len(synth_clean))
+        if n == 0:
+            return None
+        real_sample  = real_clean.sample(n=n, random_state=42)
+        synth_sample = synth_clean.sample(n=n, random_state=42)
 
         # Pre-compute ranges for continuous columns (from full real data)
         cont_shared = [c for c in self.continuous_cols if c in shared]
