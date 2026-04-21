@@ -20,8 +20,6 @@ datasets/*.csv
 benchmarks/processed/
 benchmarks/splits/
 benchmarks/synthetic/
-benchmarks/results/*
-!benchmarks/results/*.md
 
 # --- Internal documents ---
 reference-documents/
