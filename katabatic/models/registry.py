@@ -56,7 +56,13 @@ class ModelRegistry:
             'class': 'CTGANModel',
             'dependencies': ['torch', 'sklearn'],
             'extra': 'ctgan'
-        }
+        },
+        'tabebm': {
+            'module': 'katabatic.models.tabebm.models',
+            'class': 'TabEBMModel',
+            'dependencies': ['numpy', 'pandas', 'sklearn'],
+            'extra': 'tabebm'
+        },
 }
 
     @classmethod
