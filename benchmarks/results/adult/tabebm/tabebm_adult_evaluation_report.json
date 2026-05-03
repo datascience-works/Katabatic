@@ -1,0 +1,317 @@
+{
+  "composite_score": 0.8069,
+  "dimension_scores": {
+    "fidelity": 0.9636,
+    "utility": 0.9368,
+    "diversity": 0.9076,
+    "privacy": 0.4348,
+    "consistency": 0.3429,
+    "stability": 0.9565
+  },
+  "weights_used": {
+    "fidelity": 0.25,
+    "utility": 0.35,
+    "diversity": 0.1,
+    "privacy": 0.15,
+    "consistency": 0.1,
+    "stability": 0.05
+  },
+  "full_results": {
+    "fidelity": {
+      "categorical_jsd": {
+        "workclass": 0.01,
+        "education": 0.0106,
+        "educational-num": 0.7186,
+        "marital-status": 0.0088,
+        "occupation": 0.0178,
+        "relationship": 0.0035,
+        "race": 0.0042,
+        "gender": 0.0002,
+        "native-country": 0.1306,
+        "avg": 0.1005
+      },
+      "continuous_wasserstein": {
+        "age": 0.0058,
+        "fnlwgt": 0.0021,
+        "capital-gain": 0.0027,
+        "capital-loss": 0.0063,
+        "hours-per-week": 0.0055,
+        "avg": 0.0045
+      },
+      "correlation_diff": 0.0042,
+      "categorical_score": 0.8995,
+      "continuous_score": 0.9955,
+      "correlation_score": 0.9958,
+      "fidelity_score": 0.9636
+    },
+    "utility": {
+      "tstr": {
+        "LR": {
+          "accuracy": {
+            "mean": 0.7995,
+            "std": 0.0005
+          },
+          "f1": {
+            "mean": 0.7669,
+            "std": 0.0011
+          },
+          "auc": {
+            "mean": 0.7883,
+            "std": 0.0007
+          }
+        },
+        "DT": {
+          "accuracy": {
+            "mean": 0.7594,
+            "std": 0.0041
+          },
+          "f1": {
+            "mean": 0.7362,
+            "std": 0.0063
+          },
+          "auc": {
+            "mean": 0.6014,
+            "std": 0.0148
+          }
+        },
+        "RF": {
+          "accuracy": {
+            "mean": 0.8139,
+            "std": 0.0015
+          },
+          "f1": {
+            "mean": 0.7755,
+            "std": 0.0029
+          },
+          "auc": {
+            "mean": 0.852,
+            "std": 0.0025
+          }
+        },
+        "LinearSVM": {
+          "accuracy": {
+            "mean": 0.8018,
+            "std": 0.0009
+          },
+          "f1": {
+            "mean": 0.77,
+            "std": 0.0007
+          },
+          "auc": {
+            "mean": 0.7864,
+            "std": 0.0009
+          }
+        },
+        "MLP": {
+          "accuracy": {
+            "mean": 0.7475,
+            "std": 0.0063
+          },
+          "f1": {
+            "mean": 0.7581,
+            "std": 0.0049
+          },
+          "auc": {
+            "mean": 0.8099,
+            "std": 0.0034
+          }
+        }
+      },
+      "trtr": {
+        "LR": {
+          "accuracy": {
+            "mean": 0.8299,
+            "std": 0.0002
+          },
+          "f1": {
+            "mean": 0.8134,
+            "std": 0.0006
+          },
+          "auc": {
+            "mean": 0.8559,
+            "std": 0.0003
+          }
+        },
+        "DT": {
+          "accuracy": {
+            "mean": 0.8066,
+            "std": 0.004
+          },
+          "f1": {
+            "mean": 0.8079,
+            "std": 0.0041
+          },
+          "auc": {
+            "mean": 0.7412,
+            "std": 0.0064
+          }
+        },
+        "RF": {
+          "accuracy": {
+            "mean": 0.8536,
+            "std": 0.0016
+          },
+          "f1": {
+            "mean": 0.8485,
+            "std": 0.0017
+          },
+          "auc": {
+            "mean": 0.9001,
+            "std": 0.0011
+          }
+        },
+        "LinearSVM": {
+          "accuracy": {
+            "mean": 0.8297,
+            "std": 0.0006
+          },
+          "f1": {
+            "mean": 0.8126,
+            "std": 0.0006
+          },
+          "auc": {
+            "mean": 0.8548,
+            "std": 0.0004
+          }
+        },
+        "MLP": {
+          "accuracy": {
+            "mean": 0.8371,
+            "std": 0.0035
+          },
+          "f1": {
+            "mean": 0.8338,
+            "std": 0.0029
+          },
+          "auc": {
+            "mean": 0.8894,
+            "std": 0.0021
+          }
+        }
+      },
+      "delta": {
+        "LR": {
+          "accuracy": 0.0304,
+          "f1": 0.0465,
+          "auc": 0.0676
+        },
+        "DT": {
+          "accuracy": 0.0472,
+          "f1": 0.0717,
+          "auc": 0.1398
+        },
+        "RF": {
+          "accuracy": 0.0397,
+          "f1": 0.073,
+          "auc": 0.0481
+        },
+        "LinearSVM": {
+          "accuracy": 0.0279,
+          "f1": 0.0426,
+          "auc": 0.0684
+        },
+        "MLP": {
+          "accuracy": 0.0896,
+          "f1": 0.0757,
+          "auc": 0.0795
+        }
+      },
+      "utility_score": 0.9368
+    },
+    "diversity": {
+      "category_coverage": {
+        "workclass": 1.0,
+        "education": 1.0,
+        "educational-num": 0.0,
+        "marital-status": 1.0,
+        "occupation": 1.0,
+        "relationship": 1.0,
+        "race": 1.0,
+        "gender": 1.0,
+        "native-country": 1.0,
+        "avg": 0.8889
+      },
+      "bin_coverage": {
+        "age": 1.0,
+        "fnlwgt": 0.8,
+        "capital-gain": 0.5,
+        "capital-loss": 0.9,
+        "hours-per-week": 1.0,
+        "avg": 0.84
+      },
+      "gower_similarity": 0.994,
+      "diversity_score": 0.9076
+    },
+    "privacy": {
+      "mean_nndr": 0.2095,
+      "exact_duplicate_rate": 0.0,
+      "near_duplicate_rate": 0.905,
+      "nndr_score": 0.2095,
+      "exact_dup_score": 1.0,
+      "near_dup_score": 0.095,
+      "privacy_score": 0.4348
+    },
+    "consistency": {
+      "discriminator_accuracy": 1.0,
+      "discriminator_score": 0.0001,
+      "constraint_violations": {
+        "age [17, 90]": 0.0053,
+        "fnlwgt [12285, 1490400]": 0.0,
+        "capital-gain [0, 99999]": 0.4385,
+        "capital-loss [0, 4356]": 0.6116,
+        "hours-per-week [1, 99]": 0.0003,
+        "overall_violation_rate": 0.7735
+      },
+      "constraint_score": 0.2265,
+      "feature_importance_spearman": 0.8022,
+      "consistency_score": 0.3429
+    },
+    "stability": {
+      "n_runs": 5,
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "per_run_scores": [
+        {
+          "seed": 0,
+          "fidelity_score": 0.9629,
+          "diversity_score": 0.9143
+        },
+        {
+          "seed": 1,
+          "fidelity_score": 0.9623,
+          "diversity_score": 0.8932
+        },
+        {
+          "seed": 2,
+          "fidelity_score": 0.9637,
+          "diversity_score": 0.9082
+        },
+        {
+          "seed": 3,
+          "fidelity_score": 0.9625,
+          "diversity_score": 0.9154
+        },
+        {
+          "seed": 4,
+          "fidelity_score": 0.9645,
+          "diversity_score": 0.9085
+        }
+      ],
+      "mean_scores": {
+        "fidelity": 0.9632,
+        "diversity": 0.9079
+      },
+      "std_scores": {
+        "fidelity": 0.0008,
+        "diversity": 0.0079
+      },
+      "avg_std": 0.0044,
+      "stability_score": 0.9565
+    }
+  }
+}

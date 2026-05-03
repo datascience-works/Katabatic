@@ -1,0 +1,370 @@
+{
+  "composite_score": 0.8594,
+  "dimension_scores": {
+    "fidelity": 0.9945,
+    "utility": 0.9781,
+    "diversity": 0.9059,
+    "privacy": 0.4374,
+    "consistency": 0.6533,
+    "stability": 0.9385
+  },
+  "weights_used": {
+    "fidelity": 0.25,
+    "utility": 0.35,
+    "diversity": 0.1,
+    "privacy": 0.15,
+    "consistency": 0.1,
+    "stability": 0.05
+  },
+  "full_results": {
+    "fidelity": {
+      "categorical_jsd": {},
+      "continuous_wasserstein": {
+        "Time": 0.0084,
+        "V1": 0.0015,
+        "V2": 0.0006,
+        "V3": 0.0011,
+        "V4": 0.0021,
+        "V5": 0.0008,
+        "V6": 0.0007,
+        "V7": 0.0008,
+        "V8": 0.0008,
+        "V9": 0.0016,
+        "V10": 0.0013,
+        "V11": 0.0016,
+        "V12": 0.0016,
+        "V13": 0.0054,
+        "V14": 0.0015,
+        "V15": 0.0031,
+        "V16": 0.0008,
+        "V17": 0.0006,
+        "V18": 0.002,
+        "V19": 0.0023,
+        "V20": 0.0005,
+        "V21": 0.0006,
+        "V22": 0.0019,
+        "V23": 0.0004,
+        "V24": 0.003,
+        "V25": 0.0015,
+        "V26": 0.0028,
+        "V27": 0.0008,
+        "V28": 0.0003,
+        "Amount": 0.0004,
+        "avg": 0.0017
+      },
+      "correlation_diff": 0.0093,
+      "categorical_score": null,
+      "continuous_score": 0.9983,
+      "correlation_score": 0.9907,
+      "fidelity_score": 0.9945
+    },
+    "utility": {
+      "tstr": {
+        "LR": {
+          "accuracy": {
+            "mean": 0.9988,
+            "std": 0.0001
+          },
+          "f1": {
+            "mean": 0.9987,
+            "std": 0.0
+          },
+          "auc": {
+            "mean": 0.872,
+            "std": 0.0244
+          }
+        },
+        "DT": {
+          "accuracy": {
+            "mean": 0.9987,
+            "std": 0.0001
+          },
+          "f1": {
+            "mean": 0.9986,
+            "std": 0.0001
+          },
+          "auc": {
+            "mean": 0.7773,
+            "std": 0.0454
+          }
+        },
+        "RF": {
+          "accuracy": {
+            "mean": 0.9992,
+            "std": 0.0
+          },
+          "f1": {
+            "mean": 0.9991,
+            "std": 0.0
+          },
+          "auc": {
+            "mean": 0.9412,
+            "std": 0.002
+          }
+        },
+        "LinearSVM": {
+          "accuracy": {
+            "mean": 0.9989,
+            "std": 0.0
+          },
+          "f1": {
+            "mean": 0.9987,
+            "std": 0.0
+          },
+          "auc": {
+            "mean": 0.8488,
+            "std": 0.001
+          }
+        },
+        "MLP": {
+          "accuracy": {
+            "mean": 0.999,
+            "std": 0.0
+          },
+          "f1": {
+            "mean": 0.9989,
+            "std": 0.0
+          },
+          "auc": {
+            "mean": 0.881,
+            "std": 0.009
+          }
+        }
+      },
+      "trtr": {
+        "LR": {
+          "accuracy": {
+            "mean": 0.9992,
+            "std": 0.0
+          },
+          "f1": {
+            "mean": 0.9992,
+            "std": 0.0
+          },
+          "auc": {
+            "mean": 0.9549,
+            "std": 0.0031
+          }
+        },
+        "DT": {
+          "accuracy": {
+            "mean": 0.9989,
+            "std": 0.0001
+          },
+          "f1": {
+            "mean": 0.9989,
+            "std": 0.0001
+          },
+          "auc": {
+            "mean": 0.8599,
+            "std": 0.0166
+          }
+        },
+        "RF": {
+          "accuracy": {
+            "mean": 0.9994,
+            "std": 0.0
+          },
+          "f1": {
+            "mean": 0.9994,
+            "std": 0.0
+          },
+          "auc": {
+            "mean": 0.9473,
+            "std": 0.0032
+          }
+        },
+        "LinearSVM": {
+          "accuracy": {
+            "mean": 0.9992,
+            "std": 0.0001
+          },
+          "f1": {
+            "mean": 0.9991,
+            "std": 0.0001
+          },
+          "auc": {
+            "mean": 0.9401,
+            "std": 0.0016
+          }
+        },
+        "MLP": {
+          "accuracy": {
+            "mean": 0.9992,
+            "std": 0.0001
+          },
+          "f1": {
+            "mean": 0.9992,
+            "std": 0.0001
+          },
+          "auc": {
+            "mean": 0.9428,
+            "std": 0.0093
+          }
+        }
+      },
+      "delta": {
+        "LR": {
+          "accuracy": 0.0004,
+          "f1": 0.0005,
+          "auc": 0.0829
+        },
+        "DT": {
+          "accuracy": 0.0002,
+          "f1": 0.0003,
+          "auc": 0.0826
+        },
+        "RF": {
+          "accuracy": 0.0002,
+          "f1": 0.0003,
+          "auc": 0.0061
+        },
+        "LinearSVM": {
+          "accuracy": 0.0003,
+          "f1": 0.0004,
+          "auc": 0.0913
+        },
+        "MLP": {
+          "accuracy": 0.0002,
+          "f1": 0.0003,
+          "auc": 0.0618
+        }
+      },
+      "utility_score": 0.9781
+    },
+    "diversity": {
+      "category_coverage": {},
+      "bin_coverage": {
+        "Time": 1.0,
+        "V1": 0.8,
+        "V2": 0.7,
+        "V3": 0.7,
+        "V4": 1.0,
+        "V5": 0.8,
+        "V6": 0.8,
+        "V7": 1.0,
+        "V8": 0.6,
+        "V9": 1.0,
+        "V10": 0.9,
+        "V11": 0.8,
+        "V12": 0.8,
+        "V13": 1.0,
+        "V14": 0.9,
+        "V15": 0.9,
+        "V16": 0.8,
+        "V17": 0.8,
+        "V18": 0.9,
+        "V19": 0.8,
+        "V20": 0.7,
+        "V21": 0.8,
+        "V22": 0.6,
+        "V23": 0.8,
+        "V24": 0.9,
+        "V25": 0.7,
+        "V26": 0.9,
+        "V27": 0.9,
+        "V28": 0.7,
+        "Amount": 0.5,
+        "avg": 0.8167
+      },
+      "gower_similarity": 0.995,
+      "diversity_score": 0.9059
+    },
+    "privacy": {
+      "mean_nndr": 0.3122,
+      "exact_duplicate_rate": 0.0,
+      "near_duplicate_rate": 1.0,
+      "nndr_score": 0.3122,
+      "exact_dup_score": 1.0,
+      "near_dup_score": 0.0,
+      "privacy_score": 0.4374
+    },
+    "consistency": {
+      "discriminator_accuracy": 0.8558,
+      "discriminator_score": 0.2885,
+      "constraint_violations": {
+        "Time [0.0, 172792.0]": 0.0008,
+        "V1 [-56.41, 2.45]": 0.0,
+        "V2 [-72.72, 22.06]": 0.0,
+        "V3 [-48.33, 9.38]": 0.0,
+        "V4 [-5.68, 16.88]": 0.0,
+        "V5 [-113.74, 34.8]": 0.0001,
+        "V6 [-26.16, 73.3]": 0.0,
+        "V7 [-43.56, 120.59]": 0.0,
+        "V8 [-73.22, 20.01]": 0.0,
+        "V9 [-13.43, 15.6]": 0.0,
+        "V10 [-24.59, 23.75]": 0.0,
+        "V11 [-4.8, 12.02]": 0.0,
+        "V12 [-18.68, 7.85]": 0.0,
+        "V13 [-5.79, 7.13]": 0.0,
+        "V14 [-19.21, 10.53]": 0.0,
+        "V15 [-4.5, 8.88]": 0.0,
+        "V16 [-14.13, 17.32]": 0.0,
+        "V17 [-25.16, 9.25]": 0.0,
+        "V18 [-9.5, 5.04]": 0.0,
+        "V19 [-7.21, 5.59]": 0.0,
+        "V20 [-54.5, 39.42]": 0.0,
+        "V21 [-34.83, 27.2]": 0.0,
+        "V22 [-10.93, 10.5]": 0.0,
+        "V23 [-44.81, 22.53]": 0.0,
+        "V24 [-2.84, 4.58]": 0.0,
+        "V25 [-10.3, 7.52]": 0.0,
+        "V26 [-2.6, 3.52]": 0.0,
+        "V27 [-22.57, 31.61]": 0.0,
+        "V28 [-15.43, 33.85]": 0.0,
+        "Amount [0.0, 25691.16]": 0.1019,
+        "overall_violation_rate": 0.1029
+      },
+      "constraint_score": 0.8971,
+      "feature_importance_spearman": 0.7744,
+      "consistency_score": 0.6533
+    },
+    "stability": {
+      "n_runs": 5,
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "per_run_scores": [
+        {
+          "seed": 0,
+          "fidelity_score": 0.994,
+          "diversity_score": 0.9266
+        },
+        {
+          "seed": 1,
+          "fidelity_score": 0.9953,
+          "diversity_score": 0.8912
+        },
+        {
+          "seed": 2,
+          "fidelity_score": 0.9945,
+          "diversity_score": 0.903
+        },
+        {
+          "seed": 3,
+          "fidelity_score": 0.9943,
+          "diversity_score": 0.9012
+        },
+        {
+          "seed": 4,
+          "fidelity_score": 0.995,
+          "diversity_score": 0.9009
+        }
+      ],
+      "mean_scores": {
+        "fidelity": 0.9946,
+        "diversity": 0.9046
+      },
+      "std_scores": {
+        "fidelity": 0.0005,
+        "diversity": 0.0118
+      },
+      "avg_std": 0.0062,
+      "stability_score": 0.9385
+    }
+  }
+}
