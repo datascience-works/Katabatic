@@ -1,8 +1,7 @@
-import json
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Tuple, Optional, Any
-from sklearn.preprocessing import LabelEncoder, StandardScaler
+from typing import Dict, List, Optional, Any
+from sklearn.preprocessing import LabelEncoder
 
 
 def set_global_seed(seed: int = 42):
@@ -68,7 +67,6 @@ class DataTransformer:
 
     def __init__(self):
         self.label_encoders: Dict[str, LabelEncoder] = {}
-        self.scalers: Dict[str, StandardScaler] = {}
         self.schema: Optional[Dict] = None
         self.column_order: List[str] = []
         self.min_vals: Optional[np.ndarray] = None
@@ -207,112 +205,6 @@ class PrivacyMechanism:
         return noisy_votes
 
 
-def save_metadata(
-    filepath: str,
-    transformer: DataTransformer,
-    training_config: Dict[str, Any],
-    privacy_config: Dict[str, Any],
-    seed: int = 42
-):
-    """
-    Save model metadata including schema and training configuration.
-
-    Args:
-        filepath: Path to save metadata JSON
-        transformer: Fitted DataTransformer with schema info
-        training_config: Dictionary with training hyperparameters
-        privacy_config: Dictionary with privacy parameters
-        seed: Random seed used
-    """
-    metadata = {
-        'schema': transformer.schema,
-        'column_order': transformer.column_order,
-        'training_config': training_config,
-        'privacy_config': privacy_config,
-        'seed': seed,
-        'label_encoders': {
-            col: {
-                'classes': le.classes_.tolist()
-            }
-            for col, le in transformer.label_encoders.items()
-        },
-        'normalization': {
-            'min_vals': transformer.min_vals.tolist() if transformer.min_vals is not None else None,
-            'max_vals': transformer.max_vals.tolist() if transformer.max_vals is not None else None
-        },
-        'model_type': 'PATEGAN',
-        'framework_version': '0.1.0'
-    }
-
-    with open(filepath, 'w') as f:
-        json.dump(metadata, f, indent=2)
-
-
-def load_metadata(filepath: str) -> Dict[str, Any]:
-    """
-    Load metadata from JSON file.
-
-    Args:
-        filepath: Path to metadata JSON
-
-    Returns:
-        Dictionary containing metadata
-    """
-    with open(filepath, 'r') as f:
-        return json.load(f)
-
-
-def reconstruct_transformer(metadata: Dict[str, Any]) -> DataTransformer:
-    """
-    Reconstruct DataTransformer from saved metadata.
-
-    Args:
-        metadata: Loaded metadata dictionary
-
-    Returns:
-        Reconstructed DataTransformer
-    """
-    transformer = DataTransformer()
-    transformer.schema = metadata['schema']
-    transformer.column_order = metadata['column_order']
-
-    # Reconstruct label encoders
-    for col, le_info in metadata['label_encoders'].items():
-        le = LabelEncoder()
-        le.classes_ = np.array(le_info['classes'])
-        transformer.label_encoders[col] = le
-
-    # Reconstruct normalization parameters
-    if metadata['normalization']['min_vals'] is not None:
-        transformer.min_vals = np.array(metadata['normalization']['min_vals'])
-        transformer.max_vals = np.array(metadata['normalization']['max_vals'])
-
-    return transformer
-
-
-def partition_data(X: np.ndarray, num_partitions: int) -> List[np.ndarray]:
-    """
-    Partition data for teacher discriminators.
-
-    Args:
-        X: Data array to partition
-        num_partitions: Number of partitions (teachers)
-
-    Returns:
-        List of data partitions
-    """
-    n_samples = len(X)
-    indices = np.random.permutation(n_samples)
-    partition_size = n_samples // num_partitions
-
-    partitions = []
-    for i in range(num_partitions):
-        start_idx = i * partition_size
-        end_idx = start_idx + partition_size if i < num_partitions - 1 else n_samples
-        partition_indices = indices[start_idx:end_idx]
-        partitions.append(X[partition_indices])
-
-    return partitions
 
 
 

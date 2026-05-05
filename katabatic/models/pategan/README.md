@@ -56,32 +56,30 @@ model = PATEGAN(
 )
 
 # Train the model
-model.train(data_dir="benchmarks/splits/my_dataset")
+model.fit(X_train, y_train, verbose=1)
 
 # Generate synthetic data
-synthetic_data = model.sample(n_samples=1000)
+synthetic_data = model.sample(n=1000)
 ```
 
 ### Pipeline Usage (Recommended)
 
 ```python
-from katabatic.models.pategan.models import PATEGANSynthesizer
-from katabatic.pipeline.evaluation_pipeline import SyntheticEvaluationPipeline
+from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
+from katabatic.models.pategan import PATEGAN
 
-model = PATEGANSynthesizer(epsilon=1.0, delta=1e-5)
-model.train(
-    data_dir="benchmarks/splits/my_dataset",
-    categorical_cols=["workclass", "education"],
-    continuous_cols=["age", "fnlwgt"],
+# Create pipeline with PATEGAN
+pipeline = TrainTestSplitPipeline(
+    model=PATEGAN,
+    evaluations=None  # Uses default TSTR evaluation
 )
-synthetic_df = model.sample(n_samples=1000)
 
-pipeline = SyntheticEvaluationPipeline(
-    categorical_cols=["workclass", "education"],
-    continuous_cols=["age", "fnlwgt"],
+# Run complete workflow: split -> train -> evaluate
+results = pipeline.run(
+    input_csv='data/car.csv',
+    output_dir='sample_data/car',
+    synthetic_dir='synthetic/car/pategan'
 )
-report = pipeline.run(real_data=train_df, synthetic_data=synthetic_df, target_col="income")
-print(f"Composite score: {report.composite_score:.4f}")
 ```
 
 ## Configuration
@@ -164,15 +162,15 @@ model = PATEGAN(
 # Initialize model
 model = PATEGAN(epsilon=1.0, delta=1e-5, random_state=42)
 
-# Train
-model.train(data_dir="benchmarks/splits/my_dataset")
+# Train on combined X and y
+model.fit(X_train, y_train, verbose=1)
 
-# Generate synthetic samples
-synthetic_samples = model.sample(n_samples=500)
+# Generate conditional samples (future feature)
+synthetic_samples = model.sample(n=500)
 
 # Quick evaluation
-results = model.evaluate()
-print(f"Score: {results}")
+results = model.evaluate(X_test, y_test, model='lr')
+print(f"Accuracy: {results['accuracy']:.4f}")
 ```
 
 ## Model Contract (Katabatic Framework)
@@ -248,26 +246,26 @@ PATE-GAN includes a built-in `evaluate()` method for quick TSTR testing:
 
 ```python
 # Train model
-model.train(data_dir="benchmarks/splits/my_dataset")
+model.fit(X_train, y_train)
 
 # Quick evaluation
-results = model.evaluate()
+results = model.evaluate(X_test, y_test, model='lr', task='classification')
 print(results)
 # Output: {'accuracy': 0.85, 'f1_macro': 0.83}
 ```
 
-For comprehensive evaluation, use the 6-dimension evaluation pipeline:
+For comprehensive evaluation, use the pipeline with `TSTREvaluation`:
 
 ```python
-from katabatic.pipeline.evaluation_pipeline import SyntheticEvaluationPipeline
+from katabatic.evaluate.tstr.evaluation import TSTREvaluation
 
-pipeline = SyntheticEvaluationPipeline(
-    categorical_cols=["workclass", "education"],
-    continuous_cols=["age", "fnlwgt"],
+evaluator = TSTREvaluation(
+    synthetic_dir="synthetic/car/pategan",
+    real_test_dir="sample_data/car"
 )
-report = pipeline.run(real_data=train_df, synthetic_data=synthetic_df, target_col="income")
-print(f"Composite score: {report.composite_score:.4f}")
-print(report.dimension_scores)
+
+results = evaluator.evaluate()
+# Tests with LR, MLP, RF, and XGBoost
 ```
 
 ## Troubleshooting

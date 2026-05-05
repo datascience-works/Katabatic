@@ -3,11 +3,11 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from runner import RunConfig, preprocess_and_split, save_synthetic, evaluate
-from katabatic.models.ctgan.models import CTGANModel
+from katabatic.models.pategan.models import PATEGAN
 
 config = RunConfig(
     dataset_name     = "bank_marketing",
-    model_name       = "ctgan",
+    model_name       = "pategan",
     categorical_cols = ['job', 'marital', 'education', 'default', 'housing', 'loan', 'contact', 'month', 'poutcome'],
     continuous_cols  = ['age', 'balance', 'day', 'duration', 'campaign', 'pdays', 'previous'],
     target_col_raw   = "y",
@@ -25,16 +25,26 @@ config = RunConfig(
 train_df, test_df, target_col, paths = preprocess_and_split(config)
 
 print("\n" + "=" * 60)
-print("STEP 3 — Train CTGAN")
+print("STEP 3 — Train PATEGAN")
 print("=" * 60)
-model = CTGANModel(epochs=100, batch_size=512, seed=42)
-model.train(paths["split_dir"], categorical_cols=config.categorical_cols,
-                                continuous_cols=config.continuous_cols)
-print("\nCTGAN training complete.")
+model = PATEGAN(
+    epsilon=1.0,
+    delta=1e-5,
+    num_teachers=10,
+    niter=10000,
+    batch_size=128,
+    random_state=42,
+)
+model.train(
+    paths["split_dir"],
+    categorical_cols=config.categorical_cols,
+    continuous_cols=config.continuous_cols,
+)
+print("\nPATEGAN training complete.")
 
 print("\n" + "=" * 60)
 print("STEP 4 — Generate synthetic data")
-print("=" * 60)
+print("=" * 60) 
 synthetic_df = model.sample(len(train_df))
 synthetic_df = save_synthetic(synthetic_df, train_df, paths, categorical_cols=config.categorical_cols)
 

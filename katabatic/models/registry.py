@@ -47,7 +47,7 @@ class ModelRegistry:
         },
         'pategan': {
             'module': 'katabatic.models.pategan.models',
-            'class': 'PATEGANSynthesizer',
+            'class': 'PATEGAN',
             'dependencies': ['tensorflow', 'numpy', 'pandas'],
             'extra': 'pategan'
         },

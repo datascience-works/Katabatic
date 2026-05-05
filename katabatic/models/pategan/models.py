@@ -1,17 +1,12 @@
 import os
-import json
 import numpy as np
 import pandas as pd
-from typing import Optional, Dict, Any, Union
+from typing import Optional, Dict, Any
 from katabatic.models.base_model import Model
 from .utils import (
     DataTransformer,
     PrivacyMechanism,
     set_global_seed,
-    save_metadata,
-    load_metadata,
-    reconstruct_transformer,
-    partition_data
 )
 
 
@@ -250,8 +245,14 @@ class PATEGAN(Model):
             num_teachers=self.num_teachers
         )
 
-        # Training loop
+        # Partition data into disjoint subsets — one per teacher (true PATE requirement)
         n_samples = len(X_encoded)
+        indices_perm = np.random.permutation(n_samples)
+        partition_size = n_samples // self.num_teachers
+        partitions = [
+            X_encoded[indices_perm[i * partition_size: (i + 1) * partition_size]]
+            for i in range(self.num_teachers)
+        ]
 
         if verbose:
             print(f"Training PATE-GAN with ε={self.epsilon}, δ={self.delta}")
@@ -267,55 +268,43 @@ class PATEGAN(Model):
             iterator = range(self.niter)
             use_tqdm = False
 
-        # For non-tqdm progress printing
-        print_every = max(
-            1, self.niter // 10) if verbose and not use_tqdm else None
+        print_every = max(1, self.niter // 10) if verbose and not use_tqdm else None
 
         for it in iterator:
-            # Train teacher discriminators
+            # Train each teacher discriminator on its own disjoint partition
             for teacher_idx in range(self.num_teachers):
-                # Sample batch from data
-                indices = np.random.choice(
-                    n_samples, self.batch_size, replace=False)
-                X_mb = X_encoded[indices]
+                partition = partitions[teacher_idx]
+                part_size = len(partition)
+                sample_n = min(self.batch_size, part_size)
+                idx = np.random.choice(part_size, sample_n, replace=False)
+                X_mb = partition[idx]
 
-                # Sample noise
-                Z_mb = np.random.uniform(-1., 1.,
-                                         size=[self.batch_size, self.z_dim])
+                Z_mb = np.random.uniform(-1., 1., size=[sample_n, self.z_dim])
 
-                # Create teacher labels with privacy noise
-                M_real = np.ones([self.batch_size,])
-                M_fake = np.zeros([self.batch_size,])
+                # Binary labels: 1=real, 0=fake
+                M_real = np.ones([sample_n])
+                M_fake = np.zeros([sample_n])
                 M_entire = np.concatenate((M_real, M_fake), 0)
 
-                # Add Gaussian noise for privacy
-                noise = self.privacy_mechanism.add_gaussian_noise(M_entire)
-                M_entire = M_entire + noise
+                # Add Gaussian noise for differential privacy, then re-binarise
+                M_entire = self.privacy_mechanism.add_gaussian_noise(M_entire)
                 M_entire = (M_entire > 0.5).astype(float)
-                M_mb = np.reshape(M_entire, (2 * self.batch_size, 1))
+                M_mb = M_entire.reshape(-1, 1)
 
-                # Train discriminator
                 _, D_loss_curr = self._sess.run(
                     [self.D_solver, self.D_loss],
                     feed_dict={self.X: X_mb, self.Z: Z_mb, self.M: M_mb}
                 )
 
-            # Train generator
-            Z_mb = np.random.uniform(-1., 1.,
-                                     size=[self.batch_size, self.z_dim])
-            indices = np.random.choice(
-                n_samples, self.batch_size, replace=False)
-            X_mb = X_encoded[indices]
-
+            # Train generator (only Z needed — G_loss depends solely on D_fake)
+            Z_mb = np.random.uniform(-1., 1., size=[self.batch_size, self.z_dim])
             _, G_loss_curr = self._sess.run(
                 [self.G_solver, self.G_loss],
                 feed_dict={self.Z: Z_mb}
             )
 
-            # Print progress (only if not using tqdm)
             if print_every is not None and it % print_every == 0:
-                print(
-                    f"Iter {it}/{self.niter}: D_loss={D_loss_curr:.4f}, G_loss={G_loss_curr:.4f}")
+                print(f"Iter {it}/{self.niter}: D_loss={D_loss_curr:.4f}, G_loss={G_loss_curr:.4f}")
 
         if verbose:
             print("Training completed!")
@@ -325,15 +314,16 @@ class PATEGAN(Model):
 
     def sample(
         self,
-        n: int,
-        conditional: Optional[Dict[str, Any]] = None
+        n_samples: int,
+        seed: int = None,
+        **kwargs
     ) -> pd.DataFrame:
         """
         Generate synthetic samples.
 
         Args:
-            n: Number of samples to generate
-            conditional: Not implemented (for future use)
+            n_samples: Number of samples to generate
+            seed: Random seed for reproducibility (used by stability evaluator)
 
         Returns:
             DataFrame with synthetic samples in original feature space
@@ -341,242 +331,142 @@ class PATEGAN(Model):
         if not self.is_fitted:
             raise RuntimeError("Model must be fitted before sampling")
 
-        if conditional is not None:
-            print("Warning: Conditional sampling not yet implemented for PATE-GAN")
+        if seed is not None:
+            np.random.seed(seed)
 
-        # Generate in batches to avoid memory issues
         all_samples = []
-        n_batches = int(np.ceil(n / self.batch_size))
+        remaining = n_samples
 
-        for i in range(n_batches):
-            batch_size = min(self.batch_size, n - i * self.batch_size)
-            Z_sample = np.random.uniform(-1., 1.,
-                                         size=[batch_size, self.z_dim])
-
+        while remaining > 0:
+            batch_size = min(self.batch_size, remaining)
+            Z_sample = np.random.uniform(-1., 1., size=[batch_size, self.z_dim])
             X_synth = self._sess.run(
                 [self._G_sample],
                 feed_dict={self.Z: Z_sample}
             )[0]
-
             all_samples.append(X_synth)
+            remaining -= batch_size
 
-        # Concatenate all batches
-        X_synth_all = np.vstack(all_samples)[:n]
-
-        # Decode back to original feature space
-        df_synth = self.transformer.inverse_transform(X_synth_all)
-
-        return df_synth
+        X_synth_all = np.vstack(all_samples)[:n_samples]
+        return self.transformer.inverse_transform(X_synth_all)
 
     def train(
         self,
         dataset_dir: str,
         synthetic_dir: Optional[str] = None,
+        *args,
+        categorical_cols: Optional[list] = None,
+        continuous_cols: Optional[list] = None,
         **kwargs
     ) -> 'PATEGAN':
         """
-        Train PATE-GAN following Katabatic pipeline contract.
+        Train PATE-GAN following the Katabatic runner contract.
 
-        Reads x_train.csv and y_train.csv from dataset_dir,
-        trains the model, generates synthetic data, and writes
-        x_synth.csv, y_synth.csv, and metadata.json to synthetic_dir.
+        Loads training data from dataset_dir using the standard priority order:
+          train_sample.csv  →  train_full.csv  →  x_train.csv + y_train.csv
+
+        The runner calls sample() separately to obtain synthetic data, so this
+        method only trains the model and does not generate or save outputs.
 
         Args:
-            dataset_dir: Directory containing x_train.csv and y_train.csv
-            synthetic_dir: Directory to save synthetic data (optional)
-            **kwargs: Additional training parameters (epsilon, delta, num_teachers, niter, batch_size, etc.)
-
-        Returns:
-            self
+            dataset_dir: Directory containing training CSVs
+            synthetic_dir: Unused — kept for interface compatibility
+            categorical_cols: Accepted for interface compatibility (dtype-inferred internally)
+            continuous_cols: Accepted for interface compatibility (dtype-inferred internally)
+            **kwargs: verbose (int, default 1)
         """
-        # Override model parameters from kwargs if provided
-        # Pop them so they don't propagate to evaluations
-        if 'epsilon' in kwargs:
-            self.epsilon = kwargs.pop('epsilon')
-        if 'delta' in kwargs:
-            self.delta = kwargs.pop('delta')
-        if 'num_teachers' in kwargs:
-            self.num_teachers = kwargs.pop('num_teachers')
-        if 'niter' in kwargs:
-            self.niter = kwargs.pop('niter')
-        if 'batch_size' in kwargs:
-            self.batch_size = kwargs.pop('batch_size')
-        if 'learning_rate' in kwargs:
-            self.learning_rate = kwargs.pop('learning_rate')
-        if 'lambda_gp' in kwargs:
-            self.lambda_gp = kwargs.pop('lambda_gp')
-        if 'z_dim' in kwargs:
-            self.z_dim = kwargs.pop('z_dim')
-        if 'random_state' in kwargs:
-            self.random_state = kwargs.pop('random_state')
+        train_sample = os.path.join(dataset_dir, "train_sample.csv")
+        train_full   = os.path.join(dataset_dir, "train_full.csv")
+        x_path       = os.path.join(dataset_dir, "x_train.csv")
+        y_path       = os.path.join(dataset_dir, "y_train.csv")
 
-        # Read training data
-        x_train_path = os.path.join(dataset_dir, "x_train.csv")
-        y_train_path = os.path.join(dataset_dir, "y_train.csv")
-
-        if not os.path.exists(x_train_path):
-            raise FileNotFoundError(f"x_train.csv not found in {dataset_dir}")
-
-        X_train = pd.read_csv(x_train_path)
-
-        # y_train is optional
-        y_train = None
-        y_label_encoder = None
-        if os.path.exists(y_train_path):
-            y_train = pd.read_csv(y_train_path)
-            if isinstance(y_train, pd.DataFrame) and len(y_train.columns) == 1:
-                y_train = y_train.iloc[:, 0]
-
-            # Remap y_train classes to consecutive integers [0, 1, 2, ...]
-            # This is required for ML models like XGBoost which expect consecutive classes
-            from sklearn.preprocessing import LabelEncoder
-            y_label_encoder = LabelEncoder()
-            original_classes = y_train.unique()
-            y_train_remapped = y_label_encoder.fit_transform(y_train)
-            y_train = pd.Series(y_train_remapped, name=y_train.name if hasattr(
-                y_train, 'name') else 'target')
-            print(
-                f"Remapped y classes: {sorted(original_classes)} -> {sorted(y_label_encoder.transform(original_classes))}")
-
-        print(f"Loaded training data: X shape={X_train.shape}", end="")
-        if y_train is not None:
-            print(
-                f", y shape={y_train.shape if isinstance(y_train, pd.DataFrame) else (len(y_train),)}")
+        if os.path.exists(train_sample):
+            df = pd.read_csv(train_sample)
+        elif os.path.exists(train_full):
+            df = pd.read_csv(train_full)
+        elif os.path.exists(x_path):
+            X = pd.read_csv(x_path)
+            if os.path.exists(y_path):
+                y = pd.read_csv(y_path)
+                if y.shape[1] != 1:
+                    raise ValueError("y_train.csv must have exactly one column.")
+                df = pd.concat([X, y[y.columns[0]]], axis=1)
+            else:
+                df = X
         else:
-            print()
-
-        # Fit model
-        self.fit(X_train, y_train, verbose=kwargs.get('verbose', 1))
-
-        # Generate synthetic data
-        n_samples = len(X_train)
-        print(f"\nGenerating {n_samples} synthetic samples...")
-        df_synth = self.sample(n_samples)
-
-        # Split into X and y
-        if y_train is not None:
-            target_cols = y_train.columns.tolist() if isinstance(
-                y_train, pd.DataFrame) else [y_train.name]
-            x_synth = df_synth.drop(columns=target_cols)
-            y_synth = df_synth[target_cols]
-
-            # Ensure all training classes are present in synthetic data (robustness for TSTR)
-            y_col = target_cols[0]
-            df_train = pd.concat([
-                X_train.copy(),
-                (y_train if isinstance(y_train, pd.DataFrame)
-                 else y_train.to_frame(name=y_col))
-            ], axis=1)
-
-            unique_train = np.unique(df_train[y_col].values)
-            unique_synth = np.unique(y_synth[y_col].values)
-            missing_classes = set(unique_train) - set(unique_synth)
-
-            if missing_classes:
-                print(
-                    f"[PATEGAN] Adding {len(missing_classes)} dummy samples to cover classes: {sorted(missing_classes)}")
-                for cls in missing_classes:
-                    idx = np.where(df_train[y_col].values == cls)[0]
-                    if idx.size == 0:
-                        continue
-                    row = df_train.iloc[idx[0]:idx[0]+1]
-                    x_dummy = row.drop(columns=[y_col])
-                    y_dummy = row[[y_col]]
-                    x_synth = pd.concat([x_synth, x_dummy], ignore_index=True)
-                    y_synth = pd.concat([y_synth, y_dummy], ignore_index=True)
-
-            # Final guard: ensure at least 2 classes
-            if np.unique(y_synth[y_col].values).size < 2 and unique_train.size >= 2:
-                alt_classes = [c for c in unique_train if c !=
-                               y_synth[y_col].iloc[0]]
-                if alt_classes:
-                    y_synth.loc[y_synth.index[0], y_col] = alt_classes[0]
-                    print(
-                        f"[PATEGAN] Forced presence of a second class: {alt_classes[0]}")
-
-            # Cast to integers to ensure proper class labels and discrete features
-            for col in x_synth.columns:
-                try:
-                    x_synth[col] = x_synth[col].astype(int)
-                except Exception:
-                    pass
-            y_synth[y_col] = y_synth[y_col].astype(int)
-
-            # y_synth already has remapped classes [0, 1, 2, ...] since model was trained on remapped data
-            # This is what evaluation expects
-        else:
-            x_synth = df_synth
-            y_synth = None
-
-        # Also remap y_test.csv to match the synthetic data's class encoding
-        # Get real_test_dir from kwargs (passed by pipeline)
-        real_test_dir = kwargs.get('real_test_dir')
-        if y_label_encoder is not None and real_test_dir is not None:
-            y_test_path = os.path.join(real_test_dir, "y_test.csv")
-            if os.path.exists(y_test_path):
-                y_test = pd.read_csv(y_test_path)
-                if isinstance(y_test, pd.DataFrame) and len(y_test.columns) == 1:
-                    y_test = y_test.iloc[:, 0]
-
-                # Only keep test samples with classes seen in training
-                test_mask = y_test.isin(y_label_encoder.classes_)
-                if not test_mask.all():
-                    print(
-                        f"Warning: Filtering {(~test_mask).sum()} test samples with unseen classes")
-                    # Also filter x_test
-                    x_test_path = os.path.join(real_test_dir, "x_test.csv")
-                    if os.path.exists(x_test_path):
-                        x_test = pd.read_csv(x_test_path)
-                        x_test = x_test[test_mask]
-                        x_test.to_csv(x_test_path, index=False)
-                    y_test = y_test[test_mask]
-
-                # Transform y_test with same encoder
-                y_test_remapped = y_label_encoder.transform(y_test)
-                y_test = pd.DataFrame(y_test_remapped, columns=y_test.columns if isinstance(
-                    y_test, pd.DataFrame) else [y_test.name])
-                y_test.to_csv(y_test_path, index=False)
-                print(f"Remapped y_test.csv to match synthetic data encoding")
-
-        # Save synthetic data
-        if synthetic_dir is not None:
-            os.makedirs(synthetic_dir, exist_ok=True)
-
-            x_synth_path = os.path.join(synthetic_dir, "x_synth.csv")
-            x_synth.to_csv(x_synth_path, index=False)
-            print(f"Saved x_synth.csv to {x_synth_path}")
-
-            if y_synth is not None:
-                y_synth_path = os.path.join(synthetic_dir, "y_synth.csv")
-                y_synth.to_csv(y_synth_path, index=False)
-                print(f"Saved y_synth.csv to {y_synth_path}")
-
-            # Save metadata
-            metadata_path = os.path.join(synthetic_dir, "metadata.json")
-            training_config = {
-                'niter': self.niter,
-                'batch_size': self.batch_size,
-                'learning_rate': self.learning_rate,
-                'lambda_gp': self.lambda_gp,
-                'z_dim': self.z_dim
-            }
-            privacy_config = {
-                'epsilon': self.epsilon,
-                'delta': self.delta,
-                'num_teachers': self.num_teachers,
-                'lambda_noise': self.privacy_mechanism.lambda_noise
-            }
-            save_metadata(
-                metadata_path,
-                self.transformer,
-                training_config,
-                privacy_config,
-                self.random_state
+            raise FileNotFoundError(
+                f"No training data found in {dataset_dir}. "
+                "Expected train_sample.csv, train_full.csv, or x_train.csv."
             )
-            print(f"Saved metadata.json to {metadata_path}")
 
+        print(f"[PATEGAN] Loaded {len(df)} training rows, {df.shape[1]} columns.")
+        self.fit(df, verbose=kwargs.get('verbose', 1))
         return self
 
+    def evaluate(
+        self,
+        x: pd.DataFrame,
+        y: pd.Series,
+        model: str = "lr",
+        task: Optional[str] = None,
+        random_state: int = 42,
+        **kwargs
+    ) -> Dict[str, float]:
+        """
+        Quick standalone TSTR evaluation (not used by the pipeline).
+
+        Args:
+            x: Test features
+            y: Test labels
+            model: Downstream model type ('lr' or 'rf')
+            task: 'classification' or 'regression' (auto-detected if None)
+            random_state: Random seed
+
+        Returns:
+            Dictionary of metric scores
+        """
+        from sklearn.metrics import (
+            accuracy_score, f1_score, roc_auc_score,
+            mean_squared_error, mean_absolute_error, r2_score
+        )
+        from sklearn.linear_model import LogisticRegression, LinearRegression
+        from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+
+        if task is None:
+            task = 'classification' if (y.dtype == object or y.nunique() < 20) else 'regression'
+
+        df_synth = self.sample(len(x))
+        X_synth = df_synth.iloc[:, :-1]
+        y_synth = df_synth.iloc[:, -1]
+
+        if task == 'classification':
+            clf = (RandomForestClassifier(random_state=random_state, n_estimators=100)
+                   if model == 'rf'
+                   else LogisticRegression(random_state=random_state, max_iter=1000))
+            clf.fit(X_synth, y_synth)
+            y_pred = clf.predict(x)
+            results = {
+                'accuracy': accuracy_score(y, y_pred),
+                'f1_macro': f1_score(y, y_pred, average='macro', zero_division=0),
+            }
+            if y.nunique() == 2:
+                try:
+                    results['roc_auc'] = roc_auc_score(y, clf.predict_proba(x)[:, 1])
+                except Exception:
+                    pass
+        else:
+            reg = (RandomForestRegressor(random_state=random_state, n_estimators=100)
+                   if model == 'rf'
+                   else LinearRegression())
+            reg.fit(X_synth, y_synth)
+            y_pred = reg.predict(x)
+            results = {
+                'r2': r2_score(y, y_pred),
+                'mae': mean_absolute_error(y, y_pred),
+                'rmse': float(np.sqrt(mean_squared_error(y, y_pred))),
+            }
+
+        return results
 
     def __del__(self):
         """Clean up TensorFlow session."""
