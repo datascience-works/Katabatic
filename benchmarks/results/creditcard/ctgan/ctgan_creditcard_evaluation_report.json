@@ -1,0 +1,164 @@
+{
+  "composite_score": 0.4738,
+  "dimension_scores": {
+    "fidelity": 0.7575,
+    "utility": 0.0,
+    "diversity": 0.8817,
+    "privacy": 0.9961,
+    "consistency": 0.0,
+    "stability": 0.9375
+  },
+  "weights_used": {
+    "fidelity": 0.25,
+    "utility": 0.35,
+    "diversity": 0.1,
+    "privacy": 0.15,
+    "consistency": 0.1,
+    "stability": 0.05
+  },
+  "full_results": {
+    "fidelity": {
+      "categorical_jsd": {},
+      "continuous_wasserstein": {
+        "Time": 0.5474,
+        "V1": 0.0907,
+        "V2": 0.0572,
+        "V3": 0.0335,
+        "V4": 0.1706,
+        "V5": 0.0979,
+        "V6": 0.0665,
+        "V7": 0.0939,
+        "V8": 0.0326,
+        "V9": 0.0979,
+        "V10": 0.1178,
+        "V11": 0.1354,
+        "V12": 0.1049,
+        "V13": 0.3327,
+        "V14": 0.1598,
+        "V15": 0.1407,
+        "V16": 0.314,
+        "V17": 0.12,
+        "V18": 0.3307,
+        "V19": 0.2148,
+        "V20": 0.0665,
+        "V21": 0.0652,
+        "V22": 0.1476,
+        "V23": 0.1997,
+        "V24": 1.0,
+        "V25": 0.166,
+        "V26": 0.7725,
+        "V27": 0.3107,
+        "V28": 0.0644,
+        "Amount": 0.003,
+        "avg": 0.2018
+      },
+      "correlation_diff": 0.2831,
+      "categorical_score": null,
+      "continuous_score": 0.7982,
+      "correlation_score": 0.7169,
+      "fidelity_score": 0.7575
+    },
+    "utility": {
+      "error": "Supported target types are: ('binary', 'multiclass'). Got 'continuous' instead.",
+      "utility_score": 0.0
+    },
+    "diversity": {
+      "category_coverage": {},
+      "bin_coverage": {
+        "Time": 0.4,
+        "V1": 0.9,
+        "V2": 0.9,
+        "V3": 0.7,
+        "V4": 1.0,
+        "V5": 0.9,
+        "V6": 1.0,
+        "V7": 1.0,
+        "V8": 0.7,
+        "V9": 0.9,
+        "V10": 0.9,
+        "V11": 0.9,
+        "V12": 1.0,
+        "V13": 1.0,
+        "V14": 1.0,
+        "V15": 1.0,
+        "V16": 0.9,
+        "V17": 0.9,
+        "V18": 0.8,
+        "V19": 1.0,
+        "V20": 0.8,
+        "V21": 0.9,
+        "V22": 1.0,
+        "V23": 1.0,
+        "V24": 1.0,
+        "V25": 1.0,
+        "V26": 1.0,
+        "V27": 0.9,
+        "V28": 0.7,
+        "Amount": 0.3,
+        "avg": 0.88
+      },
+      "gower_similarity": 0.8833,
+      "diversity_score": 0.8817
+    },
+    "privacy": {
+      "mean_nndr": 0.9883,
+      "exact_duplicate_rate": 0.0,
+      "near_duplicate_rate": 0.0,
+      "nndr_score": 0.9883,
+      "exact_dup_score": 1.0,
+      "near_dup_score": 1.0,
+      "privacy_score": 0.9961
+    },
+    "consistency": {
+      "error": "Unknown label type: continuous. Maybe you are trying to fit a classifier, which expects discrete classes on a regression target with continuous values.",
+      "consistency_score": 0.0
+    },
+    "stability": {
+      "n_runs": 5,
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "per_run_scores": [
+        {
+          "seed": 0,
+          "fidelity_score": 0.7692,
+          "diversity_score": 0.8815
+        },
+        {
+          "seed": 1,
+          "fidelity_score": 0.7688,
+          "diversity_score": 0.8669
+        },
+        {
+          "seed": 2,
+          "fidelity_score": 0.7696,
+          "diversity_score": 0.8683
+        },
+        {
+          "seed": 3,
+          "fidelity_score": 0.7635,
+          "diversity_score": 0.8847
+        },
+        {
+          "seed": 4,
+          "fidelity_score": 0.7553,
+          "diversity_score": 0.8757
+        }
+      ],
+      "mean_scores": {
+        "fidelity": 0.7653,
+        "diversity": 0.8754
+      },
+      "std_scores": {
+        "fidelity": 0.0055,
+        "diversity": 0.007
+      },
+      "avg_std": 0.0063,
+      "stability_score": 0.9375
+    }
+  }
+}

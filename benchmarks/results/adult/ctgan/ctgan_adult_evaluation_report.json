@@ -1,0 +1,147 @@
+{
+  "composite_score": 0.3936,
+  "dimension_scores": {
+    "fidelity": 0.591,
+    "utility": 0.0,
+    "diversity": 0.3391,
+    "privacy": 0.9951,
+    "consistency": 0.1326,
+    "stability": 0.9885
+  },
+  "weights_used": {
+    "fidelity": 0.25,
+    "utility": 0.35,
+    "diversity": 0.1,
+    "privacy": 0.15,
+    "consistency": 0.1,
+    "stability": 0.05
+  },
+  "full_results": {
+    "fidelity": {
+      "categorical_jsd": {
+        "workclass": 0.7914,
+        "education": 0.7923,
+        "educational-num": 0.5949,
+        "marital-status": 0.7894,
+        "occupation": 0.7128,
+        "relationship": 0.5223,
+        "race": 0.6961,
+        "gender": 0.2373,
+        "native-country": 0.8313,
+        "avg": 0.6631
+      },
+      "continuous_wasserstein": {
+        "age": 0.3803,
+        "fnlwgt": 0.1286,
+        "capital-gain": 0.0107,
+        "capital-loss": 0.021,
+        "hours-per-week": 0.2943,
+        "avg": 0.167
+      },
+      "correlation_diff": 0.3968,
+      "categorical_score": 0.3369,
+      "continuous_score": 0.833,
+      "correlation_score": 0.6032,
+      "fidelity_score": 0.591
+    },
+    "utility": {
+      "error": "Synthetic data is too class-imbalanced \u2014 all CV folds contained only one class. The model did not learn the class distribution.",
+      "utility_score": 0.0
+    },
+    "diversity": {
+      "category_coverage": {
+        "workclass": 0.1111,
+        "education": 0.0625,
+        "educational-num": 0.25,
+        "marital-status": 0.1429,
+        "occupation": 0.0667,
+        "relationship": 0.1667,
+        "race": 0.6,
+        "gender": 1.0,
+        "native-country": 0.0238,
+        "avg": 0.2693
+      },
+      "bin_coverage": {
+        "age": 0.1,
+        "fnlwgt": 0.1,
+        "capital-gain": 0.1,
+        "capital-loss": 0.1,
+        "hours-per-week": 0.1,
+        "avg": 0.1
+      },
+      "gower_similarity": 0.648,
+      "diversity_score": 0.3391
+    },
+    "privacy": {
+      "mean_nndr": 0.9852,
+      "exact_duplicate_rate": 0.0,
+      "near_duplicate_rate": 0.0,
+      "nndr_score": 0.9852,
+      "exact_dup_score": 1.0,
+      "near_dup_score": 1.0,
+      "privacy_score": 0.9951
+    },
+    "consistency": {
+      "discriminator_accuracy": 1.0,
+      "discriminator_score": 0.0,
+      "constraint_violations": {
+        "age [17, 90]": 1.0,
+        "fnlwgt [12285, 1490400]": 1.0,
+        "capital-gain [0, 99999]": 0.0,
+        "capital-loss [0, 4356]": 0.0,
+        "hours-per-week [1, 99]": 0.0,
+        "overall_violation_rate": 1.0
+      },
+      "constraint_score": 0.0,
+      "feature_importance_spearman": 0.3978,
+      "consistency_score": 0.1326
+    },
+    "stability": {
+      "n_runs": 5,
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "per_run_scores": [
+        {
+          "seed": 0,
+          "fidelity_score": 0.5913,
+          "diversity_score": 0.3401
+        },
+        {
+          "seed": 1,
+          "fidelity_score": 0.5916,
+          "diversity_score": 0.3399
+        },
+        {
+          "seed": 2,
+          "fidelity_score": 0.5912,
+          "diversity_score": 0.3418
+        },
+        {
+          "seed": 3,
+          "fidelity_score": 0.5905,
+          "diversity_score": 0.3359
+        },
+        {
+          "seed": 4,
+          "fidelity_score": 0.591,
+          "diversity_score": 0.3394
+        }
+      ],
+      "mean_scores": {
+        "fidelity": 0.5911,
+        "diversity": 0.3394
+      },
+      "std_scores": {
+        "fidelity": 0.0004,
+        "diversity": 0.0019
+      },
+      "avg_std": 0.0011,
+      "stability_score": 0.9885
+    }
+  }
+}
