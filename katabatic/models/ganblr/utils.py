@@ -1,27 +1,39 @@
 from tensorflow.python.ops import math_ops
 import numpy as np
 import tensorflow as tf
+from sklearn.preprocessing import OneHotEncoder
+from pandas import read_csv
 
 class softmax_weight(tf.keras.constraints.Constraint):
-    """Constrains weight tensors to be under softmax `."""
-  
-    def __init__(self,feature_uniques):
+    """Constrains weight tensors to be under softmax (vectorised)."""
+
+    def __init__(self, feature_uniques):
         if isinstance(feature_uniques, np.ndarray):
-            idxs = math_ops.cumsum(np.hstack([np.array([0]),feature_uniques]))
+            feature_idxs = np.concatenate([[0], np.cumsum(feature_uniques)])
         else:
-            idxs = math_ops.cumsum([0] + feature_uniques)
-        idxs = [i.numpy() for i in idxs]
-        self.feature_idxs = [
-            (idxs[i],idxs[i+1]) for i in range(len(idxs)-1)
-        ]
-  
-    def __call__(self, w):     
-        w_new = [
-            math_ops.log(tf.nn.softmax(w[i:j,:], axis=0))
-            for i,j in self.feature_idxs
-        ]
-        return tf.concat(w_new, 0)
-  
+            feature_idxs = np.concatenate([[0], np.cumsum(np.asarray(feature_uniques))])
+        feature_idxs = feature_idxs.astype(np.int64)
+
+        # Build a segment-id vector: each row of w gets a feature group id
+        seg_ids = np.zeros(int(feature_idxs[-1]), dtype=np.int64)
+        for i in range(len(feature_idxs) - 1):
+            seg_ids[feature_idxs[i]:feature_idxs[i + 1]] = i
+
+        self.feature_idxs = feature_idxs.tolist()
+        self.seg_ids = tf.constant(seg_ids)
+        self.n_segments = int(len(feature_idxs) - 1)
+
+    def __call__(self, w):
+        # Compute group-wise log-softmax in one vectorised pass.
+        seg_max = tf.math.unsorted_segment_max(w, self.seg_ids, self.n_segments)
+        # Broadcast group max back to each row
+        max_per_row = tf.gather(seg_max, self.seg_ids)
+        shifted = w - max_per_row
+        exp_shifted = tf.exp(shifted)
+        seg_sum = tf.math.unsorted_segment_sum(exp_shifted, self.seg_ids, self.n_segments)
+        logsumexp_per_row = tf.gather(tf.math.log(seg_sum), self.seg_ids) + max_per_row
+        return w - logsumexp_per_row
+
     def get_config(self):
         return {'feature_idxs': self.feature_idxs}
 
@@ -35,7 +47,9 @@ def KL_loss(prob_fake):
 
 def get_lr(input_dim, output_dim, constraint=None,KL_LOSS=0):
     model = tf.keras.Sequential()
-    model.add(tf.keras.layers.Dense(output_dim, input_dim=input_dim, activation='softmax',kernel_constraint=constraint))
+    # declared input shape to keras
+    model.add(tf.keras.Input(shape=(input_dim,)))
+    model.add(tf.keras.layers.Dense(output_dim, activation='softmax',kernel_constraint=constraint))
     model.compile(loss=elr_loss(KL_LOSS), optimizer='adam', metrics=['accuracy'])
     #log_elr = model.fit(*train_data, validation_data=test_data, batch_size=batch_size,epochs=epochs)
     return model 
@@ -111,50 +125,3 @@ def get_demo_data(name='adult'):
     """
     assert(name in DEMO_DATASETS.keys())
     return read_csv(DEMO_DATASETS[name]['link'], **DEMO_DATASETS[name]['params'])
-
-from .kdb import KdbHighOrderFeatureEncoder
-from sklearn.preprocessing import OneHotEncoder
-from pandas import read_csv
-import numpy as np
-
-class DataUtils:
-    """
-    useful data utils for the preparation before training.
-    """
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.data_size = len(x)
-        self.num_features = x.shape[1]
-
-        yunique, ycounts = np.unique(y, return_counts=True)
-        self.num_classes = len(yunique)
-        self.class_counts = ycounts
-        self.feature_uniques = [len(np.unique(x[:,i])) for i in range(self.num_features)]
-        
-        self.constraint_positions = None
-        self._kdbe = None
-
-        self.__kdbe_x = None
-
-    def get_categories(self, idxs=None):
-        if idxs != None:
-            return [self._kdbe.ohe_.categories_[i] for i in idxs]
-        return self._kdbe.ohe_.categories_
-
-    def get_kdbe_x(self, k=0, dense_format=True) -> np.ndarray:
-        if self.__kdbe_x is not None:
-            return self.__kdbe_x
-        if self._kdbe == None:
-            self._kdbe = KdbHighOrderFeatureEncoder()
-            self._kdbe.fit(self.x, self.y, k=k)
-        kdbex = self._kdbe.transform(self.x)
-        if dense_format:
-            kdbex = kdbex.todense()
-        self.__kdbe_x = kdbex
-        self.constraint_positions = self._kdbe.constraints_
-        return kdbex
-    
-    def clear(self):
-        self._kdbe = None
-        self.__kdbe_x = None

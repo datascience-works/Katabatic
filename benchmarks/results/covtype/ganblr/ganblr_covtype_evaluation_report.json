@@ -1,0 +1,353 @@
+{
+  "composite_score": 0.7147,
+  "dimension_scores": {
+    "fidelity": 0.833,
+    "utility": 0.6297,
+    "diversity": 0.5361,
+    "privacy": 0.9987,
+    "consistency": 0.3333,
+    "stability": 0.9865
+  },
+  "weights_used": {
+    "fidelity": 0.25,
+    "utility": 0.35,
+    "diversity": 0.1,
+    "privacy": 0.15,
+    "consistency": 0.1,
+    "stability": 0.05
+  },
+  "full_results": {
+    "fidelity": {
+      "categorical_jsd": {},
+      "continuous_wasserstein": {
+        "Elevation": 0.0625,
+        "Aspect": 0.0733,
+        "Slope": 0.3477,
+        "Horizontal_Distance_To_Hydrology": 0.2924,
+        "Vertical_Distance_To_Hydrology": 0.4178,
+        "Horizontal_Distance_To_Roadways": 0.1732,
+        "Hillshade_9am": 0.352,
+        "Hillshade_Noon": 0.4057,
+        "Hillshade_3pm": 0.1188,
+        "Horizontal_Distance_To_Fire_Points": 0.1742,
+        "Wilderness_Area1": 0.0847,
+        "Wilderness_Area2": 0.3371,
+        "Wilderness_Area3": 0.0538,
+        "Wilderness_Area4": 0.2799,
+        "Soil_Type1": 0.1532,
+        "Soil_Type2": 0.184,
+        "Soil_Type3": 0.2079,
+        "Soil_Type4": 0.2242,
+        "Soil_Type5": 0.1703,
+        "Soil_Type6": 0.2477,
+        "Soil_Type7": 0.5599,
+        "Soil_Type8": 0.385,
+        "Soil_Type9": 0.3344,
+        "Soil_Type10": 0.4521,
+        "Soil_Type11": 0.4331,
+        "Soil_Type12": 0.282,
+        "Soil_Type13": 0.3548,
+        "Soil_Type14": 0.1329,
+        "Soil_Type15": 0.3487,
+        "Soil_Type16": 0.3629,
+        "Soil_Type17": 0.3165,
+        "Soil_Type18": 0.1797,
+        "Soil_Type19": 0.3236,
+        "Soil_Type20": 0.3516,
+        "Soil_Type21": 0.3321,
+        "Soil_Type22": 0.3218,
+        "Soil_Type23": 0.3038,
+        "Soil_Type24": 0.3478,
+        "Soil_Type25": 0.3786,
+        "Soil_Type26": 0.2937,
+        "Soil_Type27": 0.3609,
+        "Soil_Type28": 0.3348,
+        "Soil_Type29": 0.2077,
+        "Soil_Type30": 0.3075,
+        "Soil_Type31": 0.357,
+        "Soil_Type32": 0.3865,
+        "Soil_Type33": 0.3855,
+        "Soil_Type34": 0.2607,
+        "Soil_Type35": 0.251,
+        "Soil_Type36": 0.2711,
+        "Soil_Type37": 0.1254,
+        "Soil_Type38": 0.2628,
+        "Soil_Type39": 0.2617,
+        "Soil_Type40": 0.2656,
+        "avg": 0.2814
+      },
+      "correlation_diff": 0.0527,
+      "categorical_score": null,
+      "continuous_score": 0.7186,
+      "correlation_score": 0.9473,
+      "fidelity_score": 0.833
+    },
+    "utility": {
+      "tstr": {
+        "LR": {
+          "accuracy": {
+            "mean": 0.4971,
+            "std": 0.028
+          },
+          "f1": {
+            "mean": 0.4614,
+            "std": 0.0371
+          }
+        },
+        "DT": {
+          "accuracy": {
+            "mean": 0.396,
+            "std": 0.0042
+          },
+          "f1": {
+            "mean": 0.2434,
+            "std": 0.0042
+          }
+        },
+        "RF": {
+          "accuracy": {
+            "mean": 0.4113,
+            "std": 0.0006
+          },
+          "f1": {
+            "mean": 0.2517,
+            "std": 0.0015
+          }
+        },
+        "LinearSVM": {
+          "accuracy": {
+            "mean": 0.4645,
+            "std": 0.0213
+          },
+          "f1": {
+            "mean": 0.4334,
+            "std": 0.0357
+          }
+        },
+        "MLP": {
+          "accuracy": {
+            "mean": 0.5277,
+            "std": 0.0235
+          },
+          "f1": {
+            "mean": 0.4988,
+            "std": 0.0277
+          }
+        }
+      },
+      "trtr": {
+        "LR": {
+          "accuracy": {
+            "mean": 0.723,
+            "std": 0.0004
+          },
+          "f1": {
+            "mean": 0.7131,
+            "std": 0.0004
+          }
+        },
+        "DT": {
+          "accuracy": {
+            "mean": 0.8188,
+            "std": 0.0022
+          },
+          "f1": {
+            "mean": 0.8188,
+            "std": 0.0022
+          }
+        },
+        "RF": {
+          "accuracy": {
+            "mean": 0.8734,
+            "std": 0.0007
+          },
+          "f1": {
+            "mean": 0.8712,
+            "std": 0.0007
+          }
+        },
+        "LinearSVM": {
+          "accuracy": {
+            "mean": 0.7109,
+            "std": 0.0006
+          },
+          "f1": {
+            "mean": 0.6987,
+            "std": 0.0009
+          }
+        },
+        "MLP": {
+          "accuracy": {
+            "mean": 0.8311,
+            "std": 0.0017
+          },
+          "f1": {
+            "mean": 0.8294,
+            "std": 0.0019
+          }
+        }
+      },
+      "delta": {
+        "LR": {
+          "accuracy": 0.2259,
+          "f1": 0.2517
+        },
+        "DT": {
+          "accuracy": 0.4228,
+          "f1": 0.5754
+        },
+        "RF": {
+          "accuracy": 0.4621,
+          "f1": 0.6195
+        },
+        "LinearSVM": {
+          "accuracy": 0.2464,
+          "f1": 0.2653
+        },
+        "MLP": {
+          "accuracy": 0.3034,
+          "f1": 0.3306
+        }
+      },
+      "utility_score": 0.6297
+    },
+    "diversity": {
+      "category_coverage": {},
+      "bin_coverage": {
+        "Elevation": 1.0,
+        "Aspect": 1.0,
+        "Slope": 1.0,
+        "Horizontal_Distance_To_Hydrology": 1.0,
+        "Vertical_Distance_To_Hydrology": 1.0,
+        "Horizontal_Distance_To_Roadways": 1.0,
+        "Hillshade_9am": 0.8,
+        "Hillshade_Noon": 1.0,
+        "Hillshade_3pm": 1.0,
+        "Horizontal_Distance_To_Fire_Points": 1.0,
+        "Wilderness_Area1": 0.2,
+        "Wilderness_Area2": 0.2,
+        "Wilderness_Area3": 0.2,
+        "Wilderness_Area4": 0.2,
+        "Soil_Type1": 0.2,
+        "Soil_Type2": 0.2,
+        "Soil_Type3": 0.2,
+        "Soil_Type4": 0.2,
+        "Soil_Type5": 0.2,
+        "Soil_Type6": 0.2,
+        "Soil_Type7": 0.2,
+        "Soil_Type8": 0.2,
+        "Soil_Type9": 0.2,
+        "Soil_Type10": 0.2,
+        "Soil_Type11": 0.2,
+        "Soil_Type12": 0.2,
+        "Soil_Type13": 0.2,
+        "Soil_Type14": 0.2,
+        "Soil_Type15": 0.2,
+        "Soil_Type16": 0.2,
+        "Soil_Type17": 0.2,
+        "Soil_Type18": 0.2,
+        "Soil_Type19": 0.2,
+        "Soil_Type20": 0.2,
+        "Soil_Type21": 0.2,
+        "Soil_Type22": 0.2,
+        "Soil_Type23": 0.2,
+        "Soil_Type24": 0.2,
+        "Soil_Type25": 0.2,
+        "Soil_Type26": 0.2,
+        "Soil_Type27": 0.2,
+        "Soil_Type28": 0.2,
+        "Soil_Type29": 0.2,
+        "Soil_Type30": 0.2,
+        "Soil_Type31": 0.2,
+        "Soil_Type32": 0.2,
+        "Soil_Type33": 0.2,
+        "Soil_Type34": 0.2,
+        "Soil_Type35": 0.2,
+        "Soil_Type36": 0.2,
+        "Soil_Type37": 0.2,
+        "Soil_Type38": 0.2,
+        "Soil_Type39": 0.2,
+        "Soil_Type40": 0.2,
+        "avg": 0.3444
+      },
+      "gower_similarity": 0.7277,
+      "diversity_score": 0.5361
+    },
+    "privacy": {
+      "mean_nndr": 0.9961,
+      "exact_duplicate_rate": 0.0,
+      "near_duplicate_rate": 0.0,
+      "nndr_score": 0.9961,
+      "exact_dup_score": 1.0,
+      "near_dup_score": 1.0,
+      "privacy_score": 0.9987
+    },
+    "consistency": {
+      "discriminator_accuracy": 1.0,
+      "discriminator_score": 0.0,
+      "constraint_violations": {
+        "Elevation [1859, 3858]": 0.0,
+        "Aspect [0, 360]": 0.0,
+        "Slope [0, 66]": 0.0,
+        "Horizontal_Distance_To_Hydrology [0, 1397]": 0.0,
+        "Vertical_Distance_To_Hydrology [-173, 601]": 0.0,
+        "Horizontal_Distance_To_Roadways [0, 7117]": 0.0,
+        "Hillshade_9am [0, 254]": 0.0,
+        "Hillshade_Noon [0, 254]": 0.0,
+        "Hillshade_3pm [0, 254]": 0.0,
+        "Horizontal_Distance_To_Fire_Points [0, 7173]": 0.0,
+        "overall_violation_rate": 0.0
+      },
+      "constraint_score": 1.0,
+      "feature_importance_spearman": 0.0,
+      "consistency_score": 0.3333
+    },
+    "stability": {
+      "n_runs": 5,
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "per_run_scores": [
+        {
+          "seed": 0,
+          "fidelity_score": 0.8329,
+          "diversity_score": 0.5345
+        },
+        {
+          "seed": 1,
+          "fidelity_score": 0.8329,
+          "diversity_score": 0.5395
+        },
+        {
+          "seed": 2,
+          "fidelity_score": 0.8331,
+          "diversity_score": 0.5377
+        },
+        {
+          "seed": 3,
+          "fidelity_score": 0.8329,
+          "diversity_score": 0.5397
+        },
+        {
+          "seed": 4,
+          "fidelity_score": 0.8329,
+          "diversity_score": 0.5333
+        }
+      ],
+      "mean_scores": {
+        "fidelity": 0.8329,
+        "diversity": 0.5369
+      },
+      "std_scores": {
+        "fidelity": 0.0001,
+        "diversity": 0.0026
+      },
+      "avg_std": 0.0013,
+      "stability_score": 0.9865
+    }
+  }
+}
