@@ -56,6 +56,12 @@ class ModelRegistry:
             'class': 'CTGANModel',
             'dependencies': ['torch', 'sklearn'],
             'extra': 'ctgan'
+        },
+        'tvaegan': {
+            'module': 'katabatic.models.tvaegan.models',
+            'class': 'TVAEGANModel',
+            'dependencies': ['torch', 'sklearn'],
+            'extra': 'tvaegan'
         }
 }
 

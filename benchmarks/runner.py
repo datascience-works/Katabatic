@@ -131,11 +131,12 @@ def preprocess_and_split(config: RunConfig):
 
         # Write sample to disk so models read consistent data.
         # train_full.csv is preserved as the immutable full split.
-        sample_dir = paths["split_dir"]
-        train_df.to_csv(os.path.join(sample_dir, "train_sample.csv"), index=False)
-        train_df.drop(columns=[target_col]).to_csv(os.path.join(sample_dir, "x_train.csv"), index=False)
-        train_df[[target_col]].to_csv(os.path.join(sample_dir, "y_train.csv"), index=False)
-        print(f"[INFO] Sample written to train_sample.csv, x_train.csv, y_train.csv in split dir.")
+        train_df.to_csv(os.path.join(paths["split_dir"], "train_sample.csv"), index=False)
+        print(f"[INFO] Subsampled train written to train_sample.csv in split dir.")
+
+    # Always write x_train.csv / y_train.csv so models using the X/y split format can find them.
+    train_df.drop(columns=[target_col]).to_csv(os.path.join(paths["split_dir"], "x_train.csv"), index=False)
+    train_df[[target_col]].to_csv(os.path.join(paths["split_dir"], "y_train.csv"), index=False)
 
     return train_df, test_df, target_col, paths
 
