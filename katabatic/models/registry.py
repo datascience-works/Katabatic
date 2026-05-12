@@ -57,6 +57,12 @@ class ModelRegistry:
             'dependencies': ['torch', 'sklearn'],
             'extra': 'ctgan'
         },
+        'tabpfgen': {
+            'module': 'katabatic.models.tabpfgen.models',
+            'class': 'TabPFGenModel',
+            'dependencies': ['torch', 'tabpfn'],
+            'extra': 'tabpfgen'
+        },
         'tvaegan': {
             'module': 'katabatic.models.tvaegan.models',
             'class': 'TVAEGANModel',
