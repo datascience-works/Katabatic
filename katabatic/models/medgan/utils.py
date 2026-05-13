@@ -7,9 +7,7 @@ by Choi et al. (2017) - https://arxiv.org/abs/1703.06490
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import numpy as np
-from typing import Tuple, Optional
+from typing import Tuple
 
 
 class Autoencoder(nn.Module):
@@ -144,47 +142,6 @@ class Discriminator(nn.Module):
     def forward(self, z: torch.Tensor) -> torch.Tensor:
         """Predict probability that input is real (vs synthetic)."""
         return torch.sigmoid(self.model(z))
-
-
-def compute_mmd(x: torch.Tensor, y: torch.Tensor, kernel: str = 'rbf', 
-                bandwidth: float = 1.0) -> torch.Tensor:
-    """
-    Compute Maximum Mean Discrepancy (MMD) between two distributions.
-    
-    Args:
-        x: Samples from first distribution [n, d]
-        y: Samples from second distribution [m, d]
-        kernel: Kernel type ('rbf' or 'linear')
-        bandwidth: Bandwidth parameter for RBF kernel
-    
-    Returns:
-        MMD value
-    """
-    def rbf_kernel(x, y, bandwidth):
-        xx = torch.mm(x, x.t())
-        yy = torch.mm(y, y.t())
-        xy = torch.mm(x, y.t())
-        
-        x_sqnorms = torch.diag(xx)
-        y_sqnorms = torch.diag(yy)
-        
-        k_xx = torch.exp(-(x_sqnorms.unsqueeze(1) + x_sqnorms.unsqueeze(0) - 2 * xx) / (2 * bandwidth ** 2))
-        k_yy = torch.exp(-(y_sqnorms.unsqueeze(1) + y_sqnorms.unsqueeze(0) - 2 * yy) / (2 * bandwidth ** 2))
-        k_xy = torch.exp(-(x_sqnorms.unsqueeze(1) + y_sqnorms.unsqueeze(0) - 2 * xy) / (2 * bandwidth ** 2))
-        
-        return k_xx, k_yy, k_xy
-    
-    if kernel == 'rbf':
-        k_xx, k_yy, k_xy = rbf_kernel(x, y, bandwidth)
-    else:  # linear kernel
-        k_xx = torch.mm(x, x.t())
-        k_yy = torch.mm(y, y.t())
-        k_xy = torch.mm(x, y.t())
-    
-    m, n = x.shape[0], y.shape[0]
-    mmd = k_xx.sum() / (m * m) + k_yy.sum() / (n * n) - 2 * k_xy.sum() / (m * n)
-    
-    return mmd
 
 
 def sample_noise(batch_size: int, latent_dim: int, device: torch.device) -> torch.Tensor:

@@ -25,16 +25,19 @@ poetry install --extras medgan
 ## Usage
 
 ```python
-from katabatic.models.medgan.models import MEDGAN
+from katabatic.models.medgan import MEDGAN
+from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
 
-model = MEDGAN()
-model.train(
-    data_dir="benchmarks/splits/my_dataset",
-    categorical_cols=["workclass", "education"],
-    continuous_cols=["age", "fnlwgt"],
+pipeline = TrainTestSplitPipeline(model=MEDGAN)
+pipeline.run(
+    input_csv='data/adult.csv',
+    output_dir='sample_data/adult',
+    synthetic_dir='synthetic/adult/medgan',
+    real_test_dir='sample_data/adult'
 )
-synthetic_df = model.sample(n_samples=1000)
 ```
+
+See `examples/medgan.ipynb` for more examples.
 
 ## Key Features
 

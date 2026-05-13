@@ -12,8 +12,8 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from typing import Optional, Tuple
-from pathlib import Path
+from typing import Optional
+from sklearn.preprocessing import LabelEncoder
 
 from katabatic.models.base_model import Model
 from katabatic.models.medgan.utils import (
@@ -107,13 +107,24 @@ class MEDGAN(Model):
         self.discriminator = None
         self.input_dim_ = None
 
-    def train(self, dataset_dir: str, synthetic_dir: str, **kwargs):
+        # Metadata stored during train(), used by sample()
+        self.all_columns_ = None
+        self.feature_columns_ = None
+        self.column_dtypes_ = None
+        self.categorical_cols_ = []
+        self.continuous_cols_ = []
+        self.label_encoders_ = {}
+        self.data_min_ = None
+        self.data_max_ = None
+
+    def train(self, dataset_dir: str, categorical_cols: list = None, continuous_cols: list = None, **kwargs):
         """
         Train MedGAN model following Katabatic framework.
 
         Args:
             dataset_dir: Directory containing x_train.csv and y_train.csv
-            synthetic_dir: Directory to save synthetic data
+            categorical_cols: List of categorical column names
+            continuous_cols: List of continuous column names
             **kwargs: Additional arguments
         """
         logger.info("=" * 80)
@@ -134,8 +145,26 @@ class MEDGAN(Model):
         else:
             df_train = X_train
 
+        # Store metadata for sample()
+        self.categorical_cols_ = categorical_cols or []
+        self.continuous_cols_ = continuous_cols or []
+        self.feature_columns_ = list(X_train.columns)
+        self.all_columns_ = list(df_train.columns)
+        self.column_dtypes_ = df_train.dtypes.to_dict()  # original dtypes before encoding
+
+        # Label-encode any non-numeric columns so astype(float32) succeeds.
+        # Encoders are stored so sample() can inverse-transform back to strings.
+        self.label_encoders_ = {}
+        df_encoded = df_train.copy()
+        for col in df_encoded.columns:
+            if not pd.api.types.is_numeric_dtype(df_encoded[col]):
+                le = LabelEncoder()
+                df_encoded[col] = le.fit_transform(df_encoded[col].astype(str))
+                self.label_encoders_[col] = le
+                logger.info(f"Label-encoded '{col}': {len(le.classes_)} classes")
+
         # Convert to numpy and normalize to [0, 1]
-        data = df_train.values.astype(np.float32)
+        data = df_encoded.values.astype(np.float32)
         self.input_dim_ = data.shape[1]
 
         # Store min/max for denormalization
@@ -155,68 +184,6 @@ class MEDGAN(Model):
         # Train the model
         self._fit(data_normalized)
 
-        # Generate synthetic data
-        logger.info(f"\nGenerating {len(data)} synthetic samples...")
-        synth_data = self.sample(len(data))
-
-        # Round categorical columns to integers
-        # Assume all columns are categorical/discrete for tabular data
-        synth_data = np.round(synth_data)
-
-        # Save synthetic data
-        os.makedirs(synthetic_dir, exist_ok=True)
-
-        if os.path.exists(y_train_path):
-            # Split back into X and y
-            y_name = y_train.columns[0]
-            x_synth = pd.DataFrame(synth_data[:, :-1], columns=X_train.columns)
-            y_synth = pd.DataFrame(synth_data[:, -1:], columns=[y_name])
-
-            # Ensure all training classes are present in synthetic data
-            unique_train_classes = np.unique(df_train[y_name].values)
-            unique_synth_classes = np.unique(y_synth[y_name].values)
-            missing_classes = set(unique_train_classes) - \
-                set(unique_synth_classes)
-
-            if missing_classes:
-                logger.warning(
-                    f"Missing classes in synthetic data: {missing_classes}")
-                logger.info(
-                    "Adding dummy samples to ensure all classes are present...")
-
-                # Add one sample for each missing class
-                for cls in missing_classes:
-                    # Find a training sample with this class
-                    cls_idx = np.where(df_train[y_name].values == cls)[0][0]
-                    dummy_row = df_train.iloc[cls_idx:cls_idx+1].values
-
-                    # Append to synthetic data
-                    dummy_x = pd.DataFrame(
-                        dummy_row[:, :-1], columns=X_train.columns)
-                    dummy_y = pd.DataFrame(dummy_row[:, -1:], columns=[y_name])
-                    x_synth = pd.concat([x_synth, dummy_x], ignore_index=True)
-                    y_synth = pd.concat([y_synth, dummy_y], ignore_index=True)
-
-                logger.info(f"Added {len(missing_classes)} dummy samples")
-
-            # Convert to int to ensure proper class labels
-            for col in X_train.columns:
-                x_synth[col] = x_synth[col].astype(int)
-            y_synth[y_name] = y_synth[y_name].astype(int)
-
-            x_synth.to_csv(os.path.join(
-                synthetic_dir, "x_synth.csv"), index=False)
-            y_synth.to_csv(os.path.join(
-                synthetic_dir, "y_synth.csv"), index=False)
-        else:
-            synth_df = pd.DataFrame(synth_data, columns=df_train.columns)
-            # Convert all columns to int
-            for col in synth_df.columns:
-                synth_df[col] = synth_df[col].astype(int)
-            synth_df.to_csv(os.path.join(
-                synthetic_dir, "x_synth.csv"), index=False)
-
-        logger.info(f"\nSynthetic data saved to: {synthetic_dir}")
         logger.info("Training complete!")
 
         return self
@@ -356,15 +323,15 @@ class MEDGAN(Model):
                 logger.info(
                     f"Epoch {epoch+1}/{self.gan_epochs}: D Loss = {avg_d_loss:.6f}, G Loss = {avg_g_loss:.6f}")
 
-    def sample(self, n: int) -> np.ndarray:
+    def sample(self, n_samples: int, **kwargs) -> pd.DataFrame:
         """
         Generate synthetic samples.
 
         Args:
-            n: Number of samples to generate
+            n_samples: Number of samples to generate
 
         Returns:
-            Synthetic data as numpy array (denormalized to original range)
+            Synthetic data as pd.DataFrame with original column names and dtypes
         """
         if self.autoencoder is None or self.generator is None:
             raise RuntimeError("Model must be trained before sampling")
@@ -373,11 +340,8 @@ class MEDGAN(Model):
         self.generator.eval()
 
         with torch.no_grad():
-            # Generate noise and pass through generator
-            noise = sample_noise(n, self.latent_dim, self.device)
+            noise = sample_noise(n_samples, self.latent_dim, self.device)
             fake_latent = self.generator(noise)
-
-            # Decode latent representation to data space (normalized [0, 1])
             synthetic_data_normalized = self.autoencoder.decode(fake_latent)
             synthetic_data_normalized = synthetic_data_normalized.cpu().numpy()
 
@@ -385,5 +349,22 @@ class MEDGAN(Model):
         data_range = self.data_max_ - self.data_min_
         synthetic_data = synthetic_data_normalized * data_range + self.data_min_
 
-        return synthetic_data
+        # Build DataFrame with original column names
+        df = pd.DataFrame(synthetic_data, columns=self.all_columns_)
+
+        # Restore each column to its original representation
+        for col, orig_dtype in self.column_dtypes_.items():
+            if col not in df.columns:
+                continue
+            if col in self.label_encoders_:
+                # Was a string column — round to nearest code, clip to valid range,
+                # then inverse-transform back to the original string values
+                le = self.label_encoders_[col]
+                codes = df[col].round().clip(0, len(le.classes_) - 1).astype(int)
+                df[col] = le.inverse_transform(codes)
+            elif pd.api.types.is_integer_dtype(orig_dtype):
+                # Was a numeric integer column — round and cast
+                df[col] = df[col].round().astype(orig_dtype)
+
+        return df
 
