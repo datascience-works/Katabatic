@@ -1,0 +1,323 @@
+{
+  "composite_score": 0.8332,
+  "dimension_scores": {
+    "fidelity": 0.924,
+    "utility": 0.9495,
+    "diversity": 0.7767,
+    "privacy": 0.6856,
+    "consistency": 0.3952,
+    "stability": 0.997
+  },
+  "weights_used": {
+    "fidelity": 0.25,
+    "utility": 0.35,
+    "diversity": 0.1,
+    "privacy": 0.15,
+    "consistency": 0.1,
+    "stability": 0.05
+  },
+  "full_results": {
+    "fidelity": {
+      "categorical_jsd": {
+        "job": 0.376,
+        "marital": 0.2122,
+        "education": 0.2384,
+        "default": 0.0786,
+        "housing": 0.0206,
+        "loan": 0.2427,
+        "contact": 0.1495,
+        "month": 0.2159,
+        "poutcome": 0.1385,
+        "avg": 0.1858
+      },
+      "continuous_wasserstein": {
+        "age": 0.0258,
+        "balance": 0.0068,
+        "day": 0.0543,
+        "duration": 0.0141,
+        "campaign": 0.0147,
+        "pdays": 0.0128,
+        "previous": 0.0007,
+        "avg": 0.0185
+      },
+      "correlation_diff": 0.0238,
+      "categorical_score": 0.8142,
+      "continuous_score": 0.9815,
+      "correlation_score": 0.9762,
+      "fidelity_score": 0.924
+    },
+    "utility": {
+      "tstr": {
+        "LR": {
+          "accuracy": {
+            "mean": 0.8818,
+            "std": 0.0006
+          },
+          "f1": {
+            "mean": 0.8679,
+            "std": 0.0002
+          },
+          "auc": {
+            "mean": 0.7946,
+            "std": 0.003
+          }
+        },
+        "DT": {
+          "accuracy": {
+            "mean": 0.7776,
+            "std": 0.0766
+          },
+          "f1": {
+            "mean": 0.8001,
+            "std": 0.0534
+          },
+          "auc": {
+            "mean": 0.6161,
+            "std": 0.0182
+          }
+        },
+        "RF": {
+          "accuracy": {
+            "mean": 0.8915,
+            "std": 0.0009
+          },
+          "f1": {
+            "mean": 0.8662,
+            "std": 0.0022
+          },
+          "auc": {
+            "mean": 0.7962,
+            "std": 0.0051
+          }
+        },
+        "LinearSVM": {
+          "accuracy": {
+            "mean": 0.8836,
+            "std": 0.0003
+          },
+          "f1": {
+            "mean": 0.8676,
+            "std": 0.0001
+          },
+          "auc": {
+            "mean": 0.8053,
+            "std": 0.0019
+          }
+        },
+        "MLP": {
+          "accuracy": {
+            "mean": 0.8902,
+            "std": 0.0005
+          },
+          "f1": {
+            "mean": 0.8693,
+            "std": 0.0013
+          },
+          "auc": {
+            "mean": 0.8418,
+            "std": 0.0064
+          }
+        }
+      },
+      "trtr": {
+        "LR": {
+          "accuracy": {
+            "mean": 0.8885,
+            "std": 0.0002
+          },
+          "f1": {
+            "mean": 0.8649,
+            "std": 0.0005
+          },
+          "auc": {
+            "mean": 0.8666,
+            "std": 0.0004
+          }
+        },
+        "DT": {
+          "accuracy": {
+            "mean": 0.885,
+            "std": 0.003
+          },
+          "f1": {
+            "mean": 0.8858,
+            "std": 0.003
+          },
+          "auc": {
+            "mean": 0.7284,
+            "std": 0.0075
+          }
+        },
+        "RF": {
+          "accuracy": {
+            "mean": 0.9163,
+            "std": 0.0006
+          },
+          "f1": {
+            "mean": 0.9087,
+            "std": 0.0006
+          },
+          "auc": {
+            "mean": 0.9415,
+            "std": 0.0013
+          }
+        },
+        "LinearSVM": {
+          "accuracy": {
+            "mean": 0.8892,
+            "std": 0.0004
+          },
+          "f1": {
+            "mean": 0.8663,
+            "std": 0.0002
+          },
+          "auc": {
+            "mean": 0.8695,
+            "std": 0.0006
+          }
+        },
+        "MLP": {
+          "accuracy": {
+            "mean": 0.9012,
+            "std": 0.0013
+          },
+          "f1": {
+            "mean": 0.8925,
+            "std": 0.0016
+          },
+          "auc": {
+            "mean": 0.9029,
+            "std": 0.0026
+          }
+        }
+      },
+      "delta": {
+        "LR": {
+          "accuracy": 0.0067,
+          "f1": -0.003,
+          "auc": 0.072
+        },
+        "DT": {
+          "accuracy": 0.1074,
+          "f1": 0.0857,
+          "auc": 0.1123
+        },
+        "RF": {
+          "accuracy": 0.0248,
+          "f1": 0.0425,
+          "auc": 0.1453
+        },
+        "LinearSVM": {
+          "accuracy": 0.0056,
+          "f1": -0.0013,
+          "auc": 0.0642
+        },
+        "MLP": {
+          "accuracy": 0.011,
+          "f1": 0.0232,
+          "auc": 0.0611
+        }
+      },
+      "utility_score": 0.9495
+    },
+    "diversity": {
+      "category_coverage": {
+        "job": 0.4167,
+        "marital": 0.6667,
+        "education": 0.75,
+        "default": 0.5,
+        "housing": 1.0,
+        "loan": 0.5,
+        "contact": 1.0,
+        "month": 0.8333,
+        "poutcome": 1.0,
+        "avg": 0.7407
+      },
+      "bin_coverage": {
+        "age": 0.9,
+        "balance": 0.5,
+        "day": 1.0,
+        "duration": 0.6,
+        "campaign": 0.6,
+        "pdays": 1.0,
+        "previous": 0.1,
+        "avg": 0.6714
+      },
+      "gower_similarity": 0.918,
+      "diversity_score": 0.7767
+    },
+    "privacy": {
+      "mean_nndr": 0.8254,
+      "exact_duplicate_rate": 0.0,
+      "near_duplicate_rate": 0.7685,
+      "nndr_score": 0.8254,
+      "exact_dup_score": 1.0,
+      "near_dup_score": 0.2315,
+      "privacy_score": 0.6856
+    },
+    "consistency": {
+      "discriminator_accuracy": 0.9997,
+      "discriminator_score": 0.0006,
+      "constraint_violations": {
+        "age [18, 100]": 0.0,
+        "balance [-8019, 102127]": 0.0,
+        "day [1, 31]": 0.0021,
+        "duration [0, 5000]": 0.0,
+        "campaign [1, 63]": 0.0,
+        "pdays [-1, 999]": 0.2935,
+        "previous [0, 275]": 0.2345,
+        "overall_violation_rate": 0.4384
+      },
+      "constraint_score": 0.5616,
+      "feature_importance_spearman": 0.6235,
+      "consistency_score": 0.3952
+    },
+    "stability": {
+      "n_runs": 5,
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "per_run_scores": [
+        {
+          "seed": 0,
+          "fidelity_score": 0.9239,
+          "diversity_score": 0.771
+        },
+        {
+          "seed": 1,
+          "fidelity_score": 0.9239,
+          "diversity_score": 0.7701
+        },
+        {
+          "seed": 2,
+          "fidelity_score": 0.9243,
+          "diversity_score": 0.7704
+        },
+        {
+          "seed": 3,
+          "fidelity_score": 0.9243,
+          "diversity_score": 0.7706
+        },
+        {
+          "seed": 4,
+          "fidelity_score": 0.9243,
+          "diversity_score": 0.7699
+        }
+      ],
+      "mean_scores": {
+        "fidelity": 0.9241,
+        "diversity": 0.7704
+      },
+      "std_scores": {
+        "fidelity": 0.0002,
+        "diversity": 0.0004
+      },
+      "avg_std": 0.0003,
+      "stability_score": 0.997
+    }
+  }
+}
