@@ -44,6 +44,18 @@ class ModelRegistry:
             'class': 'CTGANModel',
             'dependencies': ['torch', 'sklearn'],
             'extra': 'ctgan'
+        },
+        'meg': {
+            'module': 'katabatic.models.meg.models',
+            'class': 'MEGModel',
+            'dependencies': ['torch', 'numpy', 'pandas'],
+            'extra': 'meg'
+        },
+        'arf': {
+            'module': 'katabatic.models.arf.models',
+            'class': 'ARFModel',
+            'dependencies': ['arfpy', 'numpy', 'pandas'],
+            'extra': 'arf'
         }
     }
 

@@ -1,6 +1,7 @@
 from katabatic.pipeline.base_pipeline import Pipeline
 from katabatic.models.base_model import Model
 from katabatic.evaluate.tstr.evaluation import TSTREvaluation
+from katabatic.evaluate.trts.evaluation import TRTSEvaluation
 from katabatic.utils.split_dataset import split_dataset
 
 
@@ -9,7 +10,7 @@ class TrainTestSplitPipeline(Pipeline):
     Version 1 of the pipeline.
     This is a placeholder for future enhancements.
     """
-    _evaluations = [TSTREvaluation]
+    _evaluations = [TSTREvaluation, TRTSEvaluation]
 
     def __init__(self, model: Model, evaluations=None, override_evaluations=False):
         super().__init__(model)
@@ -40,6 +41,7 @@ class TrainTestSplitPipeline(Pipeline):
         # Filter kwargs for evaluations to avoid unexpected params (e.g., 'config')
         eval_kwargs = dict(kwargs)
         eval_kwargs.pop('config', None)
+        eval_kwargs['output_dir'] = output_dir  # needed by TRTSEvaluation
 
         for evaluation in self._evaluations:
             eval_instance = evaluation(*args, **eval_kwargs)

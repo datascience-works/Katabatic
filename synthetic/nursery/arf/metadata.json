@@ -1,0 +1,11 @@
+{
+  "model": "arf",
+  "num_trees": 30,
+  "max_iters": 10,
+  "delta": 0.0,
+  "min_node_size": 5,
+  "seed": 42,
+  "leaf_thresh": 0.5,
+  "n_synth": 10368,
+  "label_col_original": "8"
+}

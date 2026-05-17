@@ -1,0 +1,31 @@
+{
+  "model": "SMOTEModel",
+  "schema": {
+    "columns": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ],
+    "label": "6",
+    "dtypes": {
+      "0": "int64",
+      "1": "int64",
+      "2": "int64",
+      "3": "int64",
+      "4": "int64",
+      "5": "int64",
+      "6": "int64"
+    }
+  },
+  "training": {
+    "k_neighbors": 5,
+    "sampling_strategy": "auto",
+    "n_original": 1382,
+    "n_generated": 2490,
+    "n_returned": 1382
+  }
+}

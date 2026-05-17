@@ -1,0 +1,39 @@
+{
+  "model": "SMOTEModel",
+  "schema": {
+    "columns": [
+      "fLength",
+      "fWidth",
+      "fSize",
+      "fConc",
+      "fConc1",
+      "fAsym",
+      "fM3Long",
+      "fM3Trans",
+      "fAlpha",
+      "fDist",
+      "class"
+    ],
+    "label": "class",
+    "dtypes": {
+      "fLength": "int64",
+      "fWidth": "int64",
+      "fSize": "int64",
+      "fConc": "int64",
+      "fConc1": "int64",
+      "fAsym": "int64",
+      "fM3Long": "int64",
+      "fM3Trans": "int64",
+      "fAlpha": "int64",
+      "fDist": "int64",
+      "class": "int64"
+    }
+  },
+  "training": {
+    "k_neighbors": 5,
+    "sampling_strategy": "auto",
+    "n_original": 15216,
+    "n_generated": 4516,
+    "n_returned": 15216
+  }
+}

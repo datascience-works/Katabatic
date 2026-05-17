@@ -1,0 +1,47 @@
+{
+  "model": "SMOTEModel",
+  "schema": {
+    "columns": [
+      "age",
+      "workclass",
+      "fnlwgt",
+      "education",
+      "education-num",
+      "marital-status",
+      "occupation",
+      "relationship",
+      "race",
+      "sex",
+      "capital-gain",
+      "capital-loss",
+      "hours-per-week",
+      "native-country",
+      "class"
+    ],
+    "label": "class",
+    "dtypes": {
+      "age": "int64",
+      "workclass": "int64",
+      "fnlwgt": "int64",
+      "education": "int64",
+      "education-num": "int64",
+      "marital-status": "int64",
+      "occupation": "int64",
+      "relationship": "int64",
+      "race": "int64",
+      "sex": "int64",
+      "capital-gain": "int64",
+      "capital-loss": "int64",
+      "hours-per-week": "int64",
+      "native-country": "int64",
+      "class": "int64"
+    }
+  },
+  "training": {
+    "k_neighbors": 5,
+    "sampling_strategy": "auto",
+    "n_original": 26048,
+    "n_generated": 13502,
+    "n_returned": 26048
+  }
+}

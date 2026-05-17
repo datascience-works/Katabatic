@@ -90,6 +90,9 @@ class Tabddpm(Model):
         # last seen class distribution (for sampling)
         self._class_dist: Optional[torch.Tensor] = None
 
+        # stored encoded labels for empirical sampling
+        self._y_enc_train: Optional[np.ndarray] = None
+
         # cached training loader for evaluation
         self._train_loader_infinite = None  # generator of (x, {'y': y})
 
@@ -211,76 +214,39 @@ class Tabddpm(Model):
 
             # Generate synthetic data and write CSVs for TSTR
             n_rows = len(X_train)
-            df_synth = self.sample(n_rows, as_dataframe=True)
 
-            # Split into X/y; sample() appends label column named 'label' when classification
-            if self._is_classification:
-                y_col_name = y_train.name if hasattr(
-                    y_train, "name") and y_train.name else "label"
-                if "label" in df_synth.columns:
-                    y_synth = df_synth["label"]
-                    x_synth = df_synth.drop(columns=["label"])  # features only
-                else:
-                    # Fallback: sample labels from training distribution
-                    vals, counts = np.unique(self._as_numpy(
-                        y_train).ravel(), return_counts=True)
-                    probs = counts / counts.sum()
-                    y_synth = pd.Series(np.random.choice(
-                        vals, size=n_rows, p=probs), name=y_col_name)
-                    x_synth = df_synth.copy()
+            # Detect the real label column name before training overwrites state
+            y_col_name = (
+                y_train.name
+                if hasattr(y_train, "name") and y_train.name
+                else y_train_path  # will be replaced below
+            )
+            # Read it directly from the CSV to be safe
+            y_col_name = pd.read_csv(y_train_path, nrows=0).columns[0]
 
-                # Final guard: ensure lengths align and are non-zero
-                if len(y_synth) != len(x_synth) or len(y_synth) == 0:
-                    fill_val = y_synth.iloc[0] if len(y_synth) > 0 else 0
-                    y_synth = pd.Series(
-                        np.full(len(x_synth), fill_val), name=y_col_name)
+            # train() (array mode, called above) sets is_fitted; now sample
+            x_synth_np, y_synth_np = self.sample(n_rows)
 
-                # Align feature names to real train columns if counts match
-                real_cols = X_train.columns.tolist()
-                if len(real_cols) == x_synth.shape[1]:
-                    x_synth.columns = real_cols
-                    x_synth = x_synth.reindex(columns=real_cols)
+            # Rebuild DataFrames with correct column names
+            real_cols = X_train.columns.tolist()
+            x_synth = pd.DataFrame(x_synth_np, columns=real_cols)
 
-                # Save
-                if synthetic_dir is None:
-                    synthetic_dir = os.path.join("synthetic", os.path.basename(
-                        os.path.normpath(dataset_dir)), "tabddpm")
-                os.makedirs(synthetic_dir, exist_ok=True)
-                x_path = os.path.join(synthetic_dir, "x_synth.csv")
-                y_path = os.path.join(synthetic_dir, "y_synth.csv")
-                x_synth.to_csv(x_path, index=False)
-                y_df = pd.DataFrame(y_synth, columns=[y_col_name])
-                # enforce integer labels for classifiers
-                try:
-                    y_df[y_col_name] = y_df[y_col_name].astype(int)
-                except Exception:
-                    pass
-                y_df.to_csv(y_path, index=False)
+            if synthetic_dir is None:
+                synthetic_dir = os.path.join(
+                    "synthetic",
+                    os.path.basename(os.path.normpath(dataset_dir)),
+                    "tabddpm",
+                )
+            os.makedirs(synthetic_dir, exist_ok=True)
 
-                # Post-save sanity check: ensure lengths match and non-zero
-                try:
-                    _xs = pd.read_csv(x_path)
-                    _ys = pd.read_csv(y_path)
-                    if len(_ys) != len(_xs) or len(_ys) == 0:
-                        # repair by regenerating y from training distribution
-                        vals, counts = np.unique(self._as_numpy(
-                            y_train).ravel(), return_counts=True)
-                        probs = counts / counts.sum()
-                        _ys = pd.DataFrame(
-                            np.random.choice(vals, size=len(_xs), p=probs),
-                            columns=[y_col_name]
-                        )
-                        _ys.to_csv(y_path, index=False)
-                except Exception:
-                    pass
-            else:
-                # Regression / no label column; still write x_synth
-                if synthetic_dir is None:
-                    synthetic_dir = os.path.join("synthetic", os.path.basename(
-                        os.path.normpath(dataset_dir)), "tabddpm")
-                os.makedirs(synthetic_dir, exist_ok=True)
-                df_synth.to_csv(os.path.join(
-                    synthetic_dir, "x_synth.csv"), index=False)
+            x_synth.to_csv(os.path.join(synthetic_dir, "x_synth.csv"), index=False)
+
+            y_df = pd.DataFrame(y_synth_np, columns=[y_col_name])
+            try:
+                y_df[y_col_name] = y_df[y_col_name].astype(int)
+            except Exception:
+                pass
+            y_df.to_csv(os.path.join(synthetic_dir, "y_synth.csv"), index=False)
 
             return self
 
@@ -389,6 +355,9 @@ class Tabddpm(Model):
                 binc / binc.sum(), dtype=torch.float32, device=self.device)
         else:
             self._class_dist = None
+
+        # Store encoded y for empirical label sampling in sample()
+        self._y_enc_train = y_enc.copy()
 
         # ---- build denoiser (MLP) + diffusion wrapper ----
         # Input dim for denoiser differs between external and fallback implementations.
@@ -542,18 +511,20 @@ class Tabddpm(Model):
         n: int,
         *,
         batch_size: Optional[int] = None,
-        as_dataframe: bool = True,
-    ) -> Union[np.ndarray, pd.DataFrame]:
+        as_dataframe: bool = False,
+    ) -> Union[Tuple[np.ndarray, np.ndarray], pd.DataFrame]:
         """Generate `n` synthetic samples.
 
         Args:
             n: number of rows to sample.
             batch_size: micro-batch for sampler (defaults to training batch_size).
-            as_dataframe: if True, returns a DataFrame with reconstructed columns;
-                          otherwise returns a NumPy array.
+            as_dataframe: if True, returns a reconstructed DataFrame (legacy).
+                          Default False returns (X_np, y_np) numpy tuple to
+                          match the Katabatic base model contract.
 
         Returns:
-            DataFrame or ndarray of shape (n, X.shape[1]).
+            Tuple (X_synth, y_synth) of numpy arrays by default, or a
+            DataFrame if as_dataframe=True.
         """
         if not self.is_fitted or self._diffusion is None:
             raise RuntimeError("Call train() before sample().")
@@ -576,7 +547,9 @@ class Tabddpm(Model):
         Yn = y_synth.cpu().numpy().ravel()
 
         if not as_dataframe:
-            return Xn
+            # Return (X_synth, y_synth) tuple — Katabatic pipeline contract
+            Yn = self._sample_y_empirical(len(Xn))
+            return Xn, Yn
 
         # reconstruct columns: [num ... | cat ...]
         cols = []
@@ -607,6 +580,7 @@ class Tabddpm(Model):
 
         # add y as last column if classification (mirroring your script’s CSVs)
         if self._is_classification:
+            Yn = self._sample_y_empirical(len(Xn))
             y_out = (
                 self._y_le.inverse_transform(Yn.astype(int))
                 if self._y_le is not None
@@ -617,6 +591,14 @@ class Tabddpm(Model):
         return X_df
 
     # --------------------------------- helpers ------------------------------------
+
+    def _sample_y_empirical(self, n: int) -> np.ndarray:
+        """Sample n class labels from the empirical training distribution."""
+        if self._y_enc_train is None:
+            return np.zeros(n, dtype=int)
+        vals, counts = np.unique(self._y_enc_train, return_counts=True)
+        probs = counts / counts.sum()
+        return np.random.choice(vals, size=n, p=probs).astype(int)
 
     @staticmethod
     def _ema_clone(model: torch.nn.Module) -> torch.nn.Module:

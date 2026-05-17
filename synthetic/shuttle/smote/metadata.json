@@ -1,0 +1,37 @@
+{
+  "model": "SMOTEModel",
+  "schema": {
+    "columns": [
+      "time",
+      "a1",
+      "a2",
+      "a3",
+      "a4",
+      "a5",
+      "a6",
+      "a7",
+      "a8",
+      "class"
+    ],
+    "label": "class",
+    "dtypes": {
+      "time": "int64",
+      "a1": "int64",
+      "a2": "int64",
+      "a3": "int64",
+      "a4": "int64",
+      "a5": "int64",
+      "a6": "int64",
+      "a7": "int64",
+      "a8": "int64",
+      "class": "int64"
+    }
+  },
+  "training": {
+    "k_neighbors": 5,
+    "sampling_strategy": "auto",
+    "n_original": 46400,
+    "n_generated": 208883,
+    "n_returned": 46400
+  }
+}
