@@ -24,6 +24,10 @@ benchmarks/synthetic/
 # --- Internal documents ---
 reference-documents/
 
+# --- Local Claude Code config (personal, not for sharing) ---
+CLAUDE.md
+.claude/
+
 # --- Large model/checkpoint binaries ---
 *.safetensors
 *.pt

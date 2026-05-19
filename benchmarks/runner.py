@@ -120,12 +120,14 @@ def preprocess_and_split(config: RunConfig):
 
     if config.max_train_rows is not None and len(train_df) > config.max_train_rows:
         print(f"\n[INFO] Training set ({len(train_df):,} rows) exceeds max_train_rows={config.max_train_rows:,}.")
-        train_df = train_df.groupby(target_col, group_keys=False).apply(
-            lambda g: g.sample(
-                n=max(1, round(config.max_train_rows * len(g) / len(train_df))),
+        total = len(train_df)
+        train_df = pd.concat([
+            grp.sample(
+                n=max(1, round(config.max_train_rows * len(grp) / total)),
                 random_state=config.seed,
             )
-        ).reset_index(drop=True)
+            for _, grp in train_df.groupby(target_col)
+        ]).reset_index(drop=True)
         print(f"[INFO] Stratified sample applied -> {len(train_df):,} rows retained.")
         print(f"       Class distribution: {train_df[target_col].value_counts().to_dict()}")
 

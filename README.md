@@ -4,12 +4,12 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Poetry](https://img.shields.io/badge/dependency-poetry-blue)](https://python-poetry.org/)
 
-A comprehensive framework for synthetic tabular data generation and evaluation. Includes 8 generative models (CTGAN, CoDi, TabDDPM, GANBLR, GReaT, Tabsyn, MedGAN, PATEGAN) and a 6-dimension evaluation pipeline that scores every model on Fidelity, Utility, Diversity, Privacy, Consistency and Stability.
+A comprehensive framework for synthetic tabular data generation and evaluation. Includes 8 generative models (CTGAN, CoDi, TabDDPM, GANBLR, GReaT, Tabsyn, MedGAN, PATEGAN) and a 6-dimension evaluation pipeline that scores every model on Fidelity, Utility, Diversity, Privacy, Consistency, and Stability.
 
 ## Features
 
 - **8 Generative Models**: CTGAN, CoDi, TabDDPM, GANBLR, GReaT, Tabsyn, MedGAN, PATEGAN
-- **6-Dimension Evaluation**: Fidelity, Utility, Diversity, Privacy, Consistency, Stability — combined into a single weighted composite score
+- **6-Dimension Evaluation**: Fidelity, Utility, Diversity, Privacy, Consistency, and Stability — combined into a single weighted composite score
 - **Automated Benchmark Runner**: End-to-end pipeline — preprocess → split → train → generate → evaluate → save report
 - **Data Preprocessing**: Automated encoding for mixed-type tabular data (numerical + categorical)
 - **Model Registry**: Dynamic model loading with optional per-model extra dependencies

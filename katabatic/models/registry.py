@@ -47,7 +47,7 @@ class ModelRegistry:
         },
         'pategan': {
             'module': 'katabatic.models.pategan.models',
-            'class': 'PATEGAN',
+            'class': 'PATEGANSynthesizer',
             'dependencies': ['tensorflow', 'numpy', 'pandas'],
             'extra': 'pategan'
         },
@@ -57,24 +57,12 @@ class ModelRegistry:
             'dependencies': ['torch', 'sklearn'],
             'extra': 'ctgan'
         },
-        'ctabganplus': {
-            'module': 'katabatic.models.ctabganplus.models',
-            'class': 'CTABGANPlus',
-            'dependencies': ['torch', 'numpy', 'pandas', 'sklearn'],
-            'extra': 'ctabganplus'
+        'tabebm': {
+            'module': 'katabatic.models.tabebm.models',
+            'class': 'TabEBMModel',
+            'dependencies': ['numpy', 'pandas', 'sklearn'],
+            'extra': 'tabebm'
         },
-        'tabpfgen': {
-            'module': 'katabatic.models.tabpfgen.models',
-            'class': 'TabPFGenModel',
-            'dependencies': ['torch', 'tabpfn'],
-            'extra': 'tabpfgen'
-        },
-        'tvaegan': {
-            'module': 'katabatic.models.tvaegan.models',
-            'class': 'TVAEGANModel',
-            'dependencies': ['torch', 'sklearn'],
-            'extra': 'tvaegan'
-        }
 }
 
     @classmethod

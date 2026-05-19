@@ -1,12 +1,12 @@
 {
-  "composite_score": 0.736,
+  "composite_score": 0.8398,
   "dimension_scores": {
-    "fidelity": 0.7433,
-    "utility": 0.6063,
-    "diversity": 0.9028,
-    "privacy": 0.986,
-    "consistency": 0.501,
-    "stability": 0.9945
+    "fidelity": 0.995,
+    "utility": 0.9869,
+    "diversity": 0.9299,
+    "privacy": 0.4305,
+    "consistency": 0.3861,
+    "stability": 0.989
   },
   "weights_used": {
     "fidelity": 0.25,
@@ -19,103 +19,103 @@
   "full_results": {
     "fidelity": {
       "categorical_jsd": {
-        "job": 0.3028,
-        "marital": 0.2269,
-        "education": 0.2876,
-        "default": 0.4773,
-        "housing": 0.0004,
-        "loan": 0.2727,
-        "contact": 0.2901,
-        "month": 0.3019,
-        "poutcome": 0.3912,
-        "avg": 0.2834
+        "job": 0.0107,
+        "marital": 0.0017,
+        "education": 0.0058,
+        "default": 0.0039,
+        "housing": 0.0055,
+        "loan": 0.0008,
+        "contact": 0.0045,
+        "month": 0.0112,
+        "poutcome": 0.0042,
+        "avg": 0.0054
       },
       "continuous_wasserstein": {
-        "age": 0.1833,
-        "balance": 0.6083,
-        "day": 0.0323,
-        "duration": 0.7147,
-        "campaign": 0.5328,
-        "pdays": 0.3901,
-        "previous": 0.6033,
-        "avg": 0.4378
+        "age": 0.0033,
+        "balance": 0.0004,
+        "day": 0.0081,
+        "duration": 0.0015,
+        "campaign": 0.0019,
+        "pdays": 0.0037,
+        "previous": 0.0003,
+        "avg": 0.0027
       },
-      "correlation_diff": 0.049,
-      "categorical_score": 0.7166,
-      "continuous_score": 0.5622,
-      "correlation_score": 0.951,
-      "fidelity_score": 0.7433
+      "correlation_diff": 0.0068,
+      "categorical_score": 0.9946,
+      "continuous_score": 0.9973,
+      "correlation_score": 0.9932,
+      "fidelity_score": 0.995
     },
     "utility": {
       "tstr": {
         "LR": {
           "accuracy": {
-            "mean": 0.138,
-            "std": 0.0008
+            "mean": 0.8882,
+            "std": 0.0002
           },
           "f1": {
-            "mean": 0.0686,
-            "std": 0.0018
+            "mean": 0.8671,
+            "std": 0.0005
           },
           "auc": {
-            "mean": 0.6676,
-            "std": 0.002
+            "mean": 0.8675,
+            "std": 0.0003
           }
         },
         "DT": {
           "accuracy": {
-            "mean": 0.8835,
-            "std": 0.0017
+            "mean": 0.8765,
+            "std": 0.0039
           },
           "f1": {
-            "mean": 0.834,
-            "std": 0.0091
+            "mean": 0.8755,
+            "std": 0.004
           },
           "auc": {
-            "mean": 0.5125,
-            "std": 0.0202
+            "mean": 0.6929,
+            "std": 0.0101
           }
         },
         "RF": {
           "accuracy": {
-            "mean": 0.5955,
-            "std": 0.0498
+            "mean": 0.9069,
+            "std": 0.0005
           },
           "f1": {
-            "mean": 0.6651,
-            "std": 0.0419
+            "mean": 0.8944,
+            "std": 0.0006
           },
           "auc": {
-            "mean": 0.7654,
-            "std": 0.0135
+            "mean": 0.9216,
+            "std": 0.0016
           }
         },
         "LinearSVM": {
           "accuracy": {
-            "mean": 0.1467,
-            "std": 0.0028
+            "mean": 0.888,
+            "std": 0.0002
           },
           "f1": {
-            "mean": 0.0864,
-            "std": 0.0056
+            "mean": 0.8675,
+            "std": 0.0002
           },
           "auc": {
-            "mean": 0.6691,
-            "std": 0.0019
+            "mean": 0.8709,
+            "std": 0.0003
           }
         },
         "MLP": {
           "accuracy": {
-            "mean": 0.2591,
-            "std": 0.0937
+            "mean": 0.8816,
+            "std": 0.0014
           },
           "f1": {
-            "mean": 0.2634,
-            "std": 0.1397
+            "mean": 0.8766,
+            "std": 0.0011
           },
           "auc": {
-            "mean": 0.7469,
-            "std": 0.0135
+            "mean": 0.8362,
+            "std": 0.004
           }
         }
       },
@@ -193,32 +193,32 @@
       },
       "delta": {
         "LR": {
-          "accuracy": 0.7505,
-          "f1": 0.7963,
-          "auc": 0.199
+          "accuracy": 0.0003,
+          "f1": -0.0022,
+          "auc": -0.0009
         },
         "DT": {
-          "accuracy": 0.0015,
-          "f1": 0.0518,
-          "auc": 0.2159
+          "accuracy": 0.0085,
+          "f1": 0.0103,
+          "auc": 0.0355
         },
         "RF": {
-          "accuracy": 0.3208,
-          "f1": 0.2436,
-          "auc": 0.1761
+          "accuracy": 0.0094,
+          "f1": 0.0143,
+          "auc": 0.0199
         },
         "LinearSVM": {
-          "accuracy": 0.7425,
-          "f1": 0.7799,
-          "auc": 0.2004
+          "accuracy": 0.0012,
+          "f1": -0.0012,
+          "auc": -0.0014
         },
         "MLP": {
-          "accuracy": 0.6421,
-          "f1": 0.6291,
-          "auc": 0.156
+          "accuracy": 0.0196,
+          "f1": 0.0159,
+          "auc": 0.0667
         }
       },
-      "utility_score": 0.6063
+      "utility_score": 0.9869
     },
     "diversity": {
       "category_coverage": {
@@ -235,42 +235,42 @@
       },
       "bin_coverage": {
         "age": 1.0,
-        "balance": 1.0,
+        "balance": 0.7,
         "day": 1.0,
-        "duration": 0.9,
-        "campaign": 1.0,
+        "duration": 0.8,
+        "campaign": 0.9,
         "pdays": 1.0,
-        "previous": 0.4,
-        "avg": 0.9
+        "previous": 0.2,
+        "avg": 0.8
       },
-      "gower_similarity": 0.8084,
-      "diversity_score": 0.9028
+      "gower_similarity": 0.9896,
+      "diversity_score": 0.9299
     },
     "privacy": {
-      "mean_nndr": 0.958,
+      "mean_nndr": 0.2915,
       "exact_duplicate_rate": 0.0,
-      "near_duplicate_rate": 0.0,
-      "nndr_score": 0.958,
+      "near_duplicate_rate": 1.0,
+      "nndr_score": 0.2915,
       "exact_dup_score": 1.0,
-      "near_dup_score": 1.0,
-      "privacy_score": 0.986
+      "near_dup_score": 0.0,
+      "privacy_score": 0.4305
     },
     "consistency": {
-      "discriminator_accuracy": 1.0,
-      "discriminator_score": 0.0,
+      "discriminator_accuracy": 0.998,
+      "discriminator_score": 0.004,
       "constraint_violations": {
-        "age [18, 95]": 0.0,
+        "age [18, 95]": 0.0001,
         "balance [-8020, None]": 0.0,
-        "day [1, 31]": 0.0,
-        "duration [0, None]": 0.0,
-        "campaign [1, None]": 0.0,
-        "pdays [-1, None]": 0.0,
-        "previous [0, None]": 0.0,
-        "overall_violation_rate": 0.0
+        "day [1, 31]": 0.0034,
+        "duration [0, None]": 0.0035,
+        "campaign [1, None]": 0.2294,
+        "pdays [-1, None]": 0.6065,
+        "previous [0, None]": 0.1928,
+        "overall_violation_rate": 0.7486
       },
-      "constraint_score": 1.0,
-      "feature_importance_spearman": 0.5029,
-      "consistency_score": 0.501
+      "constraint_score": 0.2514,
+      "feature_importance_spearman": 0.9029,
+      "consistency_score": 0.3861
     },
     "stability": {
       "n_runs": 5,
@@ -284,40 +284,40 @@
       "per_run_scores": [
         {
           "seed": 0,
-          "fidelity_score": 0.7435,
-          "diversity_score": 0.9031
+          "fidelity_score": 0.9947,
+          "diversity_score": 0.9281
         },
         {
           "seed": 1,
-          "fidelity_score": 0.7439,
-          "diversity_score": 0.9041
+          "fidelity_score": 0.9947,
+          "diversity_score": 0.9314
         },
         {
           "seed": 2,
-          "fidelity_score": 0.744,
-          "diversity_score": 0.904
+          "fidelity_score": 0.9949,
+          "diversity_score": 0.9274
         },
         {
           "seed": 3,
-          "fidelity_score": 0.7431,
-          "diversity_score": 0.9022
+          "fidelity_score": 0.9945,
+          "diversity_score": 0.9323
         },
         {
           "seed": 4,
-          "fidelity_score": 0.7442,
-          "diversity_score": 0.9036
+          "fidelity_score": 0.9947,
+          "diversity_score": 0.9324
         }
       ],
       "mean_scores": {
-        "fidelity": 0.7437,
-        "diversity": 0.9034
+        "fidelity": 0.9947,
+        "diversity": 0.9303
       },
       "std_scores": {
-        "fidelity": 0.0004,
-        "diversity": 0.0007
+        "fidelity": 0.0001,
+        "diversity": 0.0021
       },
-      "avg_std": 0.0006,
-      "stability_score": 0.9945
+      "avg_std": 0.0011,
+      "stability_score": 0.989
     }
   }
 }
