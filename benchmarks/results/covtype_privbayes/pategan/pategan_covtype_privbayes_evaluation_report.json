@@ -1,0 +1,273 @@
+{
+  "composite_score": 0.6551,
+  "dimension_scores": {
+    "fidelity": 0.7422,
+    "utility": 0.3865,
+    "diversity": 0.8322,
+    "privacy": 0.9904,
+    "consistency": 0.5291,
+    "stability": 0.9925
+  },
+  "weights_used": {
+    "fidelity": 0.25,
+    "utility": 0.35,
+    "diversity": 0.1,
+    "privacy": 0.15,
+    "consistency": 0.1,
+    "stability": 0.05
+  },
+  "full_results": {
+    "fidelity": {
+      "categorical_jsd": {
+        "Wilderness_Area": 0.2833,
+        "Soil_Type": 0.5689,
+        "avg": 0.4261
+      },
+      "continuous_wasserstein": {
+        "Elevation": 0.1712,
+        "Aspect": 0.0983,
+        "Slope": 0.0527,
+        "Horizontal_Distance_To_Hydrology": 0.1126,
+        "Vertical_Distance_To_Hydrology": 0.1399,
+        "Horizontal_Distance_To_Roadways": 0.0555,
+        "Hillshade_9am": 0.1397,
+        "Hillshade_Noon": 0.0551,
+        "Hillshade_3pm": 0.1241,
+        "Horizontal_Distance_To_Fire_Points": 0.0568,
+        "avg": 0.1006
+      },
+      "correlation_diff": 0.2466,
+      "categorical_score": 0.5739,
+      "continuous_score": 0.8994,
+      "correlation_score": 0.7534,
+      "fidelity_score": 0.7422
+    },
+    "utility": {
+      "tstr": {
+        "LR": {
+          "accuracy": {
+            "mean": 0.0687,
+            "std": 0.0009
+          },
+          "f1": {
+            "mean": 0.1014,
+            "std": 0.0014
+          }
+        },
+        "DT": {
+          "accuracy": {
+            "mean": 0.1373,
+            "std": 0.0538
+          },
+          "f1": {
+            "mean": 0.1685,
+            "std": 0.051
+          }
+        },
+        "RF": {
+          "accuracy": {
+            "mean": 0.271,
+            "std": 0.0087
+          },
+          "f1": {
+            "mean": 0.2758,
+            "std": 0.0046
+          }
+        },
+        "LinearSVM": {
+          "accuracy": {
+            "mean": 0.1161,
+            "std": 0.001
+          },
+          "f1": {
+            "mean": 0.1666,
+            "std": 0.0013
+          }
+        },
+        "MLP": {
+          "accuracy": {
+            "mean": 0.1172,
+            "std": 0.0482
+          },
+          "f1": {
+            "mean": 0.1584,
+            "std": 0.0554
+          }
+        }
+      },
+      "trtr": {
+        "LR": {
+          "accuracy": {
+            "mean": 0.7116,
+            "std": 0.0003
+          },
+          "f1": {
+            "mean": 0.6998,
+            "std": 0.0003
+          }
+        },
+        "DT": {
+          "accuracy": {
+            "mean": 0.8163,
+            "std": 0.0014
+          },
+          "f1": {
+            "mean": 0.8164,
+            "std": 0.0015
+          }
+        },
+        "RF": {
+          "accuracy": {
+            "mean": 0.8779,
+            "std": 0.0006
+          },
+          "f1": {
+            "mean": 0.8761,
+            "std": 0.0006
+          }
+        },
+        "LinearSVM": {
+          "accuracy": {
+            "mean": 0.6733,
+            "std": 0.0006
+          },
+          "f1": {
+            "mean": 0.6492,
+            "std": 0.0007
+          }
+        },
+        "MLP": {
+          "accuracy": {
+            "mean": 0.7997,
+            "std": 0.0031
+          },
+          "f1": {
+            "mean": 0.7955,
+            "std": 0.0039
+          }
+        }
+      },
+      "delta": {
+        "LR": {
+          "accuracy": 0.6429,
+          "f1": 0.5984
+        },
+        "DT": {
+          "accuracy": 0.679,
+          "f1": 0.6479
+        },
+        "RF": {
+          "accuracy": 0.6069,
+          "f1": 0.6003
+        },
+        "LinearSVM": {
+          "accuracy": 0.5572,
+          "f1": 0.4826
+        },
+        "MLP": {
+          "accuracy": 0.6825,
+          "f1": 0.6371
+        }
+      },
+      "utility_score": 0.3865
+    },
+    "diversity": {
+      "category_coverage": {
+        "Wilderness_Area": 1.0,
+        "Soil_Type": 0.6,
+        "avg": 0.8
+      },
+      "bin_coverage": {
+        "Elevation": 0.8,
+        "Aspect": 1.0,
+        "Slope": 0.4,
+        "Horizontal_Distance_To_Hydrology": 0.8,
+        "Vertical_Distance_To_Hydrology": 0.9,
+        "Horizontal_Distance_To_Roadways": 0.9,
+        "Hillshade_9am": 0.3,
+        "Hillshade_Noon": 0.5,
+        "Hillshade_3pm": 1.0,
+        "Horizontal_Distance_To_Fire_Points": 0.7,
+        "avg": 0.73
+      },
+      "gower_similarity": 0.9666,
+      "diversity_score": 0.8322
+    },
+    "privacy": {
+      "mean_nndr": 0.9712,
+      "exact_duplicate_rate": 0.0,
+      "near_duplicate_rate": 0.0,
+      "nndr_score": 0.9712,
+      "exact_dup_score": 1.0,
+      "near_dup_score": 1.0,
+      "privacy_score": 0.9904
+    },
+    "consistency": {
+      "discriminator_accuracy": 1.0,
+      "discriminator_score": 0.0,
+      "constraint_violations": {
+        "Elevation [1859, 3858]": 0.0,
+        "Aspect [0, 360]": 0.0,
+        "Slope [0, 66]": 0.0,
+        "Horizontal_Distance_To_Hydrology [0, 1397]": 0.0,
+        "Vertical_Distance_To_Hydrology [-173, 601]": 0.0,
+        "Horizontal_Distance_To_Roadways [0, 7117]": 0.0,
+        "Hillshade_9am [0, 254]": 0.0,
+        "Hillshade_Noon [0, 254]": 0.0,
+        "Hillshade_3pm [0, 254]": 0.0,
+        "Horizontal_Distance_To_Fire_Points [0, 7173]": 0.0,
+        "overall_violation_rate": 0.0
+      },
+      "constraint_score": 1.0,
+      "feature_importance_spearman": 0.5874,
+      "consistency_score": 0.5291
+    },
+    "stability": {
+      "n_runs": 5,
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "per_run_scores": [
+        {
+          "seed": 0,
+          "fidelity_score": 0.7418,
+          "diversity_score": 0.8325
+        },
+        {
+          "seed": 1,
+          "fidelity_score": 0.7424,
+          "diversity_score": 0.8351
+        },
+        {
+          "seed": 2,
+          "fidelity_score": 0.7431,
+          "diversity_score": 0.8345
+        },
+        {
+          "seed": 3,
+          "fidelity_score": 0.7429,
+          "diversity_score": 0.8351
+        },
+        {
+          "seed": 4,
+          "fidelity_score": 0.7424,
+          "diversity_score": 0.8347
+        }
+      ],
+      "mean_scores": {
+        "fidelity": 0.7425,
+        "diversity": 0.8344
+      },
+      "std_scores": {
+        "fidelity": 0.0005,
+        "diversity": 0.001
+      },
+      "avg_std": 0.0008,
+      "stability_score": 0.9925
+    }
+  }
+}
