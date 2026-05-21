@@ -1,27 +1,83 @@
-from katabatic.models.base_model import Model
-from sklearn.model_selection import StratifiedKFold
-import random
-import pandas as pd
+from __future__ import annotations
+
 import argparse
+import logging
+import os
+import random
+import sys
+import warnings
+from contextlib import contextmanager
+from typing import TYPE_CHECKING
+
+import numpy as np
+import pandas as pd
+from pgmpy.factors.discrete import TabularCPD
+from pgmpy.models import DiscreteBayesianNetwork
+from pgmpy.sampling import BayesianModelSampling
+from sklearn.model_selection import StratifiedKFold
+from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
+
+from katabatic.models.base_model import Model
+
+if TYPE_CHECKING:
+    from katabatic.artifacts.base import ArtifactStore
+    from katabatic.artifacts.refs import ModelRef
+
 from .kdb import *
 from .kdb import _add_uniform
 from .utils import *
-from pgmpy.models import DiscreteBayesianNetwork
-from pgmpy.sampling import BayesianModelSampling
-from pgmpy.factors.discrete import TabularCPD
-from sklearn.preprocessing import OrdinalEncoder, LabelEncoder
-import numpy as np
-import tensorflow as tf
+from .utils import _ensure_tf
 
-import os
-import sys
 sys.path.append(os.path.abspath("."))
+
+
+@contextmanager
+def _ganblr_quiet_logs():
+    """Reduce pgmpy / Keras noise during sampling and small-model builds."""
+    pg = logging.getLogger("pgmpy")
+    prev_pg = pg.level
+    pg.setLevel(logging.ERROR)
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UserWarning)
+            yield
+    finally:
+        pg.setLevel(prev_pg)
+
+
+def _epoch_progress(epochs: int, verbose: int):
+    """
+    Returns (iterable, tqdm_bar_or_None). When tqdm is available, iterable is the bar
+    (supports set_postfix); otherwise range(epochs).
+    """
+    if verbose <= 0:
+        return range(epochs), None
+    try:
+        from tqdm.auto import tqdm
+
+        bar = tqdm(
+            range(epochs),
+            desc="GANBLR",
+            unit="epoch",
+            leave=True,
+            dynamic_ncols=True,
+            bar_format=(
+                "{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} "
+                "[{elapsed}<{remaining}] {postfix}"
+            ),
+        )
+        return bar, bar
+    except ImportError:
+        return range(epochs), None
 
 
 class GANBLR(Model):
     """
     The GANBLR Model.
     """
+
+    #: Filenames written under artifact ``state/`` (used to detect reloadable train runs).
+    ARTIFACT_STATE_FILES = ("ganblr_model.pkl",)
 
     def __init__(self) -> None:
         super().__init__()
@@ -35,6 +91,31 @@ class GANBLR(Model):
         self._ordinal_encoder = OrdinalEncoder(
             dtype=int, handle_unknown='use_encoded_value', unknown_value=-1)
         self._label_encoder = LabelEncoder()
+
+    def check_dependencies(self) -> bool:
+        """
+        Verify optional deps without importing TensorFlow at construction time.
+
+        TF is loaded lazily on first ``fit()`` via ``_ensure_tf()`` so notebooks and
+        pipelines can build ``GANBLR()`` without a long silent import.
+        """
+        required_deps = [
+            d for d in self.get_required_dependencies() if d != "tensorflow"
+        ]
+        missing_deps: list[str] = []
+        for dep in required_deps:
+            try:
+                __import__(dep)
+            except ImportError:
+                missing_deps.append(dep)
+
+        if missing_deps:
+            raise ImportError(
+                f"Missing required dependencies for {self.__class__.__name__}: {missing_deps}. "
+                f"Install with: pip install katabatic[{self.__class__.__name__.lower()}]"
+            )
+
+        return True
 
     @classmethod
     def get_required_dependencies(cls) -> list[str]:
@@ -77,6 +158,7 @@ class GANBLR(Model):
 
         if verbose is None or not isinstance(verbose, int):
             verbose = 1
+        _ensure_tf(announce=verbose > 0)
         x = self._ordinal_encoder.fit_transform(x)
         y = self._label_encoder.fit_transform(y).astype(int)
         d = DataUtils(x, y)
@@ -84,32 +166,56 @@ class GANBLR(Model):
         self.k = k
         self.batch_size = batch_size
         if verbose:
-            print(f"warmup run:")
-        history = self._warmup_run(warmup_epochs, verbose=verbose)
-        syn_data = self._sample(verbose=0)
+            print("GANBLR: warmup (encoder + generator)…", flush=True)
+        history = self._warmup_run(warmup_epochs, verbose=0)
+        if verbose:
+            print("GANBLR: warmup done.", flush=True)
+
         discriminator_label = np.hstack(
             [np.ones(d.data_size), np.zeros(d.data_size)])
-        for i in range(epochs):
-            discriminator_input = np.vstack([x, syn_data[:, :-1]])
-            disc_input, disc_label = sample(
-                discriminator_input, discriminator_label, frac=0.8)
-            disc = self._discrim()
-            d_history = disc.fit(
-                disc_input, disc_label, batch_size=batch_size, epochs=1, verbose=0).history
-            prob_fake = disc.predict(x, verbose=0)
-            # ls = np.mean(-np.log(np.subtract(1, prob_fake)))
-            ls = np.mean(-np.log(np.clip(1 - prob_fake, epsilon, 1)))
-            g_history = self._run_generator(loss=ls).history
-            syn_data = self._sample(verbose=0)
 
-            if verbose:
-                print(
-                    f"Epoch {i+1}/{epochs}: G_loss = {g_history['loss'][0]:.6f}, G_accuracy = {g_history['accuracy'][0]:.6f}, D_loss = {d_history['loss'][0]:.6f}, D_accuracy = {d_history['accuracy'][0]:.6f}")
+        epoch_iter, pbar = _epoch_progress(epochs, verbose)
+        with _ganblr_quiet_logs():
+            syn_data = self._sample(verbose=0)
+            for i in epoch_iter:
+                discriminator_input = np.vstack([x, syn_data[:, :-1]])
+                disc_input, disc_label = sample(
+                    discriminator_input, discriminator_label, frac=0.8)
+                disc = self._discrim()
+                d_history = disc.fit(
+                    disc_input, disc_label, batch_size=batch_size, epochs=1, verbose=0).history
+                prob_fake = disc.predict(x, verbose=0)
+                ls = np.mean(-np.log(np.clip(1 - prob_fake, epsilon, 1)))
+                g_history = self._run_generator(loss=ls).history
+                syn_data = self._sample(verbose=0)
+
+                if pbar is not None:
+                    pbar.set_postfix(
+                        G_loss=f"{g_history['loss'][0]:.3f}",
+                        D_loss=f"{d_history['loss'][0]:.3f}",
+                        G_acc=f"{g_history['accuracy'][0]:.3f}",
+                        D_acc=f"{d_history['accuracy'][0]:.3f}",
+                    )
+                elif verbose:
+                    print(
+                        f"Epoch {i + 1}/{epochs}: G_loss = {g_history['loss'][0]:.6f}, "
+                        f"G_accuracy = {g_history['accuracy'][0]:.6f}, D_loss = {d_history['loss'][0]:.6f}, "
+                        f"D_accuracy = {d_history['accuracy'][0]:.6f}",
+                        flush=True,
+                    )
+        if pbar is not None:
+            pbar.close()
+        self.is_fitted = True
         return self
 
     def evaluate(self, x, y, model='lr') -> float:
         """
-        Perform a TSTR(Training on Synthetic data, Testing on Real data) evaluation.
+        In-memory TSTR-style check: train a small sklearn pipeline on fresh
+        synthetic samples and score on the provided real ``(x, y)`` test set.
+
+        For **canonical** utility metrics (multiple classifiers, CSV-based split
+        aligned with training), use :class:`katabatic.pipeline.train_test_split.pipeline.TrainTestSplitPipeline`
+        with :class:`katabatic.evaluate.tstr.evaluation.TSTREvaluation`.
 
         Parameters
         ----------
@@ -249,6 +355,7 @@ class GANBLR(Model):
         return sorted_result
 
     def _warmup_run(self, epochs, verbose=None):
+        tf = _ensure_tf()
         d = self._d
         tf.keras.backend.clear_session()
         ohex = d.get_kdbe_x(self.k)
@@ -261,6 +368,7 @@ class GANBLR(Model):
         return history
 
     def _run_generator(self, loss):
+        tf = _ensure_tf()
         d = self._d
         ohex = d.get_kdbe_x(self.k)
         tf.keras.backend.clear_session()
@@ -277,12 +385,47 @@ class GANBLR(Model):
         return history
 
     def _discrim(self):
+        tf = _ensure_tf()
         model = tf.keras.Sequential()
         model.add(tf.keras.layers.Dense(
             1, input_dim=self._d.num_features, activation='sigmoid'))
         model.compile(loss='binary_crossentropy',
                       optimizer='adam', metrics=['accuracy'])
         return model
+
+    def _save_artifact_state(self, state_dir: str) -> None:
+        import pickle
+
+        os.makedirs(state_dir, exist_ok=True)
+        path = os.path.join(state_dir, self.ARTIFACT_STATE_FILES[0])
+        with open(path, "wb") as f:
+            pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
+        print(f"[GANBLR] Saved fitted model state to: {path}")
+
+    @classmethod
+    def load_from_ref(cls, store: "ArtifactStore", ref: "ModelRef") -> "GANBLR":
+        import pickle
+
+        import joblib
+
+        rel = f"{ref.state_relpath}/{cls.ARTIFACT_STATE_FILES[0]}"
+        path = store.open_path(rel)
+        if not path.is_file():
+            legacy = store.open_path(f"{ref.state_relpath}/ganblr_model.joblib")
+            if legacy.is_file():
+                path = legacy
+            else:
+                raise FileNotFoundError(
+                    f"Missing GANBLR state at {rel}; train with artifact_state_dir / artifact pipeline."
+                )
+        if path.suffix == ".pkl":
+            with open(path, "rb") as f:
+                obj = pickle.load(f)
+        else:
+            obj = joblib.load(path)
+        if not isinstance(obj, cls):
+            raise TypeError(f"Expected {cls.__name__} at {rel}, got {type(obj)}")
+        return obj
 
     def train(self, dataset, size_category='small', *args, **kwargs):
         # parser = argparse.ArgumentParser(
@@ -293,7 +436,11 @@ class GANBLR(Model):
         #                     'small', 'medium', 'large'], help='Dataset size category (small/medium/large)')
         # args = parser.parse_args()
 
-        epochs = 150 if size_category == 'large' else 100
+        artifact_state_dir = kwargs.pop("artifact_state_dir", None)
+
+        epochs = kwargs.pop("train_epochs", None)
+        if epochs is None:
+            epochs = 150 if size_category == "large" else 100
 
         model_name = "ganblr"
         dataset_name = dataset
@@ -331,3 +478,6 @@ class GANBLR(Model):
         y_synth.to_csv(os.path.join(save_dir, "y_synth.csv"),
                        index=False, header=True)
         print(f"\n Synthetic data saved to: {save_dir}")
+
+        if artifact_state_dir:
+            self._save_artifact_state(artifact_state_dir)

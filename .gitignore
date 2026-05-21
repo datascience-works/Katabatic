@@ -6,6 +6,15 @@
 **/runs/**
 **/events.out.tfevents.*
 
+# Serialized model / torch checkpoints under local artifacts
+*.pkl
+*.joblib
+artifacts/**/*.pt
+
+
+.venv-deps/
+
+.vscode/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

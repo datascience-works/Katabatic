@@ -9,6 +9,13 @@ class Pipeline:
     def __init__(self, model: Model):
         self.model = model
 
+    def instantiate_model(self) -> Model:
+        """Return a model instance from a stored class, factory, or instance."""
+        m = self.model
+        if isinstance(m, Model):
+            return m
+        return m()
+
     def run(self, *args, **kwargs):
         """
         Run the pipeline with the given arguments.

@@ -59,7 +59,7 @@ def encode_categorical_columns(df):
     return df_copy
 
 
-def discretize_preprocess(file_path, output_path, bins=10, strategy='uniform'):
+def preprocess_tabular(file_path, output_path, bins=10, strategy='uniform'):
     print(f"Preprocessing: {file_path}")
     df = load_and_clean_data(file_path)
 
@@ -82,6 +82,9 @@ def discretize_preprocess(file_path, output_path, bins=10, strategy='uniform'):
     df_processed = pd.concat([X, y_encoded], axis=1)
     df_processed.to_csv(output_path, index=False)
     print(f"Saved preprocessed discrete dataset to: {output_path}")
+
+
+discretize_preprocess = preprocess_tabular
 
 
 def process_numerical_columns(df):

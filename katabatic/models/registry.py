@@ -13,7 +13,13 @@ class ModelRegistry:
             'module': 'katabatic.models.ganblr.models',
             'class': 'GANBLR',
             'dependencies': ['tensorflow', 'pgmpy', 'pyitlib', 'tf_keras', 'scipy'],
-            'extra': 'ganblr'
+            'extra': 'ganblr',
+            'dataset_requirements': {
+                'allowed_tasks': [
+                    'binary_classification',
+                    'multiclass_classification',
+                ],
+            },
         },
         'great': {
             'module': 'katabatic.models.great.models',

@@ -11,7 +11,7 @@ A comprehensive framework for synthetic tabular data generation using state-of-t
 - **Multiple Generative Models**: Support for GANBLR (GAN-based Bayesian Learning Rules) and GReaT (transformer-based generation)
 - **Automated Pipeline**: End-to-end training, generation, and evaluation workflows
 - **TSTR Evaluation**: Train on Synthetic, Test on Real data evaluation methodology
-- **Data Preprocessing**: Automated discretization and encoding for tabular data
+- **Data Preprocessing**: Automated tabular preprocessing (discretization and encoding)
 - **Cross-Validation Support**: Robust model validation capabilities
 - **Extensible Architecture**: Easy to add new models and evaluation metrics
 
@@ -157,24 +157,24 @@ print('Katabatic installation successful!')
 ```python
 from katabatic.models.ganblr.models import GANBLR
 from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
-from utils import discretize_preprocess
+from utils import preprocess_tabular
 
 # 1. Preprocess your data
 dataset_path = "raw_data/car.csv"
-output_path = "discretized_data/car.csv"
-discretize_preprocess(dataset_path, output_path)
+output_path = "preprocessed_data/car.csv"
+preprocess_tabular(dataset_path, output_path)
 
 # 2. Create and run pipeline
-input_csv = 'discretized_data/car.csv'
+input_csv = 'preprocessed_data/car.csv'
 output_dir = 'sample_data/car'
 
 pipeline = TrainTestSplitPipeline(model=GANBLR)
-pipeline.run(
+results = pipeline.run(
     input_csv=input_csv,
     output_dir=output_dir,
-    synthetic_dir='synthetic/car/ganblr',
-    real_test_dir='sample_data/car'
 )
+# Defaults: ``real_test_dir`` is ``output_dir``; ``synthetic_dir`` is under
+# ``synthetic/<basename(output_dir)>/ganblr/``. Override either if needed.
 ```
 
 ### Jupyter Notebook
@@ -198,12 +198,12 @@ See `example.ipynb` for a complete walkthrough.
 Katabatic requires discrete/categorical data. Use the built-in preprocessing utilities:
 
 ```python
-from utils import discretize_preprocess
+from utils import preprocess_tabular
 
 # Discretize numerical features and encode categorical ones
-discretize_preprocess(
+preprocess_tabular(
     file_path="raw_data/your_dataset.csv",
-    output_path="discretized_data/your_dataset.csv",
+    output_path="preprocessed_data/your_dataset.csv",
     bins=10,  # Number of bins for numerical discretization
     strategy='uniform'  # 'uniform', 'quantile', or 'kmeans'
 )
@@ -265,13 +265,18 @@ from katabatic.models.ganblr.models import GANBLR
 # Create pipeline with GANBLR
 pipeline = TrainTestSplitPipeline(model=GANBLR)
 
-# Run complete workflow: split data -> train model -> evaluate
+# Run complete workflow: split preprocessed CSV -> train model -> TSTR evaluation.
+# Legacy mode: ``real_test_dir`` defaults to ``output_dir`` (where split_dataset
+# writes ``x_test.csv`` / ``y_test.csv``). ``synthetic_dir`` defaults to
+# ``synthetic/<basename(output_dir)>/<model_slug>/`` if omitted.
 results = pipeline.run(
-    input_csv='path/to/data.csv',
+    input_csv='path/to/preprocessed_data.csv',
     output_dir='output/directory',
-    synthetic_dir='synthetic/data/location',
-    real_test_dir='test/data/location'
 )
+# Optional overrides:
+#   synthetic_dir='...', real_test_dir='...'
+# ``results`` is a dict with ``message``, ``output_dir``, ``synthetic_dir``,
+# ``real_test_dir``, ``tstr_results``, and ``pipeline.last_model`` is the fitted instance.
 ```
 
 ## 🤖 Models

@@ -1,7 +1,14 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
+
 import numpy as np
 import pandas as pd
+
+if TYPE_CHECKING:
+    from katabatic.artifacts.base import ArtifactStore
+    from katabatic.artifacts.refs import ModelRef
 
 
 class Model(ABC):
@@ -48,3 +55,13 @@ class Model(ABC):
             )
 
         return True
+
+    @classmethod
+    def load_from_ref(cls, store: "ArtifactStore", ref: "ModelRef") -> "Model":
+        """
+        Reload a fitted model from a versioned on-disk artifact (see ``ModelRef`` paths under the store).
+        Subclasses may implement; default raises NotImplementedError.
+        """
+        raise NotImplementedError(
+            f"{cls.__name__}.load_from_ref is not implemented for this model."
+        )

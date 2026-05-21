@@ -20,7 +20,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from typing import Optional, Dict, Any, Tuple
-from sklearn.metrics import accuracy_score, f1_score, r2_score
 
 from katabatic.models.base_model import Model
 from katabatic.models.codi.utils import (
@@ -129,18 +128,21 @@ class CODI(Model):
 
         set_global_seed(random_state)
 
-    def train(self, dataset_dir: str, synthetic_dir: str, **kwargs) -> "CODI":
+    def train(self, dataset_dir: str, synthetic_dir: Optional[str] = None, **kwargs) -> "CODI":
         """
         Train the CoDi model.
 
         Args:
             dataset_dir: Directory containing x_train.csv and y_train.csv
-            synthetic_dir: Directory to save synthetic data
+            synthetic_dir: Directory to save synthetic data (defaults to
+                ``{dataset_dir}/synthetic`` when omitted, e.g. legacy pipeline).
             **kwargs: Additional arguments (passed from pipeline)
 
         Returns:
             self: Trained model instance
         """
+        if synthetic_dir is None:
+            synthetic_dir = os.path.join(dataset_dir, "synthetic")
         logger.info("=" * 80)
         logger.info("Training CoDi Model")
         logger.info("=" * 80)
@@ -605,89 +607,54 @@ class CODI(Model):
 
     def evaluate(
         self,
-        x: pd.DataFrame,
-        y: pd.Series,
+        x: Optional[pd.DataFrame] = None,
+        y: Optional[pd.Series] = None,
+        *,
+        synthetic_dir: Optional[str] = None,
+        real_test_dir: Optional[str] = None,
         model: str = "lr",
         metrics: Optional[list] = None,
         task: Optional[str] = None,
         random_state: int = 42,
-        **kwargs
-    ) -> Dict[str, float]:
+        **kwargs,
+    ) -> Dict[str, Any]:
         """
-        Quick model-centric TSTR evaluation.
+        TSTR (train on synthetic, test on real) using the same protocol as
+        :class:`katabatic.evaluate.tstr.evaluation.TSTREvaluation`.
+
+        Provide ``synthetic_dir`` and ``real_test_dir`` (directories containing
+        ``x_synth.csv`` / ``y_synth.csv`` and ``x_test.csv`` / ``y_test.csv``).
+        For canonical metrics and artifact logging, use
+        :class:`katabatic.pipeline.train_test_split.pipeline.TrainTestSplitPipeline`
+        with ``TSTREvaluation``.
+
+        The legacy ``(x, y)`` real-data holdout path was removed; it was not TSTR.
 
         Args:
-            x: Feature DataFrame
-            y: Target Series
-            model: Model type ('lr', 'mlp', 'rf', 'xgb')
-            metrics: List of metrics to compute
-            task: Task type ('classification' or 'regression')
-            random_state: Random seed
-            **kwargs: Additional arguments
+            x: Deprecated; do not use.
+            y: Deprecated; do not use.
+            synthetic_dir: Directory with synthetic train CSVs for TSTR.
+            real_test_dir: Directory with real held-out test CSVs for TSTR.
+            model: Ignored; all TSTR downstream models are run.
+            metrics: Ignored (reserved).
+            task: Ignored (reserved).
+            random_state: Ignored (reserved; TSTREvaluation uses its own defaults).
+            **kwargs: Passed through to :class:`TSTREvaluation`.
 
         Returns:
-            Dictionary of metric scores
+            Mapping of downstream model name to metric dict (same shape as
+            ``TSTREvaluation.evaluate()``).
         """
-        from sklearn.model_selection import train_test_split
-        from sklearn.linear_model import LogisticRegression, LinearRegression
-        from sklearn.neural_network import MLPClassifier, MLPRegressor
-        from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-        from sklearn.preprocessing import StandardScaler
+        del model, metrics, task, random_state
+        if synthetic_dir is not None and real_test_dir is not None:
+            from katabatic.evaluate.tstr.evaluation import TSTREvaluation
 
-        # Infer task if not provided
-        if task is None:
-            unique_values = y.nunique()
-            task = 'classification' if unique_values < 20 else 'regression'
+            ev = TSTREvaluation(synthetic_dir, real_test_dir, **kwargs)
+            return ev.evaluate()
 
-        # Split data
-        X_train, X_test, y_train, y_test = train_test_split(
-            x, y, test_size=0.2, random_state=random_state
+        raise ValueError(
+            "CODI.evaluate requires synthetic_dir and real_test_dir for TSTR "
+            "(directories with x_synth.csv/y_synth.csv and x_test.csv/y_test.csv). "
+            "The previous (x, y) real-only holdout API was incorrect for TSTR and "
+            "has been removed."
         )
-
-        # Scale features
-        scaler = StandardScaler()
-        X_train_scaled = scaler.fit_transform(X_train)
-        X_test_scaled = scaler.transform(X_test)
-
-        # Select model
-        if task == 'classification':
-            if model == "lr":
-                clf = LogisticRegression(
-                    max_iter=1000, random_state=random_state)
-            elif model == "mlp":
-                clf = MLPClassifier(hidden_layer_sizes=(
-                    100,), max_iter=1000, random_state=random_state)
-            elif model == "rf":
-                clf = RandomForestClassifier(
-                    n_estimators=100, random_state=random_state)
-            else:
-                raise ValueError(f"Unknown model: {model}")
-
-            clf.fit(X_train_scaled, y_train)
-            y_pred = clf.predict(X_test_scaled)
-
-            results = {
-                'accuracy': accuracy_score(y_test, y_pred),
-                'f1_score': f1_score(y_test, y_pred, average='weighted')
-            }
-        else:
-            if model == "lr":
-                reg = LinearRegression()
-            elif model == "mlp":
-                reg = MLPRegressor(hidden_layer_sizes=(
-                    100,), max_iter=1000, random_state=random_state)
-            elif model == "rf":
-                reg = RandomForestRegressor(
-                    n_estimators=100, random_state=random_state)
-            else:
-                raise ValueError(f"Unknown model: {model}")
-
-            reg.fit(X_train_scaled, y_train)
-            y_pred = reg.predict(X_test_scaled)
-
-            results = {
-                'r2_score': r2_score(y_test, y_pred),
-                'rmse': np.sqrt(np.mean((y_test - y_pred) ** 2))
-            }
-
-        return results

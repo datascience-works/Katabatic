@@ -22,6 +22,8 @@ class TabSyn(BaseModel):
     This class ONLY uses functionality defined in tabsyn/utils.py.
     """
 
+    ARTIFACT_STATE_FILES = ("tabsyn_state.pkl",)
+
     def __init__(
         self,
         *,

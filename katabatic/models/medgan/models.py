@@ -107,15 +107,18 @@ class MEDGAN(Model):
         self.discriminator = None
         self.input_dim_ = None
 
-    def train(self, dataset_dir: str, synthetic_dir: str, **kwargs):
+    def train(self, dataset_dir: str, synthetic_dir: Optional[str] = None, **kwargs):
         """
         Train MedGAN model following Katabatic framework.
 
         Args:
             dataset_dir: Directory containing x_train.csv and y_train.csv
-            synthetic_dir: Directory to save synthetic data
+            synthetic_dir: Directory to save synthetic data (defaults to
+                ``{dataset_dir}/synthetic`` when omitted, e.g. legacy pipeline).
             **kwargs: Additional arguments
         """
+        if synthetic_dir is None:
+            synthetic_dir = os.path.join(dataset_dir, "synthetic")
         logger.info("=" * 80)
         logger.info("Training MedGAN Model")
         logger.info("=" * 80)

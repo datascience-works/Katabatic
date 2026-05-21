@@ -80,7 +80,7 @@ katabatic/
 │   │   └── split_dataset.py     # Dataset splitting utilities
 │   └── synthetic/               # Generated synthetic data storage
 ├── raw_data/                    # Original datasets
-├── discretized_data/            # Preprocessed datasets
+├── preprocessed_data/            # Preprocessed datasets
 ├── sample_data/                 # Train/test splits organized by dataset
 │   ├── adult/
 │   ├── car/
@@ -365,7 +365,7 @@ from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
 # Test with existing pipeline
 pipeline = TrainTestSplitPipeline(model=YourModelName)
 pipeline.run(
-    input_csv='discretized_data/car.csv',
+    input_csv='preprocessed_data/car.csv',
     output_dir='sample_data/car',
     synthetic_dir='synthetic/car/your_model',
     real_test_dir='sample_data/car'
@@ -496,7 +496,7 @@ from katabatic.pipeline.your_pipeline_name.pipeline import YourPipelineName
 
 pipeline = YourPipelineName(model=GANBLR)
 result = pipeline.run(
-    input_csv='discretized_data/car.csv',
+    input_csv='preprocessed_data/car.csv',
     output_dir='sample_data/car',
     synthetic_dir='synthetic/car/ganblr',
     real_test_dir='sample_data/car'
@@ -932,15 +932,15 @@ def test_new_model_integration():
 ```python
 from katabatic.models.ganblr.models import GANBLR
 from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
-from utils import discretize_preprocess
+from utils import preprocess_tabular
 
 # Step 1: Preprocess raw data
 dataset_path = "raw_data/car.csv"
-output_path = "discretized_data/car.csv"
-discretize_preprocess(dataset_path, output_path)
+output_path = "preprocessed_data/car.csv"
+preprocess_tabular(dataset_path, output_path)
 
 # Step 2: Run complete pipeline
-input_csv = 'discretized_data/car.csv'
+input_csv = 'preprocessed_data/car.csv'
 output_dir = 'sample_data/car'
 
 pipeline = TrainTestSplitPipeline(model=GANBLR)
@@ -969,7 +969,7 @@ pipeline = TrainTestSplitPipeline(
 )
 
 result = pipeline.run(
-    input_csv='discretized_data/adult.csv',
+    input_csv='preprocessed_data/adult.csv',
     output_dir='sample_data/adult',
     synthetic_dir='synthetic/adult/great',
     real_test_dir='sample_data/adult'
@@ -1025,7 +1025,7 @@ cv_pipeline = CrossValidationPipeline(
 
 # Run cross-validation
 results = cv_pipeline.run(
-    input_csv='discretized_data/magic.csv',
+    input_csv='preprocessed_data/magic.csv',
     output_dir='cv_results/magic'
 )
 ```
@@ -1037,14 +1037,14 @@ results = cv_pipeline.run(
 from katabatic.models.ganblr.models import GANBLR
 from katabatic.models.great.models import GReaT
 from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
-from utils import discretize_preprocess
+from utils import preprocess_tabular
 import pandas as pd
 import matplotlib.pyplot as plt
 
 # Cell 2: Data preprocessing
 dataset_path = "raw_data/nursery.csv"
-output_path = "discretized_data/nursery.csv"
-discretize_preprocess(dataset_path, output_path)
+output_path = "preprocessed_data/nursery.csv"
+preprocess_tabular(dataset_path, output_path)
 
 # Preview data
 df = pd.read_csv(output_path)
