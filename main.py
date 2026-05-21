@@ -1,47 +1,29 @@
-import subprocess
+"""Deprecated entry point; use ``katabatic`` CLI instead."""
+
+from __future__ import annotations
+
 import sys
-from pathlib import Path
+import warnings
 
-def main():
+warnings.warn(
+    "python main.py is deprecated; use the `katabatic` command (e.g. katabatic init-model).",
+    DeprecationWarning,
+    stacklevel=1,
+)
+
+
+def main() -> None:
     if len(sys.argv) < 2:
-        print("Usage: python main.py <command> [args...]")
+        print("Usage: katabatic <command> [args...]")
+        print("  Commands: init-model, register-dataset, pin-notebook-kernel")
         sys.exit(1)
 
-    command = sys.argv[1]
+    from katabatic.cli.main import main as cli_main
 
-    if command == "pin-notebook-kernel":
-        argv = sys.argv[2:]
-        if not argv:
-            print(
-                "Usage: python main.py pin-notebook-kernel <notebook.ipynb> [more.ipynb ...]\n"
-                "  Registers kernelspec in .venv and sets kernelspec metadata on each notebook."
-            )
-            sys.exit(1)
-        script = Path(__file__).resolve().parent / "scripts" / "pin_notebook_kernel.py"
-        try:
-            subprocess.check_call([sys.executable, str(script), *argv])
-        except subprocess.CalledProcessError as e:
-            sys.exit(e.returncode)
-        return
-
-    if command == "init-model":
-        if len(sys.argv) < 3:
-            print(
-                "Usage: python main.py init-model <model_name> [dependency1 dependency2 ...]")
-            sys.exit(1)
-        model_name = sys.argv[2]
-        dependencies = sys.argv[3:] if len(sys.argv) > 3 else None
-        try:
-            from katabatic.cli.commands.model_init import init_model
-
-            init_model(model_name, dependencies)
-        except Exception as e:
-            print(f"Error creating model: {e}")
-            sys.exit(1)
-    else:
-        print(f"Unknown command: {command}")
-        sys.exit(1)
+    # Map legacy subcommand style: python main.py init-model foo -> katabatic init-model foo
+    cli_main([sys.argv[1], *sys.argv[2:]])
 
 
 if __name__ == "__main__":
     main()
+ 

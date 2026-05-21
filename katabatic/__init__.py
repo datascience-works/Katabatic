@@ -1,10 +1,12 @@
-# katabatic/__init__.py
 """
 Katabatic package initializer.
-This makes the repo importable as 'katabatic'.
+Synthetic tabular data generation, pipelines, and evaluation.
 """
 
-# Expose submodules
+__version__ = "0.1.0"
+
 from . import models
 from . import pipeline
 from . import utils
+
+__all__ = ["__version__", "models", "pipeline", "utils"]

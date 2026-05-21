@@ -4,7 +4,6 @@ import argparse
 import logging
 import os
 import random
-import sys
 import warnings
 from contextlib import contextmanager
 from typing import TYPE_CHECKING
@@ -27,8 +26,6 @@ from .kdb import *
 from .kdb import _add_uniform
 from .utils import *
 from .utils import _ensure_tf
-
-sys.path.append(os.path.abspath("."))
 
 
 @contextmanager

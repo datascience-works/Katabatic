@@ -727,24 +727,21 @@ python run_tests.py fast                   # Fast tests only
 **Direct Pytest Usage:**
 
 ```bash
-# Run all tests
-pytest tests/
+poetry install --with dev
 
-# Run specific test file
-pytest tests/unit/test_base_model.py
+# Fast unit tests (default CI)
+poetry run pytest
 
-# Run tests with specific markers
-pytest -m "unit"                # Unit tests only
-pytest -m "integration"         # Integration tests only
-pytest -m "models"              # Model tests only
-pytest -m "not slow"            # Exclude slow tests
+# Integration tests (install extras first)
+poetry install -E ganblr -E great
+poetry run pytest -m integration
 
-# Run with coverage
-pytest --cov=katabatic --cov-report=html tests/
-
-# Run specific test method
-pytest tests/unit/test_base_model.py::TestBaseModel::test_model_is_abstract
+# GANBLR-only or GReaT-only integration
+poetry run pytest -m "integration and ganblr"
+poetry run pytest -m "integration and great"
 ```
+
+Officially **supported** models: `ganblr`, `great` (see [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md)). New models remain experimental until they have an extra, registry entry, and integration coverage.
 
 ### Writing Tests
 
@@ -932,7 +929,7 @@ def test_new_model_integration():
 ```python
 from katabatic.models.ganblr.models import GANBLR
 from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
-from utils import preprocess_tabular
+from katabatic.utils.preprocess import preprocess_tabular
 
 # Step 1: Preprocess raw data
 dataset_path = "raw_data/car.csv"
@@ -1037,7 +1034,7 @@ results = cv_pipeline.run(
 from katabatic.models.ganblr.models import GANBLR
 from katabatic.models.great.models import GReaT
 from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
-from utils import preprocess_tabular
+from katabatic.utils.preprocess import preprocess_tabular
 import pandas as pd
 import matplotlib.pyplot as plt
 

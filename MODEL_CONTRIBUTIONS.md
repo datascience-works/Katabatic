@@ -1,5 +1,7 @@
 # Model Contributions
 
+New models are **experimental** until they have a PyPI extra, registry entry (if applicable), integration smoke coverage, and documentation updates. Only `ganblr` and `great` are officially supported in v0.1.0; see [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md).
+
 ## 🛠 Contribution Workflow
 
 To contribute a new model to this project, please **do not push directly to `main` or `development` branches**. These are protected and reserved for stable and integration-ready code.
@@ -65,7 +67,8 @@ Create a **Pull Request (PR)** from your feature branch into the `development` b
 
 - Include a summary of your model
 - Mention any new dependencies
-- Add evaluation results if applicable (see `Results/` for examples)
+- Add evaluation results if applicable (artifact evaluations under `artifacts/evaluations/` or legacy `Results/`)
+- Register the model in `katabatic/models/registry.py` with `supported: False` unless promoted by maintainers
 
 ---
 

@@ -108,7 +108,7 @@ poetry --version
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/katabatic.git
+git clone https://github.com/datascience-works/Katabatic.git
 cd katabatic
 ```
 
@@ -121,11 +121,26 @@ pyenv local 3.11.9
 
 ### 3. Install Dependencies
 
-```bash
-# Install dependencies using Poetry
-poetry install
+**Install matrix (PyPI / Poetry extras):**
 
-# Activate the virtual environment
+| Use case | Command |
+|----------|---------|
+| Core only | `pip install katabatic` or `poetry install` |
+| GANBLR (supported) | `pip install katabatic[ganblr]` or `poetry install -E ganblr` |
+| GReaT (supported) | `pip install katabatic[great]` or `poetry install -E great` |
+| TSTR + XGBoost | `pip install katabatic[eval]` or `poetry install -E eval` |
+| Development | `poetry install --with dev` |
+| All optional deps | `pip install katabatic[all]` |
+
+Experimental models (`tabsyn`, `tabddpm`, `pategan`, `ctgan`, etc.) are documented in [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md).
+
+```bash
+# Minimal install (core + dev tools for contributors)
+poetry install --with dev
+
+# Supported models for local work
+poetry install --with dev -E ganblr -E great -E eval
+
 poetry shell
 ```
 
@@ -141,41 +156,57 @@ poetry add torch torchvision torchaudio --index-url https://download.pytorch.org
 ### 5. Verify Installation
 
 ```bash
-# Run a quick test
-python -c "
-import katabatic
-from katabatic.models.ganblr.models import GANBLR
-from katabatic.models.great.models import GReaT
-print('Katabatic installation successful!')
-"
+# Core import
+python -c "import katabatic; print(katabatic.__version__)"
+
+# After installing extras, e.g. poetry install -E ganblr -E great
+python -c "from katabatic.models.registry import ModelRegistry; print(ModelRegistry.get_supported_models())"
 ```
 
 ## 🚀 Quick Start
 
-### Basic Example
+### Artifact pipeline (recommended)
+
+Versioned datasets, models, and evaluations under `artifacts/`. See [GANBLR_FLOW.md](GANBLR_FLOW.md) for details.
+
+```python
+from katabatic.artifacts import LocalArtifactStore
+from katabatic.models.ganblr.models import GANBLR
+from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
+from katabatic.utils.preprocess import preprocess_tabular
+
+preprocess_tabular("raw_data/car.csv", "preprocessed_data/car.csv")
+
+store = LocalArtifactStore("artifacts")
+pipeline = TrainTestSplitPipeline(model=GANBLR())
+results = pipeline.run(
+    input_csv="preprocessed_data/car.csv",
+    dataset_name="car",
+    artifact_store=store,
+    model_name="ganblr",
+)
+# results["model_ref"], results["evaluation_refs"] — TSTR metrics on disk
+```
+
+CLI:
+
+```bash
+katabatic register-dataset car preprocessed_data/car.csv --check-model ganblr
+```
+
+### Legacy directory layout
 
 ```python
 from katabatic.models.ganblr.models import GANBLR
 from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
-from utils import preprocess_tabular
+from katabatic.utils.preprocess import preprocess_tabular
 
-# 1. Preprocess your data
-dataset_path = "raw_data/car.csv"
-output_path = "preprocessed_data/car.csv"
-preprocess_tabular(dataset_path, output_path)
-
-# 2. Create and run pipeline
-input_csv = 'preprocessed_data/car.csv'
-output_dir = 'sample_data/car'
-
-pipeline = TrainTestSplitPipeline(model=GANBLR)
-results = pipeline.run(
-    input_csv=input_csv,
-    output_dir=output_dir,
-)
-# Defaults: ``real_test_dir`` is ``output_dir``; ``synthetic_dir`` is under
-# ``synthetic/<basename(output_dir)>/ganblr/``. Override either if needed.
+preprocess_tabular("raw_data/car.csv", "preprocessed_data/car.csv")
+pipeline = TrainTestSplitPipeline(model=GANBLR())
+pipeline.run(input_csv="preprocessed_data/car.csv", output_dir="sample_data/car")
 ```
+
+Pipelines call `Model.train()`; GANBLR also exposes `fit(x, y)` for direct training.
 
 ### Jupyter Notebook
 
@@ -198,7 +229,7 @@ See `example.ipynb` for a complete walkthrough.
 Katabatic requires discrete/categorical data. Use the built-in preprocessing utilities:
 
 ```python
-from utils import preprocess_tabular
+from katabatic.utils.preprocess import preprocess_tabular
 
 # Discretize numerical features and encode categorical ones
 preprocess_tabular(
@@ -331,6 +362,8 @@ results = evaluator.evaluate()
 - F1 Score
 - AUC-ROC (for binary classification)
 
+**Statistical fidelity** (marginal JSD/KLD, DCR) is available via `katabatic.evaluate.fidelity.evaluation.StatisticalFidelityEvaluation` in artifact pipeline runs.
+
 ## 🛠 Development
 
 ### Recommended VS Code Extensions
@@ -347,46 +380,35 @@ code --install-extension ms-python.isort
 ### Development Setup
 
 ```bash
-# Clone repository
-git clone https://github.com/your-username/katabatic.git
-cd katabatic
+git clone https://github.com/datascience-works/Katabatic.git
+cd Katabatic
 
-# Install development dependencies
-poetry install --group dev
+poetry install --with dev -E ganblr -E eval   # add -E great as needed
 
-# Install pre-commit hooks
-poetry run pre-commit install
-
-# Run tests
-poetry run pytest
-
-# Format code
-poetry run black .
-poetry run isort .
-
-# Type checking
-poetry run mypy katabatic/
+poetry check
+poetry run ruff check katabatic tests
+poetry run pytest                              # fast unit tests
+poetry run pytest -m integration               # after installing model extras
+poetry run mypy katabatic/                     # optional
 ```
 
 ### Project Structure
 
 ```
-katabatic/
-├── katabatic/                    # Main package
-│   ├── models/                   # Generative models
-│   │   ├── ganblr/              # GANBLR implementation
-│   │   └── great/               # GReaT implementation
-│   ├── pipeline/                # Training pipelines
-│   ├── evaluate/                # Evaluation methods
-│   └── utils/                   # Utility functions
-├── raw_data/                    # Raw datasets
-├── sample_data/                 # Processed sample data
-├── synthetic/                   # Generated synthetic data
-├── Results/                     # Evaluation results
-├── example.ipynb               # Usage examples
-├── utils.py                    # Data preprocessing utilities
-├── pyproject.toml              # Project configuration
-└── README.md                   # This file
+Katabatic/
+├── katabatic/                 # Installable package (PyPI wheel)
+│   ├── models/                # GANBLR, GReaT, experimental generators
+│   ├── pipeline/              # TrainTestSplitPipeline, cross-validation
+│   ├── evaluate/              # TSTR, statistical fidelity
+│   ├── artifacts/             # Versioned store helpers
+│   └── utils/                 # preprocess, split_dataset, ...
+├── artifacts/                 # Local run outputs (gitignored)
+├── docs/                      # EXPERIMENTAL_MODELS.md, etc.
+├── examples/                  # Notebooks per model
+├── tests/                     # Unit + integration tests
+├── GANBLR_FLOW.md             # Artifact pipeline walkthrough
+├── pyproject.toml
+└── README.md
 ```
 
 ### Building from Source
@@ -612,8 +634,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/your-username/katabatic/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-username/katabatic/discussions)
+- **Issues**: [GitHub Issues](https://github.com/datascience-works/Katabatic/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/datascience-works/Katabatic/discussions)
 - **Email**: vikumdabare@gmail.com
 
 ## 🔗 Related Projects
