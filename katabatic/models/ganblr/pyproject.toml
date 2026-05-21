@@ -15,6 +15,7 @@ pgmpy = "^1.0.0"
 pyitlib = "^0.3.1"
 tf-keras = "^2.19.0"
 scipy = "^1.16.0"
+xgboost = "^3.2.0"
 
 [tool.poetry.group.dev.dependencies]
 # Development dependencies are inherited from main project

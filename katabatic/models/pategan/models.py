@@ -588,7 +588,12 @@ class PATEGAN(Model):
         **kwargs
     ) -> Dict[str, float]:
         """
-        Quick model-centric TSTR evaluation.
+        In-memory TSTR-style check: sample synthetic rows, fit a downstream model
+        on synthetic data, and score on the provided real ``(x, y)``.
+
+        For **canonical** utility evaluation (aligned splits, artifact logging),
+        use :class:`katabatic.pipeline.train_test_split.pipeline.TrainTestSplitPipeline`
+        with :class:`katabatic.evaluate.tstr.evaluation.TSTREvaluation`.
 
         Args:
             x: Test features

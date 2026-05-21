@@ -598,12 +598,17 @@ def train_tabsyn(
         train_rows=z_tr.shape[0],
     )
 
-    # Optional: save snapshots
+    # Optional: save snapshots (single pickle-based bundle for artifact store)
     if save_dir is not None:
         os.makedirs(save_dir, exist_ok=True)
-        torch.save(state.denoise_fn.state_dict(), os.path.join(save_dir, "tabsyn_denoiser.pt"))
-        torch.save({"num_weight": state.decoder_num_weight, "cat": [h.state_dict() for h in state.decoder_cat_heads]},
-                   os.path.join(save_dir, "tabsyn_decoder.pt"))
+        bundle = {
+            "denoise_fn": state.denoise_fn.state_dict(),
+            "decoder": {
+                "num_weight": state.decoder_num_weight,
+                "cat": [h.state_dict() for h in state.decoder_cat_heads],
+            },
+        }
+        torch.save(bundle, os.path.join(save_dir, "tabsyn_state.pkl"))
 
     return state
 

@@ -1,39 +1,96 @@
-from tensorflow.python.ops import math_ops
 import numpy as np
-import tensorflow as tf
 
-class softmax_weight(tf.keras.constraints.Constraint):
-    """Constrains weight tensors to be under softmax `."""
-  
-    def __init__(self,feature_uniques):
-        if isinstance(feature_uniques, np.ndarray):
-            idxs = math_ops.cumsum(np.hstack([np.array([0]),feature_uniques]))
-        else:
-            idxs = math_ops.cumsum([0] + feature_uniques)
-        idxs = [i.numpy() for i in idxs]
-        self.feature_idxs = [
-            (idxs[i],idxs[i+1]) for i in range(len(idxs)-1)
-        ]
-  
-    def __call__(self, w):     
-        w_new = [
-            math_ops.log(tf.nn.softmax(w[i:j,:], axis=0))
-            for i,j in self.feature_idxs
-        ]
-        return tf.concat(w_new, 0)
-  
-    def get_config(self):
-        return {'feature_idxs': self.feature_idxs}
+_tf_mod = None
+
+
+def _ensure_tf(*, announce: bool = False):
+    """Load TensorFlow on first use (cold import can take minutes on some systems)."""
+    global _tf_mod
+    if _tf_mod is None:
+        if announce:
+            print(
+                "[GANBLR] Importing TensorFlow (first load often takes 1–3+ minutes on macOS; "
+                "wait for the next line — not frozen).",
+                flush=True,
+            )
+        import tensorflow as tf
+
+        _tf_mod = tf
+        if announce:
+            print("[GANBLR] TensorFlow ready.", flush=True)
+    return _tf_mod
+
+
+_SoftmaxWeightCls = None
+
+
+def _softmax_weight_class():
+    """Return (once) a tensorflow Constraint subclass picklable as utils.SoftmaxWeight."""
+    global _SoftmaxWeightCls
+    if _SoftmaxWeightCls is None:
+        tf = _ensure_tf()
+        from tensorflow.python.ops import math_ops
+
+        class SoftmaxWeight(tf.keras.constraints.Constraint):
+            """Constrains weight tensors to be under softmax."""
+
+            def __init__(self, feature_uniques):
+                if isinstance(feature_uniques, np.ndarray):
+                    idxs = math_ops.cumsum(
+                        np.hstack([np.array([0]), feature_uniques])
+                    )
+                else:
+                    idxs = math_ops.cumsum([0] + feature_uniques)
+                idxs = [i.numpy() for i in idxs]
+                self.feature_idxs = [
+                    (idxs[i], idxs[i + 1]) for i in range(len(idxs) - 1)
+                ]
+
+            def __call__(self, w):
+                w_new = [
+                    math_ops.log(tf.nn.softmax(w[i:j, :], axis=0))
+                    for i, j in self.feature_idxs
+                ]
+                return tf.concat(w_new, 0)
+
+            def get_config(self):
+                return {"feature_idxs": self.feature_idxs}
+
+        # Nested classes get __qualname__ like "_softmax_weight_class.<locals>.SoftmaxWeight",
+        # which stdlib pickle cannot resolve. Expose as a real module attribute instead.
+        SoftmaxWeight.__module__ = __name__
+        SoftmaxWeight.__name__ = "SoftmaxWeight"
+        SoftmaxWeight.__qualname__ = "SoftmaxWeight"
+        _SoftmaxWeightCls = SoftmaxWeight
+
+    return _SoftmaxWeightCls
+
+
+def __getattr__(name: str):
+    """Lazy SoftmaxWeight so pickle can ``getattr(module, 'SoftmaxWeight')`` before any fit."""
+    if name == "SoftmaxWeight":
+        return _softmax_weight_class()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def softmax_weight(feature_uniques):
+    """Return a Keras softmax constraint (imports TensorFlow on first call)."""
+    cls = _softmax_weight_class()
+    return cls(feature_uniques)
+
 
 def elr_loss(KL_LOSS):
-  def loss(y_true, y_pred):
-    return tf.keras.losses.sparse_categorical_crossentropy(y_true, y_pred)+ KL_LOSS
-  return loss
+    def loss(y_true, y_pred):
+        tf = _ensure_tf()
+        return tf.keras.losses.sparse_categorical_crossentropy(y_true, y_pred) + KL_LOSS
+
+    return loss
 
 def KL_loss(prob_fake):
     return np.mean(-np.log(np.subtract(1,prob_fake)))
 
 def get_lr(input_dim, output_dim, constraint=None,KL_LOSS=0):
+    tf = _ensure_tf()
     model = tf.keras.Sequential()
     model.add(tf.keras.layers.Dense(output_dim, input_dim=input_dim, activation='softmax',kernel_constraint=constraint))
     model.compile(loss=elr_loss(KL_LOSS), optimizer='adam', metrics=['accuracy'])
@@ -112,10 +169,11 @@ def get_demo_data(name='adult'):
     assert(name in DEMO_DATASETS.keys())
     return read_csv(DEMO_DATASETS[name]['link'], **DEMO_DATASETS[name]['params'])
 
-from .kdb import KdbHighOrderFeatureEncoder
-from sklearn.preprocessing import OneHotEncoder
 from pandas import read_csv
-import numpy as np
+from sklearn.preprocessing import OneHotEncoder
+
+from .kdb import KdbHighOrderFeatureEncoder
+
 
 class DataUtils:
     """

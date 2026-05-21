@@ -1,19 +1,25 @@
 import os
-import argparse
-import pandas as pd
-import numpy as np
 import csv
-import random
-from sklearn.linear_model import LogisticRegression
-from sklearn.neural_network import MLPClassifier
+import warnings
+from typing import Any, Optional, Tuple
+
+import numpy as np
+import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import StandardScaler
-from xgboost import XGBClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
+from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import StandardScaler
+
+try:
+    from xgboost import XGBClassifier
+except ImportError:  # optional dependency (see pyproject.toml)
+    XGBClassifier = None  # type: ignore[misc, assignment]
 
 from katabatic.evaluate.base_evaluation import Evaluation
-
-# Need to change this prolly
+from katabatic.artifacts.base import ArtifactStore
+from katabatic.artifacts.ids import new_eval_id
+from katabatic.artifacts.refs import DatasetRef, EvaluationRef, ModelRef
 
 
 def load_data(synthetic_dir, real_test_dir):
@@ -28,11 +34,57 @@ def load_data(synthetic_dir, real_test_dir):
 
 class TSTREvaluation(Evaluation):
     def __init__(self, synthetic_dir, real_test_dir, **kwargs):
+        kwargs.pop("real_train_dir", None)
         self.synthetic_dir = synthetic_dir
         self.real_test_dir = real_test_dir
+        self._artifact_store: Optional[ArtifactStore] = kwargs.pop("_artifact_store", None)
+        self._evaluation_ref: Optional[EvaluationRef] = kwargs.pop("_evaluation_ref", None)
+        self._artifact_report_relpath: Optional[str] = kwargs.pop("_artifact_report_relpath", None)
 
         self.x_train, self.y_train, self.x_test, self.y_test = load_data(
             synthetic_dir, real_test_dir)
+
+    @classmethod
+    def from_artifact(
+        cls,
+        store: ArtifactStore,
+        model_ref: ModelRef,
+        dataset_ref: DatasetRef,
+        eval_run_id: Optional[str] = None,
+        **kwargs,
+    ) -> Tuple["TSTREvaluation", EvaluationRef]:
+        eval_run_id = eval_run_id or new_eval_id()
+        eval_ref = EvaluationRef(
+            evaluation_type="tstr",
+            eval_run_id=eval_run_id,
+            model_name=model_ref.model_name,
+            dataset_name=dataset_ref.dataset_name,
+            dataset_version=dataset_ref.dataset_version,
+            train_run_id=model_ref.train_run_id,
+            test_dataset_version=dataset_ref.dataset_version,
+        )
+        store.open_path(eval_ref.root_relpath).mkdir(parents=True, exist_ok=True)
+        synthetic_dir = str(store.open_path(model_ref.synthetic_relpath))
+        real_test_dir = str(store.open_path(dataset_ref.test_relpath))
+        report_rel = eval_ref.report_relpath
+        skip = frozenset({
+            "_artifact_store",
+            "_evaluation_ref",
+            "_artifact_report_relpath",
+            "synthetic_dir",
+            "real_test_dir",
+            "real_train_dir",
+        })
+        init_kw = {k: v for k, v in kwargs.items() if k not in skip}
+        inst = cls(
+            synthetic_dir,
+            real_test_dir,
+            _artifact_store=store,
+            _evaluation_ref=eval_ref,
+            _artifact_report_relpath=report_rel,
+            **init_kw,
+        )
+        return inst, eval_ref
 
     def evaluate(self):
         results = {}
@@ -41,16 +93,19 @@ class TSTREvaluation(Evaluation):
         num_pos = np.sum(self.y_train == 1)
         scale_pos_weight = num_neg / num_pos if num_pos > 0 else 1.0
 
-        models = {
-            # "LR": LogisticRegression(max_iter=1000, random_state=42),
-            # "MLP": MLPClassifier(hidden_layer_sizes=(100,), early_stopping=True, random_state=42),
-            # "RF": RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=42),
-            # "XGBoost": XGBClassifier(scale_pos_weight=scale_pos_weight, random_state=42)
+        models: dict[str, Any] = {
             "LR": LogisticRegression(),
             "MLP": MLPClassifier(),
             "RF": RandomForestClassifier(),
-            "XGBoost": XGBClassifier(scale_pos_weight=scale_pos_weight)
         }
+        if XGBClassifier is not None:
+            models["XGBoost"] = XGBClassifier(scale_pos_weight=scale_pos_weight)
+        else:
+            warnings.warn(
+                "xgboost is not installed; TSTR will skip the XGBoost classifier. "
+                "Install with: pip install xgboost",
+                stacklevel=2,
+            )
         for name, model in models.items():
             if name in ["LR", "MLP"]:
                 scaler = StandardScaler()
@@ -75,7 +130,10 @@ class TSTREvaluation(Evaluation):
 
             results[name] = metrics
 
-        self.save_results_to_csv(results, self.synthetic_dir)
+        if self._artifact_store is not None and self._evaluation_ref is not None and self._artifact_report_relpath is not None:
+            self._save_results_artifact(results)
+        else:
+            self.save_results_to_csv(results, self.synthetic_dir)
 
         print("\nTSTR Evaluation Results:")
         for model_name, metrics in results.items():
@@ -84,6 +142,31 @@ class TSTREvaluation(Evaluation):
                 print(f"{metric_name}: {value:.4f}")
 
         return results
+
+    def _save_results_artifact(self, results: dict[str, dict[str, float]]) -> None:
+        store = self._artifact_store
+        ref = self._evaluation_ref
+        assert store is not None and ref is not None
+
+        serializable: dict[str, Any] = {
+            k: {m: float(v) for m, v in d.items()}
+            for k, d in results.items()
+        }
+        store.save_json(ref.metrics_relpath, serializable)
+
+        report_path = self._artifact_report_relpath
+        lines = []
+        for model_name, metrics in results.items():
+            for metric_name, value in metrics.items():
+                lines.append((model_name, metric_name, round(float(value), 4)))
+
+        p = store.open_path(report_path)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with open(p, mode="w", newline="", encoding="utf-8") as file:
+            writer = csv.writer(file)
+            writer.writerow(["Model", "Metric", "Value"])
+            writer.writerows(lines)
+        print(f"\nResults saved to: {p}")
 
     @staticmethod
     def save_results_to_csv(results, synthetic_dir):

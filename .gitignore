@@ -1,3 +1,12 @@
+.DS_Store
+
+# Local pipeline outputs (not for version control)
+artifacts/
+preprocessed_data/
+sample_data/
+synthetic/
+Results/
+
 # GReaT trainer artifacts
 **/trainer_great/**
 **/checkpoint-*/
@@ -6,6 +15,15 @@
 **/runs/**
 **/events.out.tfevents.*
 
+# Serialized model / torch checkpoints under local artifacts
+*.pkl
+*.joblib
+artifacts/**/*.pt
+
+
+.venv-deps/
+
+.vscode/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
