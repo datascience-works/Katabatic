@@ -1,0 +1,62 @@
+# Publish katabatic to PyPI (production).
+#
+# Setup (choose one):
+#   Trusted publishing (recommended): https://docs.pypi.org/trusted-publishers/
+#     - PyPI project → Publishing → Add trusted publisher
+#     - Owner: datascience-works, repo: Katabatic, workflow: publish-pypi.yml
+#     - Environment name: pypi (create in GitHub repo Settings → Environments)
+#   API token: add repo secret PYPI_API_TOKEN (uncomment password in publish step)
+#
+# Triggers:
+#   - GitHub Release published (recommended): create release from tag v1.2.3
+#   - Manual: Actions → Publish to PyPI → Run workflow
+#   - Tags: v1.2.3 (semver only; no -rc / -test suffixes)
+
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+concurrency:
+  group: publish-pypi-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Build and upload to PyPI
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Poetry
+        run: pip install poetry==1.8.5
+
+      - name: Validate project metadata
+        run: poetry check
+
+      - name: Build package
+        run: poetry build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+          # password: ${{ secrets.PYPI_API_TOKEN }}  # if not using trusted publishing
