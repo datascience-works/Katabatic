@@ -53,6 +53,14 @@ def _serialize_list_str(xs: List[str]) -> str:
     return "[" + ", ".join(repr(s) for s in xs) + "]"
 
 
+def _find_project_root() -> Path:
+    """Return repo root when run from a checkout, else cwd."""
+    for candidate in [Path.cwd(), *Path.cwd().parents]:
+        if (candidate / "pyproject.toml").is_file() and (candidate / "katabatic").is_dir():
+            return candidate
+    return Path.cwd()
+
+
 def init_model(model_name: str, dependencies: Optional[List[str]] = None) -> None:
     """Initialize a new model structure aligned with the base `Model` API.
 
@@ -150,8 +158,10 @@ class {class_name}(Model):
         f"{entry_indent}}}"
     )
 
-    before = registry_content[:close_idx].rstrip()
-    after = registry_content[close_idx:]
+    # Preserve the indented closing brace line (close_idx points at `}` only).
+    line_start = registry_content.rfind("\n", 0, close_idx) + 1
+    before = registry_content[:line_start].rstrip()
+    after = registry_content[line_start:]
 
     needs_comma = not before.endswith("{")
     if needs_comma and not before.endswith(","):
@@ -160,11 +170,11 @@ class {class_name}(Model):
     if not before.endswith("\n"):
         before = before + "\n"
 
-    new_registry = before + new_entry + "\n" + after
+    new_registry = before + new_entry + ",\n" + after
 
     registry_path.write_text(new_registry)
 
-    scripts_dir = Path(__file__).parents[3] / "scripts"
+    scripts_dir = _find_project_root() / "scripts"
     scripts_dir.mkdir(parents=True, exist_ok=True)
     setup_script_path = scripts_dir / f"setup_{dir_name}.sh"
     setup_script_path.write_text(
