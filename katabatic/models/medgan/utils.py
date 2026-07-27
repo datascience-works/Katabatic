@@ -5,11 +5,9 @@ Based on "Generating Multi-label Discrete Patient Records using Generative Adver
 by Choi et al. (2017) - https://arxiv.org/abs/1703.06490
 """
 
+
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import numpy as np
-from typing import Tuple, Optional
+from torch import nn
 
 
 class Autoencoder(nn.Module):
@@ -58,7 +56,7 @@ class Autoencoder(nn.Module):
         """Decode latent representation to output."""
         return torch.sigmoid(self.decoder(z))
     
-    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Forward pass through autoencoder.
         

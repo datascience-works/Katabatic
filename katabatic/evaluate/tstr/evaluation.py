@@ -1,7 +1,7 @@
-import os
 import csv
+import os
 import warnings
-from typing import Any, Optional, Tuple
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -16,10 +16,10 @@ try:
 except ImportError:  # optional dependency (see pyproject.toml)
     XGBClassifier = None  # type: ignore[misc, assignment]
 
-from katabatic.evaluate.base_evaluation import Evaluation
 from katabatic.artifacts.base import ArtifactStore
 from katabatic.artifacts.ids import new_eval_id
 from katabatic.artifacts.refs import DatasetRef, EvaluationRef, ModelRef
+from katabatic.evaluate.base_evaluation import Evaluation
 
 
 def load_data(synthetic_dir, real_test_dir):
@@ -37,9 +37,9 @@ class TSTREvaluation(Evaluation):
         kwargs.pop("real_train_dir", None)
         self.synthetic_dir = synthetic_dir
         self.real_test_dir = real_test_dir
-        self._artifact_store: Optional[ArtifactStore] = kwargs.pop("_artifact_store", None)
-        self._evaluation_ref: Optional[EvaluationRef] = kwargs.pop("_evaluation_ref", None)
-        self._artifact_report_relpath: Optional[str] = kwargs.pop("_artifact_report_relpath", None)
+        self._artifact_store: ArtifactStore | None = kwargs.pop("_artifact_store", None)
+        self._evaluation_ref: EvaluationRef | None = kwargs.pop("_evaluation_ref", None)
+        self._artifact_report_relpath: str | None = kwargs.pop("_artifact_report_relpath", None)
 
         self.x_train, self.y_train, self.x_test, self.y_test = load_data(
             synthetic_dir, real_test_dir)
@@ -50,9 +50,9 @@ class TSTREvaluation(Evaluation):
         store: ArtifactStore,
         model_ref: ModelRef,
         dataset_ref: DatasetRef,
-        eval_run_id: Optional[str] = None,
+        eval_run_id: str | None = None,
         **kwargs,
-    ) -> Tuple["TSTREvaluation", EvaluationRef]:
+    ) -> tuple["TSTREvaluation", EvaluationRef]:
         eval_run_id = eval_run_id or new_eval_id()
         eval_ref = EvaluationRef(
             evaluation_type="tstr",

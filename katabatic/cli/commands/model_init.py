@@ -1,10 +1,9 @@
 import os
 import re
 from pathlib import Path
-from typing import List, Optional, Tuple
 
 
-def _find_models_dict_bounds(text: str) -> Tuple[int, int, str]:
+def _find_models_dict_bounds(text: str) -> tuple[int, int, str]:
     """
     Return (open_brace_idx, close_brace_idx, indent) for the _models dict.
     Uses brace counting and skips over strings.
@@ -24,7 +23,7 @@ def _find_models_dict_bounds(text: str) -> Tuple[int, int, str]:
 
     depth = 0
     i = open_idx
-    in_str: Optional[str] = None
+    in_str: str | None = None
     escaped = False
     while i < len(text):
         ch = text[i]
@@ -49,7 +48,7 @@ def _find_models_dict_bounds(text: str) -> Tuple[int, int, str]:
     raise ValueError("Unbalanced braces in _models dictionary")
 
 
-def _serialize_list_str(xs: List[str]) -> str:
+def _serialize_list_str(xs: list[str]) -> str:
     return "[" + ", ".join(repr(s) for s in xs) + "]"
 
 
@@ -61,7 +60,7 @@ def _find_project_root() -> Path:
     return Path.cwd()
 
 
-def init_model(model_name: str, dependencies: Optional[List[str]] = None) -> None:
+def init_model(model_name: str, dependencies: list[str] | None = None) -> None:
     """Initialize a new model structure aligned with the base `Model` API.
 
     Args:

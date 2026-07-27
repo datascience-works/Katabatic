@@ -1,0 +1,9 @@
+Dimension,Score,Weight,Weighted Score
+fidelity,0.9331,0.25,0.2333
+utility,0.9718,0.35,0.3401
+diversity,0.8968,0.1,0.0897
+privacy,0.7059,0.15,0.1059
+consistency,0.6081,0.1,0.0608
+stability,0.972,0.05,0.0486
+
+composite_score,0.8784,,

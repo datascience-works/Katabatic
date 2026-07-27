@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from katabatic.artifacts import (
     ArtifactStore,
@@ -49,7 +49,7 @@ def _default_legacy_synthetic_dir(output_dir: str, model: Model) -> str:
     return os.path.join("synthetic", base, _model_slug(model))
 
 
-def _per_evaluation_kw(evaluation_kwargs: Optional[Dict[Any, dict]], cls: type) -> dict:
+def _per_evaluation_kw(evaluation_kwargs: dict[Any, dict] | None, cls: type) -> dict:
     if not evaluation_kwargs:
         return {}
     return dict(evaluation_kwargs.get(cls) or evaluation_kwargs.get(cls.__name__) or {})
@@ -60,8 +60,8 @@ def _run_single_evaluation_artifact(
     store: ArtifactStore,
     mr: ModelRef,
     ds_ref: DatasetRef,
-    merged: Dict[str, Any],
-) -> Optional[EvaluationRef]:
+    merged: dict[str, Any],
+) -> EvaluationRef | None:
     from_art = getattr(evaluation_cls, "from_artifact", None)
     if callable(from_art):
         passthrough = {k: v for k, v in merged.items() if k not in _EVAL_PATH_KEYS}
@@ -87,7 +87,7 @@ class TrainTestSplitPipeline(Pipeline):
 
     def __init__(self, model: Model, evaluations=None, override_evaluations=False):
         super().__init__(model)
-        self.last_model: Optional[Model] = None
+        self.last_model: Model | None = None
 
         if evaluations and override_evaluations:
             self._evaluations = evaluations
@@ -96,7 +96,7 @@ class TrainTestSplitPipeline(Pipeline):
         else:
             self._evaluations = list(type(self)._evaluations)
 
-    def run(self, *args, **kwargs) -> Dict[str, Any]:
+    def run(self, *args, **kwargs) -> dict[str, Any]:
         kwargs = dict(kwargs)
         artifact_store = kwargs.pop("artifact_store", None)
         artifact_root = kwargs.pop("artifact_root", None)
@@ -171,17 +171,17 @@ class TrainTestSplitPipeline(Pipeline):
 
     def _run_legacy(
         self,
-        input_csv: Optional[str],
+        input_csv: str | None,
         output_dir: str,
         *args,
-        train_csv: Optional[str] = None,
-        test_csv: Optional[str] = None,
-        model_kwargs: Optional[Dict[str, Any]] = None,
-        eval_kwargs_user: Optional[Dict[str, Any]] = None,
-        evaluation_kwargs: Optional[Dict[Any, dict]] = None,
-        extra_source_dir: Optional[str] = None,
+        train_csv: str | None = None,
+        test_csv: str | None = None,
+        model_kwargs: dict[str, Any] | None = None,
+        eval_kwargs_user: dict[str, Any] | None = None,
+        evaluation_kwargs: dict[Any, dict] | None = None,
+        extra_source_dir: str | None = None,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         model_kwargs = dict(model_kwargs or {})
         eval_kwargs_user = dict(eval_kwargs_user or {})
         current_model = self.instantiate_model()
@@ -221,7 +221,7 @@ class TrainTestSplitPipeline(Pipeline):
             "real_train_dir": real_train_dir,
         }
 
-        tstr_results: List[Any] = []
+        tstr_results: list[Any] = []
         for evaluation in self._evaluations:
             per = _per_evaluation_kw(evaluation_kwargs, evaluation)
             merged = {**eval_merged, **per}
@@ -243,16 +243,16 @@ class TrainTestSplitPipeline(Pipeline):
         store: ArtifactStore,
         dataset_name: str,
         *args,
-        input_csv: Optional[str] = None,
-        train_csv: Optional[str] = None,
-        test_csv: Optional[str] = None,
-        extra_source_dir: Optional[str] = None,
-        model_kwargs: Optional[Dict[str, Any]] = None,
-        eval_kwargs_user: Optional[Dict[str, Any]] = None,
-        evaluation_kwargs: Optional[Dict[Any, dict]] = None,
-        target_column: Optional[str] = None,
+        input_csv: str | None = None,
+        train_csv: str | None = None,
+        test_csv: str | None = None,
+        extra_source_dir: str | None = None,
+        model_kwargs: dict[str, Any] | None = None,
+        eval_kwargs_user: dict[str, Any] | None = None,
+        evaluation_kwargs: dict[Any, dict] | None = None,
+        target_column: str | None = None,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         model_kwargs = dict(model_kwargs or {})
         eval_kwargs_user = dict(eval_kwargs_user or {})
         test_size = kwargs.pop("test_size", 0.2)
@@ -344,7 +344,7 @@ class TrainTestSplitPipeline(Pipeline):
             "real_train_dir": str(store.open_path(ds_ref.train_relpath)),
         }
 
-        evaluation_refs: List[Optional[EvaluationRef]] = []
+        evaluation_refs: list[EvaluationRef | None] = []
         for evaluation in self._evaluations:
             per = _per_evaluation_kw(evaluation_kwargs, evaluation)
             merged = {**eval_merged_base, **per}

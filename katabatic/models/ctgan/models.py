@@ -1,22 +1,23 @@
 from __future__ import annotations
 
-from typing import Any, Optional, Dict, List, Tuple
-import os
-import json
 import importlib
+import json
+import os
+from typing import Any
 
 import numpy as np
 import pandas as pd
 
 from katabatic.models.base_model import Model as BaseModel
+
 from .utils import (
-    infer_schema,
-    fit_transformers,
-    encode_df,
-    decode_batch,
-    build_conditioning,
-    sample_conditions,
     ColumnMeta,
+    build_conditioning,
+    decode_batch,
+    encode_df,
+    fit_transformers,
+    infer_schema,
+    sample_conditions,
 )
 
 
@@ -41,17 +42,17 @@ class CTGANModel(BaseModel):
         epochs: int = 100,
         batch_size: int = 512,
         noise_dim: int = 128,
-        generator_hidden: Tuple[int, ...] = (256, 256),
-        discriminator_hidden: Tuple[int, ...] = (256, 256),
+        generator_hidden: tuple[int, ...] = (256, 256),
+        discriminator_hidden: tuple[int, ...] = (256, 256),
         lr: float = 2e-4,
-        betas: Tuple[float, float] = (0.5, 0.9),
+        betas: tuple[float, float] = (0.5, 0.9),
         lambda_gp: float = 10.0,
         use_gradient_penalty: bool = False,
         clip_value: float = 0.01,
         n_critic: int = 5,
         gumbel_tau: float = 0.2,
         seed: int = 42,
-        device: Optional[str] = "cpu",
+        device: str | None = "cpu",
         backend: str = "torch",
     ) -> None:
         super().__init__()
@@ -72,12 +73,12 @@ class CTGANModel(BaseModel):
             "device": device,
             "backend": backend,
         }
-        self.schema: List[ColumnMeta] | None = None
-        self.output_order: List[str] = []
-        self.cat_blocks: Dict[str, Tuple[int, int]] = {}
-        self.cond_blocks: Dict[str, Tuple[int, int]] = {}
-        self.empirical_probs: Dict[str, np.ndarray] = {}
-        self._train_df: Optional[pd.DataFrame] = None
+        self.schema: list[ColumnMeta] | None = None
+        self.output_order: list[str] = []
+        self.cat_blocks: dict[str, tuple[int, int]] = {}
+        self.cond_blocks: dict[str, tuple[int, int]] = {}
+        self.empirical_probs: dict[str, np.ndarray] = {}
+        self._train_df: pd.DataFrame | None = None
 
         # Torch-related members (only set when backend == 'torch')
         self.generator = None
@@ -97,9 +98,9 @@ class CTGANModel(BaseModel):
         in_d = self._enc_dim + self._cond_dim
 
         class LocalMLP(nn.Module):
-            def __init__(self, in_dim: int, hidden: List[int], out_dim: int):
+            def __init__(self, in_dim: int, hidden: list[int], out_dim: int):
                 super().__init__()
-                layers: List[nn.Module] = []
+                layers: list[nn.Module] = []
                 last = in_dim
                 for h in hidden:
                     layers += [nn.Linear(last, h), nn.ReLU()]
@@ -144,10 +145,10 @@ class CTGANModel(BaseModel):
     def train(
         self,
         data_dir: str,
-        synthetic_dir: Optional[str] = None,
+        synthetic_dir: str | None = None,
         *args,
         **kwargs,
-    ) -> "CTGANModel":
+    ) -> CTGANModel:
         # Load data
         train_full = os.path.join(data_dir, "train_full.csv")
         x_path = os.path.join(data_dir, "x_train.csv")
@@ -351,8 +352,8 @@ class CTGANModel(BaseModel):
 
     def sample(
         self,
-        n: Optional[int] = None,
-        conditional: Optional[Dict[str, Any]] = None,
+        n: int | None = None,
+        conditional: dict[str, Any] | None = None,
         *args,
         **kwargs,
     ) -> pd.DataFrame:
@@ -367,7 +368,7 @@ class CTGANModel(BaseModel):
             else:
                 batch = int(n) if n is not None else 1000
                 self.generator.eval()
-                all_rows: List[pd.DataFrame] = []
+                all_rows: list[pd.DataFrame] = []
                 with torch.no_grad():
                     steps = (batch + 1023) // 1024
                     remain = batch
@@ -411,7 +412,7 @@ class CTGANModel(BaseModel):
         # NumPy fallback
         n_rows = int(n) if n is not None else (
             len(self._train_df) if self._train_df is not None else 1000)
-        rows: Dict[str, list] = {c.name: [] for c in self.schema}
+        rows: dict[str, list] = {c.name: [] for c in self.schema}
         rng = np.random.default_rng(self.cfg.get("seed", 42))
         train_df = self._train_df if self._train_df is not None else None
 

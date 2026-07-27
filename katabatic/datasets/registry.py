@@ -3,7 +3,7 @@ from __future__ import annotations
 import warnings
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from katabatic.artifacts.base import ArtifactStore
 from katabatic.artifacts.local import LocalArtifactStore
@@ -25,7 +25,7 @@ class DatasetRegistry:
         self._store = store
 
     @classmethod
-    def from_root(cls, root: str | Path) -> "DatasetRegistry":
+    def from_root(cls, root: str | Path) -> DatasetRegistry:
         return cls(LocalArtifactStore(root))
 
     @property
@@ -40,7 +40,7 @@ class DatasetRegistry:
     def _save_raw(self, data: dict[str, Any]) -> None:
         self._store.save_json(self._relpath, data)
 
-    def get(self, dataset_name: str) -> Optional[dict[str, Any]]:
+    def get(self, dataset_name: str) -> dict[str, Any] | None:
         key = artifact_path_segment(dataset_name)
         return self._load_raw()["datasets"].get(key)
 
@@ -49,7 +49,7 @@ class DatasetRegistry:
         dataset_name: str,
         csv_path: str | Path,
         *,
-        target_column: Optional[str] = None,
+        target_column: str | None = None,
     ) -> dict[str, Any]:
         key = artifact_path_segment(dataset_name)
         raw = self._load_raw()
@@ -72,7 +72,7 @@ class DatasetRegistry:
         dataset_name: str,
         csv_path: str | Path,
         *,
-        target_column: Optional[str] = None,
+        target_column: str | None = None,
     ) -> dict[str, Any]:
         """
         Register when the logical name is missing; otherwise return the existing entry.

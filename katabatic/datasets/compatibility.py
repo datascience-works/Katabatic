@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from katabatic.models.registry import ModelRegistry
 
 
-def _requirements_for_model(model_name: str) -> Optional[dict[str, Any]]:
+def _requirements_for_model(model_name: str) -> dict[str, Any] | None:
     info = ModelRegistry.get_model_info(model_name)
     if not info:
         return None

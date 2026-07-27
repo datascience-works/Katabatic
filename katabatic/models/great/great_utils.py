@@ -1,14 +1,12 @@
-import typing as tp
 
 import numpy as np
 import pandas as pd
 import torch
-
 from transformers import AutoTokenizer
 
 
 def _array_to_dataframe(
-    data: tp.Union[pd.DataFrame, np.ndarray], columns=None
+    data: pd.DataFrame | np.ndarray, columns=None
 ) -> pd.DataFrame:
     """Converts a Numpy Array to a Pandas DataFrame
 
@@ -38,7 +36,7 @@ def _array_to_dataframe(
     return pd.DataFrame(data=data, columns=columns)
 
 
-def _get_column_distribution(df: pd.DataFrame, col: str) -> tp.Union[list, dict]:
+def _get_column_distribution(df: pd.DataFrame, col: str) -> list | dict:
     """Returns the distribution of a given column. If continuous, returns a list of all values.
         If categorical, returns a dictionary in form {"A": 0.6, "B": 0.4}
 
@@ -57,8 +55,8 @@ def _get_column_distribution(df: pd.DataFrame, col: str) -> tp.Union[list, dict]
 
 
 def _convert_tokens_to_text(
-    tokens: tp.List[torch.Tensor], tokenizer: AutoTokenizer
-) -> tp.List[str]:
+    tokens: list[torch.Tensor], tokenizer: AutoTokenizer
+) -> list[str]:
     """Decodes the tokens back to strings
 
     Args:
@@ -80,7 +78,7 @@ def _convert_tokens_to_text(
 
 
 def _convert_text_to_tabular_data(
-    text: tp.List[str], columns: tp.List[str]
+    text: list[str], columns: list[str]
 ) -> pd.DataFrame:
     """Converts the sentences back to tabular data
 

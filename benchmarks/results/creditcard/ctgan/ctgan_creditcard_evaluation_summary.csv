@@ -1,0 +1,20 @@
+Dimension,Score,Weight,Weighted Score
+<<<<<<< HEAD
+fidelity,0.7575,0.25,0.1894
+utility,0.0,0.35,0.0
+diversity,0.8817,0.1,0.0882
+privacy,0.9961,0.15,0.1494
+consistency,0.0,0.1,0.0
+stability,0.9375,0.05,0.0469
+
+composite_score,0.4738,,
+=======
+fidelity,0.5884,0.25,0.1471
+utility,0.0,0.35,0.0
+diversity,0.655,0.1,0.0655
+privacy,0.999,0.15,0.1498
+consistency,0.0,0.1,0.0
+stability,0.9095,0.05,0.0455
+
+composite_score,0.4079,,
+>>>>>>> f997e4c (Add CTGAN benchmark scripts for car, covtype, and creditcard and evaluation reports/summaries across benchmark datasets)

@@ -1,40 +1,36 @@
-import warnings
 import json
-import typing as tp
 import logging
-import re
+import os
 import random
+import re
+import warnings
 
 import fsspec
 import numpy as np
 import pandas as pd
-
-from tqdm import tqdm
-
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments
-import os
 
-from .great_dataset import GReaTDataset, GReaTDataCollator
+# Import base model
+from katabatic.models.base_model import Model
+from tqdm import tqdm
+from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments
+
+from .great_dataset import GReaTDataCollator, GReaTDataset
 from .great_start import (
-    GReaTStart,
     CategoricalStart,
     ContinuousStart,
+    GReaTStart,
     RandomStart,
-    _pad_tokens,
 )
 from .great_trainer import GReaTTrainer
 from .great_utils import (
     _array_to_dataframe,
-    _get_column_distribution,
-    _convert_tokens_to_text,
     _convert_text_to_tabular_data,
+    _convert_tokens_to_text,
+    _get_column_distribution,
     _partial_df_to_promts,
     bcolors,
 )
-
-# Import base model
-from katabatic.models.base_model import Model
 
 
 class GReaT(Model):
@@ -66,8 +62,8 @@ class GReaT(Model):
         epochs: int = 100,
         batch_size: int = 8,
         efficient_finetuning: str = "",
-        float_precision: tp.Optional[int] = None,
-        report_to: tp.List[str] = [],
+        float_precision: int | None = None,
+        report_to: list[str] = [],
         **train_kwargs,
     ):
         """Initializes GReaT.
@@ -99,9 +95,9 @@ class GReaT(Model):
             try:
                 from peft import (
                     LoraConfig,
+                    TaskType,
                     get_peft_model,
                     prepare_model_for_int8_training,
-                    TaskType,
                 )
             except ImportError:
                 raise ImportError(
@@ -229,10 +225,10 @@ class GReaT(Model):
 
     def fit(
         self,
-        data: tp.Union[pd.DataFrame, np.ndarray],
-        column_names: tp.Optional[tp.List[str]] = None,
-        conditional_col: tp.Optional[str] = None,
-        resume_from_checkpoint: tp.Union[bool, str] = False,
+        data: pd.DataFrame | np.ndarray,
+        column_names: list[str] | None = None,
+        conditional_col: str | None = None,
+        resume_from_checkpoint: bool | str = False,
     ) -> GReaTTrainer:
         """Fine-tune GReaT using tabular data.
 
@@ -281,8 +277,8 @@ class GReaT(Model):
     def sample(
         self,
         n_samples: int,
-        start_col: tp.Optional[str] = "",
-        start_col_dist: tp.Optional[tp.Union[dict, list]] = None,
+        start_col: str | None = "",
+        start_col_dist: dict | list | None = None,
         temperature: float = 0.7,
         k: int = 100,
         max_length: int = 100,
@@ -493,7 +489,7 @@ class GReaT(Model):
                     pbar.update(1)
 
                 except Exception as e:
-                    print(f"Error generating sample {i+1}: {str(e)}")
+                    print(f"Error generating sample {i+1}: {e!s}")
                     continue
 
         # Convert to DataFrame
@@ -516,8 +512,8 @@ class GReaT(Model):
     def _legacy_sample(
         self,
         n_samples: int,
-        start_col: tp.Optional[str] = "",
-        start_col_dist: tp.Optional[tp.Union[dict, list]] = None,
+        start_col: str | None = "",
+        start_col_dist: dict | list | None = None,
         temperature: float = 0.7,
         k: int = 100,
         max_length: int = 100,
@@ -616,7 +612,7 @@ class GReaT(Model):
                         raise Exception("Breaking the generation loop!")
 
             except Exception as e:
-                print(f"{bcolors.FAIL}An error has occurred: {str(e)}{bcolors.ENDC}")
+                print(f"{bcolors.FAIL}An error has occurred: {e!s}{bcolors.ENDC}")
                 print(
                     f"{bcolors.WARNING}To address this issue, consider fine-tuning the GReaT model for a longer period. This can be achieved by increasing the number of epochs.{bcolors.ENDC}"
                 )
@@ -648,7 +644,7 @@ class GReaT(Model):
 
     def great_sample(
         self,
-        starting_prompts: tp.Union[str, list[str]],
+        starting_prompts: str | list[str],
         temperature: float = 0.7,
         max_length: int = 100,
         device: str = "cuda",
@@ -861,7 +857,7 @@ class GReaT(Model):
         self.num_cols = df.select_dtypes(include=np.number).columns.to_list()
 
     def _update_conditional_information(
-        self, df: pd.DataFrame, conditional_col: tp.Optional[str] = None
+        self, df: pd.DataFrame, conditional_col: str | None = None
     ):
         assert conditional_col is None or isinstance(
             conditional_col, str
@@ -877,8 +873,8 @@ class GReaT(Model):
 
     def _get_start_sampler(
         self,
-        start_col: tp.Optional[str],
-        start_col_dist: tp.Optional[tp.Union[tp.Dict, tp.List]],
+        start_col: str | None,
+        start_col_dist: dict | list | None,
     ) -> GReaTStart:
         if start_col and start_col_dist is None:
             raise ValueError(

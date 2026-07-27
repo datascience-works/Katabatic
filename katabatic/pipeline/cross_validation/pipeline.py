@@ -15,13 +15,11 @@ class CrossValidationPipeline:
         """
         Execute the cross-validation process.
         """
-        ...
 
     def evaluate(self):
         """
         Evaluate the model's performance using cross-validation metrics.
         """
-        ...
 
 
 

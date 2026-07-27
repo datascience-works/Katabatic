@@ -20,6 +20,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from typing import Optional, Dict, Any, Tuple
+from sklearn.metrics import accuracy_score, f1_score, r2_score
 
 from katabatic.models.base_model import Model
 from katabatic.models.codi.utils import (
@@ -128,21 +129,18 @@ class CODI(Model):
 
         set_global_seed(random_state)
 
-    def train(self, dataset_dir: str, synthetic_dir: Optional[str] = None, **kwargs) -> "CODI":
+    def train(self, dataset_dir: str, synthetic_dir: str, **kwargs) -> "CODI":
         """
         Train the CoDi model.
 
         Args:
             dataset_dir: Directory containing x_train.csv and y_train.csv
-            synthetic_dir: Directory to save synthetic data (defaults to
-                ``{dataset_dir}/synthetic`` when omitted, e.g. legacy pipeline).
+            synthetic_dir: Directory to save synthetic data
             **kwargs: Additional arguments (passed from pipeline)
 
         Returns:
             self: Trained model instance
         """
-        if synthetic_dir is None:
-            synthetic_dir = os.path.join(dataset_dir, "synthetic")
         logger.info("=" * 80)
         logger.info("Training CoDi Model")
         logger.info("=" * 80)
@@ -220,6 +218,9 @@ class CODI(Model):
         # Keep data encoded for evaluation
         df_synth = self.sample(len(df_train), return_encoded=True)
 
+        # Fix for the ordering of the file
+        df_synth = df_synth[[clmns for clmns in self.schema_['column_order']]]
+        
         # Save synthetic data
         os.makedirs(synthetic_dir, exist_ok=True)
 
@@ -356,8 +357,8 @@ class CODI(Model):
             self.model_dis_.parameters(), lr=self.lr_dis)
 
         # Convert to tensors
-        data_con_tensor = torch.from_numpy(data_con).float()
-        data_cat_tensor = torch.from_numpy(data_cat).float()
+        data_con_tensor = torch.from_numpy(data_con).float().to(self.device)
+        data_cat_tensor = torch.from_numpy(data_cat).float().to(self.device)
 
         # Training loop
         n_samples = len(data_con)
@@ -368,7 +369,7 @@ class CODI(Model):
             self.model_dis_.train()
 
             # Shuffle data
-            indices = torch.randperm(n_samples)
+            indices = torch.randperm(n_samples, device=self.device)
             data_con_shuffled = data_con_tensor[indices]
             data_cat_shuffled = data_cat_tensor[indices]
 
@@ -379,10 +380,8 @@ class CODI(Model):
                 start_idx = batch_idx * self.batch_size
                 end_idx = min((batch_idx + 1) * self.batch_size, n_samples)
 
-                batch_con = data_con_shuffled[start_idx:end_idx].to(
-                    self.device)
-                batch_cat = data_cat_shuffled[start_idx:end_idx].to(
-                    self.device)
+                batch_con = data_con_shuffled[start_idx:end_idx]
+                batch_cat = data_cat_shuffled[start_idx:end_idx]
 
                 # Train step
                 loss_con, loss_dis = self._train_step(
@@ -417,16 +416,18 @@ class CODI(Model):
 
         # === Continuous diffusion loss (if we have continuous features) ===
         if self.has_continuous_:
+            # Added one hot encoding for categorical variables.
+            x_cat_onehot = self._to_onehot(x_cat) if self.has_categorical_ else x_cat
             noise_con = torch.randn_like(x_con)
             x_t_con = self.trainer_con_.make_x_t(x_con, t, noise_con)
-            eps_pred = self.model_con_(x_t_con, t, x_cat)
+            eps_pred = self.model_con_(x_t_con, t, x_cat_onehot)
             loss_con_diff = F.mse_loss(eps_pred, noise_con)
 
             # Contrastive learning (simplified)
             neg_indices = torch.randperm(batch_size)
-            x_cat_neg = x_cat[neg_indices]
+            x_cat_neg = x_cat_onehot[neg_indices]
 
-            eps_pos = self.model_con_(x_t_con, t, x_cat)
+            eps_pos = self.model_con_(x_t_con, t, x_cat_onehot)
             eps_neg = self.model_con_(x_t_con, t, x_cat_neg)
 
             loss_con_contrast = torch.relu(
@@ -607,54 +608,89 @@ class CODI(Model):
 
     def evaluate(
         self,
-        x: Optional[pd.DataFrame] = None,
-        y: Optional[pd.Series] = None,
-        *,
-        synthetic_dir: Optional[str] = None,
-        real_test_dir: Optional[str] = None,
+        x: pd.DataFrame,
+        y: pd.Series,
         model: str = "lr",
         metrics: Optional[list] = None,
         task: Optional[str] = None,
         random_state: int = 42,
-        **kwargs,
-    ) -> Dict[str, Any]:
+        **kwargs
+    ) -> Dict[str, float]:
         """
-        TSTR (train on synthetic, test on real) using the same protocol as
-        :class:`katabatic.evaluate.tstr.evaluation.TSTREvaluation`.
-
-        Provide ``synthetic_dir`` and ``real_test_dir`` (directories containing
-        ``x_synth.csv`` / ``y_synth.csv`` and ``x_test.csv`` / ``y_test.csv``).
-        For canonical metrics and artifact logging, use
-        :class:`katabatic.pipeline.train_test_split.pipeline.TrainTestSplitPipeline`
-        with ``TSTREvaluation``.
-
-        The legacy ``(x, y)`` real-data holdout path was removed; it was not TSTR.
+        Quick model-centric TSTR evaluation.
 
         Args:
-            x: Deprecated; do not use.
-            y: Deprecated; do not use.
-            synthetic_dir: Directory with synthetic train CSVs for TSTR.
-            real_test_dir: Directory with real held-out test CSVs for TSTR.
-            model: Ignored; all TSTR downstream models are run.
-            metrics: Ignored (reserved).
-            task: Ignored (reserved).
-            random_state: Ignored (reserved; TSTREvaluation uses its own defaults).
-            **kwargs: Passed through to :class:`TSTREvaluation`.
+            x: Feature DataFrame
+            y: Target Series
+            model: Model type ('lr', 'mlp', 'rf', 'xgb')
+            metrics: List of metrics to compute
+            task: Task type ('classification' or 'regression')
+            random_state: Random seed
+            **kwargs: Additional arguments
 
         Returns:
-            Mapping of downstream model name to metric dict (same shape as
-            ``TSTREvaluation.evaluate()``).
+            Dictionary of metric scores
         """
-        del model, metrics, task, random_state
-        if synthetic_dir is not None and real_test_dir is not None:
-            from katabatic.evaluate.tstr.evaluation import TSTREvaluation
+        from sklearn.model_selection import train_test_split
+        from sklearn.linear_model import LogisticRegression, LinearRegression
+        from sklearn.neural_network import MLPClassifier, MLPRegressor
+        from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+        from sklearn.preprocessing import StandardScaler
 
-            ev = TSTREvaluation(synthetic_dir, real_test_dir, **kwargs)
-            return ev.evaluate()
+        # Infer task if not provided
+        if task is None:
+            unique_values = y.nunique()
+            task = 'classification' if unique_values < 20 else 'regression'
 
-        raise ValueError(
-            "CODI.evaluate requires synthetic_dir and real_test_dir for TSTR "
-            "(directories with x_synth.csv/y_synth.csv and x_test.csv/y_test.csv). "
-            "The previous (x, y) real-only holdout API was incorrect for TSTR and "
-            "has been removed."
+        # Split data
+        X_train, X_test, y_train, y_test = train_test_split(
+            x, y, test_size=0.2, random_state=random_state
         )
+
+        # Scale features
+        scaler = StandardScaler()
+        X_train_scaled = scaler.fit_transform(X_train)
+        X_test_scaled = scaler.transform(X_test)
+
+        # Select model
+        if task == 'classification':
+            if model == "lr":
+                clf = LogisticRegression(
+                    max_iter=1000, random_state=random_state)
+            elif model == "mlp":
+                clf = MLPClassifier(hidden_layer_sizes=(
+                    100,), max_iter=1000, random_state=random_state)
+            elif model == "rf":
+                clf = RandomForestClassifier(
+                    n_estimators=100, random_state=random_state)
+            else:
+                raise ValueError(f"Unknown model: {model}")
+
+            clf.fit(X_train_scaled, y_train)
+            y_pred = clf.predict(X_test_scaled)
+
+            results = {
+                'accuracy': accuracy_score(y_test, y_pred),
+                'f1_score': f1_score(y_test, y_pred, average='weighted')
+            }
+        else:
+            if model == "lr":
+                reg = LinearRegression()
+            elif model == "mlp":
+                reg = MLPRegressor(hidden_layer_sizes=(
+                    100,), max_iter=1000, random_state=random_state)
+            elif model == "rf":
+                reg = RandomForestRegressor(
+                    n_estimators=100, random_state=random_state)
+            else:
+                raise ValueError(f"Unknown model: {model}")
+
+            reg.fit(X_train_scaled, y_train)
+            y_pred = reg.predict(X_test_scaled)
+
+            results = {
+                'r2_score': r2_score(y_test, y_pred),
+                'rmse': np.sqrt(np.mean((y_test - y_pred) ** 2))
+            }
+
+        return results

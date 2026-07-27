@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import logging
 import os
 import random
@@ -13,7 +12,6 @@ import pandas as pd
 from pgmpy.factors.discrete import TabularCPD
 from pgmpy.models import DiscreteBayesianNetwork
 from pgmpy.sampling import BayesianModelSampling
-from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
 
 from katabatic.models.base_model import Model
@@ -227,12 +225,12 @@ class GANBLR(Model):
         accuracy_score : float.
 
         """
-        from sklearn.linear_model import LogisticRegression
-        from sklearn.neural_network import MLPClassifier
         from sklearn.ensemble import RandomForestClassifier
-        from sklearn.preprocessing import OneHotEncoder
-        from sklearn.pipeline import Pipeline
+        from sklearn.linear_model import LogisticRegression
         from sklearn.metrics import accuracy_score
+        from sklearn.neural_network import MLPClassifier
+        from sklearn.pipeline import Pipeline
+        from sklearn.preprocessing import OneHotEncoder
 
         eval_model = None
         models = dict(
@@ -240,7 +238,7 @@ class GANBLR(Model):
             rf=RandomForestClassifier,
             mlp=MLPClassifier
         )
-        if model in models.keys():
+        if model in models:
             eval_model = models[model]()
         elif hasattr(model, 'fit') and hasattr(model, 'predict'):
             eval_model = model
@@ -400,7 +398,7 @@ class GANBLR(Model):
         print(f"[GANBLR] Saved fitted model state to: {path}")
 
     @classmethod
-    def load_from_ref(cls, store: "ArtifactStore", ref: "ModelRef") -> "GANBLR":
+    def load_from_ref(cls, store: ArtifactStore, ref: ModelRef) -> GANBLR:
         import pickle
 
         import joblib

@@ -1,16 +1,18 @@
-from typing import Any, Optional, Union, Dict
+import os
+from typing import Any
+
 import numpy as np
 import pandas as pd
-import os
 
 # NOTE: adjust this import if your base lives elsewhere
 from katabatic.models.base_model import Model as BaseModel
+
 from .utils import (
     TabSynConfig,
     TabSynState,
-    train_tabsyn,
     evaluate_tabsyn,
     sample_tabsyn,
+    train_tabsyn,
 )
 
 
@@ -42,7 +44,7 @@ class TabSyn(BaseModel):
         weight_decay: float = 0.0,
         patience: int = 20,
         seed: int = 42,
-        device: Optional[str] = None,
+        device: str | None = None,
     ) -> None:
         super().__init__()
         self.config = TabSynConfig(
@@ -58,7 +60,7 @@ class TabSyn(BaseModel):
             seed=seed,
             device=device,
         )
-        self.state: Optional[TabSynState] = None
+        self.state: TabSynState | None = None
 
     # ---- Base hooks ---------------------------------------------------------
 
@@ -71,8 +73,8 @@ class TabSyn(BaseModel):
     def train(
         self,
         data_dir: str,
-        save_dir: Optional[str] = None,
-        extra_info: Optional[Dict[str, Any]] = None,
+        save_dir: str | None = None,
+        extra_info: dict[str, Any] | None = None,
         *args,
         **kwargs
     ) -> "TabSyn":
@@ -160,12 +162,12 @@ class TabSyn(BaseModel):
 
     def sample(
         self,
-        n_samples: Optional[int] = None,
+        n_samples: int | None = None,
         return_df: bool = True,
-        save_path: Optional[str] = None,
+        save_path: str | None = None,
         *args,
         **kwargs
-    ) -> Union[np.ndarray, pd.DataFrame]:
+    ) -> np.ndarray | pd.DataFrame:
         """Generate synthetic rows. If `return_df` True, returns a DataFrame."""
         if not self.is_fitted or self.state is None:
             raise RuntimeError("Call train() before sample().")

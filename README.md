@@ -4,18 +4,18 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Poetry](https://img.shields.io/badge/dependency-poetry-blue)](https://python-poetry.org/)
 
-A comprehensive framework for synthetic tabular data generation using state-of-the-art machine learning models including GANBLR and GReaT (Generation of Realistic Tabular data).
+A comprehensive framework for synthetic tabular data generation and evaluation. Includes 8 generative models (CTGAN, CoDi, TabDDPM, GANBLR, GReaT, Tabsyn, MedGAN, PATEGAN) and a 6-dimension evaluation pipeline that scores every model on Fidelity, Utility, Diversity, Privacy, Consistency and Stability.
 
-## 🚀 Features
+## Features
 
-- **Multiple Generative Models**: Support for GANBLR (GAN-based Bayesian Learning Rules) and GReaT (transformer-based generation)
-- **Automated Pipeline**: End-to-end training, generation, and evaluation workflows
-- **TSTR Evaluation**: Train on Synthetic, Test on Real data evaluation methodology
-- **Data Preprocessing**: Automated tabular preprocessing (discretization and encoding)
-- **Cross-Validation Support**: Robust model validation capabilities
-- **Extensible Architecture**: Easy to add new models and evaluation metrics
+- **8 Generative Models**: CTGAN, CoDi, TabDDPM, GANBLR, GReaT, Tabsyn, MedGAN, PATEGAN
+- **6-Dimension Evaluation**: Fidelity, Utility, Diversity, Privacy, Consistency, Stability — combined into a single weighted composite score
+- **Automated Benchmark Runner**: End-to-end pipeline — preprocess → split → train → generate → evaluate → save report
+- **Data Preprocessing**: Automated encoding for mixed-type tabular data (numerical + categorical)
+- **Model Registry**: Dynamic model loading with optional per-model extra dependencies
+- **Extensible Architecture**: Easy to add new models via `python scaffold.py init-model <name>`
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
@@ -27,14 +27,18 @@ A comprehensive framework for synthetic tabular data generation using state-of-t
 - [Contributing](#contributing)
 - [License](#license)
 
-## 🔧 Prerequisites
+## Architecture
+
+For a full overview of the project structure, data flow, and component relationships see [ARCHITECTURE.md](ARCHITECTURE.md).
+
+## Prerequisites
 
 ### System Requirements
 
 - **Operating System**: macOS, Linux, or Windows
 - **Python**: 3.11.x (strictly required due to TensorFlow compatibility)
 - **Memory**: Minimum 8GB RAM (16GB+ recommended for large datasets)
-- **GPU**: NVIDIA GPU with CUDA support (optional but recommended for GReaT model)
+- **GPU**: NVIDIA GPU with CUDA support (optional but recommended)
 
 ### Required Tools
 
@@ -103,140 +107,148 @@ export PATH="$HOME/.local/bin:$PATH"
 poetry --version
 ```
 
-## 📦 Installation
+## Installation
 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/datascience-works/Katabatic.git
+git clone https://github.com/your-username/katabatic.git
 cd katabatic
 ```
 
 ### 2. Set Python Version
 
+This project requires **Python 3.11.9 strictly**. Other versions will not work due to TensorFlow and dependency constraints.
+
+**Check your Python version:**
 ```bash
-# Set local Python version for this project
+python --version
+```
+
+**If you have pyenv (Mac/Linux):**
+```bash
+pyenv install 3.11.9
 pyenv local 3.11.9
+python --version  # Should output: Python 3.11.9
+```
+
+**If you have Python 3.11.9 installed directly (Windows):**
+```bash
+# Tell Poetry to use it explicitly
+poetry env use 3.11.9
+
+# Verify Poetry picked it up
+poetry env info
 ```
 
 ### 3. Install Dependencies
 
-**Install matrix (PyPI / Poetry extras):**
-
-| Use case | Command |
-|----------|---------|
-| Core only | `pip install katabatic` or `poetry install` |
-| GANBLR (supported) | `pip install katabatic[ganblr]` or `poetry install -E ganblr` |
-| GReaT (supported) | `pip install katabatic[great]` or `poetry install -E great` |
-| TSTR + XGBoost | `pip install katabatic[eval]` or `poetry install -E eval` |
-| Development | `poetry install --with dev` |
-| All optional deps | `pip install katabatic[all]` |
-
-Experimental models (`tabsyn`, `tabddpm`, `pategan`, `ctgan`, etc.) are documented in [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md).
-
 ```bash
-# Minimal install (core + dev tools for contributors)
-poetry install --with dev
+# Core dependencies (always required — includes the evaluation pipeline)
+poetry install
 
-# Supported models for local work
-poetry install --with dev -E ganblr -E great -E eval
-
-poetry shell
+# Add extras for the models you want to use
+poetry install -E ctgan       # CTGAN, CoDi, MedGAN
+poetry install -E tabddpm     # TabDDPM
+poetry install -E ganblr      # GANBLR
+poetry install -E great       # GReaT
+poetry install -E all         # install everything
 ```
 
-### 4. GPU Support (Optional)
-
-If you have an NVIDIA GPU and want to use it for GReaT model training:
+### 4. Activate the Virtual Environment
 
 ```bash
-# Install CUDA-compatible versions
+# Get the activation path
+poetry env activate
+
+# Copy the path it returns and run it, for example:
+# Mac/Linux:
+source /path/to/virtualenvs/katabatic-xxx-py3.11/bin/activate
+
+# Windows:
+C:\path\to\virtualenvs\katabatic-xxx-py3.11\Scripts\activate
+```
+
+### 5. GPU Support (Optional)
+
+If you have an NVIDIA GPU and want to use it for GReaT or other torch-based models:
+
+```bash
 poetry add torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 ```
 
-### 5. Verify Installation
+### 6. Verify Installation
 
 ```bash
-# Core import
-python -c "import katabatic; print(katabatic.__version__)"
-
-# After installing extras, e.g. poetry install -E ganblr -E great
-python -c "from katabatic.models.registry import ModelRegistry; print(ModelRegistry.get_supported_models())"
+python -c "
+import pandas, numpy, scipy, sklearn
+from katabatic.pipeline.evaluation_pipeline import SyntheticEvaluationPipeline
+print('Katabatic installation successful!')
+"
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
-### Artifact pipeline (recommended)
+### Run an existing example script
 
-Versioned datasets, models, and evaluations under `artifacts/`. See [GANBLR_FLOW.md](GANBLR_FLOW.md) for details.
+Ready-to-run scripts are available in `benchmarks/examples/` for two datasets:
+
+| Script | Model | Dataset |
+|---|---|---|
+| `benchmarks/examples/run_ctgan_adult.py` | CTGAN | Adult Income |
+| `benchmarks/examples/run_codi_adult.py` | CoDi | Adult Income |
+| `benchmarks/examples/run_tabddpm_adult.py` | TabDDPM | Adult Income |
+| `benchmarks/examples/run_ctgan_bank_marketing.py` | CTGAN | Bank Marketing |
+
+Each script runs the full pipeline: preprocess → split → train → generate → evaluate → save report.
+
+```bash
+# place your dataset CSV in datasets/ then run
+python benchmarks/examples/run_ctgan_adult.py
+```
+
+### Add a new dataset and model
 
 ```python
-from katabatic.artifacts import LocalArtifactStore
-from katabatic.models.ganblr.models import GANBLR
-from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
-from katabatic.utils.preprocess import preprocess_tabular
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))  # add benchmarks/ to path
 
-preprocess_tabular("raw_data/car.csv", "preprocessed_data/car.csv")
+from runner import RunConfig, preprocess_and_split, save_synthetic, evaluate
+from katabatic.models.ctgan.models import CTGANModel
 
-store = LocalArtifactStore("artifacts")
-pipeline = TrainTestSplitPipeline(model=GANBLR())
-results = pipeline.run(
-    input_csv="preprocessed_data/car.csv",
-    dataset_name="car",
-    artifact_store=store,
-    model_name="ganblr",
+config = RunConfig(
+    dataset_name     = "your_dataset",        # matches datasets/your_dataset.csv
+    model_name       = "ctgan",
+    categorical_cols = ['workclass', 'education'],   # actual column names
+    continuous_cols  = ['age', 'fnlwgt'],
+    target_col_raw   = "income",              # original target column name
+    constraints      = {'age': (17, 90)},     # optional logical bounds per column
 )
-# results["model_ref"], results["evaluation_refs"] — TSTR metrics on disk
+
+train_df, test_df, target_col, paths = preprocess_and_split(config)
+
+model = CTGANModel(epochs=100, batch_size=512, seed=42)
+model.train(paths["split_dir"], categorical_cols=config.categorical_cols,
+                                continuous_cols=config.continuous_cols)
+
+synthetic_df = model.sample(len(train_df))
+synthetic_df = save_synthetic(synthetic_df, train_df, paths)
+evaluate(model, config, train_df, synthetic_df, target_col, paths, test_df)
 ```
 
-CLI:
-
-```bash
-katabatic register-dataset car preprocessed_data/car.csv --check-model ganblr
-```
-
-### Legacy directory layout
-
-```python
-from katabatic.models.ganblr.models import GANBLR
-from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
-from katabatic.utils.preprocess import preprocess_tabular
-
-preprocess_tabular("raw_data/car.csv", "preprocessed_data/car.csv")
-pipeline = TrainTestSplitPipeline(model=GANBLR())
-pipeline.run(input_csv="preprocessed_data/car.csv", output_dir="sample_data/car")
-```
-
-Pipelines call `Model.train()`; GANBLR also exposes `fit(x, y)` for direct training.
-
-### Jupyter Notebook
-
-For interactive development, launch Jupyter:
-
-```bash
-# Start Jupyter Lab
-poetry run jupyter lab
-
-# Or Jupyter Notebook
-poetry run jupyter notebook
-```
-
-See `example.ipynb` for a complete walkthrough.
-
-## 📖 Usage
+## Usage
 
 ### Data Preprocessing
 
-Katabatic requires discrete/categorical data. Use the built-in preprocessing utilities:
+Katabatic provides a preprocessing utility that cleans a raw CSV while preserving original column names and data types. It fills numerical NaN values with the column median, drops constant/all-NaN columns, and moves the target column to the last position. Categorical columns are **not** encoded — each model receives the cleaned data and handles its own encoding internally:
 
 ```python
-from katabatic.utils.preprocess import preprocess_tabular
+from katabatic.utils.preprocess import encode_preprocess
 
-# Discretize numerical features and encode categorical ones
-preprocess_tabular(
-    file_path="raw_data/your_dataset.csv",
-    output_path="preprocessed_data/your_dataset.csv",
-    bins=10,  # Number of bins for numerical discretization
-    strategy='uniform'  # 'uniform', 'quantile', or 'kmeans'
+encode_preprocess(
+    file_path="datasets/your_dataset.csv",
+    output_path="benchmarks/processed/your_dataset_processed.csv",
+    target_col="income",   # optional — moved to last column if provided
 )
 ```
 
@@ -287,84 +299,90 @@ synthetic_data = model.sample(
 
 ### Pipeline Usage
 
-Katabatic provides automated pipelines for complete workflows:
+Evaluate any synthetic dataset with the 6-dimension evaluation pipeline:
 
 ```python
-from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
-from katabatic.models.ganblr.models import GANBLR
+from katabatic.pipeline.evaluation_pipeline import SyntheticEvaluationPipeline
 
-# Create pipeline with GANBLR
-pipeline = TrainTestSplitPipeline(model=GANBLR)
-
-# Run complete workflow: split preprocessed CSV -> train model -> TSTR evaluation.
-# Legacy mode: ``real_test_dir`` defaults to ``output_dir`` (where split_dataset
-# writes ``x_test.csv`` / ``y_test.csv``). ``synthetic_dir`` defaults to
-# ``synthetic/<basename(output_dir)>/<model_slug>/`` if omitted.
-results = pipeline.run(
-    input_csv='path/to/preprocessed_data.csv',
-    output_dir='output/directory',
+pipeline = SyntheticEvaluationPipeline(
+    categorical_cols=['workclass', 'education', 'occupation'],
+    continuous_cols=['age', 'fnlwgt', 'capital-gain'],
 )
-# Optional overrides:
-#   synthetic_dir='...', real_test_dir='...'
-# ``results`` is a dict with ``message``, ``output_dir``, ``synthetic_dir``,
-# ``real_test_dir``, ``tstr_results``, and ``pipeline.last_model`` is the fitted instance.
+
+report = pipeline.run(
+    real_data=train_df,
+    synthetic_data=synthetic_df,
+    target_col='income',
+    test_data=test_df,                  # held-out set — used by Utility for fair TSTR/TRTR comparison
+    constraints={'age': (17, None)},    # optional logical bounds — (min, max)
+    output_dir='benchmarks/results/my_run/',
+)
+
+print(report.composite_score)          # weighted composite 0–1
+print(report.dimension_scores)         # per-dimension breakdown
 ```
 
-## 🤖 Models
+## Models
 
-### GANBLR (GAN-based Bayesian Learning Rules)
+| Model | Extra | Type | Best for |
+|---|---|---|---|
+| **CTGAN** | `ctgan` | GAN | Mixed tabular data |
+| **CoDi** | `codi` | Diffusion + GAN | Mixed tabular data |
+| **TabDDPM** | `tabddpm` | Diffusion | Numerical + categorical |
+| **GANBLR** | `ganblr` | GAN + Bayesian network | Discrete/categorical data |
+| **GReaT** | `great` | Transformer (LLM) | Mixed data types |
+| **Tabsyn** | `tabsyn` | VAE + Diffusion | High-fidelity mixed data |
+| **MedGAN** | `medgan` | GAN | Medical / binary data |
+| **PATEGAN** | `pategan` | GAN + PATE | Privacy-preserving synthesis |
 
-- **Type**: GAN-based generative model
-- **Best for**: Discrete/categorical tabular data
-- **Features**:
-  - k-dependence Bayesian Networks
-  - Adversarial training
-  - High-quality discrete data generation
+Install extras as needed:
 
-### GReaT (Generation of Realistic Tabular Data)
+```bash
+poetry install -E ctgan       # CTGAN, CoDi, MedGAN
+poetry install -E tabddpm     # TabDDPM
+poetry install -E ganblr      # GANBLR
+poetry install -E great       # GReaT
+poetry install -E all         # all models
+```
 
-- **Type**: Transformer-based generative model
-- **Best for**: Mixed data types (numerical + categorical)
-- **Features**:
-  - Pre-trained language model fine-tuning
-  - Conditional generation
-  - Data imputation capabilities
+### Adding a new model
 
-## 📊 Evaluation
+Use the scaffold tool to generate a boilerplate model stub:
 
-### TSTR (Train on Synthetic, Test on Real)
+```bash
+python scaffold.py init-model mymodel dep1 dep2
+```
 
-Katabatic includes comprehensive evaluation using the TSTR methodology:
+This creates `katabatic/models/mymodel/` with the standard `Model` interface pre-filled.
+
+## Evaluation
+
+Katabatic evaluates synthetic data across 6 dimensions, each producing a score between 0 and 1. They are combined into a single **composite score** using fixed weights:
+
+| Dimension | Weight | What it measures |
+|---|---|---|
+| **Utility** | 35% | TSTR vs TRTR accuracy gap — how useful the synthetic data is for ML |
+| **Fidelity** | 25% | Statistical similarity to real data (distributions, correlations) |
+| **Privacy** | 15% | Nearest-neighbour distance ratio — protection against re-identification |
+| **Diversity** | 10% | Coverage of the feature space (bin coverage + Gower distance spread) |
+| **Consistency** | 10% | Label coherence + constraint satisfaction across folds |
+| **Stability** | 5% | Reproducibility of the model across different random seeds |
 
 ```python
-from katabatic.evaluate.tstr.evaluation import TSTREvaluation
+from katabatic.pipeline.evaluation_pipeline import SyntheticEvaluationPipeline
 
-# Initialize evaluator
-evaluator = TSTREvaluation(
-    synthetic_dir="path/to/synthetic/data",
-    real_test_dir="path/to/real/test/data"
+pipeline = SyntheticEvaluationPipeline(
+    dimensions=['fidelity', 'utility', 'diversity', 'privacy', 'consistency'],
+    categorical_cols=['workclass', 'education'],
+    continuous_cols=['age', 'fnlwgt', 'capital-gain'],
 )
-
-# Run evaluation with multiple ML models
-results = evaluator.evaluate()
+report = pipeline.run(real_data=train_df, synthetic_data=synth_df, target_col='income')
+print(f"Composite score: {report.composite_score:.4f}")
 ```
 
-**Supported Evaluation Models:**
+Reports are saved as JSON + CSV to the `output_dir` you specify.
 
-- Logistic Regression
-- Multi-layer Perceptron (MLP)
-- Random Forest
-- XGBoost
-
-**Metrics:**
-
-- Accuracy
-- F1 Score
-- AUC-ROC (for binary classification)
-
-**Statistical fidelity** (marginal JSD/KLD, DCR) is available via `katabatic.evaluate.fidelity.evaluation.StatisticalFidelityEvaluation` in artifact pipeline runs.
-
-## 🛠 Development
+## Development
 
 ### Recommended VS Code Extensions
 
@@ -380,33 +398,70 @@ code --install-extension ms-python.isort
 ### Development Setup
 
 ```bash
-git clone https://github.com/datascience-works/Katabatic.git
-cd Katabatic
+# Clone repository
+git clone https://github.com/your-username/katabatic.git
+cd katabatic
 
-poetry install --with dev -E ganblr -E eval   # add -E great as needed
+# Install development dependencies
+poetry install --group dev
 
-poetry check
-poetry run ruff check katabatic tests
-poetry run pytest                              # fast unit tests
-poetry run pytest -m integration               # after installing model extras
-poetry run mypy katabatic/                     # optional
+# Install pre-commit hooks
+poetry run pre-commit install
+
+# Run tests
+poetry run pytest
+
+# Format code
+poetry run black .
+poetry run isort .
+
+# Type checking
+poetry run mypy katabatic/
 ```
 
 ### Project Structure
 
 ```
-Katabatic/
-├── katabatic/                 # Installable package (PyPI wheel)
-│   ├── models/                # GANBLR, GReaT, experimental generators
-│   ├── pipeline/              # TrainTestSplitPipeline, cross-validation
-│   ├── evaluate/              # TSTR, statistical fidelity
-│   ├── artifacts/             # Versioned store helpers
-│   └── utils/                 # preprocess, split_dataset, ...
-├── artifacts/                 # Local run outputs (gitignored)
-├── docs/                      # EXPERIMENTAL_MODELS.md, etc.
-├── examples/                  # Notebooks per model
-├── tests/                     # Unit + integration tests
-├── GANBLR_FLOW.md             # Artifact pipeline walkthrough
+katabatic/
+├── katabatic/                    # Main package
+│   ├── models/                   # Generative models (8 implementations)
+│   │   ├── base_model.py        # Abstract Model interface
+│   │   ├── registry.py          # Dynamic model loader
+│   │   ├── ctgan/
+│   │   ├── codi/
+│   │   ├── tabddpm/
+│   │   ├── ganblr/
+│   │   ├── great/
+│   │   ├── tabsyn/
+│   │   ├── medgan/
+│   │   └── pategan/
+│   ├── pipeline/
+│   │   └── evaluation_pipeline.py   # SyntheticEvaluationPipeline
+│   ├── evaluate/                # One subpackage per dimension
+│   │   ├── fidelity/
+│   │   ├── utility/
+│   │   ├── diversity/
+│   │   ├── privacy/
+│   │   ├── consistency/
+│   │   ├── stability/
+│   │   └── report/              # EvaluationReport + composite score
+│   └── utils/
+│       ├── preprocess.py        # encode_preprocess + mappings
+│       ├── split_dataset.py     # stratified train/test split
+│       └── column_types.py      # categorical/continuous auto-detection
+├── benchmarks/
+│   ├── runner.py                # RunConfig + pipeline orchestration helpers
+│   ├── examples/                # Ready-to-run benchmark scripts
+│   │   ├── run_ctgan_adult.py
+│   │   ├── run_codi_adult.py
+│   │   ├── run_tabddpm_adult.py
+│   │   └── run_ctgan_bank_marketing.py
+│   ├── processed/               # Preprocessed CSVs (git-ignored)
+│   ├── splits/                  # Train/test splits (git-ignored)
+│   ├── synthetic/               # Generated synthetic data (git-ignored)
+│   └── results/                 # Evaluation reports (git-ignored)
+├── datasets/                    # Raw dataset CSVs (git-ignored)
+├── scaffold.py                  # CLI — scaffold new model stubs
 ├── pyproject.toml
 └── README.md
 ```
@@ -421,7 +476,7 @@ poetry build
 pip install dist/katabatic-*.whl
 ```
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
 
@@ -622,23 +677,23 @@ def generate_synthetic_data(
 - Include edge case testing
 - Mock external dependencies
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **GANBLR**: Based on the GAN-based Bayesian Learning Rules methodology
 - **GReaT**: Implements Generation of Realistic Tabular data using transformer models
 - **Contributors**: Thanks to all contributors who have helped improve this project
 
-## 📞 Support
+## Support
 
-- **Issues**: [GitHub Issues](https://github.com/datascience-works/Katabatic/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/datascience-works/Katabatic/discussions)
+- **Issues**: [GitHub Issues](https://github.com/your-username/katabatic/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/your-username/katabatic/discussions)
 - **Email**: vikumdabare@gmail.com
 
-## 🔗 Related Projects
+## Related Projects
 
 - [GANBLR Original Paper](https://link-to-paper)
 - [GReaT Repository](https://github.com/kathrinse/be_great)
@@ -646,4 +701,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Happy generating!** 🎯
+**Happy generating!**

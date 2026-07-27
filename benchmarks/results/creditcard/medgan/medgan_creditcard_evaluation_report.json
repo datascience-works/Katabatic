@@ -1,0 +1,200 @@
+{
+  "composite_score": 0.5537,
+  "dimension_scores": {
+    "fidelity": 0.9735,
+    "utility": 0.0,
+    "diversity": 0.8304,
+    "privacy": 0.965,
+    "consistency": 0.3371,
+    "stability": 0.976
+  },
+  "weights_used": {
+    "fidelity": 0.25,
+    "utility": 0.35,
+    "diversity": 0.1,
+    "privacy": 0.15,
+    "consistency": 0.1,
+    "stability": 0.05
+  },
+  "full_results": {
+    "fidelity": {
+      "categorical_jsd": {},
+      "continuous_wasserstein": {
+        "Time": 0.0623,
+        "V1": 0.0054,
+        "V2": 0.0086,
+        "V3": 0.0115,
+        "V4": 0.0163,
+        "V5": 0.0062,
+        "V6": 0.0052,
+        "V7": 0.0071,
+        "V8": 0.0043,
+        "V9": 0.0313,
+        "V10": 0.009,
+        "V11": 0.0085,
+        "V12": 0.0142,
+        "V13": 0.0099,
+        "V14": 0.0054,
+        "V15": 0.0167,
+        "V16": 0.0207,
+        "V17": 0.0145,
+        "V18": 0.0179,
+        "V19": 0.0049,
+        "V20": 0.0081,
+        "V21": 0.0039,
+        "V22": 0.0086,
+        "V23": 0.0146,
+        "V24": 0.0128,
+        "V25": 0.0085,
+        "V26": 0.0263,
+        "V27": 0.0165,
+        "V28": 0.0088,
+        "Amount": 0.0018,
+        "avg": 0.013
+      },
+      "correlation_diff": 0.04,
+      "categorical_score": null,
+      "continuous_score": 0.987,
+      "correlation_score": 0.96,
+      "fidelity_score": 0.9735
+    },
+    "utility": {
+      "error": "Synthetic data is too class-imbalanced \u2014 all CV folds contained only one class. The model did not learn the class distribution.",
+      "utility_score": 0.0
+    },
+    "diversity": {
+      "category_coverage": {},
+      "bin_coverage": {
+        "Time": 1.0,
+        "V1": 0.9,
+        "V2": 0.7,
+        "V3": 0.6,
+        "V4": 0.8,
+        "V5": 0.6,
+        "V6": 0.6,
+        "V7": 0.6,
+        "V8": 0.6,
+        "V9": 0.7,
+        "V10": 0.7,
+        "V11": 0.7,
+        "V12": 0.5,
+        "V13": 1.0,
+        "V14": 0.6,
+        "V15": 0.9,
+        "V16": 0.4,
+        "V17": 0.4,
+        "V18": 0.6,
+        "V19": 0.8,
+        "V20": 0.5,
+        "V21": 0.6,
+        "V22": 0.6,
+        "V23": 0.5,
+        "V24": 0.9,
+        "V25": 0.6,
+        "V26": 0.6,
+        "V27": 0.7,
+        "V28": 0.3,
+        "Amount": 1.0,
+        "avg": 0.6667
+      },
+      "gower_similarity": 0.9941,
+      "diversity_score": 0.8304
+    },
+    "privacy": {
+      "mean_nndr": 0.9394,
+      "exact_duplicate_rate": 0.0,
+      "near_duplicate_rate": 0.0445,
+      "nndr_score": 0.9394,
+      "exact_dup_score": 1.0,
+      "near_dup_score": 0.9555,
+      "privacy_score": 0.965
+    },
+    "consistency": {
+      "discriminator_accuracy": 0.9943,
+      "discriminator_score": 0.0113,
+      "constraint_violations": {
+        "Time [0.0, 172792.0]": 0.0,
+        "V1 [-56.41, 2.45]": 0.0,
+        "V2 [-72.72, 22.06]": 0.0,
+        "V3 [-48.33, 9.38]": 0.0,
+        "V4 [-5.68, 16.88]": 0.0,
+        "V5 [-113.74, 34.8]": 0.0,
+        "V6 [-26.16, 73.3]": 0.0,
+        "V7 [-43.56, 120.59]": 0.0,
+        "V8 [-73.22, 20.01]": 0.0,
+        "V9 [-13.43, 15.6]": 0.0,
+        "V10 [-24.59, 23.75]": 0.0,
+        "V11 [-4.8, 12.02]": 0.0,
+        "V12 [-18.68, 7.85]": 0.0,
+        "V13 [-5.79, 7.13]": 0.0,
+        "V14 [-19.21, 10.53]": 0.0,
+        "V15 [-4.5, 8.88]": 0.0,
+        "V16 [-14.13, 17.32]": 0.0,
+        "V17 [-25.16, 9.25]": 0.0,
+        "V18 [-9.5, 5.04]": 0.0,
+        "V19 [-7.21, 5.59]": 0.0,
+        "V20 [-54.5, 39.42]": 0.0,
+        "V21 [-34.83, 27.2]": 0.0,
+        "V22 [-10.93, 10.5]": 0.0,
+        "V23 [-44.81, 22.53]": 0.0,
+        "V24 [-2.84, 4.58]": 0.0,
+        "V25 [-10.3, 7.52]": 0.0,
+        "V26 [-2.6, 3.52]": 0.0,
+        "V27 [-22.57, 31.61]": 0.0,
+        "V28 [-15.43, 33.85]": 0.0,
+        "Amount [0.0, 25691.16]": 0.0,
+        "overall_violation_rate": 0.0
+      },
+      "constraint_score": 1.0,
+      "feature_importance_spearman": 0.0,
+      "consistency_score": 0.3371
+    },
+    "stability": {
+      "n_runs": 5,
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "per_run_scores": [
+        {
+          "seed": 0,
+          "fidelity_score": 0.9736,
+          "diversity_score": 0.8329
+        },
+        {
+          "seed": 1,
+          "fidelity_score": 0.9733,
+          "diversity_score": 0.8429
+        },
+        {
+          "seed": 2,
+          "fidelity_score": 0.9732,
+          "diversity_score": 0.8373
+        },
+        {
+          "seed": 3,
+          "fidelity_score": 0.9733,
+          "diversity_score": 0.8357
+        },
+        {
+          "seed": 4,
+          "fidelity_score": 0.9735,
+          "diversity_score": 0.8455
+        }
+      ],
+      "mean_scores": {
+        "fidelity": 0.9734,
+        "diversity": 0.8389
+      },
+      "std_scores": {
+        "fidelity": 0.0001,
+        "diversity": 0.0047
+      },
+      "avg_std": 0.0024,
+      "stability_score": 0.976
+    }
+  }
+}

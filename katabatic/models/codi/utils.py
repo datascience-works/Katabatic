@@ -159,12 +159,17 @@ def set_global_seed(seed: int):
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
 
-
-def get_device(device: Optional[str] = None) -> torch.device:
-    """Get the best available device."""
-    if device is not None:
-        return torch.device(device)
-    return torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+def get_device(device: str | torch.device | None = None) -> torch.device:
+    if device is None:
+        resolved_device = torch.device(
+            "cuda" if torch.cuda.is_available() else "cpu"
+        )
+    elif isinstance(device, torch.device):
+        resolved_device = device
+    else:
+        resolved_device = torch.device(device)
+    print("Device type used:", resolved_device)
+    return resolved_device
 
 
 def get_timestep_embedding(timesteps: torch.Tensor, embedding_dim: int, max_positions: int = 10000) -> torch.Tensor:
@@ -297,7 +302,13 @@ class GaussianDiffusionTrainer(nn.Module):
         self.register_buffer('sqrt_alphas_bar', torch.sqrt(alphas_bar))
         self.register_buffer('sqrt_one_minus_alphas_bar',
                              torch.sqrt(1 - alphas_bar))
-
+    # section added as used by the GaussianDiffusionTrainer
+    def make_x_t(self, x_0, t, noise):
+        return (
+            extract(self.sqrt_alphas_bar, t, x_0.shape) * x_0 +
+            extract(self.sqrt_one_minus_alphas_bar, t, x_0.shape) * noise
+        )
+        
     def forward(self, x_0, t, cond):
         """Training step."""
         noise = torch.randn_like(x_0)
@@ -342,6 +353,24 @@ class GaussianDiffusionSampler(nn.Module):
         self.register_buffer('posterior_mean_coef2', posterior_mean_coef2)
         self.register_buffer('posterior_log_variance', posterior_log_variance)
 
+
+    def p_mean_variance(self, x_t, t, cond):
+        """Single sampling step."""
+        eps = self.model(x_t, t, cond)
+        x_0_pred = (
+            extract(self.sqrt_recip_alphas_bar, t, x_t.shape) * x_t -
+            extract(self.sqrt_recipm1_alphas_bar, t, x_t.shape) * eps
+        )
+        x_0_pred = torch.clamp(x_0_pred, -1, 1)
+
+        mean = (
+            extract(self.posterior_mean_coef1, t, x_t.shape) * x_0_pred +
+            extract(self.posterior_mean_coef2, t, x_t.shape) * x_t
+        )
+        log_variance = extract(self.posterior_log_variance, t, x_t.shape)
+
+        return mean , log_variance
+    
     def p_sample(self, x_t, t, cond):
         """Single sampling step."""
         eps = self.model(x_t, t, cond)

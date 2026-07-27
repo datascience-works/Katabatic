@@ -1,7 +1,8 @@
 import json
+from typing import Any
+
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Tuple, Optional, Any
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 
@@ -15,7 +16,7 @@ def set_global_seed(seed: int = 42):
         pass
 
 
-def infer_schema(df: pd.DataFrame) -> Dict[str, Any]:
+def infer_schema(df: pd.DataFrame) -> dict[str, Any]:
     """
     Infer schema from a dataframe including column types and metadata.
 
@@ -67,12 +68,12 @@ class DataTransformer:
     """
 
     def __init__(self):
-        self.label_encoders: Dict[str, LabelEncoder] = {}
-        self.scalers: Dict[str, StandardScaler] = {}
-        self.schema: Optional[Dict] = None
-        self.column_order: List[str] = []
-        self.min_vals: Optional[np.ndarray] = None
-        self.max_vals: Optional[np.ndarray] = None
+        self.label_encoders: dict[str, LabelEncoder] = {}
+        self.scalers: dict[str, StandardScaler] = {}
+        self.schema: dict | None = None
+        self.column_order: list[str] = []
+        self.min_vals: np.ndarray | None = None
+        self.max_vals: np.ndarray | None = None
 
     def fit(self, df: pd.DataFrame) -> 'DataTransformer':
         """
@@ -210,8 +211,8 @@ class PrivacyMechanism:
 def save_metadata(
     filepath: str,
     transformer: DataTransformer,
-    training_config: Dict[str, Any],
-    privacy_config: Dict[str, Any],
+    training_config: dict[str, Any],
+    privacy_config: dict[str, Any],
     seed: int = 42
 ):
     """
@@ -248,7 +249,7 @@ def save_metadata(
         json.dump(metadata, f, indent=2)
 
 
-def load_metadata(filepath: str) -> Dict[str, Any]:
+def load_metadata(filepath: str) -> dict[str, Any]:
     """
     Load metadata from JSON file.
 
@@ -262,7 +263,7 @@ def load_metadata(filepath: str) -> Dict[str, Any]:
         return json.load(f)
 
 
-def reconstruct_transformer(metadata: Dict[str, Any]) -> DataTransformer:
+def reconstruct_transformer(metadata: dict[str, Any]) -> DataTransformer:
     """
     Reconstruct DataTransformer from saved metadata.
 
@@ -290,7 +291,7 @@ def reconstruct_transformer(metadata: Dict[str, Any]) -> DataTransformer:
     return transformer
 
 
-def partition_data(X: np.ndarray, num_partitions: int) -> List[np.ndarray]:
+def partition_data(X: np.ndarray, num_partitions: int) -> list[np.ndarray]:
     """
     Partition data for teacher discriminators.
 

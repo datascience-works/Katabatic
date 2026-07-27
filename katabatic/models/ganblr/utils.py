@@ -166,11 +166,10 @@ def get_demo_data(name='adult'):
     data : pandas.DataFrame
         the demo dataset.
     """
-    assert(name in DEMO_DATASETS.keys())
+    assert(name in DEMO_DATASETS)
     return read_csv(DEMO_DATASETS[name]['link'], **DEMO_DATASETS[name]['params'])
 
 from pandas import read_csv
-from sklearn.preprocessing import OneHotEncoder
 
 from .kdb import KdbHighOrderFeatureEncoder
 

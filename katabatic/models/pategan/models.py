@@ -1,17 +1,16 @@
 import os
-import json
+from typing import Any
+
 import numpy as np
 import pandas as pd
-from typing import Optional, Dict, Any, Union
+
 from katabatic.models.base_model import Model
+
 from .utils import (
     DataTransformer,
     PrivacyMechanism,
-    set_global_seed,
     save_metadata,
-    load_metadata,
-    reconstruct_transformer,
-    partition_data
+    set_global_seed,
 )
 
 
@@ -36,7 +35,7 @@ class PATEGAN(Model):
         num_teachers: int = 10,
         niter: int = 10000,
         batch_size: int = 128,
-        z_dim: Optional[int] = None,
+        z_dim: int | None = None,
         learning_rate: float = 1e-4,
         lambda_gp: float = 10.0,
         random_state: int = 42
@@ -71,8 +70,8 @@ class PATEGAN(Model):
         self.random_state = random_state
 
         # State
-        self.transformer: Optional[DataTransformer] = None
-        self.privacy_mechanism: Optional[PrivacyMechanism] = None
+        self.transformer: DataTransformer | None = None
+        self.privacy_mechanism: PrivacyMechanism | None = None
         self._sess = None
         self._G_sample = None
         self._is_built = False
@@ -213,7 +212,7 @@ class PATEGAN(Model):
 
         self._is_built = True
 
-    def fit(self, X: pd.DataFrame, y: Optional[pd.Series] = None, verbose: int = 1) -> 'PATEGAN':
+    def fit(self, X: pd.DataFrame, y: pd.Series | None = None, verbose: int = 1) -> 'PATEGAN':
         """
         Fit PATE-GAN to data.
 
@@ -326,7 +325,7 @@ class PATEGAN(Model):
     def sample(
         self,
         n: int,
-        conditional: Optional[Dict[str, Any]] = None
+        conditional: dict[str, Any] | None = None
     ) -> pd.DataFrame:
         """
         Generate synthetic samples.
@@ -371,7 +370,7 @@ class PATEGAN(Model):
     def train(
         self,
         dataset_dir: str,
-        synthetic_dir: Optional[str] = None,
+        synthetic_dir: str | None = None,
         **kwargs
     ) -> 'PATEGAN':
         """
@@ -536,7 +535,7 @@ class PATEGAN(Model):
                 y_test = pd.DataFrame(y_test_remapped, columns=y_test.columns if isinstance(
                     y_test, pd.DataFrame) else [y_test.name])
                 y_test.to_csv(y_test_path, index=False)
-                print(f"Remapped y_test.csv to match synthetic data encoding")
+                print("Remapped y_test.csv to match synthetic data encoding")
 
         # Save synthetic data
         if synthetic_dir is not None:
@@ -582,11 +581,11 @@ class PATEGAN(Model):
         x: pd.DataFrame,
         y: pd.Series,
         model: str = "lr",
-        metrics: Optional[list] = None,
-        task: Optional[str] = None,
+        metrics: list | None = None,
+        task: str | None = None,
         random_state: int = 42,
         **kwargs
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         In-memory TSTR-style check: sample synthetic rows, fit a downstream model
         on synthetic data, and score on the provided real ``(x, y)``.
@@ -607,12 +606,16 @@ class PATEGAN(Model):
         Returns:
             Dictionary of metric scores
         """
-        from sklearn.metrics import (
-            accuracy_score, f1_score, roc_auc_score,
-            mean_squared_error, mean_absolute_error, r2_score
-        )
-        from sklearn.linear_model import LogisticRegression, LinearRegression
         from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+        from sklearn.linear_model import LinearRegression, LogisticRegression
+        from sklearn.metrics import (
+            accuracy_score,
+            f1_score,
+            mean_absolute_error,
+            mean_squared_error,
+            r2_score,
+            roc_auc_score,
+        )
 
         # Auto-detect task
         if task is None:

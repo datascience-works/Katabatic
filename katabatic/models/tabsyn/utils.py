@@ -1,20 +1,19 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
-
 import json
 import os
+from dataclasses import dataclass
+from typing import Any
+
 import numpy as np
 import pandas as pd
 
 # all torch-related code lives here so models.py only imports from utils.py
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
-
 
 # =========================
 # Config and runtime state
@@ -35,25 +34,25 @@ class TabSynConfig:
     weight_decay: float = 0.0
     patience: int = 20
     seed: int = 42
-    device: Optional[str] = None
+    device: str | None = None
 
 
 @dataclass
 class TabSynState:
     # data/meta
-    info: Dict[str, Any]
+    info: dict[str, Any]
     n_num: int
-    cat_sizes: List[int]
+    cat_sizes: list[int]
     token_dim: int
-    column_order: List[int]               # numeric->cat->(target at the end)
-    scaler_mean: Optional[np.ndarray]     # for numeric inverse
-    scaler_std: Optional[np.ndarray]
+    column_order: list[int]               # numeric->cat->(target at the end)
+    scaler_mean: np.ndarray | None     # for numeric inverse
+    scaler_std: np.ndarray | None
     # encoder/decoder
     encoder_num_weight: torch.Tensor      # (n_num, d_token)
     encoder_num_bias: torch.Tensor        # (n_num, d_token)
-    encoder_cat_embeds: List[torch.Tensor]  # per categorical col: (n_classes, d_token)
+    encoder_cat_embeds: list[torch.Tensor]  # per categorical col: (n_classes, d_token)
     decoder_num_weight: torch.Tensor      # (n_num, d_token)
-    decoder_cat_heads: List[nn.Linear]    # per categorical col
+    decoder_cat_heads: list[nn.Linear]    # per categorical col
     # diffusion denoiser
     denoise_fn: nn.Module                 # MLPDiffusion
     device: torch.device
@@ -64,7 +63,7 @@ class TabSynState:
 # Utilities
 # ===========
 
-def _get_device(pref: Optional[str]) -> torch.device:
+def _get_device(pref: str | None) -> torch.device:
     if pref in (None, "", "auto"):
         return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     return torch.device(pref)
@@ -76,7 +75,7 @@ def _seed_all(seed: int) -> None:
     torch.cuda.manual_seed_all(seed)
 
 
-def _load_info(data_dir: str) -> Dict[str, Any]:
+def _load_info(data_dir: str) -> dict[str, Any]:
     info_path = os.path.join(data_dir, "info.json")
     if os.path.exists(info_path):
         with open(info_path, "r") as f:
@@ -88,12 +87,12 @@ def _load_info(data_dir: str) -> Dict[str, Any]:
 def _load_split_arrays(
     data_dir: str,
     split: str,
-) -> Tuple[Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+) -> tuple[np.ndarray | None, np.ndarray | None, np.ndarray]:
     """
     Returns (X_num, X_cat, y) for the split. Any of X_num/X_cat may be None.
     Expects NumPy files like: X_num_train.npy, X_cat_train.npy, y_train.npy
     """
-    def _maybe(path: str) -> Optional[np.ndarray]:
+    def _maybe(path: str) -> np.ndarray | None:
         p = os.path.join(data_dir, path)
         return np.load(p, allow_pickle=True) if os.path.exists(p) else None
 
@@ -104,11 +103,11 @@ def _load_split_arrays(
 
 
 def _concat_xy(
-    X_num: Optional[np.ndarray],
-    X_cat: Optional[np.ndarray],
+    X_num: np.ndarray | None,
+    X_cat: np.ndarray | None,
     y: np.ndarray,
     task_type: str,
-) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+) -> tuple[np.ndarray, np.ndarray | None]:
     """
     For classification, move y to categorical side; for regression, to numerical.
     """
@@ -120,7 +119,7 @@ def _concat_xy(
     return X_num, X_cat
 
 
-def _fit_numeric_scaler(X_num: Optional[np.ndarray]) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
+def _fit_numeric_scaler(X_num: np.ndarray | None) -> tuple[np.ndarray | None, np.ndarray | None]:
     if X_num is None:
         return None, None
     mean = X_num.mean(axis=0)
@@ -129,19 +128,19 @@ def _fit_numeric_scaler(X_num: Optional[np.ndarray]) -> Tuple[Optional[np.ndarra
     return mean, std
 
 
-def _transform_numeric(X_num: Optional[np.ndarray], mean: Optional[np.ndarray], std: Optional[np.ndarray]) -> Optional[np.ndarray]:
+def _transform_numeric(X_num: np.ndarray | None, mean: np.ndarray | None, std: np.ndarray | None) -> np.ndarray | None:
     if X_num is None:
         return None
     return (X_num - mean) / std
 
 
-def _inverse_numeric(X_num: np.ndarray, mean: Optional[np.ndarray], std: Optional[np.ndarray]) -> np.ndarray:
+def _inverse_numeric(X_num: np.ndarray, mean: np.ndarray | None, std: np.ndarray | None) -> np.ndarray:
     if mean is None or std is None:
         return X_num
     return X_num * std + mean
 
 
-def _cat_sizes(X_cat: Optional[np.ndarray]) -> List[int]:
+def _cat_sizes(X_cat: np.ndarray | None) -> list[int]:
     if X_cat is None:
         return []
     sizes = []
@@ -154,8 +153,8 @@ def _cat_sizes(X_cat: Optional[np.ndarray]) -> List[int]:
 
 
 def _categorical_to_index(
-    X_cat: Optional[np.ndarray],
-) -> Tuple[Optional[np.ndarray], List[Dict[str, int]]]:
+    X_cat: np.ndarray | None,
+) -> tuple[np.ndarray | None, list[dict[str, int]]]:
     """
     Maps each categorical column to integer indices [0..n_classes-1].
     Returns encoded array and per-column vocab dicts.
@@ -163,7 +162,7 @@ def _categorical_to_index(
     if X_cat is None:
         return None, []
     enc = np.zeros_like(X_cat, dtype=np.int64)
-    vocabs: List[Dict[str, int]] = []
+    vocabs: list[dict[str, int]] = []
     for j in range(X_cat.shape[1]):
         col = X_cat[:, j].astype(str)
         uniq = np.unique(col)
@@ -184,7 +183,7 @@ class _Encoder(nn.Module):
       - one token per numeric feature: v * W_j + b_j,
       - one token per categorical feature: Embedding(category_id).
     """
-    def __init__(self, n_num: int, cat_sizes: List[int], d_token: int) -> None:
+    def __init__(self, n_num: int, cat_sizes: list[int], d_token: int) -> None:
         super().__init__()
         self.n_num = n_num
         self.cat_sizes = cat_sizes
@@ -210,7 +209,7 @@ class _Encoder(nn.Module):
         for p in self.parameters():
             p.requires_grad = False
 
-    def forward(self, X_num: Optional[torch.Tensor], X_cat: Optional[torch.Tensor]) -> torch.Tensor:
+    def forward(self, X_num: torch.Tensor | None, X_cat: torch.Tensor | None) -> torch.Tensor:
         B = (X_num.shape[0] if X_num is not None else X_cat.shape[0]) if (X_num is not None or X_cat is not None) else 0
         tokens = [torch.zeros(B, 1, self.d_token, device=X_num.device if X_num is not None else X_cat.device)]
         if X_num is not None and self.n_num > 0:
@@ -232,7 +231,7 @@ class _Decoder(nn.Module):
     For each numeric feature, a linear head over its token.
     For each categorical feature, a linear head producing class logits.
     """
-    def __init__(self, n_num: int, cat_sizes: List[int], d_token: int) -> None:
+    def __init__(self, n_num: int, cat_sizes: list[int], d_token: int) -> None:
         super().__init__()
         self.n_num = n_num
         self.cat_sizes = cat_sizes
@@ -251,7 +250,7 @@ class _Decoder(nn.Module):
             nn.init.xavier_uniform_(head.weight)
             nn.init.zeros_(head.bias)
 
-    def forward(self, z: torch.Tensor) -> Tuple[Optional[torch.Tensor], List[torch.Tensor]]:
+    def forward(self, z: torch.Tensor) -> tuple[torch.Tensor | None, list[torch.Tensor]]:
         """
         z: (B, (1 + n_num + n_cat) * d_token)
         """
@@ -262,14 +261,14 @@ class _Decoder(nn.Module):
         tokens = z.view(B, n_tokens, self.d_token)
 
         # numeric tokens follow CLS
-        num_pred: Optional[torch.Tensor] = None
+        num_pred: torch.Tensor | None = None
         if self.n_num > 0:
             num_toks = tokens[:, 1:1 + self.n_num]                    # (B, n_num, d_token)
             # (B, n_num)
             num_pred = (num_toks * self.num_weight.unsqueeze(0)).sum(-1)
 
         # categorical tokens follow numeric
-        cat_logits: List[torch.Tensor] = []
+        cat_logits: list[torch.Tensor] = []
         for j, head in enumerate(self.cat_heads):
             cat_tok = tokens[:, 1 + self.n_num + j]                   # (B, d_token)
             cat_logits.append(head(cat_tok))                          # (B, n_classes)
@@ -373,7 +372,7 @@ def _sample_precond(
     num_samples: int,
     dim: int,
     num_steps: int = 50,
-    device: Optional[torch.device] = None,
+    device: torch.device | None = None,
 ) -> torch.Tensor:
     device = device or torch.device("cpu")
     rho = 7
@@ -409,8 +408,8 @@ def _sample_precond(
 
 def _prepare_training_mats(
     data_dir: str,
-    info: Dict[str, Any],
-) -> Tuple[np.ndarray, Optional[np.ndarray], np.ndarray, List[int]]:
+    info: dict[str, Any],
+) -> tuple[np.ndarray, np.ndarray | None, np.ndarray, list[int]]:
     Xn_tr, Xc_tr, y_tr = _load_split_arrays(data_dir, "train")
     task_type = info.get("task_type", "binclass")
     Xn_tr, Xc_tr = _concat_xy(Xn_tr, Xc_tr, y_tr, task_type)
@@ -433,11 +432,11 @@ def _prepare_training_mats(
 
 def _prepare_split_mats_for_eval(
     data_dir: str,
-    info: Dict[str, Any],
-    mean: Optional[np.ndarray],
-    std: Optional[np.ndarray],
+    info: dict[str, Any],
+    mean: np.ndarray | None,
+    std: np.ndarray | None,
     split: str,
-) -> Tuple[np.ndarray, Optional[np.ndarray], np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray | None, np.ndarray]:
     Xn, Xc, y = _load_split_arrays(data_dir, split)
     task_type = info.get("task_type", "binclass")
     Xn, Xc = _concat_xy(Xn, Xc, y, task_type)
@@ -451,12 +450,12 @@ def _prepare_split_mats_for_eval(
 
 def _make_dataloaders_from_latent(
     z: torch.Tensor,
-    Xn: Optional[torch.Tensor],
-    Xc: Optional[torch.Tensor],
+    Xn: torch.Tensor | None,
+    Xc: torch.Tensor | None,
     batch_size: int,
 ) -> DataLoader:
     # Prepare labels for decoder training
-    y_list: List[torch.Tensor] = []
+    y_list: list[torch.Tensor] = []
     if Xn is not None and Xn.numel() > 0:
         y_list.append(Xn.float())
     if Xc is not None:
@@ -470,8 +469,8 @@ def train_tabsyn(
     *,
     data_dir: str,
     cfg: TabSynConfig,
-    save_dir: Optional[str] = None,
-    extra_info: Dict[str, Any] = {},
+    save_dir: str | None = None,
+    extra_info: dict[str, Any] = {},
 ) -> TabSynState:
     _seed_all(cfg.seed)
     device = _get_device(cfg.device)
@@ -666,7 +665,7 @@ def _rebuild_decoder_from_state(state: TabSynState) -> _Decoder:
     return dec
 
 
-def _rebuild_encoder_from_state(state: TabSynState, device: Optional[torch.device] = None) -> _Encoder:
+def _rebuild_encoder_from_state(state: TabSynState, device: torch.device | None = None) -> _Encoder:
     enc = _Encoder(state.n_num, state.cat_sizes, state.token_dim)
     if state.n_num > 0:
         enc.num_weight.data = state.encoder_num_weight.clone()
@@ -681,9 +680,9 @@ def _rebuild_encoder_from_state(state: TabSynState, device: Optional[torch.devic
 def sample_tabsyn(
     state: TabSynState,
     *,
-    n_samples: Optional[int] = None,
+    n_samples: int | None = None,
     return_df: bool = True,
-) -> 'pd.DataFrame | np.ndarray':
+) -> pd.DataFrame | np.ndarray:
     device = state.device
 
     denoise = state.denoise_fn.to(device).eval()
@@ -726,7 +725,7 @@ def sample_tabsyn(
         return np.concatenate([Xn_hat, Xc_hat], axis=1)
 
     # As DataFrame
-    cols: List[str] = []
+    cols: list[str] = []
     if state.n_num > 0:
         cols += [f"num_{i}" for i in range(state.n_num)]
     cols += [f"cat_{i}" for i in range(len(state.cat_sizes))]

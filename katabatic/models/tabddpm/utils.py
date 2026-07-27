@@ -13,12 +13,12 @@ If the real `tabddpm` package is installed, `models.py` will prefer that.
 
 from __future__ import annotations
 
-from typing import Optional, Sequence, Tuple
+from collections.abc import Sequence
 
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
 
 class MLPDiffusion(nn.Module):
@@ -66,7 +66,7 @@ class MLPDiffusion(nn.Module):
         layers.append(nn.Linear(in_dim, self.d_in))
         self.net = nn.Sequential(*layers)
 
-    def forward(self, x: torch.Tensor, y: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, y: torch.Tensor | None = None) -> torch.Tensor:
         if self.is_y_cond and self.num_classes > 0 and y is not None:
             # Ensure y is long for one-hot
             y_onehot = F.one_hot(
@@ -91,7 +91,7 @@ class GaussianMultinomialDiffusion(nn.Module):
         gaussian_loss_type: str = "mse",
         num_timesteps: int = 1000,
         scheduler: str = "cosine",
-        device: Optional[torch.device] = None,
+        device: torch.device | None = None,
     ) -> None:
         super().__init__()
         self._denoise_fn = denoise_fn
@@ -106,10 +106,10 @@ class GaussianMultinomialDiffusion(nn.Module):
         self._steps = int(num_timesteps)
         self._scheduler = scheduler
 
-    def forward(self, x: torch.Tensor, y: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, y: torch.Tensor | None = None) -> torch.Tensor:
         return self._denoise_fn(x, y)
 
-    def mixed_loss(self, xb: torch.Tensor, out: dict) -> Tuple[torch.Tensor, torch.Tensor]:
+    def mixed_loss(self, xb: torch.Tensor, out: dict) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute a simple reconstruction-style mixed loss.
 
         We split the loss into two parts for reporting parity:
@@ -147,7 +147,7 @@ class GaussianMultinomialDiffusion(nn.Module):
         batch_size: int,
         y_dist: torch.Tensor,
         ddim: bool = False,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Sample synthetic x and y.
 
         We draw y ~ Categorical(y_dist) if provided, otherwise zeros. Then we

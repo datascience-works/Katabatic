@@ -5,22 +5,20 @@ Based on "Generating Multi-label Discrete Patient Records using Generative Adver
 by Choi et al. (2017) - https://arxiv.org/abs/1703.06490
 """
 
-import os
 import logging
+import os
+
 import numpy as np
 import pandas as pd
 import torch
-import torch.nn as nn
-import torch.optim as optim
-from typing import Optional, Tuple
-from pathlib import Path
+from torch import nn, optim
 
 from katabatic.models.base_model import Model
 from katabatic.models.medgan.utils import (
     Autoencoder,
-    Generator,
     Discriminator,
-    sample_noise
+    Generator,
+    sample_noise,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -65,7 +63,7 @@ class MEDGAN(Model):
 
         # Other
         random_state: int = 42,
-        device: Optional[str] = None
+        device: str | None = None
     ):
         super().__init__()
 
@@ -107,7 +105,7 @@ class MEDGAN(Model):
         self.discriminator = None
         self.input_dim_ = None
 
-    def train(self, dataset_dir: str, synthetic_dir: Optional[str] = None, **kwargs):
+    def train(self, dataset_dir: str, synthetic_dir: str | None = None, **kwargs):
         """
         Train MedGAN model following Katabatic framework.
 
@@ -150,7 +148,7 @@ class MEDGAN(Model):
         data_range[data_range == 0] = 1  # Avoid division by zero
         data_normalized = (data - self.data_min_) / data_range
 
-        logger.info(f"Data normalized to [0, 1] range")
+        logger.info("Data normalized to [0, 1] range")
         logger.info(f"Original range: [{data.min():.2f}, {data.max():.2f}]")
         logger.info(
             f"Normalized range: [{data_normalized.min():.2f}, {data_normalized.max():.2f}]")
@@ -392,4 +390,3 @@ class MEDGAN(Model):
 
     def evaluate(self):
         """Evaluate is handled by the pipeline's TSTREvaluation."""
-        pass

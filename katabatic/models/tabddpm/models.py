@@ -1,24 +1,24 @@
 """Implementation of Tabddpm model."""
 from __future__ import annotations
 
-from typing import Any, Optional, Sequence, Union, Dict, Tuple, List
-import math
-import random
-import tempfile
-from pathlib import Path
 import os
+import random
+from collections.abc import Sequence
+from typing import Any, Union
 
 import numpy as np
 import pandas as pd
 import torch
-from torch.utils.data import DataLoader, TensorDataset
 from sklearn.preprocessing import LabelEncoder
+from torch.utils.data import DataLoader, TensorDataset
 
 from katabatic.models.base_model import Model
 
 # Core TabDDPM pieces (prefer external package; fallback to local utils)
 try:  # pragma: no cover - import guard
-    from tabddpm.model.gaussian_multinomial_diffusion import GaussianMultinomialDiffusion  # type: ignore
+    from tabddpm.model.gaussian_multinomial_diffusion import (
+        GaussianMultinomialDiffusion,  # type: ignore
+    )
     from tabddpm.model.modules import MLPDiffusion  # type: ignore
     _TABDDPM_EXTERNAL = True
 except Exception:  # fallback to lightweight local implementations
@@ -70,31 +70,31 @@ class Tabddpm(Model):
             pass
 
         # learned artifacts
-        self._diffusion: Optional[GaussianMultinomialDiffusion] = None
-        self._denoiser: Optional[torch.nn.Module] = None
-        self._denoiser_ema: Optional[torch.nn.Module] = None
+        self._diffusion: GaussianMultinomialDiffusion | None = None
+        self._denoiser: torch.nn.Module | None = None
+        self._denoiser_ema: torch.nn.Module | None = None
 
         # training metadata
         self._n_num: int = 0
         # per-categorical cardinalities; [0] => no categoricals
         self._K: np.ndarray = np.array([0], dtype=int)
         self._is_classification: bool = True
-        self._y_classes_: Optional[np.ndarray] = None
-        self._y_le: Optional[LabelEncoder] = None
+        self._y_classes_: np.ndarray | None = None
+        self._y_le: LabelEncoder | None = None
 
         # feature schema for roundtripping to DataFrame on sample()
-        self._feature_names_num: List[str] = []
-        self._feature_names_cat: List[str] = []
-        self._cat_label_encoders: Dict[str, LabelEncoder] = {}
+        self._feature_names_num: list[str] = []
+        self._feature_names_cat: list[str] = []
+        self._cat_label_encoders: dict[str, LabelEncoder] = {}
 
         # last seen class distribution (for sampling)
-        self._class_dist: Optional[torch.Tensor] = None
+        self._class_dist: torch.Tensor | None = None
 
         # cached training loader for evaluation
         self._train_loader_infinite = None  # generator of (x, {'y': y})
 
         # config snapshot
-        self._cfg: Dict[str, Any] = dict(self._defaults)
+        self._cfg: dict[str, Any] = dict(self._defaults)
 
         # fail fast on deps
         self.check_dependencies()
@@ -160,7 +160,7 @@ class Tabddpm(Model):
         self,
         *args,
         **kwargs,
-    ) -> "Model":
+    ) -> Model:
         """Train TabDDPM.
 
         Two modes are supported:
@@ -290,8 +290,8 @@ class Tabddpm(Model):
             raise TypeError(
                 "train() missing required positional arguments: X, y")
         X, y = args[0], args[1]
-        cat_cols: Optional[Sequence[Union[int, str]]] = kwargs.get("cat_cols")
-        config: Optional[Dict[str, Any]] = kwargs.get("config")
+        cat_cols: Sequence[int | str] | None = kwargs.get("cat_cols")
+        config: dict[str, Any] | None = kwargs.get("config")
 
         self.check_dependencies()
         if config:
@@ -399,8 +399,7 @@ class Tabddpm(Model):
             # Fallback uses concatenated [numerical | categorical indices] directly
             d_in = self._n_num + len(self._feature_names_cat)
         is_y_cond = True  # follow your training script
-        num_classes = int(len(np.unique(y_enc))
-                          ) if self._is_classification else 0
+        num_classes = len(np.unique(y_enc)) if self._is_classification else 0
 
         rtdl_params = dict(d_layers=list(
             self._cfg["d_layers"]), dropout=float(self._cfg["dropout"]))
@@ -482,10 +481,10 @@ class Tabddpm(Model):
 
     def evaluate(
         self,
-        X: Optional[ArrayLike] = None,
-        y: Optional[ArrayLike] = None,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
         *,
-        batches: Optional[int] = None,
+        batches: int | None = None,
     ) -> float:
         """Return a single scalar score (higher is better).
 
@@ -524,7 +523,7 @@ class Tabddpm(Model):
 
         n_batches = int(self._cfg["eval_batches"]
                         if batches is None else batches)
-        losses: List[float] = []
+        losses: list[float] = []
         with torch.no_grad():
             for _ in range(n_batches):
                 xb, out = next(loader)
@@ -541,9 +540,9 @@ class Tabddpm(Model):
         self,
         n: int,
         *,
-        batch_size: Optional[int] = None,
+        batch_size: int | None = None,
         as_dataframe: bool = True,
-    ) -> Union[np.ndarray, pd.DataFrame]:
+    ) -> np.ndarray | pd.DataFrame:
         """Generate `n` synthetic samples.
 
         Args:
