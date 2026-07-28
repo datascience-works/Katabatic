@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, development, master]
+    branches: [main, development, master, feature/evaluation-pipeline]
   pull_request:
     branches: [main, development, master]
 
@@ -17,7 +17,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install Poetry
-        run: pip install poetry==1.8.5
+        run: pip install --upgrade poetry
 
       - name: Install dependencies
         run: poetry install --with dev
@@ -44,7 +44,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install Poetry
-        run: pip install poetry==1.8.5
+        run: pip install --upgrade poetry
 
       - name: Install with ganblr extra
         run: poetry install --with dev -E ganblr
@@ -62,7 +62,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install Poetry
-        run: pip install poetry==1.8.5
+        run: pip install --upgrade poetry
 
       - name: Install with great extra
         run: poetry install --with dev -E great
@@ -82,7 +82,7 @@ jobs:
 
       - name: Install Poetry and build
         run: |
-          pip install poetry==1.8.5
+          pip install --upgrade poetry
           poetry build
 
       - name: Install wheel in clean venv
