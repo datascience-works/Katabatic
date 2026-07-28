@@ -37,10 +37,7 @@ rtdl_revisiting_models = {version = "0.0.2", optional = true}
 tabpfn = {version = ">=2.0", optional = true}
 
 # Development and testing dependencies (only in dev installs)
-ipykernel = {version = "^6.29.5"}
-pytest = {version = "^7.4.0", optional = true}
-pytest-cov = {version = "^4.1.0", optional = true}
-pytest-mock = {version = "^3.11.0", optional = true}
+# ipykernel is declared in the dev group below
 accelerate = ">=0.26.0"
 tensorflow-io = "0.31.0"
 
@@ -51,7 +48,8 @@ tabddpm = ["torch", "rtdl_revisiting_models", "libzero", "category-encoders"]
 pategan = ["tensorflow"]
 codi = ["torch"]
 medgan = ["torch"]
-dev = ["ipykernel", "pytest", "pytest-cov", "pytest-mock"]
+# keep ipykernel in extras.dev only; test packages moved to dev group
+dev = ["ipykernel"]
 ctgan = ["torch"]
 tabpfgen = ["torch", "tabpfn"]
 
@@ -82,6 +80,11 @@ autopep8 = "^2.0.0"
 isort = "^5.12.0"
 mypy = "^1.5.0"
 ruff = "^0.12.4"
+# Development / test tooling
+ipykernel = "^6.29.5"
+pytest = "^7.4.0"
+pytest-cov = "^4.1.0"
+pytest-mock = "^3.11.0"
 
 [build-system]
 requires = ["poetry-core"]
