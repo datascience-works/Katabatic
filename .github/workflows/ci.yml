@@ -2,28 +2,34 @@ name: CI
 
 on:
   push:
-    branches: [main, development, master, feature/evaluation-pipeline]
+    branches: [main, development]
   pull_request:
-    branches: [main, development, master]
+    branches: [main, development]
 
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
+      - name: Cache Poetry environment
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-lint-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+
       - name: Install Poetry
-        run: pip install --upgrade poetry
+        run: pip install poetry==2.4.1
+
+      - name: Validate project + lock in sync
+        run: poetry check --lock
 
       - name: Install dependencies
         run: poetry install --with dev
-
-      - name: Poetry check
-        run: poetry check
 
       - name: Ruff
         run: poetry run ruff check katabatic tests
@@ -37,14 +43,20 @@ jobs:
   integration-ganblr:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
+      - name: Cache Poetry environment
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-ganblr-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+
       - name: Install Poetry
-        run: pip install --upgrade poetry
+        run: pip install poetry==2.4.1
 
       - name: Install with ganblr extra
         run: poetry install --with dev -E ganblr
@@ -55,14 +67,20 @@ jobs:
   integration-great:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
+      - name: Cache Poetry environment
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-great-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+
       - name: Install Poetry
-        run: pip install --upgrade poetry
+        run: pip install poetry==2.4.1
 
       - name: Install with great extra
         run: poetry install --with dev -E great
@@ -74,15 +92,15 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint-and-test
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
       - name: Install Poetry and build
         run: |
-          pip install --upgrade poetry
+          pip install poetry==2.4.1
           poetry build
 
       - name: Install wheel in clean venv
