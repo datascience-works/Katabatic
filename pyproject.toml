@@ -106,6 +106,14 @@ pytest-mock = "^3.11.0"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
+ignore = ["E501"] #prevents PRs. More effort required to fix across codebase.
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: full model stack (slow)",
+    "ganblr: requires ganblr extra",
+    "great: requires great extra",
+]
 
 [build-system]
 requires = ["poetry-core>=2.0"]

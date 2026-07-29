@@ -147,9 +147,9 @@ class EvaluationReport:
             return {k: self._serialisable(v) for k, v in obj.items()}
         if isinstance(obj, list):
             return [self._serialisable(v) for v in obj]
-        if isinstance(obj, (np.integer,)):
+        if isinstance(obj, np.integer):
             return int(obj)
-        if isinstance(obj, (np.floating,)):
+        if isinstance(obj, np.floating):
             return float(obj)
         if isinstance(obj, np.ndarray):
             return obj.tolist()

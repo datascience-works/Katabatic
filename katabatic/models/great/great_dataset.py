@@ -41,7 +41,7 @@ class GReaTDataset(Dataset):
         Returns:
             Formatted string value
         """
-        if isinstance(value, (float, np.floating)) and self.float_precision is not None:
+        if isinstance(value, float | np.floating) and self.float_precision is not None:
             # Format to a string with specified decimal places, removing trailing zeros
             formatted_value_str = f"{value:.{self.float_precision}f}"
             if "." in formatted_value_str:
@@ -64,11 +64,7 @@ class GReaTDataset(Dataset):
 
         shuffled_text = ", ".join(
             [
-                "%s is %s"
-                % (
-                    row.column_names[i],
-                    self._format_value(row.columns[i].to_pylist()[0]),
-                )
+                f"{row.column_names[i]} is {self._format_value(row.columns[i].to_pylist()[0])}"
                 for i in shuffle_idx
             ]
         )

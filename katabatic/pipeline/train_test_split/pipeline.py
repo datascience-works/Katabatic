@@ -184,7 +184,7 @@ class TrainTestSplitPipeline(Pipeline):
     ) -> dict[str, Any]:
         model_kwargs = dict(model_kwargs or {})
         eval_kwargs_user = dict(eval_kwargs_user or {})
-        current_model = self.instantiate_model()
+        current_model = self.model() if isinstance(self.model, type) else self.model
 
         if train_csv is not None and test_csv is not None:
             split_dataset_presplit(train_csv, test_csv, output_dir, **kwargs)
@@ -269,7 +269,7 @@ class TrainTestSplitPipeline(Pipeline):
         reg = DatasetRegistry(store)
         reg.register_if_absent(dataset_name, profile_csv, target_column=target_column)
 
-        current_model = self.instantiate_model()
+        current_model = self.model() if isinstance(self.model, type) else self.model
         model_name = model_name or _model_slug(current_model)
 
         if require_registered_dataset:

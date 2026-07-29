@@ -24,11 +24,7 @@ def _array_to_dataframe(data: pd.DataFrame | np.ndarray, columns=None) -> pd.Dat
         "To convert the data into a Pandas DataFrame, a list of column names has to be given!"
     )
     assert len(columns) == len(data[0]), (
-        "%d column names are given, but array has %d columns!"
-        % (
-            len(columns),
-            len(data[0]),
-        )
+        f"{len(columns)} column names are given, but array has {len(data[0])} columns!"
     )
 
     return pd.DataFrame(data=data, columns=columns)
@@ -130,7 +126,7 @@ def _encode_row_partial(row, shuffle=True, float_precision=None):
         value = row[row.index[i]]
         if not pd.isna(value):
             col_name = row.index[i]
-            if isinstance(value, (float, np.floating)) and float_precision is not None:
+            if isinstance(value, float | np.floating) and float_precision is not None:
                 # Format to a string with specified decimal places, removing trailing zeros
                 formatted_value_str = f"{value:.{float_precision}f}"
                 if "." in formatted_value_str:

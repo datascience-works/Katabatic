@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import random
 from collections.abc import Sequence
-from typing import Any, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -29,7 +29,7 @@ except Exception:  # fallback to lightweight local implementations
     _TABDDPM_EXTERNAL = False
 
 
-ArrayLike = Union[pd.Series, pd.DataFrame, np.ndarray, Sequence]
+ArrayLike = pd.Series | pd.DataFrame | np.ndarray | Sequence
 
 
 class Tabddpm(Model):
