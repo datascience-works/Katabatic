@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "katabatic"
+name = "katabatic-test"
 version = "0.1.0a1"
 description = "Framework for synthetic tabular data generation, evaluation, and artifact-based pipelines."
 authors = ["Vikum Dabare <vikumdabare@gmail.com>"]
