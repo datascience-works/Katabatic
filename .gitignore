@@ -234,3 +234,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+# Benchmark data and outputs (never commit)
+benchmarks/results/
+benchmarks/processed/
+benchmarks/splits/
+datasets/*.csv

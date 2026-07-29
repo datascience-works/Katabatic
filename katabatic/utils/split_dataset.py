@@ -1,9 +1,9 @@
-import pandas as pd
-import numpy as np
 import argparse
 import os
 import random
-from typing import Tuple
+
+import numpy as np
+import pandas as pd
 from sklearn.model_selection import train_test_split
 
 from katabatic.utils.train_test_consistency import sanity_check_train_test
@@ -13,7 +13,7 @@ def compute_train_test_split(
     df: pd.DataFrame,
     test_size: float = 0.2,
     seed: int = 42,
-) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series, pd.Series, pd.Series]:
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series, pd.Series, pd.Series]:
     """
     Stratified split on the last column as label. Sets y_train/y_test .name to label column name.
     """

@@ -14,8 +14,9 @@ from pathlib import Path
 def run_command(cmd, cwd=None):
     """Run a shell command and return success status."""
     try:
-        result = subprocess.run(cmd, shell=True, cwd=cwd, check=True,
-                                capture_output=True, text=True)
+        result = subprocess.run(
+            cmd, shell=True, cwd=cwd, check=True, capture_output=True, text=True
+        )
         print(f"✓ {cmd}")
         return True
     except subprocess.CalledProcessError as e:
@@ -92,10 +93,13 @@ def main():
         print("Katabatic Development Dependency Manager")
         print("\nUsage:")
         print(
-            "  python dev_deps.py install <model_name>  # Install deps for specific model")
+            "  python dev_deps.py install <model_name>  # Install deps for specific model"
+        )
         print("  python dev_deps.py install all          # Install deps for all models")
         print("  python dev_deps.py list                 # List available models")
-        print("  python dev_deps.py setup <model_name>   # Setup dev environment for model")
+        print(
+            "  python dev_deps.py setup <model_name>   # Setup dev environment for model"
+        )
         print("\nAvailable models:")
         for model in list_models():
             print(f"  - {model}")

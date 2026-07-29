@@ -1,7 +1,8 @@
 import json
+from typing import Any
+
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Optional, Any
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 
@@ -10,12 +11,13 @@ def set_global_seed(seed: int = 42):
     np.random.seed(seed)
     try:
         import tensorflow as tf
+
         tf.random.set_seed(seed)
     except ImportError:
         pass
 
 
-def infer_schema(df: pd.DataFrame) -> Dict[str, Any]:
+def infer_schema(df: pd.DataFrame) -> dict[str, Any]:
     """
     Infer schema from a dataframe including column types and metadata.
 
@@ -26,35 +28,33 @@ def infer_schema(df: pd.DataFrame) -> Dict[str, Any]:
         Dict containing schema information
     """
     schema = {
-        'columns': df.columns.tolist(),
-        'dtypes': {col: str(dtype) for col, dtype in df.dtypes.items()},
-        'column_info': {}
+        "columns": df.columns.tolist(),
+        "dtypes": {col: str(dtype) for col, dtype in df.dtypes.items()},
+        "column_info": {},
     }
 
     for col in df.columns:
-        col_info = {'type': None, 'metadata': {}}
+        col_info = {"type": None, "metadata": {}}
 
-        if df[col].dtype in ['object', 'category']:
-            col_info['type'] = 'categorical'
-            col_info['metadata'] = {
-                'categories': df[col].astype(str).unique().tolist()
-            }
-        elif df[col].dtype in ['int64', 'int32', 'int16', 'int8']:
-            col_info['type'] = 'discrete'
-            col_info['metadata'] = {
-                'min': int(df[col].min()),
-                'max': int(df[col].max())
+        if df[col].dtype in ["object", "category"]:
+            col_info["type"] = "categorical"
+            col_info["metadata"] = {"categories": df[col].astype(str).unique().tolist()}
+        elif df[col].dtype in ["int64", "int32", "int16", "int8"]:
+            col_info["type"] = "discrete"
+            col_info["metadata"] = {
+                "min": int(df[col].min()),
+                "max": int(df[col].max()),
             }
         else:  # float types
-            col_info['type'] = 'continuous'
-            col_info['metadata'] = {
-                'min': float(df[col].min()),
-                'max': float(df[col].max()),
-                'mean': float(df[col].mean()),
-                'std': float(df[col].std())
+            col_info["type"] = "continuous"
+            col_info["metadata"] = {
+                "min": float(df[col].min()),
+                "max": float(df[col].max()),
+                "mean": float(df[col].mean()),
+                "std": float(df[col].std()),
             }
 
-        schema['column_info'][col] = col_info
+        schema["column_info"][col] = col_info
 
     return schema
 
@@ -67,14 +67,14 @@ class DataTransformer:
     """
 
     def __init__(self):
-        self.label_encoders: Dict[str, LabelEncoder] = {}
-        self.scalers: Dict[str, StandardScaler] = {}
-        self.schema: Optional[Dict] = None
-        self.column_order: List[str] = []
-        self.min_vals: Optional[np.ndarray] = None
-        self.max_vals: Optional[np.ndarray] = None
+        self.label_encoders: dict[str, LabelEncoder] = {}
+        self.scalers: dict[str, StandardScaler] = {}
+        self.schema: dict | None = None
+        self.column_order: list[str] = []
+        self.min_vals: np.ndarray | None = None
+        self.max_vals: np.ndarray | None = None
 
-    def fit(self, df: pd.DataFrame) -> 'DataTransformer':
+    def fit(self, df: pd.DataFrame) -> "DataTransformer":
         """
         Fit transformers on the data.
 
@@ -91,9 +91,9 @@ class DataTransformer:
 
         # Encode categorical columns
         for col in self.column_order:
-            col_info = self.schema['column_info'][col]
+            col_info = self.schema["column_info"][col]
 
-            if col_info['type'] == 'categorical':
+            if col_info["type"] == "categorical":
                 le = LabelEncoder()
                 df_transformed[col] = le.fit_transform(df[col].astype(str))
                 self.label_encoders[col] = le
@@ -121,12 +121,14 @@ class DataTransformer:
         for col in self.column_order:
             if col in self.label_encoders:
                 df_transformed[col] = self.label_encoders[col].transform(
-                    df[col].astype(str))
+                    df[col].astype(str)
+                )
 
         # Convert to numpy and normalize
         data_array = df_transformed[self.column_order].values.astype(float)
-        normalized = (data_array - self.min_vals) / \
-            (self.max_vals - self.min_vals + 1e-8)
+        normalized = (data_array - self.min_vals) / (
+            self.max_vals - self.min_vals + 1e-8
+        )
 
         return normalized
 
@@ -145,23 +147,23 @@ class DataTransformer:
             DataFrame in original feature space with correct dtypes
         """
         # Denormalize
-        denormalized = data * \
-            (self.max_vals - self.min_vals + 1e-8) + self.min_vals
+        denormalized = data * (self.max_vals - self.min_vals + 1e-8) + self.min_vals
 
         # Create dataframe
         df = pd.DataFrame(denormalized, columns=self.column_order)
 
         # Decode categorical columns
         for col in self.column_order:
-            col_info = self.schema['column_info'][col]
+            col_info = self.schema["column_info"][col]
 
             if col in self.label_encoders:
                 # Round to nearest integer and clip to valid range
                 int_vals = np.round(df[col]).astype(int)
-                int_vals = np.clip(int_vals, 0, len(
-                    self.label_encoders[col].classes_) - 1)
+                int_vals = np.clip(
+                    int_vals, 0, len(self.label_encoders[col].classes_) - 1
+                )
                 df[col] = self.label_encoders[col].inverse_transform(int_vals)
-            elif col_info['type'] == 'discrete':
+            elif col_info["type"] == "discrete":
                 # Round continuous values for discrete columns
                 df[col] = np.round(df[col]).astype(int)
 
@@ -173,7 +175,9 @@ class PrivacyMechanism:
     Implements PATE privacy mechanism with noisy teacher aggregation.
     """
 
-    def __init__(self, epsilon: float = 1.0, delta: float = 1e-5, num_teachers: int = 10):
+    def __init__(
+        self, epsilon: float = 1.0, delta: float = 1e-5, num_teachers: int = 10
+    ):
         """
         Initialize privacy mechanism.
 
@@ -201,8 +205,7 @@ class PrivacyMechanism:
         Returns:
             Noisy aggregated votes (shape: [batch_size])
         """
-        noise = np.random.normal(
-            loc=0.0, scale=self.lambda_noise, size=votes.shape)
+        noise = np.random.normal(loc=0.0, scale=self.lambda_noise, size=votes.shape)
         noisy_votes = votes + noise
         return noisy_votes
 
@@ -210,9 +213,9 @@ class PrivacyMechanism:
 def save_metadata(
     filepath: str,
     transformer: DataTransformer,
-    training_config: Dict[str, Any],
-    privacy_config: Dict[str, Any],
-    seed: int = 42
+    training_config: dict[str, Any],
+    privacy_config: dict[str, Any],
+    seed: int = 42,
 ):
     """
     Save model metadata including schema and training configuration.
@@ -225,30 +228,32 @@ def save_metadata(
         seed: Random seed used
     """
     metadata = {
-        'schema': transformer.schema,
-        'column_order': transformer.column_order,
-        'training_config': training_config,
-        'privacy_config': privacy_config,
-        'seed': seed,
-        'label_encoders': {
-            col: {
-                'classes': le.classes_.tolist()
-            }
+        "schema": transformer.schema,
+        "column_order": transformer.column_order,
+        "training_config": training_config,
+        "privacy_config": privacy_config,
+        "seed": seed,
+        "label_encoders": {
+            col: {"classes": le.classes_.tolist()}
             for col, le in transformer.label_encoders.items()
         },
-        'normalization': {
-            'min_vals': transformer.min_vals.tolist() if transformer.min_vals is not None else None,
-            'max_vals': transformer.max_vals.tolist() if transformer.max_vals is not None else None
+        "normalization": {
+            "min_vals": transformer.min_vals.tolist()
+            if transformer.min_vals is not None
+            else None,
+            "max_vals": transformer.max_vals.tolist()
+            if transformer.max_vals is not None
+            else None,
         },
-        'model_type': 'PATEGAN',
-        'framework_version': '0.1.0'
+        "model_type": "PATEGAN",
+        "framework_version": "0.1.0",
     }
 
-    with open(filepath, 'w') as f:
+    with open(filepath, "w") as f:
         json.dump(metadata, f, indent=2)
 
 
-def load_metadata(filepath: str) -> Dict[str, Any]:
+def load_metadata(filepath: str) -> dict[str, Any]:
     """
     Load metadata from JSON file.
 
@@ -258,11 +263,11 @@ def load_metadata(filepath: str) -> Dict[str, Any]:
     Returns:
         Dictionary containing metadata
     """
-    with open(filepath, 'r') as f:
+    with open(filepath) as f:
         return json.load(f)
 
 
-def reconstruct_transformer(metadata: Dict[str, Any]) -> DataTransformer:
+def reconstruct_transformer(metadata: dict[str, Any]) -> DataTransformer:
     """
     Reconstruct DataTransformer from saved metadata.
 
@@ -273,24 +278,24 @@ def reconstruct_transformer(metadata: Dict[str, Any]) -> DataTransformer:
         Reconstructed DataTransformer
     """
     transformer = DataTransformer()
-    transformer.schema = metadata['schema']
-    transformer.column_order = metadata['column_order']
+    transformer.schema = metadata["schema"]
+    transformer.column_order = metadata["column_order"]
 
     # Reconstruct label encoders
-    for col, le_info in metadata['label_encoders'].items():
+    for col, le_info in metadata["label_encoders"].items():
         le = LabelEncoder()
-        le.classes_ = np.array(le_info['classes'])
+        le.classes_ = np.array(le_info["classes"])
         transformer.label_encoders[col] = le
 
     # Reconstruct normalization parameters
-    if metadata['normalization']['min_vals'] is not None:
-        transformer.min_vals = np.array(metadata['normalization']['min_vals'])
-        transformer.max_vals = np.array(metadata['normalization']['max_vals'])
+    if metadata["normalization"]["min_vals"] is not None:
+        transformer.min_vals = np.array(metadata["normalization"]["min_vals"])
+        transformer.max_vals = np.array(metadata["normalization"]["max_vals"])
 
     return transformer
 
 
-def partition_data(X: np.ndarray, num_partitions: int) -> List[np.ndarray]:
+def partition_data(X: np.ndarray, num_partitions: int) -> list[np.ndarray]:
     """
     Partition data for teacher discriminators.
 
@@ -313,6 +318,3 @@ def partition_data(X: np.ndarray, num_partitions: int) -> List[np.ndarray]:
         partitions.append(X[partition_indices])
 
     return partitions
-
-
-

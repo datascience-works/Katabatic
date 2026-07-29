@@ -82,7 +82,8 @@ class GANBLR(Model):
         self.k = None
         self.constraints = None
         self._ordinal_encoder = OrdinalEncoder(
-            dtype=int, handle_unknown='use_encoded_value', unknown_value=-1)
+            dtype=int, handle_unknown="use_encoded_value", unknown_value=-1
+        )
         self._label_encoder = LabelEncoder()
 
     def check_dependencies(self) -> bool:
@@ -113,10 +114,10 @@ class GANBLR(Model):
     @classmethod
     def get_required_dependencies(cls) -> list[str]:
         """Return a list of required dependencies for this model."""
-        return ['tensorflow', 'pgmpy', 'sklearn', 'scipy']
+        return ["tensorflow", "pgmpy", "sklearn", "scipy"]
 
     def fit(self, x, y, k=0, batch_size=32, epochs=10, warmup_epochs=1, verbose=1):
-        '''
+        """
         Fit the model to the given data.
 
         Parameters
@@ -146,7 +147,7 @@ class GANBLR(Model):
         -------
         self : object
             Fitted model.
-        '''
+        """
         epsilon = 1e-10
 
         if verbose is None or not isinstance(verbose, int):
@@ -164,8 +165,7 @@ class GANBLR(Model):
         if verbose:
             print("GANBLR: warmup done.", flush=True)
 
-        discriminator_label = np.hstack(
-            [np.ones(d.data_size), np.zeros(d.data_size)])
+        discriminator_label = np.hstack([np.ones(d.data_size), np.zeros(d.data_size)])
 
         epoch_iter, pbar = _epoch_progress(epochs, verbose)
         with _ganblr_quiet_logs():
@@ -173,10 +173,12 @@ class GANBLR(Model):
             for i in epoch_iter:
                 discriminator_input = np.vstack([x, syn_data[:, :-1]])
                 disc_input, disc_label = sample(
-                    discriminator_input, discriminator_label, frac=0.8)
+                    discriminator_input, discriminator_label, frac=0.8
+                )
                 disc = self._discrim()
                 d_history = disc.fit(
-                    disc_input, disc_label, batch_size=batch_size, epochs=1, verbose=0).history
+                    disc_input, disc_label, batch_size=batch_size, epochs=1, verbose=0
+                ).history
                 prob_fake = disc.predict(x, verbose=0)
                 ls = np.mean(-np.log(np.clip(1 - prob_fake, epsilon, 1)))
                 g_history = self._run_generator(loss=ls).history
@@ -201,7 +203,7 @@ class GANBLR(Model):
         self.is_fitted = True
         return self
 
-    def evaluate(self, x, y, model='lr') -> float:
+    def evaluate(self, x, y, model="lr") -> float:
         """
         In-memory TSTR-style check: train a small sklearn pipeline on fresh
         synthetic samples and score on the provided real ``(x, y)`` test set.
@@ -223,43 +225,48 @@ class GANBLR(Model):
         accuracy_score : float.
 
         """
-        from sklearn.linear_model import LogisticRegression
-        from sklearn.neural_network import MLPClassifier
         from sklearn.ensemble import RandomForestClassifier
-        from sklearn.preprocessing import OneHotEncoder
-        from sklearn.pipeline import Pipeline
+        from sklearn.linear_model import LogisticRegression
         from sklearn.metrics import accuracy_score
+        from sklearn.neural_network import MLPClassifier
+        from sklearn.pipeline import Pipeline
+        from sklearn.preprocessing import OneHotEncoder
 
         eval_model = None
         models = dict(
-            lr=LogisticRegression,
-            rf=RandomForestClassifier,
-            mlp=MLPClassifier
+            lr=LogisticRegression, rf=RandomForestClassifier, mlp=MLPClassifier
         )
-        if model in models.keys():
+        if model in models:
             eval_model = models[model]()
-        elif hasattr(model, 'fit') and hasattr(model, 'predict'):
+        elif hasattr(model, "fit") and hasattr(model, "predict"):
             eval_model = model
         else:
             raise Exception(
-                "Invalid Arugument `model`, Should be one of ['lr', 'mlp', 'rf'], or a model class that have sklearn-style `fit` and `predict` method.")
+                "Invalid Arugument `model`, Should be one of ['lr', 'mlp', 'rf'], or a model class that have sklearn-style `fit` and `predict` method."
+            )
 
         synthetic_data = self._sample()
-        synthetic_x, synthetic_y = synthetic_data[:,
-                                                  :-1], synthetic_data[:, -1]
+        synthetic_x, synthetic_y = synthetic_data[:, :-1], synthetic_data[:, -1]
         x_test = self._ordinal_encoder.transform(x)
         y_test = self._label_encoder.transform(y)
 
         categories = self._d.get_categories()
-        pipline = Pipeline([('encoder', OneHotEncoder(
-            categories=categories, handle_unknown='ignore')), ('model',  eval_model)])
+        pipline = Pipeline(
+            [
+                (
+                    "encoder",
+                    OneHotEncoder(categories=categories, handle_unknown="ignore"),
+                ),
+                ("model", eval_model),
+            ]
+        )
         pipline.fit(synthetic_x, synthetic_y)
         pred = pipline.predict(x_test)
         return accuracy_score(y_test, pred)
 
     def sample(self, size=None, verbose=1) -> np.ndarray:
         """
-        Generate synthetic data.     
+        Generate synthetic data.
 
         Parameters
         ----------
@@ -275,10 +282,10 @@ class GANBLR(Model):
             Generated synthetic data.
         """
         ordinal_data = self._sample(size, verbose)
-        origin_x = self._ordinal_encoder.inverse_transform(
-            ordinal_data[:, :-1])
-        origin_y = self._label_encoder.inverse_transform(
-            ordinal_data[:, -1]).reshape(-1, 1)
+        origin_x = self._ordinal_encoder.inverse_transform(ordinal_data[:, :-1])
+        origin_y = self._label_encoder.inverse_transform(ordinal_data[:, -1]).reshape(
+            -1, 1
+        )
         return np.hstack([origin_x, origin_y])
 
     def _sample(self, size=None, verbose=1) -> np.ndarray:
@@ -292,15 +299,15 @@ class GANBLR(Model):
         feature_cards = np.array(d.feature_uniques)
         # ensure sum of each constraint group equals to 1, then re concat the probs
         _idxs = np.cumsum([0] + d._kdbe.constraints_.tolist())
-        constraint_idxs = [(_idxs[i], _idxs[i+1]) for i in range(len(_idxs)-1)]
+        constraint_idxs = [(_idxs[i], _idxs[i + 1]) for i in range(len(_idxs) - 1)]
 
         probs = np.exp(self.__gen_weights[0])
         cpd_probs = [probs[start:end, :] for start, end in constraint_idxs]
-        cpd_probs = np.vstack([p/p.sum(axis=0) for p in cpd_probs])
+        cpd_probs = np.vstack([p / p.sum(axis=0) for p in cpd_probs])
 
         # assign the probs to the full cpd tables
         idxs = np.cumsum([0] + d._kdbe.high_order_feature_uniques_)
-        feature_idxs = [(idxs[i], idxs[i+1]) for i in range(len(idxs)-1)]
+        feature_idxs = [(idxs[i], idxs[i + 1]) for i in range(len(idxs) - 1)]
         have_value_idxs = d._kdbe.have_value_idxs_
         full_cpd_probs = []
         for have_value, (start, end) in zip(have_value_idxs, feature_idxs):
@@ -309,15 +316,12 @@ class GANBLR(Model):
             # (n_all_combination) Note: the order is (*parent, variable)
             have_value_ravel = have_value.ravel()
             # (n_classes * n_all_combination)
-            have_value_ravel_repeat = np.hstack(
-                [have_value_ravel] * d.num_classes)
+            have_value_ravel_repeat = np.hstack([have_value_ravel] * d.num_classes)
             # (n_classes * n_all_combination) <- (n_classes * n_high_order_feature_uniques)
-            full_cpd_prob_ravel = np.zeros_like(
-                have_value_ravel_repeat, dtype=float)
+            full_cpd_prob_ravel = np.zeros_like(have_value_ravel_repeat, dtype=float)
             full_cpd_prob_ravel[have_value_ravel_repeat] = cpd_prob_.T.ravel()
             # (n_classes * n_parent_combinations, n_variable_unique)
-            full_cpd_prob = full_cpd_prob_ravel.reshape(
-                -1, have_value.shape[-1]).T
+            full_cpd_prob = full_cpd_prob_ravel.reshape(-1, have_value.shape[-1]).T
             full_cpd_prob = _add_uniform(full_cpd_prob, noise=0)
             full_cpd_probs.append(full_cpd_prob)
 
@@ -329,12 +333,16 @@ class GANBLR(Model):
         # create TabularCPD objects
         evidences = d._kdbe.dependencies_
         feature_cpds = [
-            TabularCPD(str(name), feature_cards[name], table,
-                       evidence=[y_name, *[str(e) for e in evidences]],
-                       evidence_card=[d.num_classes, *feature_cards[evidences].tolist()])
+            TabularCPD(
+                str(name),
+                feature_cards[name],
+                table,
+                evidence=[y_name, *[str(e) for e in evidences]],
+                evidence_card=[d.num_classes, *feature_cards[evidences].tolist()],
+            )
             for (name, evidences), table in zip(evidences.items(), full_cpd_probs)
         ]
-        y_probs = (d.class_counts/d.data_size).reshape(-1, 1)
+        y_probs = (d.class_counts / d.data_size).reshape(-1, 1)
         y_cpd = TabularCPD(y_name, d.num_classes, y_probs)
 
         # create kDB model, then sample the data
@@ -342,7 +350,8 @@ class GANBLR(Model):
         model.add_cpds(y_cpd, *feature_cpds)
         sample_size = d.data_size if size is None else size
         result = BayesianModelSampling(model).forward_sample(
-            size=sample_size, show_progress=verbose > 0)
+            size=sample_size, show_progress=verbose > 0
+        )
         sorted_result = result[node_names].values
 
         return sorted_result
@@ -354,8 +363,9 @@ class GANBLR(Model):
         ohex = d.get_kdbe_x(self.k)
         self.constraints = softmax_weight(d.constraint_positions)
         elr = get_lr(ohex.shape[1], d.num_classes, self.constraints)
-        history = elr.fit(ohex, d.y, batch_size=self.batch_size,
-                          epochs=epochs, verbose=verbose)
+        history = elr.fit(
+            ohex, d.y, batch_size=self.batch_size, epochs=epochs, verbose=verbose
+        )
         self.__gen_weights = elr.get_weights()
         tf.keras.backend.clear_session()
         return history
@@ -366,13 +376,17 @@ class GANBLR(Model):
         ohex = d.get_kdbe_x(self.k)
         tf.keras.backend.clear_session()
         model = tf.keras.Sequential()
-        model.add(tf.keras.layers.Dense(
-            d.num_classes, input_dim=ohex.shape[1], activation='softmax', kernel_constraint=self.constraints))
-        model.compile(loss=elr_loss(loss), optimizer='adam',
-                      metrics=['accuracy'])
+        model.add(
+            tf.keras.layers.Dense(
+                d.num_classes,
+                input_dim=ohex.shape[1],
+                activation="softmax",
+                kernel_constraint=self.constraints,
+            )
+        )
+        model.compile(loss=elr_loss(loss), optimizer="adam", metrics=["accuracy"])
         model.set_weights(self.__gen_weights)
-        history = model.fit(
-            ohex, d.y, batch_size=self.batch_size, epochs=1, verbose=0)
+        history = model.fit(ohex, d.y, batch_size=self.batch_size, epochs=1, verbose=0)
         self.__gen_weights = model.get_weights()
         tf.keras.backend.clear_session()
         return history
@@ -380,10 +394,14 @@ class GANBLR(Model):
     def _discrim(self):
         tf = _ensure_tf()
         model = tf.keras.Sequential()
-        model.add(tf.keras.layers.Dense(
-            1, input_dim=self._d.num_features, activation='sigmoid'))
-        model.compile(loss='binary_crossentropy',
-                      optimizer='adam', metrics=['accuracy'])
+        model.add(
+            tf.keras.layers.Dense(
+                1, input_dim=self._d.num_features, activation="sigmoid"
+            )
+        )
+        model.compile(
+            loss="binary_crossentropy", optimizer="adam", metrics=["accuracy"]
+        )
         return model
 
     def _save_artifact_state(self, state_dir: str) -> None:
@@ -396,7 +414,7 @@ class GANBLR(Model):
         print(f"[GANBLR] Saved fitted model state to: {path}")
 
     @classmethod
-    def load_from_ref(cls, store: "ArtifactStore", ref: "ModelRef") -> "GANBLR":
+    def load_from_ref(cls, store: ArtifactStore, ref: ModelRef) -> GANBLR:
         import pickle
 
         import joblib
@@ -420,7 +438,7 @@ class GANBLR(Model):
             raise TypeError(f"Expected {cls.__name__} at {rel}, got {type(obj)}")
         return obj
 
-    def train(self, dataset, size_category='small', *args, **kwargs):
+    def train(self, dataset, size_category="small", *args, **kwargs):
         # parser = argparse.ArgumentParser(
         #     description="Train GANBLR and generate synthetic data")
         # parser.add_argument('--dataset', type=str, required=True,
@@ -440,7 +458,7 @@ class GANBLR(Model):
         data_dir = f"{dataset_name}"
 
         # Honor explicit synthetic_dir if provided (pipeline passes this)
-        explicit_synth_dir = kwargs.get('synthetic_dir')
+        explicit_synth_dir = kwargs.get("synthetic_dir")
         if explicit_synth_dir and isinstance(explicit_synth_dir, str):
             save_dir = explicit_synth_dir
         else:
@@ -468,8 +486,7 @@ class GANBLR(Model):
         y_synth = df_synth.iloc[:, -1]
 
         x_synth.to_csv(os.path.join(save_dir, "x_synth.csv"), index=False)
-        y_synth.to_csv(os.path.join(save_dir, "y_synth.csv"),
-                       index=False, header=True)
+        y_synth.to_csv(os.path.join(save_dir, "y_synth.csv"), index=False, header=True)
         print(f"\n Synthetic data saved to: {save_dir}")
 
         if artifact_state_dir:

@@ -13,12 +13,12 @@ If the real `tabddpm` package is installed, `models.py` will prefer that.
 
 from __future__ import annotations
 
-from typing import Optional, Sequence, Tuple
+from collections.abc import Sequence
 
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
 
 class MLPDiffusion(nn.Module):
@@ -66,11 +66,12 @@ class MLPDiffusion(nn.Module):
         layers.append(nn.Linear(in_dim, self.d_in))
         self.net = nn.Sequential(*layers)
 
-    def forward(self, x: torch.Tensor, y: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, y: torch.Tensor | None = None) -> torch.Tensor:
         if self.is_y_cond and self.num_classes > 0 and y is not None:
             # Ensure y is long for one-hot
             y_onehot = F.one_hot(
-                y.long().view(-1), num_classes=self.num_classes).float()
+                y.long().view(-1), num_classes=self.num_classes
+            ).float()
             x = torch.cat([x, y_onehot], dim=1)
         return self.net(x)
 
@@ -91,25 +92,30 @@ class GaussianMultinomialDiffusion(nn.Module):
         gaussian_loss_type: str = "mse",
         num_timesteps: int = 1000,
         scheduler: str = "cosine",
-        device: Optional[torch.device] = None,
+        device: torch.device | None = None,
     ) -> None:
         super().__init__()
         self._denoise_fn = denoise_fn
         self.register_buffer("_dummy", torch.zeros(1))  # for .to(device)
 
         # bookkeeping
-        self._K = np.array(num_classes, dtype=int) if len(
-            num_classes) > 0 else np.array([0], dtype=int)
+        self._K = (
+            np.array(num_classes, dtype=int)
+            if len(num_classes) > 0
+            else np.array([0], dtype=int)
+        )
         self._n_num = int(num_numerical_features)
         self._n_cat = int(np.sum(self._K > 0))
         self._gauss_loss = gaussian_loss_type
         self._steps = int(num_timesteps)
         self._scheduler = scheduler
 
-    def forward(self, x: torch.Tensor, y: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, y: torch.Tensor | None = None) -> torch.Tensor:
         return self._denoise_fn(x, y)
 
-    def mixed_loss(self, xb: torch.Tensor, out: dict) -> Tuple[torch.Tensor, torch.Tensor]:
+    def mixed_loss(
+        self, xb: torch.Tensor, out: dict
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute a simple reconstruction-style mixed loss.
 
         We split the loss into two parts for reporting parity:
@@ -147,7 +153,7 @@ class GaussianMultinomialDiffusion(nn.Module):
         batch_size: int,
         y_dist: torch.Tensor,
         ddim: bool = False,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Sample synthetic x and y.
 
         We draw y ~ Categorical(y_dist) if provided, otherwise zeros. Then we
@@ -175,14 +181,18 @@ class GaussianMultinomialDiffusion(nn.Module):
             end = min(start + batch_size, n)
             bsz = end - start
             # base noise
-            x0 = torch.randn(bsz, self._n_num,
-                             device=device) if self._n_num > 0 else None
+            x0 = (
+                torch.randn(bsz, self._n_num, device=device)
+                if self._n_num > 0
+                else None
+            )
             if self._n_cat > 0:
                 # uniform categorical indices per column
                 cat_cols = []
                 for k in self._K[self._K > 0]:
-                    idx = torch.randint(low=0, high=int(
-                        k), size=(bsz, 1), device=device).float()
+                    idx = torch.randint(
+                        low=0, high=int(k), size=(bsz, 1), device=device
+                    ).float()
                     cat_cols.append(idx)
                 xcat = torch.cat(cat_cols, dim=1) if cat_cols else None
             else:
@@ -201,14 +211,15 @@ class GaussianMultinomialDiffusion(nn.Module):
             x_out = self._denoise_fn(x_in, y_batch)
             # numeric clamp, categorical round
             if self._n_num > 0:
-                x_out[:, :self._n_num] = x_out[:,
-                                               :self._n_num].clamp_(-3.0, 3.0)
+                x_out[:, : self._n_num] = x_out[:, : self._n_num].clamp_(-3.0, 3.0)
             if self._n_cat > 0:
-                x_out[:, self._n_num:] = torch.round(
-                    x_out[:, self._n_num:]).clamp_(min=0)
+                x_out[:, self._n_num :] = torch.round(x_out[:, self._n_num :]).clamp_(
+                    min=0
+                )
             xs.append(x_out)
 
         X = torch.cat(xs, dim=0)[:n]
         return X, y_vec[:n]
+
 
 # Add your utility functions here.

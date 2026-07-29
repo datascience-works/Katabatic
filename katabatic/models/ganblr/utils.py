@@ -39,9 +39,7 @@ def _softmax_weight_class():
 
             def __init__(self, feature_uniques):
                 if isinstance(feature_uniques, np.ndarray):
-                    idxs = math_ops.cumsum(
-                        np.hstack([np.array([0]), feature_uniques])
-                    )
+                    idxs = math_ops.cumsum(np.hstack([np.array([0]), feature_uniques]))
                 else:
                     idxs = math_ops.cumsum([0] + feature_uniques)
                 idxs = [i.numpy() for i in idxs]
@@ -89,21 +87,31 @@ def elr_loss(KL_LOSS):
 
     return loss
 
-def KL_loss(prob_fake):
-    return np.mean(-np.log(np.subtract(1,prob_fake)))
 
-def get_lr(input_dim, output_dim, constraint=None,KL_LOSS=0):
+def KL_loss(prob_fake):
+    return np.mean(-np.log(np.subtract(1, prob_fake)))
+
+
+def get_lr(input_dim, output_dim, constraint=None, KL_LOSS=0):
     tf = _ensure_tf()
     model = tf.keras.Sequential()
-    model.add(tf.keras.layers.Dense(output_dim, input_dim=input_dim, activation='softmax',kernel_constraint=constraint))
-    model.compile(loss=elr_loss(KL_LOSS), optimizer='adam', metrics=['accuracy'])
-    #log_elr = model.fit(*train_data, validation_data=test_data, batch_size=batch_size,epochs=epochs)
-    return model 
+    model.add(
+        tf.keras.layers.Dense(
+            output_dim,
+            input_dim=input_dim,
+            activation="softmax",
+            kernel_constraint=constraint,
+        )
+    )
+    model.compile(loss=elr_loss(KL_LOSS), optimizer="adam", metrics=["accuracy"])
+    # log_elr = model.fit(*train_data, validation_data=test_data, batch_size=batch_size,epochs=epochs)
+    return model
+
 
 def sample(*arrays, n=None, frac=None, random_state=None):
-    '''
+    """
     generate sample random arrays from given arrays. The given arrays must be same size.
-    
+
     Parameters:
     --------------
     *arrays: arrays to be sampled.
@@ -118,17 +126,17 @@ def sample(*arrays, n=None, frac=None, random_state=None):
     --------------
     the sampled array(s). Passing in multiple arrays will result in the return of a tuple.
 
-    '''
+    """
     random = np.random
     if isinstance(random_state, int):
         random = random.RandomState(random_state)
     elif isinstance(random_state, np.random.RandomState):
         random = random_state
-    
+
     arr0 = arrays[0]
     original_size = len(arr0)
     if n is None and frac is None:
-        raise Exception('You must specify one of frac or size.')
+        raise Exception("You must specify one of frac or size.")
     if n is None:
         n = int(len(arr0) * frac)
 
@@ -136,32 +144,32 @@ def sample(*arrays, n=None, frac=None, random_state=None):
     if len(arrays) > 1:
         sampled_arrays = []
         for arr in arrays:
-            assert(len(arr) == original_size)
+            assert len(arr) == original_size
             sampled_arrays.append(arr[idxs])
         return tuple(sampled_arrays)
     else:
         return arr0[idxs]
 
+
 DEMO_DATASETS = {
-    'adult': {
-        'link':'https://raw.githubusercontent.com/chriszhangpodo/discretizedata/main/adult-dm.csv',
-        'params': {
-            'dtype' : int
-        }
+    "adult": {
+        "link": "https://raw.githubusercontent.com/chriszhangpodo/discretizedata/main/adult-dm.csv",
+        "params": {"dtype": int},
     },
-    'adult-raw':{
-        'link':'https://drive.google.com/uc?export=download&id=1iA-_qIC1xKQJ4nL2ugX1_XJQf8__xOY0',
-        'params': {}
-    }
+    "adult-raw": {
+        "link": "https://drive.google.com/uc?export=download&id=1iA-_qIC1xKQJ4nL2ugX1_XJQf8__xOY0",
+        "params": {},
+    },
 }
 
-def get_demo_data(name='adult'):
+
+def get_demo_data(name="adult"):
     """
     Download demo dataset from internet.
 
     Parameters
     ----------
-    name : str 
+    name : str
         Name of dataset. Should be one of ['adult', 'adult-raw'].
 
     Returns
@@ -169,14 +177,15 @@ def get_demo_data(name='adult'):
     data : pandas.DataFrame
         the demo dataset.
     """
-    assert(name in DEMO_DATASETS.keys())
-    return read_csv(DEMO_DATASETS[name]['link'], **DEMO_DATASETS[name]['params'])
+    assert name in DEMO_DATASETS
+    return read_csv(DEMO_DATASETS[name]["link"], **DEMO_DATASETS[name]["params"])
 
 
 class DataUtils:
     """
     useful data utils for the preparation before training.
     """
+
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -186,8 +195,10 @@ class DataUtils:
         yunique, ycounts = np.unique(y, return_counts=True)
         self.num_classes = len(yunique)
         self.class_counts = ycounts
-        self.feature_uniques = [len(np.unique(x[:,i])) for i in range(self.num_features)]
-        
+        self.feature_uniques = [
+            len(np.unique(x[:, i])) for i in range(self.num_features)
+        ]
+
         self.constraint_positions = None
         self._kdbe = None
 
@@ -210,7 +221,7 @@ class DataUtils:
         self.__kdbe_x = kdbex
         self.constraint_positions = self._kdbe.constraints_
         return kdbex
-    
+
     def clear(self):
         self._kdbe = None
         self.__kdbe_x = None
