@@ -2193,7 +2193,7 @@ description = "NVIDIA Collective Communication Library (NCCL) Runtime"
 optional = false
 python-versions = ">=3"
 groups = ["main"]
-markers = "platform_system == \"Linux\" and platform_machine != \"aarch64\" and (platform_machine == \"x86_64\" or extra == \"all\")"
+markers = "platform_system == \"Linux\" and platform_machine != \"aarch64\" and (platform_machine == \"x86_64\" or extra == \"eval\" or extra == \"all\")"
 files = [
     {file = "nvidia_nccl_cu12-2.27.5-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:31432ad4d1fb1004eb0c56203dc9bc2178a1ba69d1d9e02d64a6938ab5e40e7a"},
     {file = "nvidia_nccl_cu12-2.27.5-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:ad730cf15cb5d25fe849c6e6ca9eb5b76db16a80f13f425ac68d8e2e55624457"},
@@ -2478,6 +2478,7 @@ description = "A Python package for describing statistical models and for buildi
 optional = false
 python-versions = ">=3.6"
 groups = ["main"]
+markers = "extra == \"ganblr\" or extra == \"all\" or extra == \"tabddpm\" or extra == \"tabsyn\""
 files = [
     {file = "patsy-1.0.1-py2.py3-none-any.whl", hash = "sha256:751fb38f9e97e62312e921a1954b81e1bb2bcda4f5eeabaf94db251ee791509c"},
     {file = "patsy-1.0.1.tar.gz", hash = "sha256:e786a9391eec818c054e359b737bbce692f051aee4c661f4141cc88fb459c0c4"},
@@ -3719,7 +3720,7 @@ test = ["Cython", "array-api-strict (>=2.0)", "asv", "gmpy2", "hypothesis (>=6.3
 name = "setuptools"
 version = "80.9.0"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
-optional = false
+optional = true
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
@@ -3776,6 +3777,7 @@ description = "Statistical computations and models for Python"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
+markers = "extra == \"ganblr\" or extra == \"all\" or extra == \"tabddpm\" or extra == \"tabsyn\""
 files = [
     {file = "statsmodels-0.14.4-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:7a62f1fc9086e4b7ee789a6f66b3c0fc82dd8de1edda1522d30901a0aa45e42b"},
     {file = "statsmodels-0.14.4-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:46ac7ddefac0c9b7b607eed1d47d11e26fe92a1bc1f4d9af48aeed4e21e87981"},
@@ -3970,9 +3972,10 @@ and-cuda = ["nvidia-cublas-cu12 (==12.5.3.2)", "nvidia-cuda-cupti-cu12 (==12.5.8
 name = "tensorflow-io"
 version = "0.31.0"
 description = "TensorFlow IO"
-optional = false
+optional = true
 python-versions = ">=3.7, <3.12"
 groups = ["main"]
+markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
 files = [
     {file = "tensorflow_io-0.31.0-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:1de4c5812fd5e390ecf8fb95dcf5489c95fb05b1719aa6df2f9a577ea13b940e"},
     {file = "tensorflow_io-0.31.0-cp310-cp310-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:1f59628272c9afb4b5dbc5c989cd80d421aaa37d006b9348ef63c165c6a14c9e"},
@@ -4009,9 +4012,10 @@ tensorflow-rocm = ["tensorflow-rocm (>=2.11.0,<2.12.0)"]
 name = "tensorflow-io-gcs-filesystem"
 version = "0.31.0"
 description = "TensorFlow IO"
-optional = false
+optional = true
 python-versions = ">=3.7, <3.12"
 groups = ["main"]
+markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
 files = [
     {file = "tensorflow_io_gcs_filesystem-0.31.0-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:a71421f8d75a093b6aac65b4c8c8d2f768c3ca6215307cf8c16192e62d992bcf"},
     {file = "tensorflow_io_gcs_filesystem-0.31.0-cp310-cp310-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:359134ecbd3bf938bb0cf65be4526106c30da461b2e2ce05446a229ed35f6832"},
@@ -4608,7 +4612,7 @@ description = "XGBoost Python Package"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"all\""
+markers = "extra == \"eval\" or extra == \"all\""
 files = [
     {file = "xgboost-3.0.2-py3-none-macosx_10_15_x86_64.whl", hash = "sha256:923f46cd1b25c0a39fc98e969fa0a72a1a84feb7f55797cb3385962cd8d3b2d4"},
     {file = "xgboost-3.0.2-py3-none-macosx_12_0_arm64.whl", hash = "sha256:5c4e377c86df815669939646b3abe7a20559e4d4c0f5c2ab10c31252e7a9d7d9"},
@@ -4887,19 +4891,19 @@ multidict = ">=4.0"
 propcache = ">=0.2.1"
 
 [extras]
-all = ["category-encoders", "datasets", "pgmpy", "pyitlib", "rtdl_revisiting_models", "tabpfn", "tensorflow", "tf-keras", "tomli", "tomli-w", "torch", "tqdm", "transformers", "xgboost"]
+all = ["category-encoders", "datasets", "pgmpy", "pyitlib", "rtdl_revisiting_models", "statsmodels", "tabpfn", "tensorflow", "tensorflow-io", "tf-keras", "tomli", "tomli-w", "torch", "tqdm", "transformers", "xgboost"]
 codi = ["torch"]
 ctgan = ["torch"]
-dev = []
-ganblr = ["pgmpy", "pyitlib", "tensorflow", "tf-keras"]
+eval = ["xgboost"]
+ganblr = ["pgmpy", "pyitlib", "tensorflow", "tensorflow-io", "tf-keras"]
 great = ["datasets", "torch", "transformers"]
 medgan = ["torch"]
-pategan = ["tensorflow"]
+pategan = ["tensorflow", "tensorflow-io"]
 tabddpm = ["category-encoders", "rtdl_revisiting_models", "torch"]
 tabpfgen = ["tabpfn", "torch"]
-tabsyn = ["category-encoders", "scipy", "tomli", "tomli-w", "torch", "tqdm"]
+tabsyn = ["category-encoders", "tomli", "tomli-w", "torch", "tqdm"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.12"
-content-hash = "fe5cfd0f364be24fb6d86666cc42f986104abd598d3c14ef2e5a836208f9305f"
+content-hash = "4bdeebab28e93bda6c6e7577988d495bd959a4933a18e260fe74d1a50a5cf9a2"
