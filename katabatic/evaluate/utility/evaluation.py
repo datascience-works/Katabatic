@@ -1,17 +1,16 @@
 import numpy as np
 import pandas as pd
 import sklearn.base as skbase
-from sklearn.preprocessing import LabelEncoder
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.svm import LinearSVC
-from sklearn.neural_network import MLPClassifier
 from sklearn.calibration import CalibratedClassifierCV
-from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import Pipeline as SklearnPipeline
-from sklearn.model_selection import StratifiedKFold
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
+from sklearn.model_selection import StratifiedKFold
+from sklearn.neural_network import MLPClassifier
+from sklearn.pipeline import Pipeline as SklearnPipeline
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.svm import LinearSVC
+from sklearn.tree import DecisionTreeClassifier
 
 from katabatic.evaluate.base_evaluation import Evaluation
 
@@ -19,20 +18,34 @@ from katabatic.evaluate.base_evaluation import Evaluation
 def _make_classifiers():
     """Return a fresh dict of classifier pipelines."""
     return {
-        'LR': SklearnPipeline([
-            ('scaler', StandardScaler()),
-            ('clf', LogisticRegression(max_iter=1000, random_state=42)),
-        ]),
-        'DT': DecisionTreeClassifier(random_state=42),
-        'RF': RandomForestClassifier(n_estimators=100, random_state=42),
-        'LinearSVM': SklearnPipeline([
-            ('scaler', StandardScaler()),
-            ('clf', CalibratedClassifierCV(LinearSVC(max_iter=2000, random_state=42))),
-        ]),
-        'MLP': SklearnPipeline([
-            ('scaler', StandardScaler()),
-            ('clf', MLPClassifier(hidden_layer_sizes=(100,), max_iter=500, random_state=42)),
-        ]),
+        "LR": SklearnPipeline(
+            [
+                ("scaler", StandardScaler()),
+                ("clf", LogisticRegression(max_iter=1000, random_state=42)),
+            ]
+        ),
+        "DT": DecisionTreeClassifier(random_state=42),
+        "RF": RandomForestClassifier(n_estimators=100, random_state=42),
+        "LinearSVM": SklearnPipeline(
+            [
+                ("scaler", StandardScaler()),
+                (
+                    "clf",
+                    CalibratedClassifierCV(LinearSVC(max_iter=2000, random_state=42)),
+                ),
+            ]
+        ),
+        "MLP": SklearnPipeline(
+            [
+                ("scaler", StandardScaler()),
+                (
+                    "clf",
+                    MLPClassifier(
+                        hidden_layer_sizes=(100,), max_iter=500, random_state=42
+                    ),
+                ),
+            ]
+        ),
     }
 
 
@@ -83,26 +96,32 @@ class UtilityEvaluation(Evaluation):
         self.n_folds = n_folds
 
     def evaluate(self) -> dict:
-        X_synth = self._encode(self.synthetic_data.drop(columns=[self.target_col])).values
-        X_real  = self._encode(self.real_data.drop(columns=[self.target_col])).values
+        X_synth = self._encode(
+            self.synthetic_data.drop(columns=[self.target_col])
+        ).values
+        X_real = self._encode(self.real_data.drop(columns=[self.target_col])).values
 
-        y_real_raw  = self.real_data[self.target_col]
+        y_real_raw = self.real_data[self.target_col]
         y_synth_raw = self.synthetic_data[self.target_col]
-        y_test_raw  = self.test_data[self.target_col] if self.test_data is not None else y_real_raw
+        y_test_raw = (
+            self.test_data[self.target_col]
+            if self.test_data is not None
+            else y_real_raw
+        )
 
         if pd.api.types.is_numeric_dtype(y_real_raw):
-            y_real  = y_real_raw.values
-            y_synth = pd.to_numeric(y_synth_raw, errors='coerce').values
-            y_test  = pd.to_numeric(y_test_raw,  errors='coerce').values
+            y_real = y_real_raw.values
+            y_synth = pd.to_numeric(y_synth_raw, errors="coerce").values
+            y_test = pd.to_numeric(y_test_raw, errors="coerce").values
         else:
             le = LabelEncoder()
             sources = [y_real_raw, y_synth_raw]
             if self.test_data is not None:
                 sources.append(y_test_raw)
             le.fit(pd.concat(sources).astype(str))
-            y_real  = le.transform(y_real_raw.astype(str))
+            y_real = le.transform(y_real_raw.astype(str))
             y_synth = le.transform(y_synth_raw.astype(str))
-            y_test  = le.transform(y_test_raw.astype(str))
+            y_test = le.transform(y_test_raw.astype(str))
 
         if self.test_data is not None:
             X_test = self._encode(self.test_data.drop(columns=[self.target_col])).values
@@ -116,24 +135,27 @@ class UtilityEvaluation(Evaluation):
         trtr_results = {}
 
         for name, clf in _make_classifiers().items():
-            tstr_results[name] = self._tstr(clf, X_synth, y_synth, X_test, y_test, cv, is_binary)
+            tstr_results[name] = self._tstr(
+                clf, X_synth, y_synth, X_test, y_test, cv, is_binary
+            )
 
         for name, clf in _make_classifiers().items():
-            trtr_results[name] = self._trtr(clf, X_real, y_real, X_test, y_test, cv, is_binary)
+            trtr_results[name] = self._trtr(
+                clf, X_real, y_real, X_test, y_test, cv, is_binary
+            )
 
         delta = self._compute_delta(tstr_results, trtr_results)
         utility_score = self._compute_score(delta)
 
         results = {
-            'tstr': tstr_results,
-            'trtr': trtr_results,
-            'delta': delta,
-            'utility_score': round(utility_score, 4),
+            "tstr": tstr_results,
+            "trtr": trtr_results,
+            "delta": delta,
+            "utility_score": round(utility_score, 4),
         }
 
         self._print_summary(results)
         return results
-
 
     def _encode(self, df: pd.DataFrame) -> pd.DataFrame:
         """Label-encode non-numeric columns so classifiers can consume them."""
@@ -150,7 +172,7 @@ class UtilityEvaluation(Evaluation):
 
     def _tstr(self, clf, X_synth, y_synth, X_test, y_test, cv, is_binary):
         """Train on each synthetic CV fold, test on the held-out test set."""
-        fold_metrics = {'accuracy': [], 'f1': [], 'auc': []}
+        fold_metrics = {"accuracy": [], "f1": [], "auc": []}
         skipped = 0
 
         for train_idx, _ in cv.split(X_synth, y_synth):
@@ -173,7 +195,7 @@ class UtilityEvaluation(Evaluation):
 
     def _trtr(self, clf, X_real, y_real, X_test, y_test, cv, is_binary):
         """Train on real CV folds, test on the held-out test set."""
-        fold_metrics = {'accuracy': [], 'f1': [], 'auc': []}
+        fold_metrics = {"accuracy": [], "f1": [], "auc": []}
 
         use_held_out = self.test_data is not None
         for train_idx, test_idx in cv.split(X_real, y_real):
@@ -191,12 +213,12 @@ class UtilityEvaluation(Evaluation):
     def _score(self, clf, X, y, is_binary):
         metrics = {}
         y_pred = clf.predict(X)
-        metrics['accuracy'] = accuracy_score(y, y_pred)
-        metrics['f1'] = f1_score(y, y_pred, average='weighted', zero_division=0)
+        metrics["accuracy"] = accuracy_score(y, y_pred)
+        metrics["f1"] = f1_score(y, y_pred, average="weighted", zero_division=0)
         if is_binary:
             try:
                 y_prob = clf.predict_proba(X)[:, 1]
-                metrics['auc'] = roc_auc_score(y, y_prob)
+                metrics["auc"] = roc_auc_score(y, y_prob)
             except Exception as e:
                 print(f"  [WARNING] AUC could not be computed: {e}")
         return metrics
@@ -204,8 +226,8 @@ class UtilityEvaluation(Evaluation):
     def _aggregate(self, fold_metrics):
         return {
             metric: {
-                'mean': round(float(np.mean(vals)), 4),
-                'std': round(float(np.std(vals)), 4),
+                "mean": round(float(np.mean(vals)), 4),
+                "std": round(float(np.std(vals)), 4),
             }
             for metric, vals in fold_metrics.items()
             if vals
@@ -218,8 +240,8 @@ class UtilityEvaluation(Evaluation):
             for metric in tstr_results[clf_name]:
                 if metric in trtr_results.get(clf_name, {}):
                     gap = (
-                        trtr_results[clf_name][metric]['mean']
-                        - tstr_results[clf_name][metric]['mean']
+                        trtr_results[clf_name][metric]["mean"]
+                        - tstr_results[clf_name][metric]["mean"]
                     )
                     delta[clf_name][metric] = round(gap, 4)
         return delta
@@ -234,12 +256,13 @@ class UtilityEvaluation(Evaluation):
     def _print_summary(self, results):
         print("\n=== Utility Evaluation ===")
         print(f"Overall utility score: {results['utility_score']:.4f}")
-        print(f"\n{'Classifier':<12} {'Metric':<10} {'TSTR mean':<12} {'TRTR mean':<12} {'Delta':<8}")
+        print(
+            f"\n{'Classifier':<12} {'Metric':<10} {'TSTR mean':<12} {'TRTR mean':<12} {'Delta':<8}"
+        )
         print("-" * 56)
-        for clf in results['tstr']:
-            for metric in results['tstr'][clf]:
-                tstr_m = results['tstr'][clf][metric]['mean']
-                trtr_m = results['trtr'][clf][metric]['mean']
-                d = results['delta'][clf].get(metric, '-')
+        for clf in results["tstr"]:
+            for metric in results["tstr"][clf]:
+                tstr_m = results["tstr"][clf][metric]["mean"]
+                trtr_m = results["trtr"][clf][metric]["mean"]
+                d = results["delta"][clf].get(metric, "-")
                 print(f"{clf:<12} {metric:<10} {tstr_m:<12.4f} {trtr_m:<12.4f} {d}")
-

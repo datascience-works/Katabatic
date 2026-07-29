@@ -55,7 +55,9 @@ def _serialize_list_str(xs: list[str]) -> str:
 def _find_project_root() -> Path:
     """Return repo root when run from a checkout, else cwd."""
     for candidate in [Path.cwd(), *Path.cwd().parents]:
-        if (candidate / "pyproject.toml").is_file() and (candidate / "katabatic").is_dir():
+        if (candidate / "pyproject.toml").is_file() and (
+            candidate / "katabatic"
+        ).is_dir():
             return candidate
     return Path.cwd()
 
@@ -71,7 +73,8 @@ def init_model(model_name: str, dependencies: list[str] | None = None) -> None:
     dir_name = re.sub(r"(?<!^)(?=[A-Z])", "_", model_name).lower()
     if not re.fullmatch(r"[a-z][a-z0-9_]*", dir_name):
         raise ValueError(
-            "Invalid model name. Use letters, numbers and underscores; start with a letter.")
+            "Invalid model name. Use letters, numbers and underscores; start with a letter."
+        )
     class_name = "".join(word.capitalize() for word in dir_name.split("_"))
 
     from katabatic.models.registry import ModelRegistry

@@ -59,7 +59,9 @@ class DiversityEvaluation(Evaluation):
         self.gower_sample_size = gower_sample_size
 
         if categorical_cols is None and continuous_cols is None:
-            self.categorical_cols, self.continuous_cols = get_column_types(self.real_data, exclude_last=False)
+            self.categorical_cols, self.continuous_cols = get_column_types(
+                self.real_data, exclude_last=False
+            )
             print(
                 "[WARNING] categorical_cols and continuous_cols were not provided. "
                 "Auto-detecting from dtypes — integer-encoded categorical columns will be "
@@ -78,19 +80,25 @@ class DiversityEvaluation(Evaluation):
         # Use len > 1 (not truthiness) to guard against dicts that only contain
         # the 'avg' sentinel when all columns were skipped — that would be truthy
         # but would incorrectly contribute a 1.0 score.
-        active = [s for s in [
-            cat_coverage.get('avg') if len(cat_coverage) > 1 else None,
-            bin_coverage.get('avg') if len(bin_coverage) > 1 else None,
-            gower_similarity,
-        ] if s is not None]
+        active = [
+            s
+            for s in [
+                cat_coverage.get("avg") if len(cat_coverage) > 1 else None,
+                bin_coverage.get("avg") if len(bin_coverage) > 1 else None,
+                gower_similarity,
+            ]
+            if s is not None
+        ]
 
         diversity_score = round(float(np.mean(active)), 4) if active else 0.0
 
         results = {
-            'category_coverage': cat_coverage,
-            'bin_coverage': bin_coverage,
-            'gower_similarity': round(gower_similarity, 4) if gower_similarity is not None else None,
-            'diversity_score': diversity_score,
+            "category_coverage": cat_coverage,
+            "bin_coverage": bin_coverage,
+            "gower_similarity": round(gower_similarity, 4)
+            if gower_similarity is not None
+            else None,
+            "diversity_score": diversity_score,
         }
 
         self._print_summary(results)
@@ -111,9 +119,10 @@ class DiversityEvaluation(Evaluation):
             coverage = len(real_cats & synth_cats) / len(real_cats)
             scores[col] = round(coverage, 4)
 
-        scores['avg'] = round(float(np.mean(list(scores.values()))), 4) if scores else 0.0
+        scores["avg"] = (
+            round(float(np.mean(list(scores.values()))), 4) if scores else 0.0
+        )
         return scores
-
 
     def _compute_bin_coverage(self) -> dict:
         if not self.continuous_cols:
@@ -146,9 +155,10 @@ class DiversityEvaluation(Evaluation):
             bins_hit = len(set(synth_bin_ids))
             scores[col] = round(bins_hit / self.n_bins, 4)
 
-        scores['avg'] = round(float(np.mean(list(scores.values()))), 4) if scores else 0.0
+        scores["avg"] = (
+            round(float(np.mean(list(scores.values()))), 4) if scores else 0.0
+        )
         return scores
-
 
     def _compute_gower_similarity(self):
         all_cols = self.categorical_cols + self.continuous_cols
@@ -156,12 +166,12 @@ class DiversityEvaluation(Evaluation):
         if len(shared) == 0:
             return None
 
-        real_clean  = self.real_data[shared].dropna()
+        real_clean = self.real_data[shared].dropna()
         synth_clean = self.synthetic_data[shared].dropna()
         n = min(self.gower_sample_size, len(real_clean), len(synth_clean))
         if n == 0:
             return None
-        real_sample  = real_clean.sample(n=n, random_state=42)
+        real_sample = real_clean.sample(n=n, random_state=42)
         synth_sample = synth_clean.sample(n=n, random_state=42)
 
         # Pre-compute ranges for continuous columns (from full real data)
@@ -173,7 +183,9 @@ class DiversityEvaluation(Evaluation):
         }
 
         real_dists = self._pairwise_gower(real_sample, cat_shared, cont_shared, ranges)
-        synth_dists = self._pairwise_gower(synth_sample, cat_shared, cont_shared, ranges)
+        synth_dists = self._pairwise_gower(
+            synth_sample, cat_shared, cont_shared, ranges
+        )
 
         if len(real_dists) == 0 or len(synth_dists) == 0:
             return None
@@ -195,9 +207,13 @@ class DiversityEvaluation(Evaluation):
             return np.array([])
 
         # Pre-extract numpy arrays for speed
-        cont_data = df[cont_cols].values.astype(float) if cont_cols else np.empty((n, 0))
+        cont_data = (
+            df[cont_cols].values.astype(float) if cont_cols else np.empty((n, 0))
+        )
         cat_data = df[cat_cols].values if cat_cols else np.empty((n, 0), dtype=object)
-        cont_ranges = np.array([ranges.get(c, 1.0) or 1.0 for c in cont_cols], dtype=float)
+        cont_ranges = np.array(
+            [ranges.get(c, 1.0) or 1.0 for c in cont_cols], dtype=float
+        )
 
         distances = []
         for i in range(n):
@@ -206,7 +222,9 @@ class DiversityEvaluation(Evaluation):
 
                 # Continuous: normalised absolute difference
                 if cont_cols:
-                    d += float(np.sum(np.abs(cont_data[i] - cont_data[j]) / cont_ranges))
+                    d += float(
+                        np.sum(np.abs(cont_data[i] - cont_data[j]) / cont_ranges)
+                    )
 
                 # Categorical: indicator (0 = same, 1 = different)
                 if cat_cols:
@@ -216,22 +234,23 @@ class DiversityEvaluation(Evaluation):
 
         return np.array(distances)
 
-
     def _print_summary(self, results):
         print("\n=== Diversity Evaluation ===")
         print(f"Overall diversity score: {results['diversity_score']:.4f}")
 
-        if results['category_coverage']:
-            print(f"\nCategory Coverage (% of real categories in synth)")
-            for col, val in results['category_coverage'].items():
-                tag = '  avg' if col == 'avg' else f'  {col}'
+        if results["category_coverage"]:
+            print("\nCategory Coverage (% of real categories in synth)")
+            for col, val in results["category_coverage"].items():
+                tag = "  avg" if col == "avg" else f"  {col}"
                 print(f"{tag:<32} {val * 100:.1f}%")
 
-        if results['bin_coverage']:
+        if results["bin_coverage"]:
             print(f"\nBin Coverage ({self.n_bins} bins, % bins hit by synth)")
-            for col, val in results['bin_coverage'].items():
-                tag = '  avg' if col == 'avg' else f'  {col}'
+            for col, val in results["bin_coverage"].items():
+                tag = "  avg" if col == "avg" else f"  {col}"
                 print(f"{tag:<32} {val * 100:.1f}%")
 
-        if results['gower_similarity'] is not None:
-            print(f"\nGower distance distribution similarity: {results['gower_similarity']:.4f}")
+        if results["gower_similarity"] is not None:
+            print(
+                f"\nGower distance distribution similarity: {results['gower_similarity']:.4f}"
+            )

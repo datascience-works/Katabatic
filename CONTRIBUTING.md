@@ -27,10 +27,9 @@ Katabatic follows a modular architecture with three main components:
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │     Models      │    │    Pipelines    │    │   Evaluations   │
 │                 │    │                 │    │                 │
-│ • CTGAN         │    │ • Evaluation    │    │ • Fidelity      │
-│ • GReaT         │ ───►   Pipeline     │ ───► • Utility       │
-│ • CustomModel   │    │ • Custom        │    │ • Privacy       │
-│ • ...8 total    │    │   Pipeline      │    │ • + 3 more      │
+│ • GANBLR        │    │ • TrainTestSplit│    │ • TSTR          │
+│ • GReaT         │ ───► • CrossValidation│ ───► • Custom Evals │
+│ • CustomModel   │    │ • CustomPipeline│    │ • Metrics       │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
@@ -50,64 +49,53 @@ katabatic/
 │   ├── models/                   # Model implementations
 │   │   ├── __init__.py
 │   │   ├── base_model.py         # Abstract base class for all models
-│   │   ├── registry.py           # Dynamic model loader
-│   │   ├── ctgan/                # CTGAN implementation
-│   │   ├── codi/                 # CoDi implementation
-│   │   ├── tabddpm/              # TabDDPM implementation
-│   │   ├── ganblr/               # GANBLR implementation
+│   │   ├── ganblr/               # GANBLR model implementation
 │   │   │   ├── __init__.py
-│   │   │   ├── models.py
-│   │   │   ├── kdb.py
-│   │   │   ├── utils.py
-│   │   │   ├── poetry.lock
-│   │   │   └── pyproject.toml   # Model-specific dependencies
-│   │   ├── great/                # GReaT implementation
-│   │   │   ├── models.py
-│   │   │   ├── great_dataset.py
-│   │   │   ├── great_trainer.py
-│   │   │   ├── great_utils.py
-│   │   │   ├── great_start.py
-│   │   │   ├── poetry.lock
-│   │   │   └── pyproject.toml   # Model-specific dependencies
-│   │   ├── tabsyn/               # Tabsyn implementation
-│   │   ├── medgan/               # MedGAN implementation
-│   │   └── pategan/              # PATEGAN implementation
+│   │   │   ├── models.py         # Main GANBLR class
+│   │   │   ├── kdb.py           # K-Dependence Bayesian classifier
+│   │   │   ├── utils.py         # GANBLR-specific utilities
+│   │   │   ├── poetry.lock      # Model-specific dependencies
+│   │   │   └── pyproject.toml   # Model configuration
+│   │   └── great/               # GReaT model implementation
+│   │       ├── models.py        # Main GReaT class
+│   │       ├── great_dataset.py # Dataset handling
+│   │       ├── great_trainer.py # Training logic
+│   │       ├── great_utils.py   # GReaT-specific utilities
+│   │       ├── great_start.py   # Sampling initialization
+│   │       ├── poetry.lock      # Model-specific dependencies
+│   │       └── pyproject.toml   # Model configuration
 │   ├── pipeline/                 # Pipeline implementations
 │   │   ├── __init__.py
 │   │   ├── base_pipeline.py      # Abstract base class for pipelines
-│   │   └── evaluation_pipeline.py  # SyntheticEvaluationPipeline (main)
+│   │   ├── train_test_split/     # Train-test split pipeline
+│   │   │   └── pipeline.py
+│   │   └── cross_validation/     # Cross-validation pipeline
+│   │       └── pipeline.py
 │   ├── evaluate/                 # Evaluation implementations
 │   │   ├── __init__.py
 │   │   ├── base_evaluation.py    # Abstract base class for evaluations
-│   │   ├── fidelity/             # JSD + Wasserstein + Correlation
-│   │   ├── utility/              # TSTR vs TRTR across 5 classifiers
-│   │   ├── diversity/            # Category + Bin + Gower coverage
-│   │   ├── privacy/              # NNDR + duplicate detection
-│   │   ├── consistency/          # Discriminator + constraints + feature importance
-│   │   ├── stability/            # Multi-run variance
-│   │   └── report/               # EvaluationReport + composite scoring
-│   └── utils/                    # Shared utilities
-│       ├── column_types.py       # Categorical/continuous auto-detection
-│       ├── split_dataset.py      # Stratified train/test split
-│       └── preprocess.py         # encode_preprocess + data cleaning
-├── benchmarks/
-│   ├── runner.py                 # RunConfig + shared pipeline helpers
-│   ├── splits/                   # Preprocessed train/test splits per dataset
-│   ├── synthetic/                # Generated synthetic data per dataset/model
-│   ├── results/                  # Evaluation results per dataset/model
-│   └── examples/                 # Reference run scripts
-│       ├── run_ctgan_adult.py
-│       ├── run_codi_adult.py
-│       ├── run_tabddpm_adult.py
-│       └── run_ctgan_bank_marketing.py
-├── datasets/
-│   ├── adult.csv
-│   └── bank_marketing.csv
-├── scaffold.py                   # Scaffolds a new model (python scaffold.py init-model <name>)
-├── pyproject.toml                # Main project dependencies
-├── poetry.lock                   # Locked dependencies
-├── Makefile                      # Build and development commands
-└── README.md                     # User documentation
+│   │   └── tstr/                # TSTR evaluation
+│   │       └── evaluation.py
+│   ├── utils/                    # Shared utilities
+│   │   └── split_dataset.py     # Dataset splitting utilities
+│   └── synthetic/               # Generated synthetic data storage
+├── raw_data/                    # Original datasets
+├── preprocessed_data/            # Preprocessed datasets
+├── sample_data/                 # Train/test splits organized by dataset
+│   ├── adult/
+│   ├── car/
+│   └── [other_datasets]/
+├── synthetic/                   # Synthetic data organized by dataset/model
+│   └── car/
+│       └── ganblr/
+├── Results/                     # Evaluation results
+├── utils.py                     # Top-level utility functions
+├── main.py                      # Command-line interface
+├── example.ipynb               # Usage examples
+├── pyproject.toml              # Main project dependencies
+├── poetry.lock                 # Locked dependencies
+├── Makefile                    # Build and development commands
+└── README.md                   # User documentation
 ```
 
 ### Key Design Patterns
@@ -126,7 +114,7 @@ katabatic/
 #### 3. Data Flow
 
 ```
-Raw Data → encode_preprocess → Train/Test Split → Model Training → Synthetic Generation → SyntheticEvaluationPipeline → EvaluationReport
+Raw Data → Preprocessing → Train/Test Split → Model Training → Synthetic Generation → Evaluation → Results
 ```
 
 ## 🔄 Development Workflow
@@ -161,8 +149,8 @@ python -c "from katabatic.models.ganblr.models import GANBLR; print('Setup succe
    # Run existing tests
    pytest tests/
 
-   # Run a benchmark example
-   python benchmarks/examples/run_ctgan_adult.py
+   # Test with example notebook
+   jupyter lab example.ipynb
    ```
 
 4. **Update Documentation**
@@ -174,14 +162,6 @@ python -c "from katabatic.models.ganblr.models import GANBLR; print('Setup succe
 5. **Submit Pull Request**
 
 ## 🤖 Adding New Models
-
-The recommended way to add a new model is via the scaffold tool, which generates all the boilerplate automatically:
-
-```bash
-python scaffold.py init-model your_model_name dep1 dep2
-```
-
-This creates `katabatic/models/your_model_name/` with `__init__.py`, `models.py`, and `utils.py` pre-filled, and registers the model in `katabatic/models/registry.py`.
 
 ### Step 1: Create Model Directory Structure
 
@@ -207,8 +187,7 @@ Create `katabatic/models/your_model_name/models.py`:
 from katabatic.models.base_model import Model
 import pandas as pd
 import numpy as np
-import os
-from typing import Optional
+from typing import Union, Optional, Any
 
 
 class YourModelName(Model):
@@ -223,44 +202,77 @@ class YourModelName(Model):
         Description of parameter 2
     """
 
-    def __init__(self, param1=None, param2=None):
+    def __init__(self, param1: Any, param2: Optional[Any] = None):
         self.param1 = param1
         self.param2 = param2
-        self.is_fitted = False
+        self._is_fitted = False
 
-    def train(
-        self,
-        data_dir: str,
-        *args,
-        categorical_cols: Optional[list] = None,
-        continuous_cols: Optional[list] = None,
-        **kwargs,
-    ) -> "YourModelName":
+    def train(self, dataset: str, size_category: str = 'small', *args, **kwargs) -> None:
         """
         Train the model on the given dataset.
 
         Parameters
         ----------
-        data_dir : str
-            Path to the directory containing x_train.csv and y_train.csv
-        categorical_cols : list, optional
-            Names of categorical columns
-        continuous_cols : list, optional
-            Names of continuous columns
+        dataset : str
+            Path to the dataset directory containing train/test splits
+        size_category : str, default='small'
+            Dataset size category for optimization
+        *args, **kwargs
+            Additional training parameters
+
+        Note
+        ----
+        Expected dataset structure:
+        dataset/
+        ├── x_train.csv
+        ├── y_train.csv
+        ├── x_test.csv
+        └── y_test.csv
+        """
+        # Load training data
+        x_train = pd.read_csv(f"{dataset}/x_train.csv")
+        y_train = pd.read_csv(f"{dataset}/y_train.csv").values.ravel()
+
+        # Implement your training logic here
+        # Example:
+        self._fit_internal(x_train, y_train, **kwargs)
+        self._is_fitted = True
+
+        # Save synthetic data
+        synthetic_x, synthetic_y = self._generate_synthetic_data(len(x_train))
+        self._save_synthetic_data(synthetic_x, synthetic_y, kwargs.get('synthetic_dir'))
+
+    def evaluate(self, x_test: np.ndarray, y_test: np.ndarray, **kwargs) -> float:
+        """
+        Evaluate the model using TSTR methodology.
+
+        Parameters
+        ----------
+        x_test : np.ndarray
+            Test features
+        y_test : np.ndarray
+            Test labels
+        **kwargs
+            Additional evaluation parameters
 
         Returns
         -------
-        self
+        float
+            Evaluation score (e.g., accuracy)
         """
-        x_train = pd.read_csv(os.path.join(data_dir, "x_train.csv"))
-        y_train = pd.read_csv(os.path.join(data_dir, "y_train.csv")).squeeze()
+        if not self._is_fitted:
+            raise ValueError("Model must be trained before evaluation")
 
-        # Implement your training logic here
-        self._fit_internal(x_train, y_train, **kwargs)
-        self.is_fitted = True
-        return self
+        # Implement your evaluation logic
+        # This typically involves:
+        # 1. Generate synthetic data
+        # 2. Train a classifier on synthetic data
+        # 3. Test on real data
+        # 4. Return performance metric
 
-    def sample(self, n_samples: int, **kwargs) -> pd.DataFrame:
+        return score
+
+    def sample(self, n_samples: int, **kwargs) -> np.ndarray:
         """
         Generate synthetic samples.
 
@@ -268,40 +280,37 @@ class YourModelName(Model):
         ----------
         n_samples : int
             Number of samples to generate
+        **kwargs
+            Additional sampling parameters
 
         Returns
         -------
-        pd.DataFrame
-            Generated synthetic data with original column names
+        np.ndarray
+            Generated synthetic data
         """
-        if not self.is_fitted:
+        if not self._is_fitted:
             raise ValueError("Model must be trained before sampling")
 
+        # Implement your sampling logic
         synthetic_data = self._generate_samples(n_samples, **kwargs)
         return synthetic_data
 
-    def evaluate(self, **kwargs) -> dict:
-        """
-        Quick TSTR evaluation. For comprehensive evaluation use
-        SyntheticEvaluationPipeline instead.
-        """
-        if not self.is_fitted:
-            raise ValueError("Model must be trained before evaluation")
-
-        # Implement quick evaluation logic
-        raise NotImplementedError
-
-    def check_dependencies(self) -> bool:
-        """Return True if all required dependencies are installed."""
-        return True
-
-    def _fit_internal(self, x: pd.DataFrame, y: pd.Series, **kwargs):
+    def _fit_internal(self, x: pd.DataFrame, y: np.ndarray, **kwargs):
         """Internal fitting logic - implement your algorithm here"""
-        raise NotImplementedError
+        pass
 
-    def _generate_samples(self, n_samples: int, **kwargs) -> pd.DataFrame:
-        """Internal sampling logic - implement your algorithm here"""
-        raise NotImplementedError
+    def _generate_synthetic_data(self, n_samples: int):
+        """Generate synthetic data during training"""
+        # Implement synthetic data generation
+        pass
+
+    def _save_synthetic_data(self, x_synth: np.ndarray, y_synth: np.ndarray, synthetic_dir: str):
+        """Save synthetic data to specified directory"""
+        if synthetic_dir:
+            import os
+            os.makedirs(synthetic_dir, exist_ok=True)
+            pd.DataFrame(x_synth).to_csv(f"{synthetic_dir}/x_synth.csv", index=False)
+            pd.DataFrame(y_synth).to_csv(f"{synthetic_dir}/y_synth.csv", index=False)
 ```
 
 ### Step 4: Update Model **init**.py
@@ -322,130 +331,175 @@ Add to `katabatic/models/__init__.py`:
 from .your_model_name import YourModelName
 ```
 
-### Step 6: Add Model Dependencies
+### Step 6: Add Model-Specific Dependencies (if needed)
 
-Add your model's dependencies to the root `pyproject.toml`:
+If your model requires specific dependencies, create:
+
+`katabatic/models/your_model_name/pyproject.toml`:
 
 ```toml
+[tool.poetry]
+name = "katabatic-your-model"
+version = "0.1.0"
+description = "Your model implementation for Katabatic"
+
 [tool.poetry.dependencies]
-# Add as optional dependency
-your-dep = {version = "^1.0", optional = true}
+python = ">=3.11,<3.12"
+# Add your model-specific dependencies here
+tensorflow = "^2.19.0"  # Example
+torch = "^2.0.0"        # Example
 
-[tool.poetry.extras]
-# Create an extras group for your model
-your_model_name = ["your-dep"]
-```
-
-Install with:
-
-```bash
-poetry install -E your_model_name
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 ```
 
 ### Step 7: Test Your Model
 
-Create a benchmark script based on the existing examples:
+Create a test script:
 
 ```python
-# benchmarks/examples/run_your_model_adult.py
-import os, sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-
 from katabatic.models.your_model_name.models import YourModelName
-from benchmarks.runner import RunConfig, preprocess_and_split, save_synthetic, evaluate
+from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
 
-config = RunConfig(
-    dataset="adult",
-    model_name="your_model_name",
-    target_col_raw="income",
-    categorical_cols=["workclass", "education", "marital-status", "occupation",
-                      "relationship", "race", "gender", "native-country"],
-    continuous_cols=["age", "fnlwgt", "capital-gain", "capital-loss", "hours-per-week"],
-    constraints={"age": (17, 90), "hours-per-week": (1, 99)},
+# Test with existing pipeline
+pipeline = TrainTestSplitPipeline(model=YourModelName)
+pipeline.run(
+    input_csv='preprocessed_data/car.csv',
+    output_dir='sample_data/car',
+    synthetic_dir='synthetic/car/your_model',
+    real_test_dir='sample_data/car'
 )
-
-train_df, test_df, paths = preprocess_and_split(config)
-
-model = YourModelName()
-model.train(
-    data_dir=paths["splits_dir"],
-    categorical_cols=config.categorical_cols,
-    continuous_cols=config.continuous_cols,
-)
-
-synthetic_df = model.sample(n_samples=len(train_df))
-save_synthetic(synthetic_df, train_df, paths)
-evaluate(train_df, test_df, synthetic_df, config, paths)
 ```
 
 ## 🔄 Adding New Pipelines
 
-The main evaluation pipeline is `SyntheticEvaluationPipeline` in `katabatic/pipeline/evaluation_pipeline.py`. For most use cases you should use it directly rather than writing a new pipeline.
-
-If you need a custom pipeline, subclass `Pipeline` from `base_pipeline.py`:
-
-### Step 1: Create Pipeline File
+### Step 1: Create Pipeline Directory
 
 ```bash
-touch katabatic/pipeline/your_pipeline_name.py
+mkdir -p katabatic/pipeline/your_pipeline_name
+touch katabatic/pipeline/your_pipeline_name/__init__.py
+touch katabatic/pipeline/your_pipeline_name/pipeline.py
 ```
 
 ### Step 2: Implement Pipeline Class
 
-`katabatic/pipeline/your_pipeline_name.py`:
+`katabatic/pipeline/your_pipeline_name/pipeline.py`:
 
 ```python
 from katabatic.pipeline.base_pipeline import Pipeline
 from katabatic.models.base_model import Model
-from typing import Optional
+from katabatic.evaluate.tstr.evaluation import TSTREvaluation
+from katabatic.utils.split_dataset import split_dataset
+from typing import List, Type, Optional
 
 
 class YourPipelineName(Pipeline):
     """
     Description of your pipeline.
 
+    This pipeline implements [describe the workflow].
+
     Parameters
     ----------
     model : Model
         The model class to use for training
+    evaluations : List[Type], optional
+        List of evaluation classes to run
+    override_evaluations : bool, default=False
+        Whether to override default evaluations
     """
 
-    def __init__(self, model: Model, **kwargs):
+    # Default evaluations for this pipeline
+    _evaluations = [TSTREvaluation]
+
+    def __init__(self,
+                 model: Model,
+                 evaluations: Optional[List[Type]] = None,
+                 override_evaluations: bool = False):
         super().__init__(model)
+
+        if evaluations and override_evaluations:
+            self._evaluations = evaluations
+        elif evaluations:
+            self._evaluations.extend(evaluations)
 
     def run(self, *args, **kwargs):
         """
         Run your pipeline with the given arguments.
 
+        Parameters
+        ----------
+        input_csv : str
+            Path to input CSV file
+        output_dir : str
+            Directory to save processed data
+        *args, **kwargs
+            Additional pipeline-specific parameters
+
         Returns
         -------
-        Result of the pipeline run
+        str
+            Success message or results
         """
+        # Validate required parameters
+        input_csv = kwargs.pop('input_csv', None)
+        output_dir = kwargs.pop('output_dir', None)
+
+        if not input_csv or not output_dir:
+            raise ValueError("Both 'input_csv' and 'output_dir' must be provided.")
+
         # Step 1: Initialize model
         current_model = self.model()
 
-        # Step 2: Train model
-        current_model.train(kwargs["data_dir"], *args, **kwargs)
+        # Step 2: Implement your pipeline logic
+        # Example: Data preparation
+        self._prepare_data(input_csv, output_dir, *args, **kwargs)
 
-        # Step 3: Generate synthetic data
-        synthetic_df = current_model.sample(kwargs.get("n_samples", 1000))
+        # Step 3: Train model
+        current_model.train(output_dir, *args, **kwargs)
 
-        return synthetic_df
+        # Step 4: Run evaluations
+        for evaluation_class in self._evaluations:
+            eval_instance = evaluation_class(*args, **kwargs)
+            eval_instance.evaluate()
+
+        return "Your pipeline executed successfully."
+
+    def _prepare_data(self, input_csv: str, output_dir: str, *args, **kwargs):
+        """Implement your data preparation logic here"""
+        # Example implementation
+        split_dataset(input_csv, output_dir, *args, **kwargs)
+
+        # Add any additional preprocessing steps specific to your pipeline
+        pass
 
     def __repr__(self):
         return f"YourPipelineName(model={self.model})"
 ```
 
-### Step 3: Test Your Pipeline
+### Step 3: Update Pipeline **init**.py
+
+`katabatic/pipeline/your_pipeline_name/__init__.py`:
+
+```python
+from .pipeline import YourPipelineName
+
+__all__ = ['YourPipelineName']
+```
+
+### Step 4: Test Your Pipeline
 
 ```python
 from katabatic.models.ganblr.models import GANBLR
-from katabatic.pipeline.your_pipeline_name import YourPipelineName
+from katabatic.pipeline.your_pipeline_name.pipeline import YourPipelineName
 
 pipeline = YourPipelineName(model=GANBLR)
 result = pipeline.run(
-    data_dir="benchmarks/splits/adult",
-    n_samples=1000,
+    input_csv='preprocessed_data/car.csv',
+    output_dir='sample_data/car',
+    synthetic_dir='synthetic/car/ganblr',
+    real_test_dir='sample_data/car'
 )
 print(result)
 ```
@@ -477,18 +531,28 @@ class YourEvaluationName(Evaluation):
     """
     Description of your evaluation methodology.
 
+    This evaluation implements [describe the evaluation approach].
+
     Parameters
     ----------
-    real_data : pd.DataFrame
-        Real training data
-    synthetic_data : pd.DataFrame
-        Synthetic data to evaluate
+    synthetic_dir : str
+        Directory containing synthetic data
+    real_test_dir : str
+        Directory containing real test data
     **kwargs
         Additional evaluation parameters
     """
 
-    def __init__(self, real_data: pd.DataFrame, synthetic_data: pd.DataFrame, **kwargs):
-        super().__init__(real_data=real_data, synthetic_data=synthetic_data, **kwargs)
+    def __init__(self, synthetic_dir: str, real_test_dir: str, **kwargs):
+        # Initialize base class
+        super().__init__(model=None, dataset=None, **kwargs)
+
+        self.synthetic_dir = synthetic_dir
+        self.real_test_dir = real_test_dir
+        self.kwargs = kwargs
+
+        # Load data
+        self.x_synth, self.y_synth, self.x_test, self.y_test = self._load_data()
 
     def evaluate(self) -> Dict[str, Any]:
         """
@@ -502,16 +566,29 @@ class YourEvaluationName(Evaluation):
         results = {}
 
         # Implement your evaluation logic
+        # Example: Multiple model evaluation
         models = self._get_evaluation_models()
 
         for model_name, model in models.items():
             metrics = self._evaluate_single_model(model, model_name)
             results[model_name] = metrics
 
+        # Save results
         self._save_results(results)
+
+        # Print results
         self._print_results(results)
 
         return results
+
+    def _load_data(self):
+        """Load synthetic and real test data"""
+        x_synth = pd.read_csv(os.path.join(self.synthetic_dir, "x_synth.csv"))
+        y_synth = pd.read_csv(os.path.join(self.synthetic_dir, "y_synth.csv")).values.ravel()
+        x_test = pd.read_csv(os.path.join(self.real_test_dir, "x_test.csv"))
+        y_test = pd.read_csv(os.path.join(self.real_test_dir, "y_test.csv")).values.ravel()
+
+        return x_synth, y_synth, x_test, y_test
 
     def _get_evaluation_models(self):
         """Define models to use for evaluation"""
@@ -527,21 +604,35 @@ class YourEvaluationName(Evaluation):
 
     def _evaluate_single_model(self, model, model_name: str) -> Dict[str, float]:
         """Evaluate a single model"""
-        model.fit(self.synthetic_data.iloc[:, :-1], self.synthetic_data.iloc[:, -1])
-        y_pred = model.predict(self.real_data.iloc[:, :-1])
-        y_test = self.real_data.iloc[:, -1]
+        # Train on synthetic data
+        model.fit(self.x_synth, self.y_synth)
 
-        return {
-            'accuracy': accuracy_score(y_test, y_pred),
-            'f1_score': f1_score(y_test, y_pred, average='weighted'),
-            'precision': precision_score(y_test, y_pred, average='weighted'),
-            'recall': recall_score(y_test, y_pred, average='weighted')
+        # Predict on real test data
+        y_pred = model.predict(self.x_test)
+
+        # Calculate metrics
+        metrics = {
+            'accuracy': accuracy_score(self.y_test, y_pred),
+            'f1_score': f1_score(self.y_test, y_pred, average='weighted'),
+            'precision': precision_score(self.y_test, y_pred, average='weighted'),
+            'recall': recall_score(self.y_test, y_pred, average='weighted')
         }
+
+        return metrics
 
     def _save_results(self, results: Dict[str, Any]):
         """Save results to CSV file"""
-        results_dir = os.path.join("benchmarks", "results")
+        # Extract dataset and model names from paths
+        parts = os.path.normpath(self.synthetic_dir).split(os.sep)
+        model_name = parts[-1] if len(parts) > 0 else "unknown"
+        dataset_name = parts[-2] if len(parts) > 1 else "unknown"
+
+        # Create results directory
+        results_dir = os.path.join("Results", dataset_name)
         os.makedirs(results_dir, exist_ok=True)
+
+        # Save to CSV
+        output_path = os.path.join(results_dir, f"{model_name}_your_evaluation.csv")
 
         rows = []
         for model_name, metrics in results.items():
@@ -549,8 +640,8 @@ class YourEvaluationName(Evaluation):
                 rows.append([model_name, metric_name, round(value, 4)])
 
         df_results = pd.DataFrame(rows, columns=["Model", "Metric", "Value"])
-        output_path = os.path.join(results_dir, "your_evaluation.csv")
         df_results.to_csv(output_path, index=False)
+
         print(f"Results saved to: {output_path}")
 
     def _print_results(self, results: Dict[str, Any]):
@@ -575,13 +666,14 @@ __all__ = ['YourEvaluationName']
 ### Step 4: Test Your Evaluation
 
 ```python
-import pandas as pd
 from katabatic.evaluate.your_evaluation_name.evaluation import YourEvaluationName
 
-real_df = pd.read_csv("benchmarks/splits/adult/train_full.csv")
-synthetic_df = pd.read_csv("benchmarks/synthetic/adult/ctgan/synthetic.csv")
+# Test evaluation
+evaluation = YourEvaluationName(
+    synthetic_dir='synthetic/car/ganblr',
+    real_test_dir='sample_data/car'
+)
 
-evaluation = YourEvaluationName(real_data=real_df, synthetic_data=synthetic_df)
 results = evaluation.evaluate()
 print(results)
 ```
@@ -619,27 +711,37 @@ make test-pipelines         # Pipeline-related tests
 make test-evaluations       # Evaluation-related tests
 ```
 
+**Advanced Testing with Python Script:**
+
+```bash
+# Install test dependencies
+poetry install --group dev
+
+# Use the test runner script
+python run_tests.py all                    # All tests
+python run_tests.py unit --coverage        # Unit tests with coverage
+python run_tests.py integration --verbose  # Integration tests (verbose)
+python run_tests.py fast                   # Fast tests only
+```
+
 **Direct Pytest Usage:**
 
 ```bash
-# Run all tests
-pytest tests/
+poetry install --with dev
 
-# Run specific test file
-pytest tests/unit/test_base_model.py
+# Fast unit tests (default CI)
+poetry run pytest
 
-# Run tests with specific markers
-pytest -m "unit"                # Unit tests only
-pytest -m "integration"         # Integration tests only
-pytest -m "models"              # Model tests only
-pytest -m "not slow"            # Exclude slow tests
+# Integration tests (install extras first)
+poetry install -E ganblr -E great
+poetry run pytest -m integration
 
-# Run with coverage
-pytest --cov=katabatic --cov-report=html tests/
-
-# Run specific test method
-pytest tests/unit/test_base_model.py::TestBaseModel::test_model_is_abstract
+# GANBLR-only or GReaT-only integration
+poetry run pytest -m "integration and ganblr"
+poetry run pytest -m "integration and great"
 ```
+
+Officially **supported** models: `ganblr`, `great` (see [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md)). New models remain experimental until they have an extra, registry entry, and integration coverage.
 
 ### Writing Tests
 
@@ -663,27 +765,28 @@ tests/
 
 ```python
 import pytest
-from katabatic.models.your_model_name.models import YourModelName
+from katabatic.models.your_model import YourModel
 
 @pytest.mark.unit
 @pytest.mark.models
 class TestYourModel:
     def test_model_initialization(self):
         """Test model initializes correctly."""
-        model = YourModelName()
-        assert isinstance(model, YourModelName)
+        model = YourModel()
+        assert isinstance(model, YourModel)
         assert model.is_fitted is False
 
     def test_model_training(self, sample_dataset_files):
         """Test model training with mock data."""
-        model = YourModelName()
+        model = YourModel()
 
-        model.train(
-            data_dir=sample_dataset_files['dir'],
-            categorical_cols=sample_dataset_files['categorical_cols'],
-            continuous_cols=sample_dataset_files['continuous_cols'],
+        # Use test fixtures for reliable data
+        result = model.train(
+            dataset=sample_dataset_files['dir'],
+            epochs=5
         )
 
+        assert "successful" in result.lower()
         assert model.is_fitted is True
 ```
 
@@ -693,21 +796,28 @@ class TestYourModel:
 @pytest.mark.integration
 @pytest.mark.pipeline
 class TestYourModelIntegration:
-    def test_model_with_pipeline(self, tmp_path, sample_splits_dir):
-        """Test model trains, samples, and evaluates end-to-end."""
-        from katabatic.pipeline.evaluation_pipeline import SyntheticEvaluationPipeline
-        import pandas as pd
+    def test_model_with_pipeline(self, temp_dir, sample_binary_dataset):
+        """Test model integration with pipeline."""
+        X, y = sample_binary_dataset
 
-        model = YourModelName()
-        model.train(data_dir=sample_splits_dir, categorical_cols=[...], continuous_cols=[...])
-        synthetic_df = model.sample(n_samples=100)
+        # Create test files
+        test_data = pd.concat([X, y], axis=1)
+        input_csv = os.path.join(temp_dir, 'test_data.csv')
+        test_data.to_csv(input_csv, index=False)
 
-        train_df = pd.read_csv(f"{sample_splits_dir}/train_full.csv")
-        pipeline = SyntheticEvaluationPipeline(categorical_cols=[...], continuous_cols=[...])
-        report = pipeline.run(real_data=train_df, synthetic_data=synthetic_df, target_col="target")
+        # Test complete workflow
+        model = YourModel()
+        pipeline = TrainTestSplitPipeline(model)
 
-        assert report.composite_score >= 0.0
-        assert os.path.exists(os.path.join(tmp_path, "synthetic.csv"))
+        result = pipeline.run(
+            input_csv=input_csv,
+            output_dir=temp_dir,
+            synthetic_dir=os.path.join(temp_dir, 'synthetic'),
+            real_test_dir=temp_dir
+        )
+
+        assert "success" in result.lower()
+        assert os.path.exists(os.path.join(temp_dir, 'synthetic', 'x_synth.csv'))
 ```
 
 **Available Test Fixtures:**
@@ -726,8 +836,8 @@ def test_with_fixtures(sample_binary_dataset, sample_dataset_files, temp_dir, mo
 
 1. Test inheritance from base Model class
 2. Test initialization and parameter handling
-3. Test train/sample/evaluate method interfaces
-4. Test integration with `SyntheticEvaluationPipeline`
+3. Test train/evaluate/sample method interfaces
+4. Test integration with pipeline
 5. Test error handling and edge cases
 
 **For New Pipelines:**
@@ -743,7 +853,7 @@ def test_with_fixtures(sample_binary_dataset, sample_dataset_files, temp_dir, mo
 1. Test evaluation metric calculations
 2. Test data loading and preprocessing
 3. Test result formatting and saving
-4. Test integration with `SyntheticEvaluationPipeline`
+4. Test integration with pipeline
 5. Test handling of edge cases
 
 ### Code Quality Checks
@@ -787,96 +897,80 @@ Create integration tests for new components:
 ```python
 # tests/integration/test_new_model.py
 import pytest
+import tempfile
 import os
-import pandas as pd
 from katabatic.models.your_model_name.models import YourModelName
-from katabatic.pipeline.evaluation_pipeline import SyntheticEvaluationPipeline
+from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
 
 
-def test_new_model_integration(tmp_path):
-    """Test new model with evaluation pipeline end-to-end"""
-    splits_dir = "benchmarks/splits/adult"
-    train_df = pd.read_csv(f"{splits_dir}/train_full.csv")
+def test_new_model_integration():
+    """Test new model with existing pipeline"""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Setup test data
+        test_csv = os.path.join(temp_dir, "test_data.csv")
+        # Create test data...
 
-    model = YourModelName()
-    model.train(
-        data_dir=splits_dir,
-        categorical_cols=["workclass", "education"],
-        continuous_cols=["age", "fnlwgt"],
-    )
-    synthetic_df = model.sample(n_samples=100)
+        # Test pipeline with new model
+        pipeline = TrainTestSplitPipeline(model=YourModelName)
+        result = pipeline.run(
+            input_csv=test_csv,
+            output_dir=os.path.join(temp_dir, "output"),
+            synthetic_dir=os.path.join(temp_dir, "synthetic"),
+            real_test_dir=os.path.join(temp_dir, "output")
+        )
 
-    pipeline = SyntheticEvaluationPipeline(
-        categorical_cols=["workclass", "education"],
-        continuous_cols=["age", "fnlwgt"],
-    )
-    report = pipeline.run(real_data=train_df, synthetic_data=synthetic_df, target_col="income")
-
-    assert report.composite_score >= 0.0
+        assert "successfully" in result
 ```
 
 ## 📖 Usage Examples
 
-### Example 1: Basic Model Usage via Runner
+### Example 1: Basic Model Usage
 
 ```python
-import os, sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+from katabatic.models.ganblr.models import GANBLR
+from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
+from katabatic.utils.preprocess import preprocess_tabular
 
-from katabatic.models.ctgan.models import CTGANModel
-from benchmarks.runner import RunConfig, preprocess_and_split, save_synthetic, evaluate
+# Step 1: Preprocess raw data
+dataset_path = "raw_data/car.csv"
+output_path = "preprocessed_data/car.csv"
+preprocess_tabular(dataset_path, output_path)
 
-config = RunConfig(
-    dataset="adult",
-    model_name="ctgan",
-    target_col_raw="income",
-    categorical_cols=["workclass", "education", "marital-status", "occupation",
-                      "relationship", "race", "gender", "native-country"],
-    continuous_cols=["age", "fnlwgt", "capital-gain", "capital-loss", "hours-per-week"],
-    constraints={"age": (17, 90), "hours-per-week": (1, 99)},
+# Step 2: Run complete pipeline
+input_csv = 'preprocessed_data/car.csv'
+output_dir = 'sample_data/car'
+
+pipeline = TrainTestSplitPipeline(model=GANBLR)
+result = pipeline.run(
+    input_csv=input_csv,
+    output_dir=output_dir,
+    synthetic_dir='synthetic/car/ganblr',
+    real_test_dir='sample_data/car'
 )
 
-train_df, test_df, paths = preprocess_and_split(config)
-
-model = CTGANModel(epochs=300)
-model.train(
-    data_dir=paths["splits_dir"],
-    categorical_cols=config.categorical_cols,
-    continuous_cols=config.continuous_cols,
-)
-
-synthetic_df = model.sample(n_samples=len(train_df))
-save_synthetic(synthetic_df, train_df, paths)
-evaluate(train_df, test_df, synthetic_df, config, paths)
+print(result)
 ```
 
-### Example 2: Direct Pipeline Usage
+### Example 2: Custom Evaluation Pipeline
 
 ```python
-import pandas as pd
-from katabatic.models.ctgan.models import CTGANModel
-from katabatic.pipeline.evaluation_pipeline import SyntheticEvaluationPipeline
+from katabatic.models.great.models import GReaT
+from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
+from katabatic.evaluate.your_evaluation_name.evaluation import YourEvaluationName
 
-categorical_cols = ["workclass", "education", "marital-status"]
-continuous_cols = ["age", "fnlwgt", "hours-per-week"]
-
-model = CTGANModel(epochs=300)
-model.train(
-    data_dir="benchmarks/splits/adult",
-    categorical_cols=categorical_cols,
-    continuous_cols=continuous_cols,
+# Create pipeline with custom evaluation
+pipeline = TrainTestSplitPipeline(
+    model=GReaT,
+    evaluations=[YourEvaluationName],
+    override_evaluations=True  # Use only custom evaluation
 )
-synthetic_df = model.sample(n_samples=1000)
 
-train_df = pd.read_csv("benchmarks/splits/adult/train_full.csv")
-
-pipeline = SyntheticEvaluationPipeline(
-    categorical_cols=categorical_cols,
-    continuous_cols=continuous_cols,
+result = pipeline.run(
+    input_csv='preprocessed_data/adult.csv',
+    output_dir='sample_data/adult',
+    synthetic_dir='synthetic/adult/great',
+    real_test_dir='sample_data/adult'
 )
-report = pipeline.run(real_data=train_df, synthetic_data=synthetic_df, target_col="income")
-print(f"Composite score: {report.composite_score:.4f}")
-print(report.dimension_scores)
 ```
 
 ### Example 3: Standalone Model Usage
@@ -885,96 +979,114 @@ print(report.dimension_scores)
 import pandas as pd
 from katabatic.models.ganblr.models import GANBLR
 
-# Load preprocessed splits
-x_train = pd.read_csv("benchmarks/splits/adult/x_train.csv")
-y_train = pd.read_csv("benchmarks/splits/adult/y_train.csv").squeeze()
+# Load preprocessed data
+X = pd.read_csv("sample_data/car/x_train.csv")
+y = pd.read_csv("sample_data/car/y_train.csv").values.ravel()
 
 # Train model directly
 model = GANBLR()
-model.train(data_dir="benchmarks/splits/adult")
+model.fit(X, y, k=2, epochs=50, batch_size=32)
 
 # Generate synthetic data
-synthetic_df = model.sample(n_samples=1000)
-print(f"Generated {len(synthetic_df)} synthetic samples")
+synthetic_data = model.sample(size=1000)
+print(f"Generated {len(synthetic_data)} synthetic samples")
 
 # Evaluate model
-results = model.evaluate()
-print(f"TSTR results: {results}")
+X_test = pd.read_csv("sample_data/car/x_test.csv")
+y_test = pd.read_csv("sample_data/car/y_test.csv").values.ravel()
+accuracy = model.evaluate(X_test, y_test, model='rf')
+print(f"TSTR Accuracy: {accuracy:.4f}")
 ```
 
-### Example 4: Multi-Model Comparison
+### Example 4: Advanced Configuration
 
 ```python
-import pandas as pd
-from katabatic.models.ctgan.models import CTGANModel
-from katabatic.models.ganblr.models import GANBLR
-from katabatic.pipeline.evaluation_pipeline import SyntheticEvaluationPipeline
+from katabatic.models.great.models import GReaT
+from katabatic.pipeline.cross_validation.pipeline import CrossValidationPipeline
 
-splits_dir = "benchmarks/splits/adult"
-train_df = pd.read_csv(f"{splits_dir}/train_full.csv")
+# Configure GReaT model with custom parameters
+class CustomGReaT(GReaT):
+    def __init__(self):
+        super().__init__(
+            llm='microsoft/DialoGPT-medium',
+            epochs=200,
+            batch_size=16,
+            efficient_finetuning='lora'
+        )
 
-categorical_cols = ["workclass", "education", "marital-status"]
-continuous_cols = ["age", "fnlwgt", "hours-per-week"]
-
-models = {
-    "ctgan": CTGANModel(epochs=300),
-    "ganblr": GANBLR(),
-}
-
-pipeline = SyntheticEvaluationPipeline(
-    categorical_cols=categorical_cols,
-    continuous_cols=continuous_cols,
+# Use with cross-validation pipeline
+cv_pipeline = CrossValidationPipeline(
+    model=CustomGReaT,
+    n_splits=5
 )
 
-for name, model in models.items():
-    model.train(data_dir=splits_dir, categorical_cols=categorical_cols, continuous_cols=continuous_cols)
-    synthetic_df = model.sample(n_samples=len(train_df))
-    report = pipeline.run(real_data=train_df, synthetic_data=synthetic_df, target_col="income")
-    print(f"{name}: composite_score={report.composite_score:.4f}")
+# Run cross-validation
+results = cv_pipeline.run(
+    input_csv='preprocessed_data/magic.csv',
+    output_dir='cv_results/magic'
+)
 ```
 
 ### Example 5: Jupyter Notebook Workflow
 
 ```python
 # Cell 1: Setup and imports
-import pandas as pd
-from katabatic.models.ctgan.models import CTGANModel
 from katabatic.models.ganblr.models import GANBLR
-from katabatic.pipeline.evaluation_pipeline import SyntheticEvaluationPipeline
-from katabatic.utils.preprocess import encode_preprocess
-from katabatic.utils.split_dataset import split_dataset
+from katabatic.models.great.models import GReaT
+from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
+from katabatic.utils.preprocess import preprocess_tabular
+import pandas as pd
+import matplotlib.pyplot as plt
 
-# Cell 2: Preprocess raw data (only needed once — skipped automatically on re-runs)
-from benchmarks.runner import RunConfig, preprocess_and_split
+# Cell 2: Data preprocessing
+dataset_path = "raw_data/nursery.csv"
+output_path = "preprocessed_data/nursery.csv"
+preprocess_tabular(dataset_path, output_path)
 
-config = RunConfig(
-    dataset="adult",
-    model_name="ctgan",
-    target_col_raw="income",
-    categorical_cols=["workclass", "education", "marital-status"],
-    continuous_cols=["age", "fnlwgt", "hours-per-week"],
+# Preview data
+df = pd.read_csv(output_path)
+print(f"Dataset shape: {df.shape}")
+print(f"Target distribution:\n{df.iloc[:, -1].value_counts()}")
+
+# Cell 3: Run GANBLR
+pipeline_ganblr = TrainTestSplitPipeline(model=GANBLR)
+result_ganblr = pipeline_ganblr.run(
+    input_csv=output_path,
+    output_dir='sample_data/nursery',
+    synthetic_dir='synthetic/nursery/ganblr',
+    real_test_dir='sample_data/nursery'
 )
-train_df, test_df, paths = preprocess_and_split(config)
 
-# Cell 3: Run CTGAN
-model_ctgan = CTGANModel(epochs=300)
-model_ctgan.train(data_dir=paths["splits_dir"], categorical_cols=config.categorical_cols)
-synthetic_ctgan = model_ctgan.sample(n_samples=len(train_df))
-
-# Cell 4: Run GANBLR
-model_ganblr = GANBLR()
-model_ganblr.train(data_dir=paths["splits_dir"])
-synthetic_ganblr = model_ganblr.sample(n_samples=len(train_df))
+# Cell 4: Run GReaT
+pipeline_great = TrainTestSplitPipeline(model=GReaT)
+result_great = pipeline_great.run(
+    input_csv=output_path,
+    output_dir='sample_data/nursery',
+    synthetic_dir='synthetic/nursery/great',
+    real_test_dir='sample_data/nursery'
+)
 
 # Cell 5: Compare results
-pipeline = SyntheticEvaluationPipeline(
-    categorical_cols=config.categorical_cols,
-    continuous_cols=config.continuous_cols,
-)
+ganblr_results = pd.read_csv('Results/nursery/ganblr_tstr.csv')
+great_results = pd.read_csv('Results/nursery/great_tstr.csv')
 
-for name, synthetic_df in [("ctgan", synthetic_ctgan), ("ganblr", synthetic_ganblr)]:
-    report = pipeline.run(real_data=train_df, synthetic_data=synthetic_df, target_col="income")
-    print(f"{name}: {report.composite_score:.4f} | {report.dimension_scores}")
+# Plot comparison
+fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+
+# GANBLR results
+ganblr_acc = ganblr_results[ganblr_results['Metric'] == 'Accuracy']
+ax[0].bar(ganblr_acc['Model'], ganblr_acc['Value'])
+ax[0].set_title('GANBLR - TSTR Accuracy')
+ax[0].set_ylabel('Accuracy')
+
+# GReaT results
+great_acc = great_results[great_results['Metric'] == 'Accuracy']
+ax[1].bar(great_acc['Model'], great_acc['Value'])
+ax[1].set_title('GReaT - TSTR Accuracy')
+ax[1].set_ylabel('Accuracy')
+
+plt.tight_layout()
+plt.show()
 ```
 
 ## 🏆 Best Practices
@@ -1024,18 +1136,17 @@ from katabatic.models.ganblr.models import GANBLR
 #### 2. Missing Dependencies
 
 ```bash
-# Install model-specific dependencies via extras
-poetry install -E ctgan
-poetry install -E ganblr
-poetry install -E pategan
+# Install missing model-specific dependencies
+cd katabatic/models/your_model_name
+poetry install
 ```
 
 #### 3. Data Format Issues
 
 ```python
 # Ensure proper data types
-y = pd.read_csv("y_train.csv").squeeze()  # Convert to Series
-X = pd.read_csv("x_train.csv")            # Keep as DataFrame
+y = pd.read_csv("y_train.csv").values.ravel()  # Convert to 1D array
+X = pd.read_csv("x_train.csv")  # Keep as DataFrame
 ```
 
 #### 4. Path Issues
@@ -1043,7 +1154,7 @@ X = pd.read_csv("x_train.csv")            # Keep as DataFrame
 ```python
 # Use absolute paths or os.path.join
 import os
-splits_dir = os.path.join("benchmarks", "splits", "adult")
+synthetic_dir = os.path.join('synthetic', 'car', 'ganblr')
 ```
 
 ### Debugging Tips
@@ -1064,14 +1175,14 @@ splits_dir = os.path.join("benchmarks", "splits", "adult")
 3. **Validate Paths**:
    ```python
    import os
-   assert os.path.exists(splits_dir), f"Directory not found: {splits_dir}"
+   assert os.path.exists(input_csv), f"File not found: {input_csv}"
    ```
 
 ### Getting Help
 
 1. **Check Error Messages**: Read the full stack trace
 2. **Review Documentation**: Ensure you're following the correct API
-3. **Check Examples**: Compare with working examples in `benchmarks/examples/`
+3. **Check Examples**: Compare with working examples in `example.ipynb`
 4. **Create Minimal Reproduction**: Isolate the issue with minimal code
 
 ## 🚀 Advanced Development Topics
@@ -1082,17 +1193,14 @@ For models with special requirements:
 
 ```python
 class OptimizedModel(Model):
-    def train(self, data_dir: str, *, categorical_cols=None, continuous_cols=None, **kwargs):
+    def train(self, dataset: str, size_category: str = 'small', **kwargs):
         # Adjust parameters based on dataset size
-        x_train = pd.read_csv(os.path.join(data_dir, "x_train.csv"))
-        n_rows = len(x_train)
-
-        if n_rows > 10_000:
-            self.batch_size = 256
+        if size_category == 'large':
+            self.batch_size = 128
             self.epochs = 50
-        else:
-            self.batch_size = 64
-            self.epochs = 200
+        elif size_category == 'small':
+            self.batch_size = 32
+            self.epochs = 100
 
         # Continue with training...
 ```
@@ -1103,13 +1211,12 @@ For specialized data handling:
 
 ```python
 class CustomDataLoader:
-    def __init__(self, splits_dir: str):
-        self.splits_dir = splits_dir
+    def __init__(self, dataset_path: str):
+        self.dataset_path = dataset_path
 
-    def load(self):
-        x_train = pd.read_csv(os.path.join(self.splits_dir, "x_train.csv"))
-        y_train = pd.read_csv(os.path.join(self.splits_dir, "y_train.csv")).squeeze()
-        return x_train, y_train
+    def load_with_preprocessing(self):
+        # Custom loading logic
+        return x_train, y_train, x_test, y_test
 ```
 
 ### Experiment Tracking Integration
@@ -1118,7 +1225,7 @@ class CustomDataLoader:
 import wandb
 
 class TrackedModel(Model):
-    def train(self, data_dir: str, *, categorical_cols=None, continuous_cols=None, **kwargs):
+    def train(self, *args, **kwargs):
         wandb.init(project="katabatic-experiments")
         # Log parameters and metrics
         wandb.log({"epoch": epoch, "loss": loss})

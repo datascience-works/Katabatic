@@ -1,16 +1,23 @@
 import traceback
+
 import pandas as pd
 
-from katabatic.evaluate.report.composite import EvaluationReport
-from katabatic.evaluate.fidelity import FidelityEvaluation
-from katabatic.evaluate.utility import UtilityEvaluation
-from katabatic.evaluate.diversity import DiversityEvaluation
-from katabatic.evaluate.privacy import PrivacyEvaluation
 from katabatic.evaluate.consistency import ConsistencyEvaluation
+from katabatic.evaluate.diversity import DiversityEvaluation
+from katabatic.evaluate.fidelity import FidelityEvaluation
+from katabatic.evaluate.privacy import PrivacyEvaluation
+from katabatic.evaluate.report.composite import EvaluationReport
 from katabatic.evaluate.stability import StabilityEvaluation
+from katabatic.evaluate.utility import UtilityEvaluation
 
-
-_AVAILABLE_DIMENSIONS = ['fidelity', 'utility', 'diversity', 'privacy', 'consistency', 'stability']
+_AVAILABLE_DIMENSIONS = [
+    "fidelity",
+    "utility",
+    "diversity",
+    "privacy",
+    "consistency",
+    "stability",
+]
 
 
 class SyntheticEvaluationPipeline:
@@ -63,7 +70,9 @@ class SyntheticEvaluationPipeline:
         stability_seeds: list = None,
     ):
         # Default: all dimensions except stability (stability requires a model)
-        self.dimensions = dimensions or [d for d in _AVAILABLE_DIMENSIONS if d != 'stability']
+        self.dimensions = dimensions or [
+            d for d in _AVAILABLE_DIMENSIONS if d != "stability"
+        ]
         self.weights = weights or {}
         self.categorical_cols = categorical_cols
         self.continuous_cols = continuous_cols
@@ -77,8 +86,9 @@ class SyntheticEvaluationPipeline:
 
         unknown = [d for d in self.dimensions if d not in _AVAILABLE_DIMENSIONS]
         if unknown:
-            raise ValueError(f"Unknown dimensions: {unknown}. "
-                             f"Available: {_AVAILABLE_DIMENSIONS}")
+            raise ValueError(
+                f"Unknown dimensions: {unknown}. Available: {_AVAILABLE_DIMENSIONS}"
+            )
 
         if categorical_cols is None or continuous_cols is None:
             print(
@@ -86,7 +96,6 @@ class SyntheticEvaluationPipeline:
                 "Column types will be auto-detected from dtypes — this may be inaccurate "
                 "for integer-encoded categorical columns. Pass them explicitly for reliable results."
             )
-
 
     def run(
         self,
@@ -97,7 +106,7 @@ class SyntheticEvaluationPipeline:
         constraints: dict = None,
         model=None,
         output_dir: str = None,
-        report_prefix: str = '',
+        report_prefix: str = "",
     ) -> EvaluationReport:
         """
         Run all configured evaluation dimensions and return an EvaluationReport.
@@ -149,19 +158,21 @@ class SyntheticEvaluationPipeline:
                 # These dimensions operate on features only (no target column).
                 # Stability generates its own synthetic data internally so it
                 # also receives real_features — the target is not needed.
-                if dim in ('fidelity', 'diversity', 'privacy', 'stability'):
+                if dim in ("fidelity", "diversity", "privacy", "stability"):
                     r, s = real_features, synth_features
                 else:
                     r, s = real_data, synthetic_data
 
-                evaluator = self._build_evaluator(dim, r, s, target_col, constraints, model, test_data)
+                evaluator = self._build_evaluator(
+                    dim, r, s, target_col, constraints, model, test_data
+                )
                 dimension_results[dim] = evaluator.evaluate()
             except Exception as e:
                 print(f"  [ERROR] {dim} evaluation failed: {e}")
                 traceback.print_exc()
                 dimension_results[dim] = {
-                    'error': str(e),
-                    f'{dim}_score': 0.0,
+                    "error": str(e),
+                    f"{dim}_score": 0.0,
                 }
 
         report = EvaluationReport(dimension_results, weights=self.weights)
@@ -172,18 +183,26 @@ class SyntheticEvaluationPipeline:
 
         return report
 
-
-    def _build_evaluator(self, dim, real_data, synthetic_data, target_col, constraints, model=None, test_data=None):
+    def _build_evaluator(
+        self,
+        dim,
+        real_data,
+        synthetic_data,
+        target_col,
+        constraints,
+        model=None,
+        test_data=None,
+    ):
         shared = dict(real_data=real_data, synthetic_data=synthetic_data)
 
-        if dim == 'fidelity':
+        if dim == "fidelity":
             return FidelityEvaluation(
                 **shared,
                 categorical_cols=self.categorical_cols,
                 continuous_cols=self.continuous_cols,
             )
 
-        if dim == 'utility':
+        if dim == "utility":
             if not target_col:
                 raise ValueError("'target_col' is required for the utility dimension.")
             return UtilityEvaluation(
@@ -193,7 +212,7 @@ class SyntheticEvaluationPipeline:
                 n_folds=self.n_folds,
             )
 
-        if dim == 'diversity':
+        if dim == "diversity":
             return DiversityEvaluation(
                 **shared,
                 categorical_cols=self.categorical_cols,
@@ -202,7 +221,7 @@ class SyntheticEvaluationPipeline:
                 gower_sample_size=self.gower_sample_size,
             )
 
-        if dim == 'privacy':
+        if dim == "privacy":
             return PrivacyEvaluation(
                 **shared,
                 near_dup_threshold=self.near_dup_threshold,
@@ -211,9 +230,11 @@ class SyntheticEvaluationPipeline:
                 continuous_cols=self.continuous_cols,
             )
 
-        if dim == 'consistency':
+        if dim == "consistency":
             if not target_col:
-                raise ValueError("'target_col' is required for the consistency dimension.")
+                raise ValueError(
+                    "'target_col' is required for the consistency dimension."
+                )
             return ConsistencyEvaluation(
                 **shared,
                 target_col=target_col,
@@ -221,7 +242,7 @@ class SyntheticEvaluationPipeline:
                 n_folds=self.n_folds,
             )
 
-        if dim == 'stability':
+        if dim == "stability":
             return StabilityEvaluation(
                 real_data=real_data,
                 model=model,
@@ -232,7 +253,6 @@ class SyntheticEvaluationPipeline:
             )
 
         raise ValueError(f"No evaluator registered for dimension '{dim}'.")
-    
 
     def _validate_inputs(self, real_data, synthetic_data, target_col, model=None):
         if not isinstance(real_data, pd.DataFrame):
@@ -244,14 +264,14 @@ class SyntheticEvaluationPipeline:
         if synthetic_data.empty:
             raise ValueError("synthetic_data is empty.")
 
-        needs_target = {'utility', 'consistency'} & set(self.dimensions)
+        needs_target = {"utility", "consistency"} & set(self.dimensions)
         if needs_target and not target_col:
             raise ValueError(
                 f"'target_col' is required when running dimensions: {needs_target}. "
                 f"Pass it explicitly or ensure real_data has a last column to fall back to."
             )
 
-        if 'stability' in self.dimensions and model is None:
+        if "stability" in self.dimensions and model is None:
             raise ValueError(
                 "'model' must be provided when 'stability' is in dimensions. "
                 "Pass a trained model instance to pipeline.run(model=...)."

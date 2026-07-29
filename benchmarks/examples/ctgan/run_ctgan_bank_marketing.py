@@ -1,24 +1,46 @@
-import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+import sys
 
-from runner import RunConfig, preprocess_and_split, save_synthetic, evaluate
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
+
+from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
+
 from katabatic.models.ctgan.models import CTGANModel
 
 config = RunConfig(
-    dataset_name     = "bank_marketing",
-    model_name       = "ctgan",
-    categorical_cols = ['job', 'marital', 'education', 'default', 'housing', 'loan', 'contact', 'month', 'poutcome'],
-    continuous_cols  = ['age', 'balance', 'day', 'duration', 'campaign', 'pdays', 'previous'],
-    target_col_raw   = "y",
-    constraints      = {
-        'age':      (18, 95),      # legal working/banking age range
-        'balance':  (-8020, None), # min observed in dataset, no upper bound
-        'day':      (1, 31),       # day of month
-        'duration': (0, None),     # call duration in seconds, cannot be negative
-        'campaign': (1, None),     # at least 1 contact was made
-        'pdays':    (-1, None),    # -1 = not previously contacted, otherwise >= 0
-        'previous': (0, None),     # number of previous contacts, cannot be negative
+    dataset_name="bank_marketing",
+    model_name="ctgan",
+    categorical_cols=[
+        "job",
+        "marital",
+        "education",
+        "default",
+        "housing",
+        "loan",
+        "contact",
+        "month",
+        "poutcome",
+    ],
+    continuous_cols=[
+        "age",
+        "balance",
+        "day",
+        "duration",
+        "campaign",
+        "pdays",
+        "previous",
+    ],
+    target_col_raw="y",
+    constraints={
+        "age": (18, 95),  # legal working/banking age range
+        "balance": (-8020, None),  # min observed in dataset, no upper bound
+        "day": (1, 31),  # day of month
+        "duration": (0, None),  # call duration in seconds, cannot be negative
+        "campaign": (1, None),  # at least 1 contact was made
+        "pdays": (-1, None),  # -1 = not previously contacted, otherwise >= 0
+        "previous": (0, None),  # number of previous contacts, cannot be negative
     },
 )
 
@@ -28,14 +50,19 @@ print("\n" + "=" * 60)
 print("STEP 3 — Train CTGAN")
 print("=" * 60)
 model = CTGANModel(epochs=100, batch_size=512, seed=42)
-model.train(paths["split_dir"], categorical_cols=config.categorical_cols,
-                                continuous_cols=config.continuous_cols)
+model.train(
+    paths["split_dir"],
+    categorical_cols=config.categorical_cols,
+    continuous_cols=config.continuous_cols,
+)
 print("\nCTGAN training complete.")
 
 print("\n" + "=" * 60)
 print("STEP 4 — Generate synthetic data")
 print("=" * 60)
 synthetic_df = model.sample(len(train_df))
-synthetic_df = save_synthetic(synthetic_df, train_df, paths, categorical_cols=config.categorical_cols)
+synthetic_df = save_synthetic(
+    synthetic_df, train_df, paths, categorical_cols=config.categorical_cols
+)
 
 evaluate(model, config, train_df, synthetic_df, target_col, paths, test_df)

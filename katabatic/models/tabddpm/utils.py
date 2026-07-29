@@ -70,7 +70,8 @@ class MLPDiffusion(nn.Module):
         if self.is_y_cond and self.num_classes > 0 and y is not None:
             # Ensure y is long for one-hot
             y_onehot = F.one_hot(
-                y.long().view(-1), num_classes=self.num_classes).float()
+                y.long().view(-1), num_classes=self.num_classes
+            ).float()
             x = torch.cat([x, y_onehot], dim=1)
         return self.net(x)
 
@@ -98,8 +99,11 @@ class GaussianMultinomialDiffusion(nn.Module):
         self.register_buffer("_dummy", torch.zeros(1))  # for .to(device)
 
         # bookkeeping
-        self._K = np.array(num_classes, dtype=int) if len(
-            num_classes) > 0 else np.array([0], dtype=int)
+        self._K = (
+            np.array(num_classes, dtype=int)
+            if len(num_classes) > 0
+            else np.array([0], dtype=int)
+        )
         self._n_num = int(num_numerical_features)
         self._n_cat = int(np.sum(self._K > 0))
         self._gauss_loss = gaussian_loss_type
@@ -109,7 +113,9 @@ class GaussianMultinomialDiffusion(nn.Module):
     def forward(self, x: torch.Tensor, y: torch.Tensor | None = None) -> torch.Tensor:
         return self._denoise_fn(x, y)
 
-    def mixed_loss(self, xb: torch.Tensor, out: dict) -> tuple[torch.Tensor, torch.Tensor]:
+    def mixed_loss(
+        self, xb: torch.Tensor, out: dict
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute a simple reconstruction-style mixed loss.
 
         We split the loss into two parts for reporting parity:
@@ -175,14 +181,18 @@ class GaussianMultinomialDiffusion(nn.Module):
             end = min(start + batch_size, n)
             bsz = end - start
             # base noise
-            x0 = torch.randn(bsz, self._n_num,
-                             device=device) if self._n_num > 0 else None
+            x0 = (
+                torch.randn(bsz, self._n_num, device=device)
+                if self._n_num > 0
+                else None
+            )
             if self._n_cat > 0:
                 # uniform categorical indices per column
                 cat_cols = []
                 for k in self._K[self._K > 0]:
-                    idx = torch.randint(low=0, high=int(
-                        k), size=(bsz, 1), device=device).float()
+                    idx = torch.randint(
+                        low=0, high=int(k), size=(bsz, 1), device=device
+                    ).float()
                     cat_cols.append(idx)
                 xcat = torch.cat(cat_cols, dim=1) if cat_cols else None
             else:
@@ -201,14 +211,15 @@ class GaussianMultinomialDiffusion(nn.Module):
             x_out = self._denoise_fn(x_in, y_batch)
             # numeric clamp, categorical round
             if self._n_num > 0:
-                x_out[:, :self._n_num] = x_out[:,
-                                               :self._n_num].clamp_(-3.0, 3.0)
+                x_out[:, : self._n_num] = x_out[:, : self._n_num].clamp_(-3.0, 3.0)
             if self._n_cat > 0:
-                x_out[:, self._n_num:] = torch.round(
-                    x_out[:, self._n_num:]).clamp_(min=0)
+                x_out[:, self._n_num :] = torch.round(x_out[:, self._n_num :]).clamp_(
+                    min=0
+                )
             xs.append(x_out)
 
         X = torch.cat(xs, dim=0)[:n]
         return X, y_vec[:n]
+
 
 # Add your utility functions here.

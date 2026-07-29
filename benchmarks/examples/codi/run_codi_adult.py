@@ -1,15 +1,23 @@
-import platform
-import psutil
-import sys
 import os
+import platform
+import sys
 from datetime import datetime
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from runner import RunConfig, preprocess_and_split, save_synthetic, evaluate
+
+import psutil
+
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
+from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
+
 from katabatic.models.codi.models import CODI
 
+
 # ➕ Adding in system and run duration summary
-def get_runtime_summary(time_diff, start_time, end_time, model_name, dataset_name) -> None:
-    """ 
+def get_runtime_summary(
+    time_diff, start_time, end_time, model_name, dataset_name
+) -> None:
+    """
     Prints a formatted runtime summary report including start time, end time
     and total duration for a given model and a specific dataset.
 
@@ -19,37 +27,53 @@ def get_runtime_summary(time_diff, start_time, end_time, model_name, dataset_nam
         end_time     (datetime):  End timestamp of the run
         model_name   (str):       Name of the model used
         dataset_name (str):       Name of the dataset used
-    """    
-    print("==================================================================================")
+    """
+    print(
+        "=================================================================================="
+    )
     print("⏰ Evaluation Runtime Report 🧾")
-    print("==================================================================================")
+    print(
+        "=================================================================================="
+    )
     print("Start time:", start_time)
     print("End time:", end_time)
-    print(model_name + " has taken " + str(time_diff) + " seconds to run the adult " + dataset_name + " dataset.")
+    print(
+        model_name
+        + " has taken "
+        + str(time_diff)
+        + " seconds to run the adult "
+        + dataset_name
+        + " dataset."
+    )
 
 
 def get_system_run_details() -> None:
     """
     Prints a summary of the hardware used to run the evalautions on.
-    This report outlines the OS, CPU, GPU details and RAM states. 
+    This report outlines the OS, CPU, GPU details and RAM states.
     Compatible with any device or OS.
-    """    
+    """
     results = platform.uname()
     ram = psutil.virtual_memory()
-    
+
     gpu_info = "No GPU has been detected."
     try:
         import tensorflow as tf
-        gpus = tf.config.list_physical_devices('GPU')
+
+        gpus = tf.config.list_physical_devices("GPU")
         if gpus:
             details = tf.config.experimental.get_device_details(gpus[0])
-            gpu_info = details.get('device_name', 'Unknown')
+            gpu_info = details.get("device_name", "Unknown")
     except Exception:
         gpu_info = "No GPU or Tensorflow install has been detected."
 
-    print("==================================================================================")
+    print(
+        "=================================================================================="
+    )
     print("💻 Computation Hardware Summary 🧾")
-    print("==================================================================================")
+    print(
+        "=================================================================================="
+    )
     print(f"  🖥️  System:     {results.system}")
     print(f"  🏠  Node:       {results.node}")
     print(f"  📦  Release:    {results.release}")
@@ -59,22 +83,35 @@ def get_system_run_details() -> None:
     print(f"  📟  Total RAM:  {round(ram.total / 1e9, 4)} GB")
     print(f"  💾  Free RAM:   {round(ram.available / 1e9, 4)} GB")
     print(f"  ⚡  Used RAM:   {round(ram.used / 1e9, 4)} GB")
-    print("==================================================================================")
-    
+    print(
+        "=================================================================================="
+    )
+
+
 start_time = datetime.now()
 
 config = RunConfig(
-    dataset_name     = "adult",
-    model_name       = "codi",
-    categorical_cols = ['workclass', 'education', 'educational-num', 'marital-status', 'occupation', 'relationship', 'race', 'gender', 'native-country'],
-    continuous_cols  = ['age', 'fnlwgt', 'capital-gain', 'capital-loss', 'hours-per-week'],
-    target_col_raw   = "class",
-    constraints      = {
-        'age':            (17, 90),          # working age range
-        'fnlwgt':         (12285, 1490400),  # census sampling weight, dataset min/max
-        'capital-gain':   (0, 99999),        # cannot be negative, capped at 99999 in dataset
-        'capital-loss':   (0, 4356),         # cannot be negative, capped at 4356 in dataset
-        'hours-per-week': (1, 99),           # at least 1 hour, max 99 in dataset
+    dataset_name="adult",
+    model_name="codi",
+    categorical_cols=[
+        "workclass",
+        "education",
+        "educational-num",
+        "marital-status",
+        "occupation",
+        "relationship",
+        "race",
+        "gender",
+        "native-country",
+    ],
+    continuous_cols=["age", "fnlwgt", "capital-gain", "capital-loss", "hours-per-week"],
+    target_col_raw="class",
+    constraints={
+        "age": (17, 90),  # working age range
+        "fnlwgt": (12285, 1490400),  # census sampling weight, dataset min/max
+        "capital-gain": (0, 99999),  # cannot be negative, capped at 99999 in dataset
+        "capital-loss": (0, 4356),  # cannot be negative, capped at 4356 in dataset
+        "hours-per-week": (1, 99),  # at least 1 hour, max 99 in dataset
     },
 )
 
@@ -90,11 +127,15 @@ print("\n" + "=" * 60)
 print("STEP 4 — Generate synthetic data")
 print("=" * 60)
 synthetic_df = model.sample(len(train_df))
-synthetic_df = save_synthetic(synthetic_df, train_df, paths, categorical_cols=config.categorical_cols)
+synthetic_df = save_synthetic(
+    synthetic_df, train_df, paths, categorical_cols=config.categorical_cols
+)
 evaluate(model, config, train_df, synthetic_df, target_col, paths, test_df)
 
 # ➕ Adding in system and run duration summary
 end_time = datetime.now()
 time_diff = end_time - start_time
-get_runtime_summary(time_diff, start_time, end_time, config.model_name, config.dataset_name)
+get_runtime_summary(
+    time_diff, start_time, end_time, config.model_name, config.dataset_name
+)
 get_system_run_details()

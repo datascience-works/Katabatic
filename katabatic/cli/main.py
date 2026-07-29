@@ -61,7 +61,9 @@ def main(argv: list[str] | None = None) -> None:
     )
     p_init.set_defaults(func=_cmd_init_model)
 
-    p_reg = sub.add_parser("register-dataset", help="Register a dataset in the artifact registry")
+    p_reg = sub.add_parser(
+        "register-dataset", help="Register a dataset in the artifact registry"
+    )
     p_reg.add_argument("dataset_name", help="Registry name for the dataset")
     p_reg.add_argument("csv_path", help="Path to source CSV")
     p_reg.add_argument("--target-column", default=None, help="Target column name")

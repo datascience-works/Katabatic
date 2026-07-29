@@ -76,7 +76,7 @@ class TabSyn(BaseModel):
         save_dir: str | None = None,
         extra_info: dict[str, Any] | None = None,
         *args,
-        **kwargs
+        **kwargs,
     ) -> "TabSyn":
         """Train decoder & diffusion on the dataset located in `data_dir`,
         then materialize x_synth.csv / y_synth.csv for TSTR."""
@@ -93,8 +93,7 @@ class TabSyn(BaseModel):
         # 2) Decide where to save synthetic data
         synth_dir = kwargs.get("synthetic_dir")
         if not synth_dir or not isinstance(synth_dir, str):
-            dataset_name = os.path.basename(
-                os.path.normpath(data_dir)) or "dataset"
+            dataset_name = os.path.basename(os.path.normpath(data_dir)) or "dataset"
             synth_dir = os.path.join("synthetic", dataset_name, "tabsyn")
         os.makedirs(synth_dir, exist_ok=True)
 
@@ -109,7 +108,8 @@ class TabSyn(BaseModel):
             # If this is a regression task, there is no categorical label to emit.
             # You can either raise or skip y_synth. TSTR expects a label, so raise:
             raise ValueError(
-                "TSTR expects a label column, but no categorical columns were learned (regression task?).")
+                "TSTR expects a label column, but no categorical columns were learned (regression task?)."
+            )
 
         num_cols = [f"num_{i}" for i in range(n_num)]
         cat_cols = [f"cat_{i}" for i in range(n_cat)]
@@ -124,28 +124,29 @@ class TabSyn(BaseModel):
         # Align synthetic feature names & order with real train CSV
         real_x_train_path = os.path.join(data_dir, "x_train.csv")
         try:
-            real_cols = pd.read_csv(
-                real_x_train_path, nrows=0).columns.tolist()
+            real_cols = pd.read_csv(real_x_train_path, nrows=0).columns.tolist()
             if len(real_cols) == x_synth.shape[1]:
                 # 1) rename to real names (even if current names differ)
                 x_synth.columns = real_cols
                 # 2) reorder columns to match exactly (defensive; ensures identical order)
                 x_synth = x_synth.reindex(columns=real_cols)
             else:
-                print(f"[TabSyn] Warning: feature count mismatch: "
-                      f"synthetic={x_synth.shape[1]} vs real={len(real_cols)}. "
-                      "Leaving synthetic column names as-is.")
+                print(
+                    f"[TabSyn] Warning: feature count mismatch: "
+                    f"synthetic={x_synth.shape[1]} vs real={len(real_cols)}. "
+                    "Leaving synthetic column names as-is."
+                )
         except Exception as e:
             print(
-                f"[TabSyn] Warning: could not align feature names using {real_x_train_path}: {e}")
+                f"[TabSyn] Warning: could not align feature names using {real_x_train_path}: {e}"
+            )
 
         # 5) Write CSVs that TSTR expects
         x_path = os.path.join(synth_dir, "x_synth.csv")
         y_path = os.path.join(synth_dir, "y_synth.csv")
         x_synth.to_csv(x_path, index=False)
         y_synth.to_csv(y_path, index=False, header=True)
-        print(
-            f"[TabSyn] Synthetic data saved:\n  X -> {x_path}\n  y -> {y_path}")
+        print(f"[TabSyn] Synthetic data saved:\n  X -> {x_path}\n  y -> {y_path}")
 
         return self
 
@@ -166,7 +167,7 @@ class TabSyn(BaseModel):
         return_df: bool = True,
         save_path: str | None = None,
         *args,
-        **kwargs
+        **kwargs,
     ) -> np.ndarray | pd.DataFrame:
         """Generate synthetic rows. If `return_df` True, returns a DataFrame."""
         if not self.is_fitted or self.state is None:

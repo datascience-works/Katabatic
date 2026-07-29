@@ -66,7 +66,6 @@ class ConsistencyEvaluation(Evaluation):
         self.constraints = constraints or {}
         self.n_folds = n_folds
 
-
     def evaluate(self) -> dict:
         discriminator_acc = self._compute_discriminator()
         constraint_results = self._compute_constraint_violations()
@@ -77,19 +76,27 @@ class ConsistencyEvaluation(Evaluation):
         # synthetic but with inverted labels — still a detectable model. Without abs,
         # acc=0.1 gives a perfect 1.0 instead of the correct 0.2.
         disc_score = round(max(0.0, 1.0 - abs(discriminator_acc - 0.5) * 2), 4)
-        constraint_score = round(1.0 - constraint_results['overall_violation_rate'], 4) if constraint_results else None
+        constraint_score = (
+            round(1.0 - constraint_results["overall_violation_rate"], 4)
+            if constraint_results
+            else None
+        )
         spearman_val = spearman_score if spearman_score is not None else None
 
-        active = [s for s in [disc_score, constraint_score, spearman_val] if s is not None]
+        active = [
+            s for s in [disc_score, constraint_score, spearman_val] if s is not None
+        ]
         consistency_score = round(float(np.mean(active)), 4) if active else 0.0
 
         results = {
-            'discriminator_accuracy': round(discriminator_acc, 4),
-            'discriminator_score': disc_score,
-            'constraint_violations': constraint_results,
-            'constraint_score': constraint_score,
-            'feature_importance_spearman': round(spearman_val, 4) if spearman_val is not None else None,
-            'consistency_score': consistency_score,
+            "discriminator_accuracy": round(discriminator_acc, 4),
+            "discriminator_score": disc_score,
+            "constraint_violations": constraint_results,
+            "constraint_score": constraint_score,
+            "feature_importance_spearman": round(spearman_val, 4)
+            if spearman_val is not None
+            else None,
+            "consistency_score": consistency_score,
         }
 
         self._print_summary(results)
@@ -100,11 +107,15 @@ class ConsistencyEvaluation(Evaluation):
         Combine real (1) and synthetic (0) rows, run k-fold CV with RF.
         Returns mean accuracy across folds.
         """
-        real_enc  = self._encode_dataframe(self.real_data.copy(),  reference_df=self.synthetic_data)
-        synth_enc = self._encode_dataframe(self.synthetic_data.copy(), reference_df=self.real_data)
+        real_enc = self._encode_dataframe(
+            self.real_data.copy(), reference_df=self.synthetic_data
+        )
+        synth_enc = self._encode_dataframe(
+            self.synthetic_data.copy(), reference_df=self.real_data
+        )
 
-        real_enc['_label'] = 1
-        synth_enc['_label'] = 0
+        real_enc["_label"] = 1
+        synth_enc["_label"] = 0
 
         combined = pd.concat([real_enc, synth_enc], ignore_index=True)
 
@@ -112,16 +123,16 @@ class ConsistencyEvaluation(Evaluation):
         # Including the target lets the discriminator trivially distinguish real from
         # synthetic via target-distribution differences, which are already captured by
         # the Utility dimension and would unfairly penalise Consistency.
-        feature_cols = [c for c in real_enc.columns
-                        if c != '_label' and c != self.target_col]
+        feature_cols = [
+            c for c in real_enc.columns if c != "_label" and c != self.target_col
+        ]
         X = combined[feature_cols].values
-        y = combined['_label'].values
+        y = combined["_label"].values
 
         clf = RandomForestClassifier(n_estimators=100, random_state=42)
         cv = StratifiedKFold(n_splits=self.n_folds, shuffle=True, random_state=42)
-        scores = cross_val_score(clf, X, y, cv=cv, scoring='accuracy')
+        scores = cross_val_score(clf, X, y, cv=cv, scoring="accuracy")
         return float(np.mean(scores))
-
 
     def _compute_constraint_violations(self) -> dict:
         if not self.constraints:
@@ -147,9 +158,10 @@ class ConsistencyEvaluation(Evaluation):
             results[f"{col} [{col_min}, {col_max}]"] = rate
             violated_any |= violation_mask
 
-        results['overall_violation_rate'] = round(float(violated_any.sum()) / n_synth, 4)
+        results["overall_violation_rate"] = round(
+            float(violated_any.sum()) / n_synth, 4
+        )
         return results
-
 
     def _compute_feature_importance_spearman(self):
         """
@@ -163,11 +175,11 @@ class ConsistencyEvaluation(Evaluation):
         if not feature_cols:
             return None
 
-        X_real  = self._encode_dataframe(
+        X_real = self._encode_dataframe(
             self.real_data[feature_cols].copy(),
             reference_df=self.synthetic_data[feature_cols],
         ).values
-        y_real  = self.real_data[self.target_col].values
+        y_real = self.real_data[self.target_col].values
 
         X_synth = self._encode_dataframe(
             self.synthetic_data[feature_cols].copy(),
@@ -175,7 +187,7 @@ class ConsistencyEvaluation(Evaluation):
         ).values
         y_synth = self.synthetic_data[self.target_col].values
 
-        clf_real  = RandomForestClassifier(n_estimators=100, random_state=42)
+        clf_real = RandomForestClassifier(n_estimators=100, random_state=42)
         clf_synth = RandomForestClassifier(n_estimators=100, random_state=42)
 
         clf_real.fit(X_real, y_real)
@@ -192,8 +204,9 @@ class ConsistencyEvaluation(Evaluation):
         # Spearman is in [-1, 1]; clip at 0 for scoring (negative means inverted)
         return float(max(0.0, corr))
 
-
-    def _encode_dataframe(self, df: pd.DataFrame, reference_df: pd.DataFrame = None) -> pd.DataFrame:
+    def _encode_dataframe(
+        self, df: pd.DataFrame, reference_df: pd.DataFrame = None
+    ) -> pd.DataFrame:
         """Label-encode non-numeric columns so RF can consume the data.
 
         When reference_df is provided the encoder is fitted on the union of
@@ -216,21 +229,27 @@ class ConsistencyEvaluation(Evaluation):
         print("\n=== Consistency Evaluation ===")
         print(f"Overall consistency score: {results['consistency_score']:.4f}")
 
-        acc = results['discriminator_accuracy']
+        acc = results["discriminator_accuracy"]
         flag = "  [RED FLAG - model is easily detectable]" if acc > 0.70 else ""
         print(f"\nDiscriminator accuracy: {acc:.4f}{flag}")
-        print(f"Discriminator score:    {results['discriminator_score']:.4f}  (target ~1.0, i.e. accuracy ~0.5)")
+        print(
+            f"Discriminator score:    {results['discriminator_score']:.4f}  (target ~1.0, i.e. accuracy ~0.5)"
+        )
 
-        if results['constraint_violations']:
+        if results["constraint_violations"]:
             print("\nConstraint violations:")
-            for constraint, rate in results['constraint_violations'].items():
-                if constraint != 'overall_violation_rate':
+            for constraint, rate in results["constraint_violations"].items():
+                if constraint != "overall_violation_rate":
                     print(f"  {constraint:<40} {rate * 100:.1f}%")
-            print(f"  {'Overall violation rate':<40} {results['constraint_violations']['overall_violation_rate'] * 100:.1f}%")
+            print(
+                f"  {'Overall violation rate':<40} {results['constraint_violations']['overall_violation_rate'] * 100:.1f}%"
+            )
             print(f"  Constraint score: {results['constraint_score']:.4f}")
         else:
             print("\nNo constraints defined — constraint check skipped.")
 
-        if results['feature_importance_spearman'] is not None:
-            print(f"\nFeature importance Spearman correlation: {results['feature_importance_spearman']:.4f}")
+        if results["feature_importance_spearman"] is not None:
+            print(
+                f"\nFeature importance Spearman correlation: {results['feature_importance_spearman']:.4f}"
+            )
             print("  (1.0 = identical feature rankings, 0.0 = completely different)")

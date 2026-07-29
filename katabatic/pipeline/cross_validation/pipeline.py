@@ -1,4 +1,3 @@
-
 class CrossValidationPipeline:
     """
     A class to handle the cross-validation pipeline for model evaluation.
@@ -20,7 +19,6 @@ class CrossValidationPipeline:
         """
         Evaluate the model's performance using cross-validation metrics.
         """
-
 
 
 # first half train, second half test then second half train, first half test

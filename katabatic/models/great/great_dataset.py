@@ -3,8 +3,9 @@ import typing as tp
 from dataclasses import dataclass
 
 import numpy as np
-from datasets import Dataset
 from transformers import DataCollatorWithPadding
+
+from datasets import Dataset
 
 
 class GReaTDataset(Dataset):
@@ -31,20 +32,20 @@ class GReaTDataset(Dataset):
 
     def _format_value(self, value):
         """Format a value based on its type.
-        
+
         For floats, applies precision formatting if float_precision is set.
-        
+
         Args:
             value: The value to format
-            
+
         Returns:
             Formatted string value
         """
         if isinstance(value, (float, np.floating)) and self.float_precision is not None:
             # Format to a string with specified decimal places, removing trailing zeros
             formatted_value_str = f"{value:.{self.float_precision}f}"
-            if '.' in formatted_value_str:
-                formatted_value_str = formatted_value_str.rstrip('0').rstrip('.')
+            if "." in formatted_value_str:
+                formatted_value_str = formatted_value_str.rstrip("0").rstrip(".")
             return formatted_value_str
         return str(value).strip()
 
@@ -64,7 +65,10 @@ class GReaTDataset(Dataset):
         shuffled_text = ", ".join(
             [
                 "%s is %s"
-                % (row.column_names[i], self._format_value(row.columns[i].to_pylist()[0]))
+                % (
+                    row.column_names[i],
+                    self._format_value(row.columns[i].to_pylist()[0]),
+                )
                 for i in shuffle_idx
             ]
         )

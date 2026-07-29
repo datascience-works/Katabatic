@@ -39,5 +39,5 @@ def get_column_types(df: pd.DataFrame, exclude_last: bool = True):
     """
     cols = list(df.columns[:-1]) if exclude_last else list(df.columns)
     categorical_cols = [c for c in cols if not is_numerical(df[c])]
-    continuous_cols  = [c for c in cols if is_numerical(df[c])]
+    continuous_cols = [c for c in cols if is_numerical(df[c])]
     return categorical_cols, continuous_cols

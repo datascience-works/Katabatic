@@ -63,7 +63,6 @@ class PrivacyEvaluation(Evaluation):
         self.categorical_cols = categorical_cols or []
         self.continuous_cols = continuous_cols or []
 
-
     def evaluate(self) -> dict:
         real_norm, synth_norm, cat_mask = self._normalise()
 
@@ -84,16 +83,18 @@ class PrivacyEvaluation(Evaluation):
         nndr_score = round(mean_nndr, 4)
         exact_dup_score = round(1.0 - exact_dup_rate, 4)
         near_dup_score = round(1.0 - near_dup_rate, 4)
-        privacy_score = round(float(np.mean([nndr_score, exact_dup_score, near_dup_score])), 4)
+        privacy_score = round(
+            float(np.mean([nndr_score, exact_dup_score, near_dup_score])), 4
+        )
 
         results = {
-            'mean_nndr': round(mean_nndr, 4),
-            'exact_duplicate_rate': round(exact_dup_rate, 4),
-            'near_duplicate_rate': round(near_dup_rate, 4),
-            'nndr_score': nndr_score,
-            'exact_dup_score': exact_dup_score,
-            'near_dup_score': near_dup_score,
-            'privacy_score': privacy_score,
+            "mean_nndr": round(mean_nndr, 4),
+            "exact_duplicate_rate": round(exact_dup_rate, 4),
+            "near_duplicate_rate": round(near_dup_rate, 4),
+            "nndr_score": nndr_score,
+            "exact_dup_score": exact_dup_score,
+            "near_dup_score": near_dup_score,
+            "privacy_score": privacy_score,
         }
 
         self._print_summary(results)
@@ -135,18 +136,19 @@ class PrivacyEvaluation(Evaluation):
                 synth_out[:, i] = le.transform(synth[col].astype(str)).astype(float)
             else:
                 # Continuous: min-max scale to [0, 1] using real data range
-                real_num = pd.to_numeric(real[col], errors='coerce')
-                synth_num = pd.to_numeric(synth[col], errors='coerce')
+                real_num = pd.to_numeric(real[col], errors="coerce")
+                synth_num = pd.to_numeric(synth[col], errors="coerce")
                 col_min = float(real_num.min())
                 col_max = float(real_num.max())
                 col_range = col_max - col_min
                 if col_range > 0:
                     real_out[:, i] = (real_num.values - col_min) / col_range
-                    synth_out[:, i] = (synth_num.fillna(col_min).values - col_min) / col_range
+                    synth_out[:, i] = (
+                        synth_num.fillna(col_min).values - col_min
+                    ) / col_range
                 # else constant column — stays 0
 
         return real_out, synth_out, cat_mask
-
 
     @staticmethod
     def _gower_matrix(A, B, cat_mask, batch_size=500):
@@ -176,23 +178,22 @@ class PrivacyEvaluation(Evaluation):
             if np.any(cont_mask):
                 # Continuous: absolute difference, shape (batch, m, n_cont)
                 cont_diff = np.abs(
-                    A_batch[:, np.newaxis, :][:, :, cont_mask] -
-                    B[np.newaxis, :, :][:, :, cont_mask]
+                    A_batch[:, np.newaxis, :][:, :, cont_mask]
+                    - B[np.newaxis, :, :][:, :, cont_mask]
                 )
                 batch_dist += cont_diff.sum(axis=2)
 
             if np.any(cat_mask):
                 # Categorical: 0 same, 1 different, shape (batch, m, n_cat)
                 cat_diff = (
-                    A_batch[:, np.newaxis, :][:, :, cat_mask] !=
-                    B[np.newaxis, :, :][:, :, cat_mask]
+                    A_batch[:, np.newaxis, :][:, :, cat_mask]
+                    != B[np.newaxis, :, :][:, :, cat_mask]
                 ).astype(np.float32)
                 batch_dist += cat_diff.sum(axis=2)
 
             dist[start:end] = batch_dist / d
 
         return dist
-
 
     def _compute_nndr(self, dist: np.ndarray) -> float:
         """
@@ -210,21 +211,23 @@ class PrivacyEvaluation(Evaluation):
         d1 = partitioned[:, 0]
         d2 = partitioned[:, 1]
 
-        with np.errstate(divide='ignore', invalid='ignore'):
+        with np.errstate(divide="ignore", invalid="ignore"):
             ratios = np.where(d2 > 0, d1 / d2, 0.0)
 
         return float(np.mean(ratios))
 
-
-    def _compute_exact_duplicates(self, dist: np.ndarray, synth_norm: np.ndarray) -> float:
+    def _compute_exact_duplicates(
+        self, dist: np.ndarray, synth_norm: np.ndarray
+    ) -> float:
         """
         % of synthetic rows with Gower distance == 0 to any real row.
         """
         exact = np.sum(dist.min(axis=1) == 0.0)
         return float(exact) / len(synth_norm)
 
-
-    def _compute_near_duplicates(self, dist: np.ndarray, synth_norm: np.ndarray) -> float:
+    def _compute_near_duplicates(
+        self, dist: np.ndarray, synth_norm: np.ndarray
+    ) -> float:
         """
         % of synthetic rows whose nearest real neighbour Gower distance is in
         (0, near_dup_threshold). Exact duplicates (distance == 0) are excluded
@@ -234,18 +237,23 @@ class PrivacyEvaluation(Evaluation):
         near = np.sum((min_dists > 0) & (min_dists < self.near_dup_threshold))
         return float(near) / len(synth_norm)
 
-
     def _print_summary(self, results):
         print("\n=== Privacy Evaluation ===")
         print(f"Overall privacy score: {results['privacy_score']:.4f}")
 
-        print(f"\nNNDR (mean ratio d1/d2):      {results['mean_nndr']:.4f}  (1.0 = fully private, 0.0 = memorised)")
+        print(
+            f"\nNNDR (mean ratio d1/d2):      {results['mean_nndr']:.4f}  (1.0 = fully private, 0.0 = memorised)"
+        )
         print(f"NNDR score:                   {results['nndr_score']:.4f}")
 
-        print(f"\nExact duplicate rate:         {results['exact_duplicate_rate'] * 100:.2f}%")
-        print(f"Near-duplicate rate (<{self.near_dup_threshold}):  {results['near_duplicate_rate'] * 100:.2f}%")
+        print(
+            f"\nExact duplicate rate:         {results['exact_duplicate_rate'] * 100:.2f}%"
+        )
+        print(
+            f"Near-duplicate rate (<{self.near_dup_threshold}):  {results['near_duplicate_rate'] * 100:.2f}%"
+        )
 
-        if results['exact_duplicate_rate'] > 0.01:
+        if results["exact_duplicate_rate"] > 0.01:
             print("  [WARNING] Exact duplicates detected — possible memorisation.")
-        if results['near_duplicate_rate'] > 0.05:
+        if results["near_duplicate_rate"] > 0.05:
             print("  [WARNING] High near-duplicate rate — review model privacy.")

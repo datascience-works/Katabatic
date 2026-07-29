@@ -1,8 +1,12 @@
-import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+import sys
 
-from runner import RunConfig, preprocess_and_split, save_synthetic, evaluate
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
+
+from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
+
 from katabatic.models.ctgan.models import CTGANModel
 
 config = RunConfig(
@@ -86,13 +90,19 @@ print("\n" + "=" * 60)
 print("STEP 3 — Train CTGAN")
 print("=" * 60)
 model = CTGANModel(epochs=100, batch_size=512, seed=42)
-model.train(paths["split_dir"], categorical_cols=config.categorical_cols, continuous_cols=config.continuous_cols)
+model.train(
+    paths["split_dir"],
+    categorical_cols=config.categorical_cols,
+    continuous_cols=config.continuous_cols,
+)
 print("\nCTGAN training complete.")
 
 print("\n" + "=" * 60)
 print("STEP 4 — Generate synthetic data")
 print("=" * 60)
 synthetic_df = model.sample(len(train_df))
-synthetic_df = save_synthetic(synthetic_df, train_df, paths, categorical_cols=config.categorical_cols)
+synthetic_df = save_synthetic(
+    synthetic_df, train_df, paths, categorical_cols=config.categorical_cols
+)
 
 evaluate(model, config, train_df, synthetic_df, target_col, paths, test_df)

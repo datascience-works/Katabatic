@@ -4,7 +4,7 @@
 name = "absl-py"
 version = "2.3.0"
 description = "Abseil Python Common Libraries, see https://github.com/abseil/abseil-py."
-optional = false
+optional = true
 python-versions = ">=3.8"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
@@ -231,7 +231,7 @@ test = ["astroid (>=2,<4)", "pytest", "pytest-cov", "pytest-xdist"]
 name = "astunparse"
 version = "1.6.3"
 description = "An AST unparser for Python"
-optional = false
+optional = true
 python-versions = "*"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
@@ -764,7 +764,7 @@ typing = ["typing-extensions (>=4.12.2) ; python_version < \"3.11\""]
 name = "flatbuffers"
 version = "25.2.10"
 description = "The FlatBuffers serialization format for Python"
-optional = false
+optional = true
 python-versions = "*"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
@@ -935,7 +935,7 @@ tqdm = ["tqdm"]
 name = "gast"
 version = "0.6.0"
 description = "Python AST that abstracts the underlying Python version"
-optional = false
+optional = true
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,>=2.7"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
@@ -948,7 +948,7 @@ files = [
 name = "google-pasta"
 version = "0.2.0"
 description = "pasta is an AST-based Python refactoring library"
-optional = false
+optional = true
 python-versions = "*"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
@@ -965,7 +965,7 @@ six = "*"
 name = "grpcio"
 version = "1.73.0"
 description = "HTTP/2-based RPC framework"
-optional = false
+optional = true
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
@@ -1030,7 +1030,7 @@ protobuf = ["grpcio-tools (>=1.73.0)"]
 name = "h5py"
 version = "3.14.0"
 description = "Read and write HDF5 files from Python"
-optional = false
+optional = true
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
@@ -1349,7 +1349,7 @@ test = ["ipykernel", "pre-commit", "pytest (<9)", "pytest-cov", "pytest-timeout"
 name = "keras"
 version = "3.10.0"
 description = "Multi-backend Keras"
-optional = false
+optional = true
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
@@ -1372,7 +1372,7 @@ rich = "*"
 name = "libclang"
 version = "18.1.1"
 description = "Clang Python Bindings, mirrored from the official LLVM repo: https://github.com/llvm/llvm-project/tree/main/clang/bindings/python, to make the installation process easier."
-optional = false
+optional = true
 python-versions = "*"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
@@ -1423,7 +1423,7 @@ scikit-learn = ["scikit-learn (>=1.0.2)"]
 name = "markdown"
 version = "3.8.2"
 description = "Python implementation of John Gruber's Markdown."
-optional = false
+optional = true
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
@@ -1440,7 +1440,7 @@ testing = ["coverage", "pyyaml"]
 name = "markdown-it-py"
 version = "3.0.0"
 description = "Python port of markdown-it. Markdown parsing, done right!"
-optional = false
+optional = true
 python-versions = ">=3.8"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
@@ -1552,7 +1552,7 @@ traitlets = "*"
 name = "mdurl"
 version = "0.1.2"
 description = "Markdown URL utilities"
-optional = false
+optional = true
 python-versions = ">=3.7"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
@@ -1565,7 +1565,7 @@ files = [
 name = "ml-dtypes"
 version = "0.5.1"
 description = ""
-optional = false
+optional = true
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
@@ -1906,7 +1906,7 @@ files = [
 name = "namex"
 version = "0.1.0"
 description = "A simple utility to separate the implementation of your Python package and its public API surface."
-optional = false
+optional = true
 python-versions = "*"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
@@ -2244,7 +2244,7 @@ files = [
 name = "opt-einsum"
 version = "3.4.0"
 description = "Path optimization of einsum functions."
-optional = false
+optional = true
 python-versions = ">=3.8"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
@@ -2257,7 +2257,7 @@ files = [
 name = "optree"
 version = "0.16.0"
 description = "Optimized PyTree Utilities."
-optional = false
+optional = true
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
@@ -2475,7 +2475,7 @@ files = [
 name = "patsy"
 version = "1.0.1"
 description = "A Python package for describing statistical models and for building design matrices."
-optional = false
+optional = true
 python-versions = ">=3.6"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"all\" or extra == \"tabddpm\" or extra == \"tabsyn\""
@@ -2510,7 +2510,7 @@ ptyprocess = ">=0.5"
 name = "pgmpy"
 version = "1.0.0"
 description = "A library for Probabilistic Graphical Models"
-optional = false
+optional = true
 python-versions = "*"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"all\""
@@ -2698,7 +2698,7 @@ files = [
 name = "protobuf"
 version = "5.29.5"
 description = ""
-optional = false
+optional = true
 python-versions = ">=3.8"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
@@ -3043,7 +3043,7 @@ windows-terminal = ["colorama (>=0.4.6)"]
 name = "pyitlib"
 version = "0.3.1"
 description = "A library of information-theoretic methods"
-optional = false
+optional = true
 python-versions = "*"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"all\""
@@ -3061,7 +3061,7 @@ scipy = ">=1.0.1"
 name = "pyro-api"
 version = "0.1.2"
 description = "Generic API for dispatch to Pyro backends."
-optional = false
+optional = true
 python-versions = "*"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"all\""
@@ -3078,7 +3078,7 @@ test = ["flake8", "pytest (>=5.0)"]
 name = "pyro-ppl"
 version = "1.8.6"
 description = "A Python library for probabilistic modeling and inference"
-optional = false
+optional = true
 python-versions = ">=3.7"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"all\""
@@ -3517,7 +3517,7 @@ use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 name = "rich"
 version = "14.0.0"
 description = "Render rich text, tables, progress bars, syntax highlighting, markdown and more to the terminal"
-optional = false
+optional = true
 python-versions = ">=3.8.0"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
@@ -3774,7 +3774,7 @@ tests = ["cython", "littleutils", "pygments", "pytest", "typeguard"]
 name = "statsmodels"
 version = "0.14.4"
 description = "Statistical computations and models for Python"
-optional = false
+optional = true
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"all\" or extra == \"tabddpm\" or extra == \"tabsyn\""
@@ -3880,7 +3880,7 @@ wandb = ["wandb (>=0.25.1)"]
 name = "tensorboard"
 version = "2.19.0"
 description = "TensorBoard lets you watch Tensors Flow"
-optional = false
+optional = true
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
@@ -3904,7 +3904,7 @@ werkzeug = ">=1.0.1"
 name = "tensorboard-data-server"
 version = "0.7.2"
 description = "Fast data loading for TensorBoard"
-optional = false
+optional = true
 python-versions = ">=3.7"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
@@ -3918,7 +3918,7 @@ files = [
 name = "tensorflow"
 version = "2.19.0"
 description = "TensorFlow is an open source machine learning framework for everyone."
-optional = false
+optional = true
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
@@ -4049,7 +4049,7 @@ tensorflow-rocm = ["tensorflow-rocm (>=2.11.0,<2.12.0)"]
 name = "termcolor"
 version = "3.1.0"
 description = "ANSI color formatting for output in terminal"
-optional = false
+optional = true
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
@@ -4484,7 +4484,7 @@ files = [
 name = "werkzeug"
 version = "3.1.3"
 description = "The comprehensive WSGI web application library."
-optional = false
+optional = true
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
@@ -4503,7 +4503,7 @@ watchdog = ["watchdog (>=2.3)"]
 name = "wheel"
 version = "0.45.1"
 description = "A built-package format for Python"
-optional = false
+optional = true
 python-versions = ">=3.8"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
@@ -4519,7 +4519,7 @@ test = ["pytest (>=6.0.0)", "setuptools (>=65)"]
 name = "wrapt"
 version = "1.17.2"
 description = "Module for decorators, wrappers and monkey patching."
-optional = false
+optional = true
 python-versions = ">=3.8"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""

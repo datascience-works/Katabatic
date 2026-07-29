@@ -1,8 +1,12 @@
-import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+import sys
 
-from runner import RunConfig, preprocess_and_split, save_synthetic, evaluate
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
+
+from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
+
 from katabatic.models.medgan.models import MEDGAN
 
 config = RunConfig(
@@ -20,13 +24,19 @@ print("\n" + "=" * 60)
 print("STEP 3 — Train MedGAN")
 print("=" * 60)
 model = MEDGAN(ae_pretrain_epochs=100, gan_epochs=1000, batch_size=256, random_state=42)
-model.train(paths["split_dir"], categorical_cols=config.categorical_cols, continuous_cols=config.continuous_cols)
+model.train(
+    paths["split_dir"],
+    categorical_cols=config.categorical_cols,
+    continuous_cols=config.continuous_cols,
+)
 print("\nMedGAN training complete.")
 
 print("\n" + "=" * 60)
 print("STEP 4 — Generate synthetic data")
 print("=" * 60)
 synthetic_df = model.sample(len(train_df))
-synthetic_df = save_synthetic(synthetic_df, train_df, paths, categorical_cols=config.categorical_cols)
+synthetic_df = save_synthetic(
+    synthetic_df, train_df, paths, categorical_cols=config.categorical_cols
+)
 
 evaluate(model, config, train_df, synthetic_df, target_col, paths, test_df)

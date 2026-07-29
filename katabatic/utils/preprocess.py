@@ -4,8 +4,8 @@ from katabatic.utils.column_types import is_numerical
 
 
 def load_and_clean_data(file_path: str) -> pd.DataFrame:
-    df = pd.read_csv(file_path, na_values='?')
-    df.dropna(axis=1, how='all', inplace=True)
+    df = pd.read_csv(file_path, na_values="?")
+    df.dropna(axis=1, how="all", inplace=True)
     return df
 
 
@@ -16,7 +16,7 @@ def process_numerical_columns(df: pd.DataFrame) -> pd.DataFrame:
         if not is_numerical(df[col]):
             continue
         try:
-            col_data = pd.to_numeric(df[col], errors='coerce')
+            col_data = pd.to_numeric(df[col], errors="coerce")
             col_data = col_data.fillna(col_data.median())
 
             unique_vals = col_data.nunique(dropna=True)
@@ -39,11 +39,15 @@ def fill_categorical_nulls(df: pd.DataFrame) -> pd.DataFrame:
     for col in df.columns:
         if not is_numerical(df_copy[col]):
             df_copy[col] = df_copy[col].astype(str).str.strip()
-            df_copy[col] = df_copy[col].replace({'nan': 'Missing', 'missing': 'Missing'})
+            df_copy[col] = df_copy[col].replace(
+                {"nan": "Missing", "missing": "Missing"}
+            )
     return df_copy
 
 
-def preprocess_dataset(file_path: str, output_path: str, target_col: str = None) -> None:
+def preprocess_dataset(
+    file_path: str, output_path: str, target_col: str = None
+) -> None:
     """
     Load and clean a raw CSV. No encoding is applied — models handle their own
     data representation. Only the minimum necessary cleaning is done:
@@ -83,7 +87,7 @@ def preprocess_dataset(file_path: str, output_path: str, target_col: str = None)
     X = fill_categorical_nulls(X)
 
     # Keep target as-is; just normalise any NaN to the string 'Missing'
-    y = y.fillna('Missing').astype(str).str.strip()
+    y = y.fillna("Missing").astype(str).str.strip()
 
     df_processed = pd.concat([X, y], axis=1)
     df_processed.to_csv(output_path, index=False)

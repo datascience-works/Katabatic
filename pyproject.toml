@@ -96,8 +96,6 @@ packages = [{ include = "katabatic" }]
 include = ["CHANGELOG.md"]
 
 [tool.poetry.group.dev.dependencies]
-autopep8 = "^2.0.0"
-isort = "^5.12.0"
 mypy = "^1.5.0"
 ruff = "^0.12.4"
 # Development / test tooling
@@ -105,6 +103,9 @@ ipykernel = "^6.29.5"
 pytest = "^7.4.0"
 pytest-cov = "^4.1.0"
 pytest-mock = "^3.11.0"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
 
 [build-system]
 requires = ["poetry-core>=2.0"]

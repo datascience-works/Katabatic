@@ -1,25 +1,24 @@
-import os
 import csv
 import json
-
+import os
 
 # Score key returned by each evaluator's result dict
 SCORE_KEYS = {
-    'fidelity':    'fidelity_score',
-    'utility':     'utility_score',
-    'diversity':   'diversity_score',
-    'privacy':     'privacy_score',
-    'consistency': 'consistency_score',
-    'stability':   'stability_score',
+    "fidelity": "fidelity_score",
+    "utility": "utility_score",
+    "diversity": "diversity_score",
+    "privacy": "privacy_score",
+    "consistency": "consistency_score",
+    "stability": "stability_score",
 }
 
 DEFAULT_WEIGHTS = {
-    'utility':     0.35,
-    'fidelity':    0.25,
-    'privacy':     0.15,
-    'diversity':   0.10,
-    'consistency': 0.10,
-    'stability':   0.05,
+    "utility": 0.35,
+    "fidelity": 0.25,
+    "privacy": 0.15,
+    "diversity": 0.10,
+    "consistency": 0.10,
+    "stability": 0.05,
 }
 
 
@@ -47,7 +46,6 @@ class EvaluationReport:
         self.dimension_scores = self._extract_scores()
         self.composite_score = self._compute_composite()
 
-
     def _extract_scores(self) -> dict:
         scores = {}
         for dim, result in self.dimension_results.items():
@@ -67,8 +65,7 @@ class EvaluationReport:
         )
         return round(composite, 4)
 
-
-    def save(self, output_dir: str, prefix: str = ''):
+    def save(self, output_dir: str, prefix: str = ""):
         """
         Save a JSON report (full results) and a CSV summary to output_dir.
 
@@ -91,33 +88,34 @@ class EvaluationReport:
             for d, w in active_weights.items()
         }
         payload = {
-            'composite_score': self.composite_score,
-            'dimension_scores': self.dimension_scores,
-            'weights_used': normalised_weights,
-            'full_results': self._serialisable(self.dimension_results),
+            "composite_score": self.composite_score,
+            "dimension_scores": self.dimension_scores,
+            "weights_used": normalised_weights,
+            "full_results": self._serialisable(self.dimension_results),
         }
-        path = os.path.join(output_dir, f'{prefix}evaluation_report.json')
-        with open(path, 'w') as f:
+        path = os.path.join(output_dir, f"{prefix}evaluation_report.json")
+        with open(path, "w") as f:
             json.dump(payload, f, indent=2)
         print(f"Full report saved to:    {path}")
 
     def _save_csv(self, output_dir: str, prefix: str):
-        path = os.path.join(output_dir, f'{prefix}evaluation_summary.csv')
+        path = os.path.join(output_dir, f"{prefix}evaluation_summary.csv")
         active_weights = {d: self.weights.get(d, 0.0) for d in self.dimension_scores}
         total_weight = sum(active_weights.values())
 
-        with open(path, mode='w', newline='') as f:
+        with open(path, mode="w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(['Dimension', 'Score', 'Weight', 'Weighted Score'])
+            writer.writerow(["Dimension", "Score", "Weight", "Weighted Score"])
             for dim, score in self.dimension_scores.items():
                 w = active_weights[dim]
                 normalised_w = round(w / total_weight, 4) if total_weight else 0
-                writer.writerow([dim, score, normalised_w, round(score * normalised_w, 4)])
+                writer.writerow(
+                    [dim, score, normalised_w, round(score * normalised_w, 4)]
+                )
             writer.writerow([])
-            writer.writerow(['composite_score', self.composite_score, '', ''])
+            writer.writerow(["composite_score", self.composite_score, "", ""])
 
         print(f"Summary CSV saved to:    {path}")
-
 
     def print_summary(self):
         bar_width = 30
@@ -132,19 +130,19 @@ class EvaluationReport:
             w = active_weights[dim]
             norm_w = w / total_weight if total_weight else 0
             filled = int(score * bar_width)
-            bar = '#' * filled + '-' * (bar_width - filled)
+            bar = "#" * filled + "-" * (bar_width - filled)
             print(f"  {dim:<12} [{bar}] {score:.4f}  (weight {norm_w:.0%})")
 
         print("-" * 52)
         filled = int(self.composite_score * bar_width)
-        bar = '#' * filled + '-' * (bar_width - filled)
+        bar = "#" * filled + "-" * (bar_width - filled)
         print(f"  {'COMPOSITE':<12} [{bar}] {self.composite_score:.4f}")
         print("=" * 52)
-
 
     def _serialisable(self, obj):
         """Recursively convert numpy types to plain Python for JSON."""
         import numpy as np
+
         if isinstance(obj, dict):
             return {k: self._serialisable(v) for k, v in obj.items()}
         if isinstance(obj, list):

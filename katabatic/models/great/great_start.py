@@ -1,5 +1,4 @@
 import random
-import typing as tp
 
 
 def _pad(x, length: int, pad_value=50256):

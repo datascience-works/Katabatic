@@ -1,17 +1,21 @@
-import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+import sys
+
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 
 import pandas as pd
-from runner import RunConfig, preprocess_and_split, save_synthetic, evaluate
+from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
+
 from katabatic.models.tabpfgen.models import TabPFGenModel
 
 # max_train_rows=1000: TabPFN is designed for small datasets; this also keeps
 # generation fast. runner.py caps x_train.csv to this size.
 config = RunConfig(
     max_train_rows=999,
-    dataset_name     = "covtype",
-    model_name       = "tabpfgen",
+    dataset_name="covtype",
+    model_name="tabpfgen",
     categorical_cols=[],
     continuous_cols=[
         "Elevation",
@@ -82,7 +86,6 @@ config = RunConfig(
         "Hillshade_3pm": (0, 254),
         "Horizontal_Distance_To_Fire_Points": (0, 7173),
     },
-    
 )
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)
@@ -111,6 +114,8 @@ print("\n" + "=" * 60)
 print("STEP 4 — Load and validate synthetic data")
 print("=" * 60)
 synthetic_df = pd.read_csv(result["synthetic_csv"])
-synthetic_df = save_synthetic(synthetic_df, train_df, paths, categorical_cols=config.categorical_cols)
+synthetic_df = save_synthetic(
+    synthetic_df, train_df, paths, categorical_cols=config.categorical_cols
+)
 
 evaluate(model, config, train_df, synthetic_df, target_col, paths, test_df)

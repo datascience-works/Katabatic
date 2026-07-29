@@ -1,18 +1,21 @@
-import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+import sys
 
-from runner import RunConfig, preprocess_and_split, save_synthetic, evaluate
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
+
+from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
+
 from katabatic.models.ganblr.models import GANBLR
 
-
 config = RunConfig(
-    dataset_name     = "car",
-    model_name       = "ganblr",
-    categorical_cols = ['buying', 'maint', 'doors', 'persons', 'lug_boot', 'safety'],
-    continuous_cols  = [],
-    target_col_raw   = "class",
-    constraints      = None,
+    dataset_name="car",
+    model_name="ganblr",
+    categorical_cols=["buying", "maint", "doors", "persons", "lug_boot", "safety"],
+    continuous_cols=[],
+    target_col_raw="class",
+    constraints=None,
 )
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)
@@ -34,8 +37,10 @@ print("\nGANBLR training complete.")
 
 print("\n" + "=" * 60)
 print("STEP 4 — Generate synthetic data")
-print("=" * 60) 
+print("=" * 60)
 synthetic_df = model.sample(len(train_df))
-synthetic_df = save_synthetic(synthetic_df, train_df, paths, categorical_cols=config.categorical_cols)
+synthetic_df = save_synthetic(
+    synthetic_df, train_df, paths, categorical_cols=config.categorical_cols
+)
 
 evaluate(model, config, train_df, synthetic_df, target_col, paths, test_df)

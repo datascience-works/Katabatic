@@ -50,7 +50,9 @@ class FidelityEvaluation(Evaluation):
         super().__init__(real_data, synthetic_data)
 
         if categorical_cols is None and continuous_cols is None:
-            self.categorical_cols, self.continuous_cols = get_column_types(self.real_data, exclude_last=False)
+            self.categorical_cols, self.continuous_cols = get_column_types(
+                self.real_data, exclude_last=False
+            )
             print(
                 "[WARNING] categorical_cols and continuous_cols were not provided. "
                 "Auto-detecting from dtypes — integer-encoded categorical columns will be "
@@ -59,7 +61,6 @@ class FidelityEvaluation(Evaluation):
         else:
             self.categorical_cols = categorical_cols or []
             self.continuous_cols = continuous_cols or []
-            
 
     def evaluate(self) -> dict:
         jsd_results = self._compute_jsd()
@@ -69,21 +70,21 @@ class FidelityEvaluation(Evaluation):
         # Component scores in [0, 1] — higher is better.
         # Check for actual per-column entries, not just the 'avg' sentinel key,
         # to avoid a spurious 1.0 score when all columns were skipped.
-        cat_score = round(1.0 - jsd_results['avg'], 4) if len(jsd_results) > 1 else None
-        cont_score = round(1.0 - wd_results['avg'], 4) if len(wd_results) > 1 else None
+        cat_score = round(1.0 - jsd_results["avg"], 4) if len(jsd_results) > 1 else None
+        cont_score = round(1.0 - wd_results["avg"], 4) if len(wd_results) > 1 else None
         corr_score = round(1.0 - corr_diff, 4) if corr_diff is not None else None
 
         active = [s for s in [cat_score, cont_score, corr_score] if s is not None]
         fidelity_score = round(float(np.mean(active)), 4) if active else 0.0
 
         results = {
-            'categorical_jsd': jsd_results,
-            'continuous_wasserstein': wd_results,
-            'correlation_diff': round(corr_diff, 4) if corr_diff is not None else None,
-            'categorical_score': cat_score,
-            'continuous_score': cont_score,
-            'correlation_score': corr_score,
-            'fidelity_score': fidelity_score,
+            "categorical_jsd": jsd_results,
+            "continuous_wasserstein": wd_results,
+            "correlation_diff": round(corr_diff, 4) if corr_diff is not None else None,
+            "categorical_score": cat_score,
+            "continuous_score": cont_score,
+            "correlation_score": corr_score,
+            "fidelity_score": fidelity_score,
         }
 
         self._print_summary(results)
@@ -104,7 +105,9 @@ class FidelityEvaluation(Evaluation):
             score = float(jensenshannon(real_dist, synth_dist))
             scores[col] = round(score, 4)
 
-        scores['avg'] = round(float(np.mean(list(scores.values()))), 4) if scores else 0.0
+        scores["avg"] = (
+            round(float(np.mean(list(scores.values()))), 4) if scores else 0.0
+        )
         return scores
 
     def _aligned_distributions(self, real_col, synth_col):
@@ -152,19 +155,20 @@ class FidelityEvaluation(Evaluation):
             synth_norm = (synth_vals - real_vals.min()) / col_range
 
             wd = float(wasserstein_distance(real_norm, synth_norm))
-            scores[col] = round(min(1.0, wd), 4)   # clip at 1 for safety
+            scores[col] = round(min(1.0, wd), 4)  # clip at 1 for safety
 
-        scores['avg'] = round(float(np.mean(list(scores.values()))), 4) if scores else 0.0
+        scores["avg"] = (
+            round(float(np.mean(list(scores.values()))), 4) if scores else 0.0
+        )
         return scores
-    
 
     def _compute_correlation_diff(self):
         num_cols = [c for c in self.continuous_cols if c in self.synthetic_data.columns]
         if len(num_cols) < 2:
             return None
 
-        real_corr = self.real_data[num_cols].corr(method='pearson').values
-        synth_corr = self.synthetic_data[num_cols].corr(method='pearson').values
+        real_corr = self.real_data[num_cols].corr(method="pearson").values
+        synth_corr = self.synthetic_data[num_cols].corr(method="pearson").values
 
         # Replace NaN (constant columns) with 0 before diffing
         real_corr = np.nan_to_num(real_corr, nan=0.0)
@@ -173,29 +177,36 @@ class FidelityEvaluation(Evaluation):
         # Element-wise absolute difference, average over upper triangle (excl. diagonal)
         diff_matrix = np.abs(real_corr - synth_corr)
         upper_idx = np.triu_indices_from(diff_matrix, k=1)
-        avg_diff = float(np.mean(diff_matrix[upper_idx])) if len(upper_idx[0]) > 0 else 0.0
+        avg_diff = (
+            float(np.mean(diff_matrix[upper_idx])) if len(upper_idx[0]) > 0 else 0.0
+        )
 
         # avg_diff is in [0, 2] theoretically; divide by 2 to normalise to [0, 1]
         return round(min(1.0, avg_diff / 2.0), 4)
-
 
     def _print_summary(self, results):
         print("\n=== Fidelity Evaluation ===")
         print(f"Overall fidelity score: {results['fidelity_score']:.4f}")
 
-        if results['categorical_jsd']:
-            print(f"\nCategorical JSD (lower = better)  ->  score: {results['categorical_score']:.4f}")
-            for col, val in results['categorical_jsd'].items():
-                if col != 'avg':
+        if results["categorical_jsd"]:
+            print(
+                f"\nCategorical JSD (lower = better)  ->  score: {results['categorical_score']:.4f}"
+            )
+            for col, val in results["categorical_jsd"].items():
+                if col != "avg":
                     print(f"  {col:<30} JSD = {val:.4f}")
             print(f"  {'avg':<30} JSD = {results['categorical_jsd']['avg']:.4f}")
 
-        if results['continuous_wasserstein']:
-            print(f"\nContinuous Wasserstein (normalised, lower = better)  ->  score: {results['continuous_score']:.4f}")
-            for col, val in results['continuous_wasserstein'].items():
-                if col != 'avg':
+        if results["continuous_wasserstein"]:
+            print(
+                f"\nContinuous Wasserstein (normalised, lower = better)  ->  score: {results['continuous_score']:.4f}"
+            )
+            for col, val in results["continuous_wasserstein"].items():
+                if col != "avg":
                     print(f"  {col:<30} WD  = {val:.4f}")
             print(f"  {'avg':<30} WD  = {results['continuous_wasserstein']['avg']:.4f}")
 
-        if results['correlation_diff'] is not None:
-            print(f"\nCorrelation matrix avg diff: {results['correlation_diff']:.4f}  ->  score: {results['correlation_score']:.4f}")
+        if results["correlation_diff"] is not None:
+            print(
+                f"\nCorrelation matrix avg diff: {results['correlation_diff']:.4f}  ->  score: {results['correlation_score']:.4f}"
+            )

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -12,7 +12,7 @@ from katabatic.datasets.profile import infer_dataset_profile
 
 
 def _iso_now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 REGISTRY_RELPATH = "registry/datasets.json"
@@ -54,7 +54,9 @@ class DatasetRegistry:
         key = artifact_path_segment(dataset_name)
         raw = self._load_raw()
         if key in raw["datasets"]:
-            raise ValueError(f"dataset name already registered: {dataset_name!r} (key {key!r})")
+            raise ValueError(
+                f"dataset name already registered: {dataset_name!r} (key {key!r})"
+            )
 
         profile = infer_dataset_profile(
             csv_path, target_column=target_column, dataset_name=dataset_name

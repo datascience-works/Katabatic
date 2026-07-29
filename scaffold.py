@@ -11,12 +11,14 @@ def main():
     if command == "init-model":
         if len(sys.argv) < 3:
             print(
-                "Usage: python scaffold.py init-model <model_name> [dependency1 dependency2 ...]")
+                "Usage: python scaffold.py init-model <model_name> [dependency1 dependency2 ...]"
+            )
             sys.exit(1)
         model_name = sys.argv[2]
         dependencies = sys.argv[3:] if len(sys.argv) > 3 else None
         try:
             from katabatic.cli.commands.model_init import init_model
+
             init_model(model_name, dependencies)
         except Exception as e:
             print(f"Error creating model: {e}")

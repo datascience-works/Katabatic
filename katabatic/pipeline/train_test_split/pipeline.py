@@ -275,7 +275,9 @@ class TrainTestSplitPipeline(Pipeline):
         if require_registered_dataset:
             entry = reg.get(dataset_name)
             if entry is None:
-                raise ValueError(f"Dataset {dataset_name!r} missing from registry after register_if_absent.")
+                raise ValueError(
+                    f"Dataset {dataset_name!r} missing from registry after register_if_absent."
+                )
             ok, msg = check_dataset_for_model(entry, model_name)
             if not ok:
                 raise ValueError(
@@ -330,12 +332,16 @@ class TrainTestSplitPipeline(Pipeline):
         config = train_kw.get("config")
         if config is not None:
             if hasattr(config, "__dict__") and not isinstance(config, dict):
-                cfg_dict = {k: v for k, v in vars(config).items() if not k.startswith("_")}
+                cfg_dict = {
+                    k: v for k, v in vars(config).items() if not k.startswith("_")
+                }
                 store.save_json(f"{mr.root_relpath}/config.json", cfg_dict)
             elif isinstance(config, dict):
                 store.save_json(f"{mr.root_relpath}/config.json", config)
             else:
-                store.save_json(f"{mr.root_relpath}/config.json", {"repr": repr(config)})
+                store.save_json(
+                    f"{mr.root_relpath}/config.json", {"repr": repr(config)}
+                )
 
         eval_merged_base = {
             **eval_kwargs_user,
@@ -348,9 +354,7 @@ class TrainTestSplitPipeline(Pipeline):
         for evaluation in self._evaluations:
             per = _per_evaluation_kw(evaluation_kwargs, evaluation)
             merged = {**eval_merged_base, **per}
-            ref = _run_single_evaluation_artifact(
-                evaluation, store, mr, ds_ref, merged
-            )
+            ref = _run_single_evaluation_artifact(evaluation, store, mr, ds_ref, merged)
             evaluation_refs.append(ref)
 
         self.last_model = current_model
