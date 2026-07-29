@@ -164,7 +164,9 @@ def _partial_df_to_promts(partial_df: pd.DataFrame, float_precision=None):
     Returns:
         List of strings with the starting prompt for each sample.
     """
-    encoder = lambda x: _encode_row_partial(x, True, float_precision)
+    def encoder(x):
+        return _encode_row_partial(x, True, float_precision)
+
     res_encode = list(partial_df.apply(encoder, axis=1))
     res_first = list(partial_df.apply(_get_random_missing, axis=1))
 

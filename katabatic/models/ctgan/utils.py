@@ -4,7 +4,7 @@ from typing import List, Dict, Tuple
 from dataclasses import dataclass
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import QuantileTransformer, OneHotEncoder
+from sklearn.preprocessing import QuantileTransformer
 
 
 def infer_categorical_columns(df: pd.DataFrame) -> List[str]:
