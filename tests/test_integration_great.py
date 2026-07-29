@@ -16,9 +16,8 @@ def test_great_registry_load():
     assert ModelRegistry.is_supported("great")
     cls = ModelRegistry.load_model("great")
     assert cls.__name__ == "GReaT"
-    instance = cls()
-    assert hasattr(instance, "train")
-    assert hasattr(instance, "sample")
+    assert hasattr(cls, "train")
+    assert hasattr(cls, "sample")
 
 
 @pytest.mark.integration

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -18,7 +18,7 @@ class Model(ABC):
         self.is_fitted = False
 
     @abstractmethod
-    def train(self, *args, **kwargs) -> 'Model':
+    def train(self, *args, **kwargs) -> Model:
         """Train the model on the given data."""
         ...
 
@@ -28,7 +28,7 @@ class Model(ABC):
         ...
 
     @abstractmethod
-    def sample(self, *args, **kwargs) -> Union[np.ndarray, pd.DataFrame]:
+    def sample(self, *args, **kwargs) -> np.ndarray | pd.DataFrame:
         """Generate synthetic samples."""
         ...
 
@@ -57,7 +57,7 @@ class Model(ABC):
         return True
 
     @classmethod
-    def load_from_ref(cls, store: "ArtifactStore", ref: "ModelRef") -> "Model":
+    def load_from_ref(cls, store: ArtifactStore, ref: ModelRef) -> Model:
         """
         Reload a fitted model from a versioned on-disk artifact (see ``ModelRef`` paths under the store).
         Subclasses may implement; default raises NotImplementedError.
