@@ -1,11 +1,8 @@
 """Implementation of Tabddpm model."""
 from __future__ import annotations
 
-from typing import Any, Optional, Sequence, Union, Dict, Tuple, List
-import math
+from typing import Any, Optional, Sequence, Union, Dict, List
 import random
-import tempfile
-from pathlib import Path
 import os
 
 import numpy as np
@@ -579,7 +576,6 @@ class Tabddpm(Model):
             return Xn
 
         # reconstruct columns: [num ... | cat ...]
-        cols = []
         data = []
         start = 0
         if self._n_num > 0:

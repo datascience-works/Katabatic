@@ -9,7 +9,6 @@ import pandas as pd
 import pytest
 
 from katabatic.artifacts import LocalArtifactStore
-from katabatic.datasets.registry import DatasetRegistry
 from katabatic.evaluate.fidelity.evaluation import StatisticalFidelityEvaluation
 from katabatic.models.base_model import Model
 from katabatic.pipeline.train_test_split.pipeline import (

@@ -12,8 +12,7 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from typing import Optional, Tuple
-from pathlib import Path
+from typing import Optional
 
 from katabatic.models.base_model import Model
 from katabatic.models.medgan.utils import (
@@ -150,7 +149,7 @@ class MEDGAN(Model):
         data_range[data_range == 0] = 1  # Avoid division by zero
         data_normalized = (data - self.data_min_) / data_range
 
-        logger.info(f"Data normalized to [0, 1] range")
+        logger.info("Data normalized to [0, 1] range")
         logger.info(f"Original range: [{data.min():.2f}, {data.max():.2f}]")
         logger.info(
             f"Normalized range: [{data_normalized.min():.2f}, {data_normalized.max():.2f}]")

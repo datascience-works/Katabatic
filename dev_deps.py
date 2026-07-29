@@ -8,7 +8,6 @@ while keeping the main package clean for PyPI distribution.
 
 import subprocess
 import sys
-import os
 from pathlib import Path
 
 
@@ -35,7 +34,7 @@ def install_model_deps(model_name):
 
     if not (model_path / "pyproject.toml").exists():
         print(f"No pyproject.toml found for model '{model_name}'")
-        print(f"Using main package extras instead...")
+        print("Using main package extras instead...")
         return run_command(f"poetry install -E {model_name}")
 
     print(f"Installing dependencies for {model_name} model...")
