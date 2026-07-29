@@ -11,29 +11,27 @@ CoDi uses two co-evolving diffusion models:
 With contrastive learning to ensure coherent generation.
 """
 
-import os
-import json
 import logging
+import os
+from typing import Any, Dict, Optional, Tuple
+
 import numpy as np
 import pandas as pd
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-from typing import Optional, Dict, Any, Tuple
 
 from katabatic.models.base_model import Model
 from katabatic.models.codi.utils import (
-    infer_schema,
-    encode_dataframe,
-    decode_dataframe,
-    save_metadata,
-    load_metadata,
-    set_global_seed,
-    GaussianDiffusionTrainer,
     GaussianDiffusionSampler,
+    GaussianDiffusionTrainer,
     MultinomialDiffusion,
     TabularUNet,
-    get_device
+    decode_dataframe,
+    encode_dataframe,
+    get_device,
+    infer_schema,
+    save_metadata,
+    set_global_seed,
 )
 
 logging.basicConfig(level=logging.INFO)
