@@ -58,7 +58,7 @@ class GReaT(Model):
 
     def __init__(
         self,
-        llm: str,
+        llm: str = "distilgpt2",
         experiment_dir: str = "trainer_great",
         epochs: int = 100,
         batch_size: int = 8,
