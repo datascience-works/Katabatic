@@ -87,6 +87,7 @@ jobs:
 
       - name: Install wheel in clean venv
         run: |
+          ls -la dist/
           python -m venv /tmp/whltest
           /tmp/whltest/bin/pip install dist/katabatic-*.whl
           /tmp/whltest/bin/python -c "import katabatic; from katabatic.utils.preprocess import preprocess_tabular; print(katabatic.__version__)"
