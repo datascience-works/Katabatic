@@ -2,15 +2,16 @@
 Utility functions for the CoDi model.
 """
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import numpy as np
-import pandas as pd
 import json
 import math
 import random
-from typing import Dict, Any, Tuple, List, Optional
+from typing import Any, Dict, Optional, Tuple
+
+import numpy as np
+import pandas as pd
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 from sklearn.preprocessing import LabelEncoder
 
 

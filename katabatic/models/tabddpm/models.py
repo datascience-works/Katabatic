@@ -1,10 +1,9 @@
 """Implementation of Tabddpm model."""
 from __future__ import annotations
 
-import os
+from typing import Any, Optional, Sequence, Union, Dict, List
 import random
-from collections.abc import Sequence
-from typing import Any, Union
+import os
 
 import numpy as np
 import pandas as pd
@@ -578,7 +577,6 @@ class Tabddpm(Model):
             return Xn
 
         # reconstruct columns: [num ... | cat ...]
-        cols = []
         data = []
         start = 0
         if self._n_num > 0:

@@ -1,17 +1,12 @@
 import os
-from typing import Any
+from typing import Any, Dict, Optional
 
 import numpy as np
 import pandas as pd
 
 from katabatic.models.base_model import Model
 
-from .utils import (
-    DataTransformer,
-    PrivacyMechanism,
-    save_metadata,
-    set_global_seed,
-)
+from .utils import DataTransformer, PrivacyMechanism, save_metadata, set_global_seed
 
 
 class PATEGAN(Model):
@@ -661,7 +656,7 @@ class PATEGAN(Model):
                 try:
                     y_proba = clf.predict_proba(x)[:, 1]
                     results['roc_auc'] = roc_auc_score(y, y_proba)
-                except:
+                except (AttributeError, ValueError):
                     pass
         else:
             if model == 'lr':
@@ -688,5 +683,5 @@ class PATEGAN(Model):
         if self._sess is not None:
             try:
                 self._sess.close()
-            except:
+            except Exception:
                 pass

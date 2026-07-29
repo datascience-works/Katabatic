@@ -7,7 +7,8 @@ by Choi et al. (2017) - https://arxiv.org/abs/1703.06490
 
 
 import torch
-from torch import nn
+import torch.nn as nn
+from typing import Tuple
 
 
 class Autoencoder(nn.Module):

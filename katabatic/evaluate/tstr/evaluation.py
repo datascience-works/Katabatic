@@ -88,6 +88,16 @@ class TSTREvaluation(Evaluation):
 
     def evaluate(self):
         results = {}
+
+        # Convert to numpy array to prevent feature name conflict
+        x_train = np.asarray(self.x_train)
+        x_test = np.asarray(self.x_test)
+
+        if x_train.shape[1] != x_test.shape[1]:
+            raise ValueError(
+                f"TSTR feature-count mismatch. Synthetic has {x_train.shape[1]} columns while real test has {x_test.shape[1]}."
+            )
+        
         # Calculate class imbalance ratio for XGBoost
         num_neg = np.sum(self.y_train == 0)
         num_pos = np.sum(self.y_train == 1)
@@ -109,15 +119,15 @@ class TSTREvaluation(Evaluation):
         for name, model in models.items():
             if name in ["LR", "MLP"]:
                 scaler = StandardScaler()
-                x_train_scaled = scaler.fit_transform(self.x_train)
-                x_test_scaled = scaler.transform(self.x_test)
+                x_train_scaled = scaler.fit_transform(x_train)
+                x_test_scaled = scaler.transform(x_test)
                 model.fit(x_train_scaled, self.y_train)
                 y_pred = model.predict(x_test_scaled)
                 y_prob = model.predict_proba(x_test_scaled)[:, 1]
             else:
-                model.fit(self.x_train, self.y_train)
-                y_pred = model.predict(self.x_test)
-                y_prob = model.predict_proba(self.x_test)[:, 1]
+                model.fit(x_train, self.y_train)
+                y_pred = model.predict(x_test)
+                y_prob = model.predict_proba(x_test)[:, 1]
 
             metrics = {
                 'Accuracy': accuracy_score(self.y_test, y_pred),

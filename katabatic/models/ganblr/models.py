@@ -20,10 +20,8 @@ if TYPE_CHECKING:
     from katabatic.artifacts.base import ArtifactStore
     from katabatic.artifacts.refs import ModelRef
 
-from .kdb import *
 from .kdb import _add_uniform
-from .utils import *
-from .utils import _ensure_tf
+from .utils import DataUtils, _ensure_tf, elr_loss, get_lr, sample, softmax_weight
 
 
 @contextmanager
@@ -162,7 +160,7 @@ class GANBLR(Model):
         self.batch_size = batch_size
         if verbose:
             print("GANBLR: warmup (encoder + generator)…", flush=True)
-        history = self._warmup_run(warmup_epochs, verbose=0)
+        _ = self._warmup_run(warmup_epochs, verbose=0)
         if verbose:
             print("GANBLR: warmup done.", flush=True)
 

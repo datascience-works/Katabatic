@@ -1,4 +1,7 @@
 import numpy as np
+from pandas import read_csv
+
+from .kdb import KdbHighOrderFeatureEncoder
 
 _tf_mod = None
 
@@ -124,9 +127,9 @@ def sample(*arrays, n=None, frac=None, random_state=None):
     
     arr0 = arrays[0]
     original_size = len(arr0)
-    if n == None and frac == None:
+    if n is None and frac is None:
         raise Exception('You must specify one of frac or size.')
-    if n == None:
+    if n is None:
         n = int(len(arr0) * frac)
 
     idxs = random.choice(original_size, n, replace=False)
@@ -169,10 +172,6 @@ def get_demo_data(name='adult'):
     assert(name in DEMO_DATASETS)
     return read_csv(DEMO_DATASETS[name]['link'], **DEMO_DATASETS[name]['params'])
 
-from pandas import read_csv
-
-from .kdb import KdbHighOrderFeatureEncoder
-
 
 class DataUtils:
     """
@@ -195,14 +194,14 @@ class DataUtils:
         self.__kdbe_x = None
 
     def get_categories(self, idxs=None):
-        if idxs != None:
+        if idxs is not None:
             return [self._kdbe.ohe_.categories_[i] for i in idxs]
         return self._kdbe.ohe_.categories_
 
     def get_kdbe_x(self, k=0, dense_format=True) -> np.ndarray:
         if self.__kdbe_x is not None:
             return self.__kdbe_x
-        if self._kdbe == None:
+        if self._kdbe is None:
             self._kdbe = KdbHighOrderFeatureEncoder()
             self._kdbe.fit(self.x, self.y, k=k)
         kdbex = self._kdbe.transform(self.x)

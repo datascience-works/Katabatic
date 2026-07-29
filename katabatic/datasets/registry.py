@@ -78,7 +78,7 @@ class DatasetRegistry:
         Register when the logical name is missing; otherwise return the existing entry.
         Emits a warning if column names differ from a fresh profile of ``csv_path``.
         """
-        key = artifact_path_segment(dataset_name)
+        _ = artifact_path_segment(dataset_name)
         existing = self.get(dataset_name)
         if existing is None:
             return self.register(dataset_name, csv_path, target_column=target_column)

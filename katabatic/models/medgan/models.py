@@ -11,7 +11,9 @@ import os
 import numpy as np
 import pandas as pd
 import torch
-from torch import nn, optim
+import torch.nn as nn
+import torch.optim as optim
+from typing import Optional
 
 from katabatic.models.base_model import Model
 from katabatic.models.medgan.utils import (

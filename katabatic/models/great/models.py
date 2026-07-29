@@ -3,17 +3,18 @@ import logging
 import os
 import random
 import re
+import typing as tp
 import warnings
 
 import fsspec
 import numpy as np
 import pandas as pd
 import torch
+from tqdm import tqdm
+from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments
 
 # Import base model
 from katabatic.models.base_model import Model
-from tqdm import tqdm
-from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments
 
 from .great_dataset import GReaTDataCollator, GReaTDataset
 from .great_start import (
@@ -57,7 +58,7 @@ class GReaT(Model):
 
     def __init__(
         self,
-        llm: str,
+        llm: str = "distilgpt2",
         experiment_dir: str = "trainer_great",
         epochs: int = 100,
         batch_size: int = 8,
@@ -413,7 +414,7 @@ class GReaT(Model):
                                 eos_token_id=semicolon_token,
                                 do_sample=True
                             )
-                        except:
+                        except(ValueError, RuntimeError, IndexError, TypeError):
                             # If semicolon token doesn't work, generate with length limit
                             output = self.model.generate(
                                 inputs["input_ids"],
@@ -500,9 +501,9 @@ class GReaT(Model):
             for col in self.num_cols:
                 try:
                     df[col] = pd.to_numeric(df[col], errors='coerce')
-                except:
+                except (ValueError, TypeError) as e:
                     print(
-                        f"Warning: Could not convert column {col} to numeric")
+                        f"Warning: Could not convert column {col} to numeric: {e}")
 
             return df.head(n_samples)  # Return exactly n_samples rows
         else:
@@ -745,8 +746,6 @@ class GReaT(Model):
                 df_curr = df_miss.iloc[[index]]
                 org_index = df_curr.index  # Keep index in new DataFrame
                 while not is_complete:
-                    num_attrs_missing = pd.isna(df_curr).sum().sum()
-                    # print("Number of missing values: ",  num_attrs_missing)
                     # Generate text promt from current features.
                     starting_prompts = _partial_df_to_promts(
                         df_curr, self.float_precision)
@@ -762,8 +761,6 @@ class GReaT(Model):
                     df_curr[self.num_cols] = df_curr[self.num_cols].astype(
                         np.float)
 
-                    # Check for missing values
-                    nans = df_curr.isna()
                     if not df_curr.isna().any().any():
                         is_complete = True
                         df_list.append(df_curr.set_index(org_index))

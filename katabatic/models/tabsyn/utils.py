@@ -689,7 +689,7 @@ def sample_tabsyn(
     decoder = _rebuild_decoder_from_state(state).to(device).eval()
 
     # Use encoder to get in_dim
-    enc = _rebuild_encoder_from_state(state, device=device).eval()
+    _ = _rebuild_encoder_from_state(state, device=device).eval() #TODO - unused assignment. Check usage.
     # fabricate a fake batch to infer in_dim
     in_dim = (1 + state.n_num + len(state.cat_sizes)) * state.token_dim
 

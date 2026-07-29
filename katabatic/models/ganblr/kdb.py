@@ -1,6 +1,4 @@
 import numpy as np
-
-#import networkx as nx
 from pyitlib import discrete_random_variable as drv
 
 
@@ -21,8 +19,11 @@ def build_graph(X, y, k=2):
   y_node  = num_features
 
   #util func
-  _x = lambda i:X[:,i]
-  _x2comb = lambda i,j:(X[:,i], X[:,j])
+  def _x(i):
+     return X[:,i]
+
+  def _x2comb(i, j):
+     return (X[:,i], X[:,j])
 
   #feature indexes desc sort by mutual information
   sorted_feature_idxs = np.argsort([
@@ -95,13 +96,16 @@ def get_cross_table(*cols, apply_wt=False):
              [0, 0, 1, 0, 0],
              [5, 0, 1, 0, 1]], dtype=uint64)
       '''
+
+    def fnx1(q):
+       return len(q.squeeze().shape)
+    
     if not all(len(col) == len(cols[0]) for col in cols[1:]):
       raise ValueError("all arguments must be same size")
 
     if len(cols) == 0:
       raise TypeError("xtab() requires at least one argument")
 
-    fnx1 = lambda q: len(q.squeeze().shape)
     if not all([fnx1(col) == 1 for col in cols]):
       raise ValueError("all input arrays must be 1D")
 
@@ -196,7 +200,7 @@ def get_high_order_feature(X, col, evidence_cols, feature_uniques):
     if evidence_cols is None or len(evidence_cols) == 0:
         return X[:,[col]]
     else:
-        evidences = [X[:,_col] for _col in evidence_cols]
+        _ = [X[:,_col] for _col in evidence_cols] #TODO - Unused variable. Check if line should return.
 
         #[1, variable_unique, evidence_unique]
         base = [1, feature_uniques[col]] + [feature_uniques[_col] for _col in evidence_cols[::-1][:-1]]
