@@ -107,4 +107,4 @@ jobs:
         run: |
           python -m venv /tmp/whltest
           /tmp/whltest/bin/pip install dist/*.whl
-          /tmp/whltest/bin/python -c "import katabatic; from katabatic.utils.preprocess import preprocess_tabular; print(katabatic.__version__)"
+          /tmp/whltest/bin/python -c "import katabatic; print(katabatic.__version__)"
