@@ -90,6 +90,18 @@ Repository = "https://github.com/datascience-works/Katabatic"
 Documentation = "https://github.com/datascience-works/Katabatic#readme"
 "Bug Tracker" = "https://github.com/datascience-works/Katabatic/issues"
 
+[tool.coverage.run]
+# Experimental models are excluded until they have integration tests.
+omit = [
+    "katabatic/models/codi/*",
+    "katabatic/models/ctgan/*",
+    "katabatic/models/medgan/*",
+    "katabatic/models/pategan/*",
+    "katabatic/models/tabddpm/*",
+    "katabatic/models/tabsyn/*",
+    "katabatic/cli/*",
+]
+
 [tool.poetry]
 # Poetry-specific build config only.
 packages = [{ include = "katabatic" }]
@@ -104,16 +116,18 @@ pytest = "^7.4.0"
 pytest-cov = "^4.1.0"
 pytest-mock = "^3.11.0"
 
-[tool.ruff.lint]
-select = ["E", "F", "I", "UP"]
-ignore = ["E501"] #prevents PRs. More effort required to fix across codebase.
-
 [tool.pytest.ini_options]
 markers = [
     "integration: full model stack (slow)",
     "ganblr: requires ganblr extra",
     "great: requires great extra",
 ]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+ignore = ["E501"] #prevents PRs. More effort required to fix across codebase.
+
+
 
 [build-system]
 requires = ["poetry-core>=2.0"]

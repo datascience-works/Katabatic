@@ -35,7 +35,7 @@ jobs:
         run: poetry run ruff check katabatic tests
 
       - name: Pytest (fast)
-        run: poetry run pytest -q
+        run: poetry run pytest -q --cov=katabatic --cov-report=term-missing --cov-fail-under=60
 
       - name: Build wheel
         run: poetry build
