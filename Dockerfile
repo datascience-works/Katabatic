@@ -1,5 +1,7 @@
 FROM python:3.11-slim
 
+ARG POETRY_INSTALL_ARGS="--only main"
+
 # Python settings
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -12,21 +14,24 @@ WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        build-essential \
+    && apt-get install -y --no-install-recommends build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Poetry
 RUN pip install --no-cache-dir "poetry==${POETRY_VERSION}"
 
 # Copy dependency files
-COPY pyproject.toml poetry.lock ./
-
-# Install core dependencies only
-RUN poetry install --only main --no-root
+COPY pyproject.toml poetry.lock README.md LICENSE ./
 
 # Copy Katabatic source code
 COPY katabatic ./katabatic
+
+#Specifies which extras to install or just main.
+RUN poetry install ${POETRY_INSTALL_ARGS}
+
+#Non-root user for runtime
+RUN useradd --create-home --uid 1000 appuser
+USER appuser
 
 # Verify installation
 RUN python -c "import katabatic; print('Katabatic version:', katabatic.__version__)"
