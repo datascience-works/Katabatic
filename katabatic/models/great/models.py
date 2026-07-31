@@ -1,40 +1,36 @@
-import warnings
 import json
-import typing as tp
 import logging
-import re
+import os
 import random
+import re
+import warnings
 
 import fsspec
 import numpy as np
 import pandas as pd
-
-from tqdm import tqdm
-
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments
-import os
+from tqdm import tqdm
+from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments
 
-from .great_dataset import GReaTDataset, GReaTDataCollator
+# Import base model
+from katabatic.models.base_model import Model
+
+from .great_dataset import GReaTDataCollator, GReaTDataset
 from .great_start import (
-    GReaTStart,
     CategoricalStart,
     ContinuousStart,
+    GReaTStart,
     RandomStart,
-    _pad_tokens,
 )
 from .great_trainer import GReaTTrainer
 from .great_utils import (
     _array_to_dataframe,
-    _get_column_distribution,
-    _convert_tokens_to_text,
     _convert_text_to_tabular_data,
+    _convert_tokens_to_text,
+    _get_column_distribution,
     _partial_df_to_promts,
     bcolors,
 )
-
-# Import base model
-from katabatic.models.base_model import Model
 
 
 class GReaT(Model):
@@ -61,13 +57,13 @@ class GReaT(Model):
 
     def __init__(
         self,
-        llm: str,
+        llm: str = "distilgpt2",
         experiment_dir: str = "trainer_great",
         epochs: int = 100,
         batch_size: int = 8,
         efficient_finetuning: str = "",
-        float_precision: tp.Optional[int] = None,
-        report_to: tp.List[str] = [],
+        float_precision: int | None = None,
+        report_to: list[str] = [],
         **train_kwargs,
     ):
         """Initializes GReaT.
@@ -99,9 +95,9 @@ class GReaT(Model):
             try:
                 from peft import (
                     LoraConfig,
+                    TaskType,
                     get_peft_model,
                     prepare_model_for_int8_training,
-                    TaskType,
                 )
             except ImportError:
                 raise ImportError(
@@ -143,7 +139,7 @@ class GReaT(Model):
     @classmethod
     def get_required_dependencies(cls) -> list[str]:
         """Return a list of required dependencies for this model."""
-        return ['transformers', 'torch']
+        return ["transformers", "torch"]
 
     def train(self, *args, **kwargs):
         """Train the model.
@@ -162,7 +158,8 @@ class GReaT(Model):
 
             if not os.path.exists(x_train_path) or not os.path.exists(y_train_path):
                 raise FileNotFoundError(
-                    f"Expected x_train.csv and y_train.csv in {dataset_dir}")
+                    f"Expected x_train.csv and y_train.csv in {dataset_dir}"
+                )
 
             X_train = pd.read_csv(x_train_path)
             y_train = pd.read_csv(y_train_path)
@@ -184,8 +181,7 @@ class GReaT(Model):
 
             # Generate synthetic data of equal size on CPU to avoid GPU issues
             n_rows = len(df_train)
-            df_synth = self.sample(n_rows, device="cpu",
-                                   k=max(1, min(8, n_rows)))
+            df_synth = self.sample(n_rows, device="cpu", k=max(1, min(8, n_rows)))
 
             # Split into X / y (last column assumed to be label)
             if df_synth.shape[1] >= 2:
@@ -195,7 +191,9 @@ class GReaT(Model):
                 # Degenerate case: single column; treat as X only
                 x_synth = df_synth.copy()
                 y_synth = pd.Series(
-                    [0] * len(x_synth), name=y_train.name if hasattr(y_train, 'name') else 'target')
+                    [0] * len(x_synth),
+                    name=y_train.name if hasattr(y_train, "name") else "target",
+                )
 
             # Align feature names to X_train if counts match
             real_cols = X_train.columns.tolist()
@@ -205,14 +203,18 @@ class GReaT(Model):
 
             # Write CSVs expected by TSTR
             if synthetic_dir is None:
-                synthetic_dir = os.path.join("synthetic", os.path.basename(
-                    os.path.normpath(dataset_dir)), "great")
+                synthetic_dir = os.path.join(
+                    "synthetic",
+                    os.path.basename(os.path.normpath(dataset_dir)),
+                    "great",
+                )
             os.makedirs(synthetic_dir, exist_ok=True)
             x_path = os.path.join(synthetic_dir, "x_synth.csv")
             y_path = os.path.join(synthetic_dir, "y_synth.csv")
             x_synth.to_csv(x_path, index=False)
-            y_name = y_train.name if hasattr(
-                y_train, 'name') and y_train.name else 'target'
+            y_name = (
+                y_train.name if hasattr(y_train, "name") and y_train.name else "target"
+            )
             pd.DataFrame(y_synth, columns=[y_name]).to_csv(y_path, index=False)
 
             return self
@@ -225,14 +227,15 @@ class GReaT(Model):
         # GReaT doesn't have a built-in evaluation method
         # This could be extended to implement specific evaluation metrics
         raise NotImplementedError(
-            "GReaT evaluation not implemented. Use external evaluation metrics.")
+            "GReaT evaluation not implemented. Use external evaluation metrics."
+        )
 
     def fit(
         self,
-        data: tp.Union[pd.DataFrame, np.ndarray],
-        column_names: tp.Optional[tp.List[str]] = None,
-        conditional_col: tp.Optional[str] = None,
-        resume_from_checkpoint: tp.Union[bool, str] = False,
+        data: pd.DataFrame | np.ndarray,
+        column_names: list[str] | None = None,
+        conditional_col: str | None = None,
+        resume_from_checkpoint: bool | str = False,
     ) -> GReaTTrainer:
         """Fine-tune GReaT using tabular data.
 
@@ -281,8 +284,8 @@ class GReaT(Model):
     def sample(
         self,
         n_samples: int,
-        start_col: tp.Optional[str] = "",
-        start_col_dist: tp.Optional[tp.Union[dict, list]] = None,
+        start_col: str | None = "",
+        start_col_dist: dict | list | None = None,
         temperature: float = 0.7,
         k: int = 100,
         max_length: int = 100,
@@ -358,18 +361,18 @@ class GReaT(Model):
             pd.DataFrame: Synthetic data with original column names
         """
         if self.columns is None:
-            raise ValueError(
-                "Model has not been fitted yet. Please call fit() first.")
+            raise ValueError("Model has not been fitted yet. Please call fit() first.")
 
         # Extract known categorical values - if we can find original distributions
         categorical_values = {}
-        cat_cols = [col for col in self.columns if col.startswith('cat_')]
+        cat_cols = [col for col in self.columns if col.startswith("cat_")]
 
         # Try to infer categorical values from distributions
         for col in cat_cols:
-            if col == self.conditional_col and isinstance(self.conditional_col_dist, dict):
-                categorical_values[col] = list(
-                    self.conditional_col_dist.keys())
+            if col == self.conditional_col and isinstance(
+                self.conditional_col_dist, dict
+            ):
+                categorical_values[col] = list(self.conditional_col_dist.keys())
 
         # Make sure we're in eval mode and use the specified device
         self.model.to(device)
@@ -399,14 +402,18 @@ class GReaT(Model):
                         prompt = f"{sample_text}{feature} is"
 
                         # Generate only the value (not the next feature name)
-                        inputs = self.tokenizer(
-                            prompt, return_tensors="pt").to(self.device)
+                        inputs = self.tokenizer(prompt, return_tensors="pt").to(
+                            self.device
+                        )
 
                         # Generate until semicolon or max_length
                         try:
                             # Check if semicolon is in vocabulary
-                            semicolon_token = self.tokenizer.encode(
-                                ";")[0] if ";" in self.tokenizer.decode(list(range(1000))) else None
+                            semicolon_token = (
+                                self.tokenizer.encode(";")[0]
+                                if ";" in self.tokenizer.decode(list(range(1000)))
+                                else None
+                            )
 
                             output = self.model.generate(
                                 inputs["input_ids"],
@@ -415,9 +422,9 @@ class GReaT(Model):
                                 temperature=temperature,
                                 pad_token_id=self.tokenizer.eos_token_id,
                                 eos_token_id=semicolon_token,
-                                do_sample=True
+                                do_sample=True,
                             )
-                        except:
+                        except (ValueError, RuntimeError, IndexError, TypeError):
                             # If semicolon token doesn't work, generate with length limit
                             output = self.model.generate(
                                 inputs["input_ids"],
@@ -425,13 +432,14 @@ class GReaT(Model):
                                 max_length=len(inputs["input_ids"][0]) + 30,
                                 temperature=temperature,
                                 pad_token_id=self.tokenizer.eos_token_id,
-                                do_sample=True
+                                do_sample=True,
                             )
 
                         # Extract the generated value
                         generated_text = self.tokenizer.decode(
-                            output[0], skip_special_tokens=True)
-                        raw_value = generated_text[len(prompt):].strip()
+                            output[0], skip_special_tokens=True
+                        )
+                        raw_value = generated_text[len(prompt) :].strip()
 
                         # Clean up the value (improved parsing)
                         # First check for semicolon
@@ -442,20 +450,21 @@ class GReaT(Model):
                             # Try different delimiters in order of preference
                             for delimiter in [",", ".", "\n", " "]:
                                 if delimiter in raw_value:
-                                    value = raw_value.split(
-                                        delimiter)[0].strip()
+                                    value = raw_value.split(delimiter)[0].strip()
                                     break
                             else:
                                 # If no delimiters found, use the whole string but truncate if too long
                                 value = raw_value[:30].strip()
 
                         # Clean up any trailing non-alphanumeric characters
-                        while value and not (value[-1].isalnum() or value[-1] in ['.', '-']):
+                        while value and not (
+                            value[-1].isalnum() or value[-1] in [".", "-"]
+                        ):
                             value = value[:-1]
 
                         if feature in self.num_cols:
                             # Try to extract a number if this is a numerical column
-                            numeric_match = re.search(r'-?\d+\.?\d*', value)
+                            numeric_match = re.search(r"-?\d+\.?\d*", value)
                             if numeric_match:
                                 value = numeric_match.group(0)
                         elif feature in cat_cols:
@@ -466,7 +475,9 @@ class GReaT(Model):
                                 matched = False
                                 for cat in valid_cats:
                                     if cat.lower() == value.lower():
-                                        value = cat  # Use the proper case from the original
+                                        value = (
+                                            cat  # Use the proper case from the original
+                                        )
                                         matched = True
                                         break
 
@@ -485,15 +496,17 @@ class GReaT(Model):
                         sample_text += f"{feature} is {value}; "
 
                     # Create a dictionary with all features in original order
-                    ordered_sample = {feature: sample_values.get(
-                        feature, "") for feature in self.columns}
+                    ordered_sample = {
+                        feature: sample_values.get(feature, "")
+                        for feature in self.columns
+                    }
                     synthetic_data.append(ordered_sample)
 
                     # Update progress bar
                     pbar.update(1)
 
                 except Exception as e:
-                    print(f"Error generating sample {i+1}: {str(e)}")
+                    print(f"Error generating sample {i + 1}: {e!s}")
                     continue
 
         # Convert to DataFrame
@@ -503,10 +516,9 @@ class GReaT(Model):
             # Convert numerical columns to float if possible
             for col in self.num_cols:
                 try:
-                    df[col] = pd.to_numeric(df[col], errors='coerce')
-                except:
-                    print(
-                        f"Warning: Could not convert column {col} to numeric")
+                    df[col] = pd.to_numeric(df[col], errors="coerce")
+                except (ValueError, TypeError) as e:
+                    print(f"Warning: Could not convert column {col} to numeric: {e}")
 
             return df.head(n_samples)  # Return exactly n_samples rows
         else:
@@ -516,8 +528,8 @@ class GReaT(Model):
     def _legacy_sample(
         self,
         n_samples: int,
-        start_col: tp.Optional[str] = "",
-        start_col_dist: tp.Optional[tp.Union[dict, list]] = None,
+        start_col: str | None = "",
+        start_col_dist: dict | list | None = None,
         temperature: float = 0.7,
         k: int = 100,
         max_length: int = 100,
@@ -573,8 +585,7 @@ class GReaT(Model):
 
                     # Convert tokens back to tabular data
                     text_data = _convert_tokens_to_text(tokens, self.tokenizer)
-                    df_gen = _convert_text_to_tabular_data(
-                        text_data, self.columns)
+                    df_gen = _convert_text_to_tabular_data(text_data, self.columns)
 
                     # Remove rows where we have not generated anything
                     df_gen = df_gen[~(df_gen == "placeholder").any(axis=1)]
@@ -592,8 +603,7 @@ class GReaT(Model):
                             df_gen[i_num_cols], errors="coerce"
                         )
                         df_gen = df_gen[
-                            coerced_series.notnull(
-                            ) | df_gen[i_num_cols].isna()
+                            coerced_series.notnull() | df_gen[i_num_cols].isna()
                         ]
 
                     # Convert numerical columns to float
@@ -609,14 +619,18 @@ class GReaT(Model):
                     _cnt += 1
                     if _cnt > 13 and already_generated == 0:
                         print(
-                            f"{bcolors.WARNING}Unable to generate samples after {_cnt} attempts.{bcolors.ENDC}")
-                        print(f"{bcolors.WARNING}To address this issue, consider using guided_sampling=True, which uses a different generation approach that may be more reliable, although it might be much slower.{bcolors.ENDC}")
+                            f"{bcolors.WARNING}Unable to generate samples after {_cnt} attempts.{bcolors.ENDC}"
+                        )
                         print(
-                            f"{bcolors.WARNING}Example: model.sample(n_samples=10, guided_sampling=True){bcolors.ENDC}")
+                            f"{bcolors.WARNING}To address this issue, consider using guided_sampling=True, which uses a different generation approach that may be more reliable, although it might be much slower.{bcolors.ENDC}"
+                        )
+                        print(
+                            f"{bcolors.WARNING}Example: model.sample(n_samples=10, guided_sampling=True){bcolors.ENDC}"
+                        )
                         raise Exception("Breaking the generation loop!")
 
             except Exception as e:
-                print(f"{bcolors.FAIL}An error has occurred: {str(e)}{bcolors.ENDC}")
+                print(f"{bcolors.FAIL}An error has occurred: {e!s}{bcolors.ENDC}")
                 print(
                     f"{bcolors.WARNING}To address this issue, consider fine-tuning the GReaT model for a longer period. This can be achieved by increasing the number of epochs.{bcolors.ENDC}"
                 )
@@ -648,7 +662,7 @@ class GReaT(Model):
 
     def great_sample(
         self,
-        starting_prompts: tp.Union[str, list[str]],
+        starting_prompts: str | list[str],
         temperature: float = 0.7,
         max_length: int = 100,
         device: str = "cuda",
@@ -685,8 +699,7 @@ class GReaT(Model):
         else:
             loop_iter = starting_prompts
         for prompt in loop_iter:
-            start_token = torch.tensor(self.tokenizer(prompt)[
-                                       "input_ids"]).to(device)
+            start_token = torch.tensor(self.tokenizer(prompt)["input_ids"]).to(device)
 
             # Generate tokens
             gen = self.model.generate(
@@ -749,11 +762,10 @@ class GReaT(Model):
                 df_curr = df_miss.iloc[[index]]
                 org_index = df_curr.index  # Keep index in new DataFrame
                 while not is_complete:
-                    num_attrs_missing = pd.isna(df_curr).sum().sum()
-                    # print("Number of missing values: ",  num_attrs_missing)
                     # Generate text promt from current features.
                     starting_prompts = _partial_df_to_promts(
-                        df_curr, self.float_precision)
+                        df_curr, self.float_precision
+                    )
                     df_curr = self.great_sample(
                         starting_prompts, temperature, max_length, device=device
                     )
@@ -763,11 +775,8 @@ class GReaT(Model):
                         df_curr[i_num_cols] = pd.to_numeric(
                             df_curr[i_num_cols], errors="coerce"
                         )
-                    df_curr[self.num_cols] = df_curr[self.num_cols].astype(
-                        np.float)
+                    df_curr[self.num_cols] = df_curr[self.num_cols].astype(np.float)
 
-                    # Check for missing values
-                    nans = df_curr.isna()
                     if not df_curr.isna().any().any():
                         is_complete = True
                         df_list.append(df_curr.set_index(org_index))
@@ -791,8 +800,7 @@ class GReaT(Model):
         # Make directory
         fs = fsspec.filesystem(fsspec.utils.get_protocol(path))
         if fs.exists(path):
-            warnings.warn(
-                f"Directory {path} already exists and is overwritten now.")
+            warnings.warn(f"Directory {path} already exists and is overwritten now.")
         else:
             fs.mkdir(path)
 
@@ -850,8 +858,9 @@ class GReaT(Model):
             setattr(great, k, v)
 
         # Load model weights
-        great.model.load_state_dict(torch.load(
-            fs.open(path + "/model.pt", "rb"), map_location="cpu"))
+        great.model.load_state_dict(
+            torch.load(fs.open(path + "/model.pt", "rb"), map_location="cpu")
+        )
 
         return great
 
@@ -861,24 +870,23 @@ class GReaT(Model):
         self.num_cols = df.select_dtypes(include=np.number).columns.to_list()
 
     def _update_conditional_information(
-        self, df: pd.DataFrame, conditional_col: tp.Optional[str] = None
+        self, df: pd.DataFrame, conditional_col: str | None = None
     ):
-        assert conditional_col is None or isinstance(
-            conditional_col, str
-        ), f"The column name has to be a string and not {type(conditional_col)}"
-        assert (
-            conditional_col is None or conditional_col in df.columns
-        ), f"The column name {conditional_col} is not in the feature names of the given dataset"
+        assert conditional_col is None or isinstance(conditional_col, str), (
+            f"The column name has to be a string and not {type(conditional_col)}"
+        )
+        assert conditional_col is None or conditional_col in df.columns, (
+            f"The column name {conditional_col} is not in the feature names of the given dataset"
+        )
 
         # Take the distribution of the conditional column for a starting point in the generation process
         self.conditional_col = conditional_col if conditional_col else df.columns[-1]
-        self.conditional_col_dist = _get_column_distribution(
-            df, self.conditional_col)
+        self.conditional_col_dist = _get_column_distribution(df, self.conditional_col)
 
     def _get_start_sampler(
         self,
-        start_col: tp.Optional[str],
-        start_col_dist: tp.Optional[tp.Union[tp.Dict, tp.List]],
+        start_col: str | None,
+        start_col_dist: dict | list | None,
     ) -> GReaTStart:
         if start_col and start_col_dist is None:
             raise ValueError(
@@ -889,14 +897,16 @@ class GReaT(Model):
                 f"Start column distribution {start_col} was given, the column name is missing."
             )
 
-        assert start_col is None or isinstance(
-            start_col, str
-        ), f"The column name has to be a string and not {type(start_col)}"
+        assert start_col is None or isinstance(start_col, str), (
+            f"The column name has to be a string and not {type(start_col)}"
+        )
         assert (
             start_col_dist is None
             or isinstance(start_col_dist, dict)
             or isinstance(start_col_dist, list)
-        ), f"The distribution of the start column on has to be a list or a dict and not {type(start_col_dist)}"
+        ), (
+            f"The distribution of the start column on has to be a list or a dict and not {type(start_col_dist)}"
+        )
 
         start_col = start_col if start_col else self.conditional_col
         start_col_dist = start_col_dist if start_col_dist else self.conditional_col_dist

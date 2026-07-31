@@ -1,6 +1,4 @@
 import random
-import numpy as np
-import typing as tp
 
 
 def _pad(x, length: int, pad_value=50256):
@@ -10,7 +8,6 @@ def _pad(x, length: int, pad_value=50256):
     return [pad_value] * (length - len(x)) + x
 
 
-#
 def _pad_tokens(tokens):
     """
     Checks that all tensors in the list have the same length, pads them if necessary to the max length
@@ -44,7 +41,7 @@ class GReaTStart:
         """
         self.tokenizer = tokenizer
 
-    def get_start_tokens(self, n_samples: int) -> tp.List[tp.List[int]]:
+    def get_start_tokens(self, n_samples: int) -> list[list[int]]:
         """Get Start Tokens
 
         Creates starting points for the generation process
@@ -110,7 +107,7 @@ class ContinuousStart(GReaTStart):
         self,
         tokenizer,
         start_col: str,
-        start_col_dist: tp.List[float],
+        start_col_dist: list[float],
         noise: float = 0.01,
         decimal_places: int = 5,
     ):
@@ -153,7 +150,7 @@ class RandomStart(GReaTStart):
         all_columns (List[str]): Names of all columns
     """
 
-    def __init__(self, tokenizer, all_columns: tp.List[str]):
+    def __init__(self, tokenizer, all_columns: list[str]):
         """Initializes the Random Start
 
         Args:
