@@ -40,8 +40,17 @@ jobs:
       - name: Build wheel
         run: poetry build
 
-  integration-ganblr:
+  integration:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - model: ganblr
+            torch: false
+          - model: great
+            torch: true
+    name: integration-${{ matrix.model }}
     steps:
       - uses: actions/checkout@v5
 
@@ -53,40 +62,20 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pypoetry
-          key: poetry-ganblr-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+          key: poetry-${{ matrix.model }}-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install Poetry
         run: pip install poetry==2.4.1
 
-      - name: Install with ganblr extra
-        run: poetry install --with dev -E ganblr
-
-      - name: Integration tests (GANBLR)
-        run: poetry run pytest -m "integration and ganblr" -q
-
-  integration-great:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.11"
-
-      - name: Cache Poetry environment
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pypoetry
-          key: poetry-great-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
-
-      - name: Install Poetry
-        run: pip install poetry==2.4.1
-
-      - name: Install with great extra
-        run: poetry install --with dev -E great
-
-      - name: Integration tests (GReaT)
-        run: poetry run pytest -m "integration and great" -q
+      - name: Pre-install CPU torch
+        if: matrix.torch
+        run: poetry run pip install "torch>=2.7.1,<3.0.0" --index-url https://download.pytorch.org/whl/cpu
+ 
+      - name: Install with ${{ matrix.model }} extra
+        run: poetry install --with dev -E ${{ matrix.model }}
+ 
+      - name: Integration tests (${{ matrix.model }})
+        run: poetry run pytest -m "integration and ${{ matrix.model }}" -q
 
   wheel-smoke:
     runs-on: ubuntu-latest
