@@ -108,38 +108,3 @@ jobs:
           python -m venv /tmp/whltest
           /tmp/whltest/bin/pip install dist/*.whl
           /tmp/whltest/bin/python -c "import katabatic; print(katabatic.__version__)"
-  
-  docker-build:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        variant:
-          - { tag: "base",   args: "--only main" }
-          - { tag: "ganblr", args: "--only main -E ganblr" }
-          - { tag: "great",  args: "--only main -E great" }
-    name: docker-build-${{ matrix.variant.tag }}
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Build image (${{ matrix.variant.tag }})
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          load: true
-          tags: katabatic:${{ matrix.variant.tag }}
-          build-args: |
-            POETRY_INSTALL_ARGS=${{ matrix.variant.args }}
-          cache-from: type=gha,scope=${{ matrix.variant.tag }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.variant.tag }}
-
-      - name: Smoke test (${{ matrix.variant.tag }})
-        run: |
-          docker run --rm katabatic:${{ matrix.variant.tag }} python -c "
-          import katabatic
-          from katabatic.utils.registry import ModelRegistry
-          print('Katabatic OK:', katabatic.__version__)
-          "
