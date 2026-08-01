@@ -11,29 +11,28 @@ CoDi uses two co-evolving diffusion models:
 With contrastive learning to ensure coherent generation.
 """
 
-import os
-import json
 import logging
+import os
+from typing import Any
+
 import numpy as np
 import pandas as pd
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-from typing import Optional, Dict, Any, Tuple
+from sklearn.metrics import accuracy_score, f1_score, r2_score
 
 from katabatic.models.base_model import Model
 from katabatic.models.codi.utils import (
-    infer_schema,
-    encode_dataframe,
-    decode_dataframe,
-    save_metadata,
-    load_metadata,
-    set_global_seed,
-    GaussianDiffusionTrainer,
     GaussianDiffusionSampler,
+    GaussianDiffusionTrainer,
     MultinomialDiffusion,
     TabularUNet,
-    get_device
+    decode_dataframe,
+    encode_dataframe,
+    get_device,
+    infer_schema,
+    save_metadata,
+    set_global_seed,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -54,28 +53,24 @@ class CODI(Model):
         n_steps: int = 50,
         beta_1: float = 0.00001,
         beta_T: float = 0.02,
-
         # Network architecture
-        encoder_dim_con: Tuple[int, ...] = (64, 128, 256),
-        encoder_dim_dis: Tuple[int, ...] = (64, 128, 256),
+        encoder_dim_con: tuple[int, ...] = (64, 128, 256),
+        encoder_dim_dis: tuple[int, ...] = (64, 128, 256),
         nf_con: int = 16,
         nf_dis: int = 64,
-        activation: str = 'relu',
-
+        activation: str = "relu",
         # Training hyperparameters
         epochs: int = 30,
         batch_size: int = 512,
         lr_con: float = 2e-3,
         lr_dis: float = 2e-3,
         grad_clip: float = 1.0,
-
         # Contrastive learning
         lambda_con: float = 0.2,
         lambda_dis: float = 0.2,
-
         # Other
         random_state: int = 42,
-        device: Optional[str] = None
+        device: str | None = None,
     ):
         """
         Initialize CoDi model.
@@ -128,21 +123,18 @@ class CODI(Model):
 
         set_global_seed(random_state)
 
-    def train(self, dataset_dir: str, synthetic_dir: Optional[str] = None, **kwargs) -> "CODI":
+    def train(self, dataset_dir: str, synthetic_dir: str, **kwargs) -> "CODI":
         """
         Train the CoDi model.
 
         Args:
             dataset_dir: Directory containing x_train.csv and y_train.csv
-            synthetic_dir: Directory to save synthetic data (defaults to
-                ``{dataset_dir}/synthetic`` when omitted, e.g. legacy pipeline).
+            synthetic_dir: Directory to save synthetic data
             **kwargs: Additional arguments (passed from pipeline)
 
         Returns:
             self: Trained model instance
         """
-        if synthetic_dir is None:
-            synthetic_dir = os.path.join(dataset_dir, "synthetic")
         logger.info("=" * 80)
         logger.info("Training CoDi Model")
         logger.info("=" * 80)
@@ -165,7 +157,7 @@ class CODI(Model):
 
         # Combine X and y for full data processing
         if y_train is not None:
-            y_name = y_train.name if hasattr(y_train, 'name') else 'target'
+            y_name = y_train.name if hasattr(y_train, "name") else "target"
             df_train = X_train.copy()
             df_train[y_name] = y_train
         else:
@@ -177,12 +169,14 @@ class CODI(Model):
         self.schema_ = infer_schema(df_train)
         encoded_data, self.schema_ = encode_dataframe(df_train, self.schema_)
 
-        logger.info(f"Schema: {len(self.schema_['continuous_columns'])} continuous, "
-                    f"{len(self.schema_['categorical_columns'])} categorical columns")
+        logger.info(
+            f"Schema: {len(self.schema_['continuous_columns'])} continuous, "
+            f"{len(self.schema_['categorical_columns'])} categorical columns"
+        )
 
         # Split into continuous and categorical
-        con_cols = self.schema_['continuous_columns']
-        cat_cols = self.schema_['categorical_columns']
+        con_cols = self.schema_["continuous_columns"]
+        cat_cols = self.schema_["categorical_columns"]
 
         # Handle continuous-only, categorical-only, or mixed data
         if len(con_cols) > 0:
@@ -193,8 +187,9 @@ class CODI(Model):
 
         if len(cat_cols) > 0:
             data_cat = encoded_data[cat_cols].values.astype(np.float32)
-            self.num_classes_ = np.array([self.schema_['column_info'][col]['size']
-                                          for col in cat_cols])
+            self.num_classes_ = np.array(
+                [self.schema_["column_info"][col]["size"] for col in cat_cols]
+            )
         else:
             # If no categorical columns, create a dummy one
             data_cat = np.zeros((len(data_con), 1), dtype=np.float32)
@@ -220,82 +215,82 @@ class CODI(Model):
         # Keep data encoded for evaluation
         df_synth = self.sample(len(df_train), return_encoded=True)
 
+        # Fix for the ordering of the file
+        df_synth = df_synth[[clmns for clmns in self.schema_["column_order"]]]
+
         # Save synthetic data
         os.makedirs(synthetic_dir, exist_ok=True)
 
         # Ensure categorical columns are integers and within valid range
-        cat_cols = self.schema_['categorical_columns']
+        cat_cols = self.schema_["categorical_columns"]
         for col in cat_cols:
             if col in df_synth.columns:
-                col_info = self.schema_['column_info'][col]
-                max_val = col_info['size'] - 1
+                col_info = self.schema_["column_info"][col]
+                max_val = col_info["size"] - 1
                 # Clip, round, and convert to int
-                df_synth[col] = df_synth[col].clip(
-                    0, max_val).round().astype(int)
+                df_synth[col] = df_synth[col].clip(0, max_val).round().astype(int)
 
                 # Ensure all classes appear at least once (important for classifiers)
                 existing_classes = set(df_synth[col].unique())
-                all_classes = set(range(col_info['size']))
+                all_classes = set(range(col_info["size"]))
                 missing_classes = all_classes - existing_classes
 
                 if missing_classes:
                     logger.warning(
-                        f"Column '{col}': Adding missing classes {missing_classes}")
+                        f"Column '{col}': Adding missing classes {missing_classes}"
+                    )
                     # Add one sample for each missing class at the end
                     for missing_class in sorted(missing_classes):
                         # Create a row with this class (copy last row and change this column)
                         new_row = df_synth.iloc[-1:].copy()
                         new_row[col] = missing_class
-                        df_synth = pd.concat(
-                            [df_synth, new_row], ignore_index=True)
+                        df_synth = pd.concat([df_synth, new_row], ignore_index=True)
 
         if y_train is not None:
-            y_name = y_train.name if hasattr(y_train, 'name') else 'target'
+            y_name = y_train.name if hasattr(y_train, "name") else "target"
             x_synth = df_synth.drop(columns=[y_name])
             y_synth = df_synth[[y_name]]
 
-            x_synth.to_csv(os.path.join(
-                synthetic_dir, "x_synth.csv"), index=False)
-            y_synth.to_csv(os.path.join(
-                synthetic_dir, "y_synth.csv"), index=False)
+            x_synth.to_csv(os.path.join(synthetic_dir, "x_synth.csv"), index=False)
+            y_synth.to_csv(os.path.join(synthetic_dir, "y_synth.csv"), index=False)
         else:
-            df_synth.to_csv(os.path.join(
-                synthetic_dir, "x_synth.csv"), index=False)
+            df_synth.to_csv(os.path.join(synthetic_dir, "x_synth.csv"), index=False)
 
         # Save metadata
         metadata = {
-            'schema': self.schema_,
-            'hyperparameters': {
-                'n_steps': self.n_steps,
-                'beta_1': self.beta_1,
-                'beta_T': self.beta_T,
-                'encoder_dim_con': self.encoder_dim_con,
-                'encoder_dim_dis': self.encoder_dim_dis,
-                'nf_con': self.nf_con,
-                'nf_dis': self.nf_dis,
-                'activation': self.activation,
-                'epochs': self.epochs,
-                'batch_size': self.batch_size,
-                'lr_con': self.lr_con,
-                'lr_dis': self.lr_dis,
-                'random_state': self.random_state
-            }
+            "schema": self.schema_,
+            "hyperparameters": {
+                "n_steps": self.n_steps,
+                "beta_1": self.beta_1,
+                "beta_T": self.beta_T,
+                "encoder_dim_con": self.encoder_dim_con,
+                "encoder_dim_dis": self.encoder_dim_dis,
+                "nf_con": self.nf_con,
+                "nf_dis": self.nf_dis,
+                "activation": self.activation,
+                "epochs": self.epochs,
+                "batch_size": self.batch_size,
+                "lr_con": self.lr_con,
+                "lr_dis": self.lr_dis,
+                "random_state": self.random_state,
+            },
         }
 
         # Save schema for data encoding/decoding
-        save_metadata(self.schema_, os.path.join(synthetic_dir, 'schema.json'))
+        save_metadata(self.schema_, os.path.join(synthetic_dir, "schema.json"))
 
         # Save full metadata (schema + hyperparameters)
         import json
-        with open(os.path.join(synthetic_dir, 'metadata.json'), 'w') as f:
+
+        with open(os.path.join(synthetic_dir, "metadata.json"), "w") as f:
             # Create serializable version
             metadata_serializable = {
-                'hyperparameters': metadata['hyperparameters'],
-                'schema': {
-                    'continuous_columns': self.schema_['continuous_columns'],
-                    'categorical_columns': self.schema_['categorical_columns'],
-                    'column_order': self.schema_['column_order']
-                }
+                "hyperparameters": metadata["hyperparameters"],
+                "schema": {
+                    "continuous_columns": self.schema_["continuous_columns"],
+                    "categorical_columns": self.schema_["categorical_columns"],
+                    "column_order": self.schema_["column_order"],
+                },
             }
             json.dump(metadata_serializable, f, indent=2)
 
@@ -315,7 +310,7 @@ class CODI(Model):
             output_dim=dim_con,
             hidden_dims=list(self.encoder_dim_con),
             time_embed_dim=self.nf_con,
-            activation=self.activation
+            activation=self.activation,
         ).to(self.device)
 
         self.trainer_con_ = GaussianDiffusionTrainer(
@@ -333,7 +328,7 @@ class CODI(Model):
             output_dim=dim_cat,
             hidden_dims=list(self.encoder_dim_dis),
             time_embed_dim=self.nf_dis,
-            activation=self.activation
+            activation=self.activation,
         ).to(self.device)
 
         self.trainer_dis_ = MultinomialDiffusion(
@@ -350,14 +345,12 @@ class CODI(Model):
         logger.info(f"\nTraining for {self.epochs} epochs...")
 
         # Optimizers
-        optim_con = torch.optim.Adam(
-            self.model_con_.parameters(), lr=self.lr_con)
-        optim_dis = torch.optim.Adam(
-            self.model_dis_.parameters(), lr=self.lr_dis)
+        optim_con = torch.optim.Adam(self.model_con_.parameters(), lr=self.lr_con)
+        optim_dis = torch.optim.Adam(self.model_dis_.parameters(), lr=self.lr_dis)
 
         # Convert to tensors
-        data_con_tensor = torch.from_numpy(data_con).float()
-        data_cat_tensor = torch.from_numpy(data_cat).float()
+        data_con_tensor = torch.from_numpy(data_con).float().to(self.device)
+        data_cat_tensor = torch.from_numpy(data_cat).float().to(self.device)
 
         # Training loop
         n_samples = len(data_con)
@@ -368,7 +361,7 @@ class CODI(Model):
             self.model_dis_.train()
 
             # Shuffle data
-            indices = torch.randperm(n_samples)
+            indices = torch.randperm(n_samples, device=self.device)
             data_con_shuffled = data_con_tensor[indices]
             data_cat_shuffled = data_cat_tensor[indices]
 
@@ -379,10 +372,8 @@ class CODI(Model):
                 start_idx = batch_idx * self.batch_size
                 end_idx = min((batch_idx + 1) * self.batch_size, n_samples)
 
-                batch_con = data_con_shuffled[start_idx:end_idx].to(
-                    self.device)
-                batch_cat = data_cat_shuffled[start_idx:end_idx].to(
-                    self.device)
+                batch_con = data_con_shuffled[start_idx:end_idx]
+                batch_cat = data_cat_shuffled[start_idx:end_idx]
 
                 # Train step
                 loss_con, loss_dis = self._train_step(
@@ -396,16 +387,18 @@ class CODI(Model):
             avg_loss_dis = epoch_loss_dis / n_batches
 
             if (epoch + 1) % 5 == 0 or epoch == 0:
-                logger.info(f"Epoch {epoch+1}/{self.epochs}: "
-                            f"loss_con={avg_loss_con:.4f}, loss_dis={avg_loss_dis:.4f}")
+                logger.info(
+                    f"Epoch {epoch + 1}/{self.epochs}: "
+                    f"loss_con={avg_loss_con:.4f}, loss_dis={avg_loss_dis:.4f}"
+                )
 
     def _train_step(
         self,
         x_con: torch.Tensor,
         x_cat: torch.Tensor,
         optim_con: torch.optim.Optimizer,
-        optim_dis: torch.optim.Optimizer
-    ) -> Tuple[float, float]:
+        optim_dis: torch.optim.Optimizer,
+    ) -> tuple[float, float]:
         """Single training step with contrastive learning."""
         batch_size = x_con.shape[0]
 
@@ -417,21 +410,24 @@ class CODI(Model):
 
         # === Continuous diffusion loss (if we have continuous features) ===
         if self.has_continuous_:
+            # Added one hot encoding for categorical variables.
+            x_cat_onehot = self._to_onehot(x_cat) if self.has_categorical_ else x_cat
             noise_con = torch.randn_like(x_con)
             x_t_con = self.trainer_con_.make_x_t(x_con, t, noise_con)
-            eps_pred = self.model_con_(x_t_con, t, x_cat)
+            eps_pred = self.model_con_(x_t_con, t, x_cat_onehot)
             loss_con_diff = F.mse_loss(eps_pred, noise_con)
 
             # Contrastive learning (simplified)
             neg_indices = torch.randperm(batch_size)
-            x_cat_neg = x_cat[neg_indices]
+            x_cat_neg = x_cat_onehot[neg_indices]
 
-            eps_pos = self.model_con_(x_t_con, t, x_cat)
+            eps_pos = self.model_con_(x_t_con, t, x_cat_onehot)
             eps_neg = self.model_con_(x_t_con, t, x_cat_neg)
 
             loss_con_contrast = torch.relu(
-                F.mse_loss(eps_neg, noise_con, reduction='none').mean() -
-                F.mse_loss(eps_pos, noise_con, reduction='none').mean() + 1.0
+                F.mse_loss(eps_neg, noise_con, reduction="none").mean()
+                - F.mse_loss(eps_pos, noise_con, reduction="none").mean()
+                + 1.0
             )
 
             loss_con_total = loss_con_diff + self.lambda_con * loss_con_contrast
@@ -439,8 +435,7 @@ class CODI(Model):
             # Backward pass - continuous
             optim_con.zero_grad()
             loss_con_total.backward()
-            torch.nn.utils.clip_grad_norm_(
-                self.model_con_.parameters(), self.grad_clip)
+            torch.nn.utils.clip_grad_norm_(self.model_con_.parameters(), self.grad_clip)
             optim_con.step()
 
         # === Discrete diffusion loss (if we have categorical features) ===
@@ -449,16 +444,14 @@ class CODI(Model):
             x_cat_onehot = self._to_onehot(x_cat)
             log_x_start = torch.log(x_cat_onehot.float().clamp(min=1e-30))
             x_t_cat = self.trainer_dis_.q_sample(log_x_start, t)
-            kl, _ = self.trainer_dis_.compute_Lt(
-                log_x_start, x_t_cat, t, x_con)
+            kl, _ = self.trainer_dis_.compute_Lt(log_x_start, x_t_cat, t, x_con)
             kl_prior = self.trainer_dis_.kl_prior(log_x_start)
             loss_dis_total = (kl + kl_prior).mean()
 
             # Backward pass - discrete
             optim_dis.zero_grad()
             loss_dis_total.backward()
-            torch.nn.utils.clip_grad_norm_(
-                self.model_dis_.parameters(), self.grad_clip)
+            torch.nn.utils.clip_grad_norm_(self.model_dis_.parameters(), self.grad_clip)
             optim_dis.step()
 
         return loss_con_total.item(), loss_dis_total.item()
@@ -481,8 +474,8 @@ class CODI(Model):
     def sample(
         self,
         n: int,
-        conditional: Optional[Dict[str, Any]] = None,
-        return_encoded: bool = False
+        conditional: dict[str, Any] | None = None,
+        return_encoded: bool = False,
     ) -> pd.DataFrame:
         """
         Generate synthetic samples.
@@ -506,8 +499,7 @@ class CODI(Model):
         with torch.no_grad():
             # Start from random noise
             if self.has_continuous_:
-                x_T_con = torch.randn(
-                    n, self.model_con_.input_dim, device=self.device)
+                x_T_con = torch.randn(n, self.model_con_.input_dim, device=self.device)
             else:
                 # Dummy continuous data for categorical-only
                 x_T_con = torch.zeros(n, 1, device=self.device)
@@ -516,8 +508,7 @@ class CODI(Model):
             if self.has_categorical_:
                 x_T_cat_shape = (n, self.model_dis_.input_dim)
                 log_x_T_cat = torch.log(
-                    torch.ones(x_T_cat_shape, device=self.device) /
-                    self.num_classes_[0]
+                    torch.ones(x_T_cat_shape, device=self.device) / self.num_classes_[0]
                 )
             else:
                 # Dummy categorical data for continuous-only
@@ -531,8 +522,8 @@ class CODI(Model):
         samples_cat = x_0_cat.cpu().numpy()
 
         # Combine continuous and categorical
-        con_cols = self.schema_['continuous_columns']
-        cat_cols = self.schema_['categorical_columns']
+        con_cols = self.schema_["continuous_columns"]
+        cat_cols = self.schema_["categorical_columns"]
 
         # Create DataFrame with encoded values
         df_encoded = pd.DataFrame()
@@ -554,22 +545,20 @@ class CODI(Model):
             return df_decoded
 
     def _sample_reverse(
-        self,
-        x_T_con: torch.Tensor,
-        log_x_T_cat: torch.Tensor
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        self, x_T_con: torch.Tensor, log_x_T_cat: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Reverse diffusion sampling process."""
         x_t_con = x_T_con
         x_t_cat = log_x_T_cat
 
         for t_step in reversed(range(self.n_steps)):
-            t = torch.full((x_t_con.shape[0],), t_step,
-                           device=self.device, dtype=torch.long)
+            t = torch.full(
+                (x_t_con.shape[0],), t_step, device=self.device, dtype=torch.long
+            )
 
             # Sample continuous (if we have continuous features)
             if self.has_continuous_:
-                mean, log_var = self.sampler_con_.p_mean_variance(
-                    x_t_con, t, x_t_cat)
+                mean, log_var = self.sampler_con_.p_mean_variance(x_t_con, t, x_t_cat)
                 if t_step > 0:
                     noise = torch.randn_like(x_t_con)
                 else:
@@ -607,54 +596,90 @@ class CODI(Model):
 
     def evaluate(
         self,
-        x: Optional[pd.DataFrame] = None,
-        y: Optional[pd.Series] = None,
-        *,
-        synthetic_dir: Optional[str] = None,
-        real_test_dir: Optional[str] = None,
+        x: pd.DataFrame,
+        y: pd.Series,
         model: str = "lr",
-        metrics: Optional[list] = None,
-        task: Optional[str] = None,
+        metrics: list | None = None,
+        task: str | None = None,
         random_state: int = 42,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, float]:
         """
-        TSTR (train on synthetic, test on real) using the same protocol as
-        :class:`katabatic.evaluate.tstr.evaluation.TSTREvaluation`.
-
-        Provide ``synthetic_dir`` and ``real_test_dir`` (directories containing
-        ``x_synth.csv`` / ``y_synth.csv`` and ``x_test.csv`` / ``y_test.csv``).
-        For canonical metrics and artifact logging, use
-        :class:`katabatic.pipeline.train_test_split.pipeline.TrainTestSplitPipeline`
-        with ``TSTREvaluation``.
-
-        The legacy ``(x, y)`` real-data holdout path was removed; it was not TSTR.
+        Quick model-centric TSTR evaluation.
 
         Args:
-            x: Deprecated; do not use.
-            y: Deprecated; do not use.
-            synthetic_dir: Directory with synthetic train CSVs for TSTR.
-            real_test_dir: Directory with real held-out test CSVs for TSTR.
-            model: Ignored; all TSTR downstream models are run.
-            metrics: Ignored (reserved).
-            task: Ignored (reserved).
-            random_state: Ignored (reserved; TSTREvaluation uses its own defaults).
-            **kwargs: Passed through to :class:`TSTREvaluation`.
+            x: Feature DataFrame
+            y: Target Series
+            model: Model type ('lr', 'mlp', 'rf', 'xgb')
+            metrics: List of metrics to compute
+            task: Task type ('classification' or 'regression')
+            random_state: Random seed
+            **kwargs: Additional arguments
 
         Returns:
-            Mapping of downstream model name to metric dict (same shape as
-            ``TSTREvaluation.evaluate()``).
+            Dictionary of metric scores
         """
-        del model, metrics, task, random_state
-        if synthetic_dir is not None and real_test_dir is not None:
-            from katabatic.evaluate.tstr.evaluation import TSTREvaluation
+        from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+        from sklearn.linear_model import LinearRegression, LogisticRegression
+        from sklearn.model_selection import train_test_split
+        from sklearn.neural_network import MLPClassifier, MLPRegressor
+        from sklearn.preprocessing import StandardScaler
 
-            ev = TSTREvaluation(synthetic_dir, real_test_dir, **kwargs)
-            return ev.evaluate()
+        # Infer task if not provided
+        if task is None:
+            unique_values = y.nunique()
+            task = "classification" if unique_values < 20 else "regression"
 
-        raise ValueError(
-            "CODI.evaluate requires synthetic_dir and real_test_dir for TSTR "
-            "(directories with x_synth.csv/y_synth.csv and x_test.csv/y_test.csv). "
-            "The previous (x, y) real-only holdout API was incorrect for TSTR and "
-            "has been removed."
+        # Split data
+        X_train, X_test, y_train, y_test = train_test_split(
+            x, y, test_size=0.2, random_state=random_state
         )
+
+        # Scale features
+        scaler = StandardScaler()
+        X_train_scaled = scaler.fit_transform(X_train)
+        X_test_scaled = scaler.transform(X_test)
+
+        # Select model
+        if task == "classification":
+            if model == "lr":
+                clf = LogisticRegression(max_iter=1000, random_state=random_state)
+            elif model == "mlp":
+                clf = MLPClassifier(
+                    hidden_layer_sizes=(100,), max_iter=1000, random_state=random_state
+                )
+            elif model == "rf":
+                clf = RandomForestClassifier(
+                    n_estimators=100, random_state=random_state
+                )
+            else:
+                raise ValueError(f"Unknown model: {model}")
+
+            clf.fit(X_train_scaled, y_train)
+            y_pred = clf.predict(X_test_scaled)
+
+            results = {
+                "accuracy": accuracy_score(y_test, y_pred),
+                "f1_score": f1_score(y_test, y_pred, average="weighted"),
+            }
+        else:
+            if model == "lr":
+                reg = LinearRegression()
+            elif model == "mlp":
+                reg = MLPRegressor(
+                    hidden_layer_sizes=(100,), max_iter=1000, random_state=random_state
+                )
+            elif model == "rf":
+                reg = RandomForestRegressor(n_estimators=100, random_state=random_state)
+            else:
+                raise ValueError(f"Unknown model: {model}")
+
+            reg.fit(X_train_scaled, y_train)
+            y_pred = reg.predict(X_test_scaled)
+
+            results = {
+                "r2_score": r2_score(y_test, y_pred),
+                "rmse": np.sqrt(np.mean((y_test - y_pred) ** 2)),
+            }
+
+        return results

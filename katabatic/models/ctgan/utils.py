@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from typing import List, Dict, Tuple
 from dataclasses import dataclass
-import pandas as pd
+
 import numpy as np
-from sklearn.preprocessing import QuantileTransformer, OneHotEncoder
+import pandas as pd
+from sklearn.preprocessing import QuantileTransformer
 
 
-def infer_categorical_columns(df: pd.DataFrame) -> List[str]:
+def infer_categorical_columns(df: pd.DataFrame) -> list[str]:
     """Infer categorical columns using dtype heuristics and cardinality.
 
     Rules:
@@ -15,7 +15,7 @@ def infer_categorical_columns(df: pd.DataFrame) -> List[str]:
     - integer columns with very low cardinality (<= 20 and < 5% of rows)
       are treated as categorical
     """
-    cat_cols: List[str] = []
+    cat_cols: list[str] = []
     n_rows = max(len(df), 1)
 
     for col in df.columns:
@@ -36,28 +36,28 @@ def infer_categorical_columns(df: pd.DataFrame) -> List[str]:
 class ColumnMeta:
     name: str
     kind: str  # 'continuous' | 'categorical'
-    categories: List[str] | None = None
+    categories: list[str] | None = None
     qt: QuantileTransformer | None = None
 
 
-def infer_schema(df: pd.DataFrame) -> List[ColumnMeta]:
-    schema: List[ColumnMeta] = []
+def infer_schema(df: pd.DataFrame) -> list[ColumnMeta]:
+    schema: list[ColumnMeta] = []
     cat_cols = set(infer_categorical_columns(df))
     for c in df.columns:
         if c in cat_cols:
             cats = sorted([str(v) for v in df[c].dropna().unique().tolist()])
-            schema.append(ColumnMeta(
-                name=c, kind='categorical', categories=cats))
+            schema.append(ColumnMeta(name=c, kind="categorical", categories=cats))
         else:
-            schema.append(ColumnMeta(name=c, kind='continuous'))
+            schema.append(ColumnMeta(name=c, kind="continuous"))
     return schema
 
 
-def fit_transformers(df: pd.DataFrame, schema: List[ColumnMeta]) -> None:
+def fit_transformers(df: pd.DataFrame, schema: list[ColumnMeta]) -> None:
     for col in schema:
-        if col.kind == 'continuous':
+        if col.kind == "continuous":
             qt = QuantileTransformer(
-                output_distribution='normal', n_quantiles=min(1000, max(len(df), 10)))
+                output_distribution="normal", n_quantiles=min(1000, max(len(df), 10))
+            )
             vals = df[[col.name]].astype(float)
             qt.fit(vals)
             col.qt = qt
@@ -66,20 +66,22 @@ def fit_transformers(df: pd.DataFrame, schema: List[ColumnMeta]) -> None:
             pass
 
 
-def encode_df(df: pd.DataFrame, schema: List[ColumnMeta]) -> Tuple[np.ndarray, Dict[str, Tuple[int, int]], List[str]]:
+def encode_df(
+    df: pd.DataFrame, schema: list[ColumnMeta]
+) -> tuple[np.ndarray, dict[str, tuple[int, int]], list[str]]:
     """Encode dataframe to a continuous + one-hot representation.
 
     Returns: (encoded_array, cat_blocks, output_order)
     - cat_blocks: mapping col_name -> (start, end) indices of its one-hot block
     - output_order: list of original column names in order encountered
     """
-    arrays: List[np.ndarray] = []
-    cat_blocks: Dict[str, Tuple[int, int]] = {}
-    output_order: List[str] = []
+    arrays: list[np.ndarray] = []
+    cat_blocks: dict[str, tuple[int, int]] = {}
+    output_order: list[str] = []
 
     for col in schema:
         output_order.append(col.name)
-        if col.kind == 'continuous':
+        if col.kind == "continuous":
             vals = df[[col.name]].astype(float).values
             if col.qt is not None:
                 vals = col.qt.transform(vals)
@@ -88,8 +90,7 @@ def encode_df(df: pd.DataFrame, schema: List[ColumnMeta]) -> Tuple[np.ndarray, D
             cats = col.categories or []
             # Build mapping str(value)->index
             cat_to_idx = {v: i for i, v in enumerate(cats)}
-            idxs = df[col.name].astype(str).map(
-                lambda v: cat_to_idx.get(v, -1)).values
+            idxs = df[col.name].astype(str).map(lambda v: cat_to_idx.get(v, -1)).values
             one_hot = np.zeros((len(df), len(cats)), dtype=np.float32)
             valid = idxs >= 0
             one_hot[np.where(valid)[0], idxs[valid]] = 1.0
@@ -98,28 +99,30 @@ def encode_df(df: pd.DataFrame, schema: List[ColumnMeta]) -> Tuple[np.ndarray, D
             end = int(sum(a.shape[1] for a in arrays))
             cat_blocks[col.name] = (start, end)
 
-    enc = np.concatenate(arrays, axis=1) if arrays else np.zeros(
-        (len(df), 0), dtype=np.float32)
+    enc = (
+        np.concatenate(arrays, axis=1)
+        if arrays
+        else np.zeros((len(df), 0), dtype=np.float32)
+    )
     return enc, cat_blocks, output_order
 
 
-def decode_batch(enc: np.ndarray, schema: List[ColumnMeta]) -> pd.DataFrame:
-    rows: List[Dict[str, object]] = []
+def decode_batch(enc: np.ndarray, schema: list[ColumnMeta]) -> pd.DataFrame:
+    rows: list[dict[str, object]] = []
     col_ptr = 0
     for i in range(enc.shape[0]):
-        row: Dict[str, object] = {}
+        row: dict[str, object] = {}
         col_ptr = 0
         for col in schema:
-            if col.kind == 'continuous':
+            if col.kind == "continuous":
                 val = float(enc[i, col_ptr])
                 if col.qt is not None:
-                    val = float(col.qt.inverse_transform(
-                        np.array([[val]]))[0, 0])
+                    val = float(col.qt.inverse_transform(np.array([[val]]))[0, 0])
                 row[col.name] = val
                 col_ptr += 1
             else:
                 size = len(col.categories or [])
-                block = enc[i, col_ptr:col_ptr+size]
+                block = enc[i, col_ptr : col_ptr + size]
                 idx = int(np.argmax(block)) if size > 0 else -1
                 cats = col.categories or []
                 row[col.name] = cats[idx] if 0 <= idx < len(cats) else None
@@ -128,19 +131,20 @@ def decode_batch(enc: np.ndarray, schema: List[ColumnMeta]) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def build_conditioning(df: pd.DataFrame, schema: List[ColumnMeta]) -> Tuple[np.ndarray, Dict[str, Tuple[int, int]]]:
+def build_conditioning(
+    df: pd.DataFrame, schema: list[ColumnMeta]
+) -> tuple[np.ndarray, dict[str, tuple[int, int]]]:
     """Build a full one-hot condition space across all categorical columns.
 
     Returns: (cond_matrix for each row based on actual categories, cond_blocks mapping)
     """
-    arrays: List[np.ndarray] = []
-    cond_blocks: Dict[str, Tuple[int, int]] = {}
+    arrays: list[np.ndarray] = []
+    cond_blocks: dict[str, tuple[int, int]] = {}
     for col in schema:
-        if col.kind == 'categorical':
+        if col.kind == "categorical":
             cats = col.categories or []
             cat_to_idx = {v: i for i, v in enumerate(cats)}
-            idxs = df[col.name].astype(str).map(
-                lambda v: cat_to_idx.get(v, -1)).values
+            idxs = df[col.name].astype(str).map(lambda v: cat_to_idx.get(v, -1)).values
             one_hot = np.zeros((len(df), len(cats)), dtype=np.float32)
             valid = idxs >= 0
             one_hot[np.where(valid)[0], idxs[valid]] = 1.0
@@ -148,20 +152,26 @@ def build_conditioning(df: pd.DataFrame, schema: List[ColumnMeta]) -> Tuple[np.n
             arrays.append(one_hot)
             end = int(sum(a.shape[1] for a in arrays))
             cond_blocks[col.name] = (start, end)
-    cond = np.concatenate(arrays, axis=1) if arrays else np.zeros(
-        (len(df), 0), dtype=np.float32)
+    cond = (
+        np.concatenate(arrays, axis=1)
+        if arrays
+        else np.zeros((len(df), 0), dtype=np.float32)
+    )
     return cond, cond_blocks
 
 
-def sample_conditions(n: int, schema: List[ColumnMeta], cond_blocks: Dict[str, Tuple[int, int]],
-                      empirical_probs: Dict[str, np.ndarray] | None = None,
-                      device: str | None = None) -> np.ndarray:
-    """Sample condition vectors by choosing one categorical column uniformly and a category per its distribution.
-    """
+def sample_conditions(
+    n: int,
+    schema: list[ColumnMeta],
+    cond_blocks: dict[str, tuple[int, int]],
+    empirical_probs: dict[str, np.ndarray] | None = None,
+    device: str | None = None,
+) -> np.ndarray:
+    """Sample condition vectors by choosing one categorical column uniformly and a category per its distribution."""
     total_dim = 0
-    spans: List[Tuple[str, int]] = []
+    spans: list[tuple[str, int]] = []
     for col in schema:
-        if col.kind == 'categorical':
+        if col.kind == "categorical":
             dim = len(col.categories or [])
             spans.append((col.name, dim))
             total_dim += dim

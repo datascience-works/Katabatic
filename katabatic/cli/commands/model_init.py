@@ -1,10 +1,9 @@
 import os
 import re
 from pathlib import Path
-from typing import List, Optional, Tuple
 
 
-def _find_models_dict_bounds(text: str) -> Tuple[int, int, str]:
+def _find_models_dict_bounds(text: str) -> tuple[int, int, str]:
     """
     Return (open_brace_idx, close_brace_idx, indent) for the _models dict.
     Uses brace counting and skips over strings.
@@ -24,7 +23,7 @@ def _find_models_dict_bounds(text: str) -> Tuple[int, int, str]:
 
     depth = 0
     i = open_idx
-    in_str: Optional[str] = None
+    in_str: str | None = None
     escaped = False
     while i < len(text):
         ch = text[i]
@@ -49,19 +48,21 @@ def _find_models_dict_bounds(text: str) -> Tuple[int, int, str]:
     raise ValueError("Unbalanced braces in _models dictionary")
 
 
-def _serialize_list_str(xs: List[str]) -> str:
+def _serialize_list_str(xs: list[str]) -> str:
     return "[" + ", ".join(repr(s) for s in xs) + "]"
 
 
 def _find_project_root() -> Path:
     """Return repo root when run from a checkout, else cwd."""
     for candidate in [Path.cwd(), *Path.cwd().parents]:
-        if (candidate / "pyproject.toml").is_file() and (candidate / "katabatic").is_dir():
+        if (candidate / "pyproject.toml").is_file() and (
+            candidate / "katabatic"
+        ).is_dir():
             return candidate
     return Path.cwd()
 
 
-def init_model(model_name: str, dependencies: Optional[List[str]] = None) -> None:
+def init_model(model_name: str, dependencies: list[str] | None = None) -> None:
     """Initialize a new model structure aligned with the base `Model` API.
 
     Args:
@@ -72,7 +73,8 @@ def init_model(model_name: str, dependencies: Optional[List[str]] = None) -> Non
     dir_name = re.sub(r"(?<!^)(?=[A-Z])", "_", model_name).lower()
     if not re.fullmatch(r"[a-z][a-z0-9_]*", dir_name):
         raise ValueError(
-            "Invalid model name. Use letters, numbers and underscores; start with a letter.")
+            "Invalid model name. Use letters, numbers and underscores; start with a letter."
+        )
     class_name = "".join(word.capitalize() for word in dir_name.split("_"))
 
     from katabatic.models.registry import ModelRegistry
