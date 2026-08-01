@@ -26,6 +26,10 @@ COPY pyproject.toml poetry.lock README.md LICENSE ./
 # Copy Katabatic source code
 COPY katabatic ./katabatic
 
+# Pre-install CPU-only torch.
+RUN pip install --no-cache-dir "torch>=2.7.1,<3.0.0" \
+    --index-url https://download.pytorch.org/whl/cpu
+
 #Specifies which extras to install or just main.
 RUN poetry install ${POETRY_INSTALL_ARGS}
 
@@ -35,6 +39,6 @@ USER appuser
 
 # Verify installation
 RUN python -c "import katabatic; print('Katabatic version:', katabatic.__version__)"
-
+ 
 # Default command
 CMD ["python", "-c", "import katabatic; print('Katabatic is installed and ready')"]
