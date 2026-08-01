@@ -38,7 +38,7 @@ jobs:
         run: poetry run bandit -r katabatic -ll
 
       - name: pip-audit (Security)
-        run: poetry run pip-audit
+        run: poetry run pip-audit --skip-editable
 
       - name: Pytest (fast)
         run: poetry run pytest -q --cov=katabatic --cov-report=term-missing --cov-fail-under=45
