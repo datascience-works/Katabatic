@@ -43,10 +43,7 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
-      core: ${{ steps.filter.outputs.core }}
-      ganblr: ${{ steps.filter.outputs.ganblr }}
-      great: ${{ steps.filter.outputs.great }}
-      #add new models
+      matrix: ${{ steps.build-matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
@@ -67,23 +64,40 @@ jobs:
             great:
               - 'katabatic/models/great/**'
               - 'tests/test_integration_great.py'
+      - name: Build Dynamic Matrix
+        id: build-matrix
+        run: |
+          MATRIX="[]"
+          
+          # If a core file changed, run all models.
+          if [ "${{ steps.filter.outputs.core }}" == "true" ]; then
+            MATRIX=$(jq -n -c '[
+              {"model": "ganblr", "torch": false},
+              {"model": "great", "torch": true}
+            ]')
+          else
+            # Otherwise, append only the models that changed.
+            if [ "${{ steps.filter.outputs.ganblr }}" == "true" ]; then
+              MATRIX=$(echo $MATRIX | jq -c '. += [{"model": "ganblr", "torch": false}]')
+            fi
+            if [ "${{ steps.filter.outputs.great }}" == "true" ]; then
+              MATRIX=$(echo $MATRIX | jq -c '. += [{"model": "great", "torch": true}]')
+            fi
+          fi
+          
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
 
   integration:
     needs: [lint-and-test, changes]
+    if: ${{ needs.changes.outputs.matrix != '[]' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - model: ganblr
-            torch: false
-          - model: great
-            torch: true
+        include: ${{ fromJSON(needs.changes.outputs.matrix) }}
     name: integration-${{ matrix.model }}
-    if: ${{ needs.changes.outputs.core == 'true' || needs.changes.outputs[matrix.model] == 'true' }}
     steps:
       - uses: actions/checkout@v7
-
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
