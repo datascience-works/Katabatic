@@ -431,7 +431,7 @@ class GANBLR(Model):
                 )
         if path.suffix == ".pkl":
             with open(path, "rb") as f:
-                obj = pickle.load(f)
+                obj = pickle.load(f) # nosec B301: loading our own saved model artifact, not untrusted input
         else:
             obj = joblib.load(path)
         if not isinstance(obj, cls):

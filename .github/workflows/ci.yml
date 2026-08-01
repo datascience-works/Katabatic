@@ -34,6 +34,12 @@ jobs:
       - name: Ruff
         run: poetry run ruff check katabatic tests
 
+      - name: Bandit (Security)
+        run: poetry run bandit -r katabatic -ll
+
+      - name: pip-audit (Security)
+        run: poetry run pip-audit
+
       - name: Pytest (fast)
         run: poetry run pytest -q --cov=katabatic --cov-report=term-missing --cov-fail-under=45
 

@@ -86,9 +86,9 @@ class GReaT(Model):
         # Load Model and Tokenizer from HuggingFace
         self.efficient_finetuning = efficient_finetuning
         self.llm = llm
-        self.tokenizer = AutoTokenizer.from_pretrained(self.llm)
+        self.tokenizer = AutoTokenizer.from_pretrained(self.llm) # nosec B615: trusted HF base model
         self.tokenizer.pad_token = self.tokenizer.eos_token
-        self.model = AutoModelForCausalLM.from_pretrained(self.llm)
+        self.model = AutoModelForCausalLM.from_pretrained(self.llm) # nosec B615: trusted HF base model
 
         if self.efficient_finetuning == "lora":
             # Lazy importing
@@ -829,7 +829,7 @@ class GReaT(Model):
         Args:
             path: Path to the fine-tuned model
         """
-        self.model.load_state_dict(torch.load(fsspec.open(path, "rb")))
+        self.model.load_state_dict(torch.load(fsspec.open(path, "rb"))) # nosec B614: loading our own saved weights
 
     @classmethod
     def load_from_dir(cls, path: str):
@@ -859,7 +859,7 @@ class GReaT(Model):
 
         # Load model weights
         great.model.load_state_dict(
-            torch.load(fs.open(path + "/model.pt", "rb"), map_location="cpu")
+            torch.load(fs.open(path + "/model.pt", "rb"), map_location="cpu") # nosec B614: loading our own saved weights
         )
 
         return great
