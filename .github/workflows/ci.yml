@@ -40,7 +40,36 @@ jobs:
       - name: Build wheel
         run: poetry build
 
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      core: ${{ steps.filter.outputs.core }}
+      ganblr: ${{ steps.filter.outputs.ganblr }}
+      great: ${{ steps.filter.outputs.great }}
+      #add new models
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            core:
+              - 'pyproject.toml'
+              - 'poetry.lock'
+              - 'katabatic/pipeline/**'
+              - 'katabatic/utils/**'
+              - 'katabatic/datasets/**'
+              - 'katabatic/artifacts/**'
+              - 'katabatic/evaluate/**'
+            ganblr:
+              - 'katabatic/models/ganblr/**'
+              - 'tests/test_integration_ganblr.py'
+            great:
+              - 'katabatic/models/great/**'
+              - 'tests/test_integration_great.py'
+
   integration:
+    needs: [lint-and-test, changes]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -51,6 +80,7 @@ jobs:
           - model: great
             torch: true
     name: integration-${{ matrix.model }}
+    if: ${{ needs.changes.outputs.core == 'true' || needs.changes.outputs[matrix.model] == 'true' }}
     steps:
       - uses: actions/checkout@v7
 
