@@ -171,7 +171,7 @@ def test_artifact_presplit_auto_registry(tmp_path):
 
 
 @pytest.mark.skip(
-    reason="FidelityEvaluation uuses df-based contructor which is incompatible "
+    reason="FidelityEvaluation uses df-based constructor which is incompatible "
     "with TrainTestSplitPipeline's directory-based eval interface."
 )
 def test_artifact_fidelity_evaluation_smoke(tmp_path):

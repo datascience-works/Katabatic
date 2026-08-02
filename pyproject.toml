@@ -6,6 +6,7 @@ readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [
+    { name = "Alex Ryan", email = "alex.ryan_14@outlook.com" },
     { name = "Vikum Dabare", email = "vikumdabare@gmail.com" },
 ]
 keywords = ["synthetic-data", "tabular-data", "generative-models", "GAN", "TSTR"]
@@ -95,7 +96,6 @@ Documentation = "https://github.com/datascience-works/Katabatic#readme"
 # Experimental models are excluded until they have integration tests.
 omit = [
     "katabatic/models/codi/*",
-    "katabatic/models/ctgan/*",
     "katabatic/models/medgan/*",
     "katabatic/models/pategan/*",
     "katabatic/models/tabddpm/*",
@@ -119,13 +119,18 @@ pytest-mock = "^3.15.1"
 # Security tools
 bandit = "^1.9.4"
 pip-audit = "^2.10.1"
+pre-commit = "^4.6.1"
 
 [tool.pytest.ini_options]
 markers = [
     "integration: full model stack (slow)",
     "ganblr: requires ganblr extra",
     "great: requires great extra",
+    "ctgan: requires ctgan extra",
 ]
+
+[tool.ruff]
+extend-exclude = ["**/*.md", "**/README.md"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"] #E: pycodestyle error, F: flake8 error, I: isort imports, UP: Upgrade syntax
