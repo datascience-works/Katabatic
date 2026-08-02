@@ -302,9 +302,9 @@ These are expected and can be safely ignored.
 
 ## Reference
 
-**Paper**: "PATE-GAN: Generating Synthetic Data with Differential Privacy Guarantees"  
-**Authors**: Jinsung Yoon, James Jordon, Mihaela van der Schaar  
-**Year**: 2018  
+**Paper**: "PATE-GAN: Generating Synthetic Data with Differential Privacy Guarantees"
+**Authors**: Jinsung Yoon, James Jordon, Mihaela van der Schaar
+**Year**: 2018
 **Venue**: ICLR 2019
 
 **Original Implementation**: https://bitbucket.org/mvdschaar/mlforhealthlabpub/
