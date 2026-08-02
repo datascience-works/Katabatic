@@ -23,6 +23,8 @@ class GANBLR(Model):
     The GANBLR Model.
     """
 
+    ARTIFACT_STATE_FILE = "ganblr_model.pkl"
+
     def __init__(self) -> None:
         super().__init__()
         self.check_dependencies()  # Check dependencies on initialization
@@ -372,6 +374,15 @@ class GANBLR(Model):
         x_synth.to_csv(os.path.join(save_dir, "x_synth.csv"), index=False)
         y_synth.to_csv(os.path.join(save_dir, "y_synth.csv"), index=False, header=True)
         print(f"\n Synthetic data saved to: {save_dir}")
+
+        # persist model state for artifact reload
+        artifact_state_dir = kwargs.get("artifact_state_dir")
+        if artifact_state_dir:
+            import pickle
+
+            os.makedirs(artifact_state_dir, exist_ok=True)
+            with open(os.path.join(artifact_state_dir, "ganblr_model.pkl"), "wb") as f:
+                pickle.dump(self, f)
 
 
 class DataUtils:
