@@ -56,7 +56,7 @@ jobs:
         env:
           COVERAGE_FILE: .coverage.core
         run: poetry run pytest -q --cov=katabatic --cov-report=term-missing
-      
+
       - name: Upload Core Coverage
         uses: actions/upload-artifact@v7
         with:
@@ -149,7 +149,7 @@ jobs:
         env:
           COVERAGE_FILE: .coverage.${{ matrix.model }}
         run: poetry run pytest -m "integration and ${{ matrix.model }}" -q --cov=katabatic --cov-report=
-      
+
       - name: Upload Model Coverage
         uses: actions/upload-artifact@v7
         with:
@@ -200,7 +200,7 @@ jobs:
       - name: Smoke test image
         run: |
           docker run --rm katabatic:base python -c "import katabatic; print(katabatic.__version__)"
-  
+
   merge-coverage:
     runs-on: ubuntu-latest
     needs: [lint-and-test, integration]
