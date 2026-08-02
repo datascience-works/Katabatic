@@ -10,7 +10,7 @@ install-ganblr:
 	@echo "Installing GANBLR model dependencies..."
 	poetry install -E ganblr
 
-# Install GReaT model dependencies  
+# Install GReaT model dependencies
 install-great:
 	@echo "Installing GReaT model dependencies..."
 	poetry install -E great

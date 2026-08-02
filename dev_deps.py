@@ -14,7 +14,7 @@ from pathlib import Path
 def run_command(cmd, cwd=None):
     """Run a shell command and return success status."""
     try:
-        result = subprocess.run(
+        _ = subprocess.run(
             cmd, shell=True, cwd=cwd, check=True, capture_output=True, text=True
         )
         print(f"✓ {cmd}")

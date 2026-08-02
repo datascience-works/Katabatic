@@ -5,13 +5,13 @@ from dataclasses import dataclass, field
 
 import pandas as pd
 
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if REPO_ROOT not in sys.path:
-    sys.path.insert(0, REPO_ROOT)
-
 from katabatic.pipeline.evaluation_pipeline import SyntheticEvaluationPipeline
 from katabatic.utils.preprocess import preprocess_dataset
 from katabatic.utils.split_dataset import split_dataset
+
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
 
 
 @dataclass

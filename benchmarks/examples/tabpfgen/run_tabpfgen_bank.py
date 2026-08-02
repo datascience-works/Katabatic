@@ -6,9 +6,8 @@ sys.path.insert(
 )
 
 import pandas as pd
-from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
-
 from katabatic.models.tabpfgen.models import TabPFGenModel
+from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
 # max_train_rows=1000: TabPFN is designed for small datasets; this also keeps
 # generation fast. runner.py caps x_train.csv to this size.
