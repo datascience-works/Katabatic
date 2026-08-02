@@ -23,7 +23,7 @@ class GANBLR(Model):
     The GANBLR Model.
     """
 
-    ARTIFACT_STATE_FILE = "ganblr_model.pkl"
+    ARTIFACT_STATE_FILES = "ganblr_model.pkl"
 
     def __init__(self) -> None:
         super().__init__()
@@ -335,7 +335,10 @@ class GANBLR(Model):
         #                     'small', 'medium', 'large'], help='Dataset size category (small/medium/large)')
         # args = parser.parse_args()
 
-        epochs = 150 if size_category == "large" else 100
+        epochs = kwargs.get(
+            "train_epochs",
+            kwargs.get("epochs", 150 if size_category == "large" else 100),
+        )
 
         model_name = "ganblr"
         dataset_name = dataset
@@ -378,11 +381,16 @@ class GANBLR(Model):
         # persist model state for artifact reload
         artifact_state_dir = kwargs.get("artifact_state_dir")
         if artifact_state_dir:
-            import pickle
-
             os.makedirs(artifact_state_dir, exist_ok=True)
-            with open(os.path.join(artifact_state_dir, "ganblr_model.pkl"), "wb") as f:
-                pickle.dump(self, f)
+            try:
+                import pickle
+
+                with open(
+                    os.path.join(artifact_state_dir, "ganblr_model.pkl"), "wb"
+                ) as f:
+                    pickle.dump(self, f)
+            except Exception as e:
+                print(f"Failed to dump pickle file: {e}")
 
 
 class DataUtils:
