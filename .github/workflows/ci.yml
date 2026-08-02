@@ -112,7 +112,7 @@ jobs:
             MATRIX=$(echo "$ALL_MODELS" | jq -c --argjson changed "$CHANGED" \
               '[.[] | select(.model as $m | $changed | index($m))]')
           fi
- 
+
           echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
 
 
