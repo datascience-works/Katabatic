@@ -91,28 +91,30 @@ jobs:
             great:
               - 'katabatic/models/great/**'
               - 'tests/test_integration_great.py'
+            ctgan:
+              - 'katabatic/models/ctgan/**'
+              - 'tests/test_integration_ctgan.py'
       - name: Build Dynamic Matrix
         id: build-matrix
         run: |
-          MATRIX="[]"
+          ALL_MODELS ='[
+            {"model": "ganblr", "torch": false},
+            {"model": "great", "torch": true},
+            {"model": "ctgan", "torch": true}
+          ]'
 
           # If a core file changed, run all models.
           if [ "${{ steps.filter.outputs.core }}" == "true" ]; then
-            MATRIX=$(jq -n -c '[
-              {"model": "ganblr", "torch": false},
-              {"model": "great", "torch": true}
-            ]')
+            MATRIX=$(echo "$ALL_MODELS" | jq -c '.')
           else
             # Otherwise, append only the models that changed.
-            if [ "${{ steps.filter.outputs.ganblr }}" == "true" ]; then
-              MATRIX=$(echo $MATRIX | jq -c '. += [{"model": "ganblr", "torch": false}]')
-            fi
-            if [ "${{ steps.filter.outputs.great }}" == "true" ]; then
-              MATRIX=$(echo $MATRIX | jq -c '. += [{"model": "great", "torch": true}]')
-            fi
+            CHANGED='${{ steps.filter.outputs.changes }}'
+            MATRIX=$(echo "$ALL_MODELS" | jq -c --argjson changed "$CHANGED" \
+              '[.[] | select(.model as $m | $changed | index($m))]')
           fi
-
+ 
           echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+
 
   integration:
     needs: [lint-and-test, changes]
