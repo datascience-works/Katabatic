@@ -119,6 +119,7 @@ pytest-mock = "^3.15.1"
 # Security tools
 bandit = "^1.9.4"
 pip-audit = "^2.10.1"
+pre-commit = "^4.6.1"
 
 [tool.pytest.ini_options]
 markers = [
@@ -127,6 +128,9 @@ markers = [
     "great: requires great extra",
     "ctgan: requires ctgan extra",
 ]
+
+[tool.ruff]
+extend-exclude = ["**/*.md", "**/README.md"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"] #E: pycodestyle error, F: flake8 error, I: isort imports, UP: Upgrade syntax
