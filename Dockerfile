@@ -39,6 +39,6 @@ USER appuser
 
 # Verify installation
 RUN python -c "import katabatic; print('Katabatic version:', katabatic.__version__)"
- 
+
 # Default command
 CMD ["python", "-c", "import katabatic; print('Katabatic is installed and ready')"]
