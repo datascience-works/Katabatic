@@ -20,7 +20,7 @@ from runner import (
     save_synthetic,
 )
 
-from katabatic.models.ganblr.models import GANBLR
+from katabatic.models.ganblr.models import GANBLR  # noqa: E402
 
 # run in cpu mode(if GPU is limited)
 # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"

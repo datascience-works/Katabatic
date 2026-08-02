@@ -1,6 +1,6 @@
 # GANBLR
 
-GANBLR - Generative Adversarial Network modelling inspired by the relationship between Naive Bayes and Logistic Regression. 
+GANBLR - Generative Adversarial Network modelling inspired by the relationship between Naive Bayes and Logistic Regression.
 Was created to address two shortcomings of current GAN models when creating tabular synthetic data. These are the trade-off of raw predictive performance and lack of transparency around the generated raw data; creating a degradation in interpretability. Secondly, the prior knowledge is not incorporated as the focus is on raw features and not on explicit feature interactions which are not taken into account.
 GANBLR, on the other hand, is designed to address these two points.
 
@@ -54,13 +54,13 @@ batch_size=32, k=0 (auto-select)
 
 ## Hyperparameter Comparison
 
-| Parameter | Paper / Library Default | **Katabatic** | 
+| Parameter | Paper / Library Default | **Katabatic** |
 |---------|---------------|---------------|
-| k | 0 (auto) | **0** | 
-| epochs | 10 | **10** | 
+| k | 0 (auto) | **0** |
+| epochs | 10 | **10** |
 | batch_size | 32 | **32** |
 | warmup_epochs | 1 | **1** |
-| verbose | 1 | **0** | 
+| verbose | 1 | **0** |
 
 
 ***

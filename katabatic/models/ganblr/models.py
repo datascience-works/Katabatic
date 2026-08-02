@@ -15,7 +15,7 @@ from katabatic.models.base_model import Model
 from .utils import elr_loss, get_lr, sample, softmax_weight
 
 sys.path.append(os.path.abspath("."))
-from pyitlib import discrete_random_variable as drv
+from pyitlib import discrete_random_variable as drv  # noqa: E402
 
 
 class GANBLR(Model):
@@ -629,7 +629,7 @@ def get_high_order_feature(X, col, evidence_cols, feature_uniques):
     if evidence_cols is None or len(evidence_cols) == 0:
         return X[:, [col]]
     else:
-        evidence = [X[:, _col] for _col in evidence_cols] # noqa: F841
+        evidence = [X[:, _col] for _col in evidence_cols]  # noqa: F841
 
         # [1, variable_unique, evidence_unique]
         base = [1, feature_uniques[col]] + [
