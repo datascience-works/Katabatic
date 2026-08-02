@@ -122,6 +122,7 @@ markers = [
     "integration: full model stack (slow)",
     "ganblr: requires ganblr extra",
     "great: requires great extra",
+    "ctgan: requires ctgan extra",
 ]
 
 [tool.ruff.lint]
