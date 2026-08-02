@@ -169,9 +169,10 @@ def test_artifact_presplit_auto_registry(tmp_path):
     # StubEval has no from_artifact; pipeline returns no EvaluationRef for it.
     assert res["evaluation_refs"][0] is None
 
+
 @pytest.mark.skip(
-        reason="FidelityEvaluation uuses df-based contructor which is incompatible " \
-        "with TrainTestSplitPipeline's directory-based eval interface."
+    reason="FidelityEvaluation uuses df-based contructor which is incompatible "
+    "with TrainTestSplitPipeline's directory-based eval interface."
 )
 def test_artifact_fidelity_evaluation_smoke(tmp_path):
     df = pd.DataFrame({"f0": range(40), "y": [0, 1] * 20})
