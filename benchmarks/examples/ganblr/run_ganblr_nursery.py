@@ -23,7 +23,7 @@ from runner import (
 from katabatic.models.ganblr.models import GANBLR
 
 # run in cpu mode(if GPU is limited)
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 logging.getLogger("pgmpy").setLevel(logging.ERROR)
 warnings.filterwarnings("ignore")
@@ -103,36 +103,12 @@ def get_system_run_details() -> None:
 
 
 config = RunConfig(
-    dataset_name="adult",
+    dataset_name="nursery",
     model_name="ganblr",
-    # educational-num is ordinal but treated as categorical for GANBLR
-    # (discrete)
-    categorical_cols=[
-        "workclass",
-        "education",
-        "educational-num",
-        "marital-status",
-        "occupation",
-        "relationship",
-        "race",
-        "gender",
-        "native-country",
-    ],
-    continuous_cols=[
-        "age",
-        "fnlwgt",
-        "capital-gain",
-        "capital-loss",
-        "hours-per-week",
-    ],
-    target_col_raw="class",
-    constraints={
-        "age": (17, 90),
-        "fnlwgt": (12285, 1490400),
-        "capital-gain": (0, 99999),
-        "capital-loss": (0, 4356),
-        "hours-per-week": (1, 99),
-    },
+    categorical_cols=["0", "1", "2", "3", "4", "5", "6", "7"],
+    continuous_cols=[],
+    target_col_raw="8",
+    constraints={},
 )
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)
@@ -145,7 +121,7 @@ model.train(
     paths["split_dir"],
     categorical_cols=config.categorical_cols,
     continuous_cols=config.continuous_cols,
-    epochs=150,
+    epochs=300,
     batch_size=32,
     k=0,
     warmup_epochs=1,

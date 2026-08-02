@@ -1,17 +1,17 @@
-import json
 import os
 import sys
-from dataclasses import dataclass, field
-
+import json
 import pandas as pd
-
-from katabatic.pipeline.evaluation_pipeline import SyntheticEvaluationPipeline
-from katabatic.utils.preprocess import preprocess_dataset
-from katabatic.utils.split_dataset import split_dataset
+from dataclasses import dataclass, field
+from typing import Optional
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
+
+from katabatic.utils.preprocess import preprocess_dataset
+from katabatic.utils.split_dataset import split_dataset
+from katabatic.pipeline.evaluation_pipeline import SyntheticEvaluationPipeline
 
 
 @dataclass
@@ -21,36 +21,23 @@ class RunConfig:
     categorical_cols: list
     continuous_cols: list
     target_col_raw: str
-    constraints: dict | None = None
+    constraints: Optional[dict] = None
     test_size: float = 0.2
     seed: int = 42
-    max_train_rows: int | None = 50000  # set to None to use the full training set
-    dimensions: list = field(
-        default_factory=lambda: [
-            "fidelity",
-            "utility",
-            "diversity",
-            "privacy",
-            "consistency",
-            "stability",
-        ]
-    )
+    max_train_rows: Optional[int] = 50000   # set to None to use the full training set
+    dimensions: list = field(default_factory=lambda: [
+        'fidelity', 'utility', 'diversity', 'privacy', 'consistency', 'stability'
+    ])
 
 
 def build_paths(config: RunConfig) -> dict:
     benchmarks_dir = os.path.join(REPO_ROOT, "benchmarks")
     return {
-        "raw_data": os.path.join(REPO_ROOT, "datasets", f"{config.dataset_name}.csv"),
-        "processed_data": os.path.join(
-            benchmarks_dir, "processed", f"{config.dataset_name}_processed.csv"
-        ),
-        "split_dir": os.path.join(benchmarks_dir, "splits", config.dataset_name),
-        "synthetic_dir": os.path.join(
-            benchmarks_dir, "synthetic", config.dataset_name, config.model_name
-        ),
-        "results_dir": os.path.join(
-            benchmarks_dir, "results", config.dataset_name, config.model_name
-        ),
+        "raw_data":       os.path.join(REPO_ROOT, "datasets", f"{config.dataset_name}.csv"),
+        "processed_data": os.path.join(benchmarks_dir, "processed", f"{config.dataset_name}_processed.csv"),
+        "split_dir":      os.path.join(benchmarks_dir, "splits", config.dataset_name),
+        "synthetic_dir":  os.path.join(benchmarks_dir, "synthetic", config.dataset_name, config.model_name),
+        "results_dir":    os.path.join(benchmarks_dir, "results", config.dataset_name, config.model_name),
     }
 
 
@@ -92,18 +79,12 @@ def preprocess_and_split(config: RunConfig):
     processed_meta_path = paths["processed_data"].replace(".csv", "_meta.json")
     preprocess_ran = False
 
-    if os.path.exists(paths["processed_data"]) and _preprocess_cache_valid(
-        processed_meta_path, config.target_col_raw
-    ):
-        print(
-            "Processed data already exists and parameters match, skipping preprocessing."
-        )
+    if os.path.exists(paths["processed_data"]) and _preprocess_cache_valid(processed_meta_path, config.target_col_raw):
+        print("Processed data already exists and parameters match, skipping preprocessing.")
     else:
         if os.path.exists(paths["processed_data"]):
             print("[INFO] target_col_raw changed — regenerating processed data.")
-        preprocess_dataset(
-            paths["raw_data"], paths["processed_data"], config.target_col_raw
-        )
+        preprocess_dataset(paths["raw_data"], paths["processed_data"], config.target_col_raw)
         _write_meta(processed_meta_path, {"target_col": config.target_col_raw})
         preprocess_ran = True
 
@@ -121,72 +102,46 @@ def preprocess_and_split(config: RunConfig):
     train_full_path = os.path.join(paths["split_dir"], "train_full.csv")
     split_meta_path = os.path.join(paths["split_dir"], "split_meta.json")
 
-    if (
-        not preprocess_ran
-        and os.path.exists(train_full_path)
-        and _split_cache_valid(split_meta_path, config.test_size, config.seed)
-    ):
+    if (not preprocess_ran
+            and os.path.exists(train_full_path)
+            and _split_cache_valid(split_meta_path, config.test_size, config.seed)):
         print("Split data already exists and parameters match, skipping split.")
     else:
         if os.path.exists(train_full_path) and not preprocess_ran:
             print("[INFO] test_size or seed changed — regenerating split.")
-        split_dataset(
-            paths["processed_data"],
-            paths["split_dir"],
-            test_size=config.test_size,
-            seed=config.seed,
-        )
-        _write_meta(
-            split_meta_path, {"test_size": config.test_size, "seed": config.seed}
-        )
+        split_dataset(paths["processed_data"], paths["split_dir"],
+                      test_size=config.test_size, seed=config.seed)
+        _write_meta(split_meta_path, {"test_size": config.test_size, "seed": config.seed})
 
     train_df = pd.read_csv(os.path.join(paths["split_dir"], "train_full.csv"))
-    test_df = pd.read_csv(os.path.join(paths["split_dir"], "test_full.csv"))
+    test_df  = pd.read_csv(os.path.join(paths["split_dir"], "test_full.csv"))
     print(f"\nTrain rows: {len(train_df)}   Test rows: {len(test_df)}")
 
     if config.max_train_rows is not None and len(train_df) > config.max_train_rows:
-        print(
-            f"\n[INFO] Training set ({len(train_df):,} rows) exceeds max_train_rows={config.max_train_rows:,}."
-        )
-        train_df = (
-            train_df.groupby(target_col, group_keys=False)
-            .apply(
-                lambda g: g.sample(
-                    n=max(1, round(config.max_train_rows * len(g) / len(train_df))),
-                    random_state=config.seed,
-                )
+        print(f"\n[INFO] Training set ({len(train_df):,} rows) exceeds max_train_rows={config.max_train_rows:,}.")
+        train_df = train_df.groupby(target_col, group_keys=False).apply(
+            lambda g: g.sample(
+                n=max(1, round(config.max_train_rows * len(g) / len(train_df))),
+                random_state=config.seed,
             )
-            .reset_index(drop=True)
-        )
+        ).reset_index(drop=True)
         print(f"[INFO] Stratified sample applied -> {len(train_df):,} rows retained.")
-        print(
-            f"       Class distribution: {train_df[target_col].value_counts().to_dict()}"
-        )
+        print(f"       Class distribution: {train_df[target_col].value_counts().to_dict()}")
 
         # Write sample to disk so models read consistent data.
         # train_full.csv is preserved as the immutable full split.
-        train_df.to_csv(
-            os.path.join(paths["split_dir"], "train_sample.csv"), index=False
-        )
-        print("[INFO] Subsampled train written to train_sample.csv in split dir.")
+        train_df.to_csv(os.path.join(paths["split_dir"], "train_sample.csv"), index=False)
+        print(f"[INFO] Subsampled train written to train_sample.csv in split dir.")
 
     # Always write x_train.csv / y_train.csv so models using the X/y split format can find them.
-    train_df.drop(columns=[target_col]).to_csv(
-        os.path.join(paths["split_dir"], "x_train.csv"), index=False
-    )
-    train_df[[target_col]].to_csv(
-        os.path.join(paths["split_dir"], "y_train.csv"), index=False
-    )
+    train_df.drop(columns=[target_col]).to_csv(os.path.join(paths["split_dir"], "x_train.csv"), index=False)
+    train_df[[target_col]].to_csv(os.path.join(paths["split_dir"], "y_train.csv"), index=False)
 
     return train_df, test_df, target_col, paths
 
 
-def save_synthetic(
-    synthetic_df: pd.DataFrame,
-    train_df: pd.DataFrame,
-    paths: dict,
-    categorical_cols: list = None,
-) -> pd.DataFrame:
+def save_synthetic(synthetic_df: pd.DataFrame, train_df: pd.DataFrame, paths: dict,
+                   categorical_cols: list = None) -> pd.DataFrame:
     """Validate, align columns to training data, and save synthetic CSV."""
     if not isinstance(synthetic_df, pd.DataFrame):
         raise TypeError("synthetic_df must be a pandas DataFrame")
@@ -206,15 +161,8 @@ def save_synthetic(
     return synthetic_df
 
 
-def evaluate(
-    model,
-    config: RunConfig,
-    train_df: pd.DataFrame,
-    synthetic_df: pd.DataFrame,
-    target_col: str,
-    paths: dict,
-    test_df: pd.DataFrame = None,
-):
+def evaluate(model, config: RunConfig, train_df: pd.DataFrame, synthetic_df: pd.DataFrame,
+             target_col: str, paths: dict, test_df: pd.DataFrame = None):
     """Run the evaluation pipeline and print the final summary. Returns EvaluationReport."""
     print("\n" + "=" * 60)
     print("STEP 5 — Evaluate synthetic data")
