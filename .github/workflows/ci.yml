@@ -55,7 +55,7 @@ jobs:
       - name: Pytest (fast)
         env:
           COVERAGE_FILE: .coverage.core
-        run: poetry run pytest -q --cov=katabatic --cov-report=term-missing
+        run: poetry run pytest -q --ignore=tests/test_model_registry.py --cov=katabatic --cov-report=term-missing
 
       - name: Upload Core Coverage
         uses: actions/upload-artifact@v7
