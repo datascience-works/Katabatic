@@ -71,6 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.build-matrix.outputs.matrix }}
+      core: ${{ steps.filter.outputs.core }}
     steps:
       - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
@@ -218,8 +219,13 @@ jobs:
 
   merge-coverage:
     runs-on: ubuntu-latest
-    needs: [lint-and-test, integration]
-    if: always() && needs.lint-and-test.result == 'success'
+    needs: [lint-and-test, integration, changes]
+    if: >
+      always() &&
+      needs.lint-and-test.result == 'success' &&
+      (needs.changes.outputs.core == 'true' ||
+        (github.event_name == 'push' && github.ref == 'refs/heads/development'))
+
     steps:
       - uses: actions/checkout@v7
 
