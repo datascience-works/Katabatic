@@ -115,7 +115,6 @@ jobs:
 
           echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
 
-
   integration:
     needs: [lint-and-test, changes]
     if: ${{ needs.changes.outputs.matrix != '[]' }}
@@ -158,6 +157,20 @@ jobs:
           name: coverage-${{ matrix.model }}
           path: .coverage.${{ matrix.model }}
           include-hidden-files: true
+
+  model-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - name: Install Poetry
+        run: pip install poetry==2.4.1
+      - name: Install supported model extras
+        run: poetry install --with dev -E ganblr
+      - name: Model promotion contract
+        run: poetry run pytest tests/test_model_registry.py -v
 
   wheel-smoke:
     runs-on: ubuntu-latest
