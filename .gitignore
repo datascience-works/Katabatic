@@ -2,10 +2,17 @@
 
 # Local pipeline outputs (not for version control)
 artifacts/
+benchmarks/processed/
+benchmarks/results/
+benchmarks/splits/
+katabatic/datasets/
+datasets/
+raw_data/
 preprocessed_data/
 sample_data/
 synthetic/
 Results/
+
 
 # GReaT trainer artifacts
 **/trainer_great/**
@@ -234,8 +241,3 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
-# Benchmark data and outputs (never commit)
-benchmarks/results/
-benchmarks/processed/
-benchmarks/splits/
-datasets/*.csv

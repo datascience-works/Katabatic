@@ -5,6 +5,7 @@ import sys
 import warnings
 from time import perf_counter
 
+import pandas as pd
 import psutil
 
 sys.path.insert(
@@ -102,12 +103,12 @@ def get_system_run_details() -> None:
 
 
 config = RunConfig(
-    dataset_name="car",
+    dataset_name="shuttle",
     model_name="ganblr",
-    categorical_cols=["buying", "maint", "doors", "persons", "lug_boot", "safety"],
+    categorical_cols=["time", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8"],
     continuous_cols=[],
     target_col_raw="class",
-    constraints=None,
+    constraints={},
 )
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)
@@ -120,7 +121,7 @@ model.train(
     paths["split_dir"],
     categorical_cols=config.categorical_cols,
     continuous_cols=config.continuous_cols,
-    epochs=300,
+    epochs=150,
     batch_size=32,
     k=0,
     warmup_epochs=1,
@@ -130,7 +131,7 @@ print("\nGANBLR training complete.")
 print("\n" + "=" * 60)
 print("STEP 4 — Generate synthetic data")
 print("=" * 60)
-synthetic_df = model.sample(len(train_df))
+synthetic_df = pd.DataFrame(model.sample(len(train_df)), columns=train_df.columns)
 synthetic_df = save_synthetic(
     synthetic_df,
     train_df,
