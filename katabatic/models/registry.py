@@ -7,7 +7,6 @@ Other registered models are experimental; see ``docs/EXPERIMENTAL_MODELS.md``.
 from __future__ import annotations
 
 import importlib
-from typing import Dict, Optional, Type
 
 from .base_model import Model
 
@@ -15,7 +14,7 @@ from .base_model import Model
 class ModelRegistry:
     """Registry for managing available models and their dependencies."""
 
-    _models: Dict[str, Dict] = {
+    _models: dict[str, dict] = {
         "ganblr": {
             "module": "katabatic.models.ganblr.models",
             "class": "GANBLR",
@@ -83,12 +82,12 @@ class ModelRegistry:
         return bool(info and info.get("supported"))
 
     @classmethod
-    def get_model_info(cls, model_name: str) -> Optional[Dict]:
+    def get_model_info(cls, model_name: str) -> dict | None:
         """Get information about a specific model."""
         return cls._models.get(model_name.lower())
 
     @classmethod
-    def load_model(cls, model_name: str) -> Type[Model]:
+    def load_model(cls, model_name: str) -> type[Model]:
         """Dynamically load a model class."""
         model_name = model_name.lower()
 

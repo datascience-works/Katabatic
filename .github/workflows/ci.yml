@@ -2,91 +2,228 @@ name: CI
 
 on:
   push:
-    branches: [main, development, master]
+    branches: [main, development]
   pull_request:
-    branches: [main, development, master]
+    branches: [main, development]
 
 jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - run: pip install pre-commit
+      - run: pre-commit run --all-files
+
   lint-and-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
+      - name: Cache Poetry environment
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-lint-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+
       - name: Install Poetry
-        run: pip install poetry==1.8.5
+        run: pip install poetry==2.4.1
+
+      - name: Validate project + lock in sync
+        run: poetry check --lock
 
       - name: Install dependencies
         run: poetry install --with dev
 
-      - name: Poetry check
-        run: poetry check
-
       - name: Ruff
         run: poetry run ruff check katabatic tests
 
+      - name: Bandit (Security)
+        run: poetry run bandit -r katabatic -ll
+
+      - name: pip-audit (Security)
+        run: |
+          poetry run pip freeze --exclude-editable > ci-audit-reqs.txt
+          poetry run pip-audit -r ci-audit-reqs.txt -s osv
+
       - name: Pytest (fast)
-        run: poetry run pytest -q
+        env:
+          COVERAGE_FILE: .coverage.core
+        run: poetry run pytest -q --cov=katabatic --cov-report=term-missing
+
+      - name: Upload Core Coverage
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-core
+          path: .coverage.core
+          include-hidden-files: true
 
       - name: Build wheel
         run: poetry build
 
-  integration-ganblr:
+  changes:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.build-matrix.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            core:
+              - 'pyproject.toml'
+              - 'poetry.lock'
+              - 'katabatic/pipeline/**'
+              - 'katabatic/utils/**'
+              - 'katabatic/datasets/**'
+              - 'katabatic/artifacts/**'
+              - 'katabatic/evaluate/**'
+            ganblr:
+              - 'katabatic/models/ganblr/**'
+              - 'tests/test_integration_ganblr.py'
+            great:
+              - 'katabatic/models/great/**'
+              - 'tests/test_integration_great.py'
+            ctgan:
+              - 'katabatic/models/ctgan/**'
+              - 'tests/test_integration_ctgan.py'
+      - name: Build Dynamic Matrix
+        id: build-matrix
+        run: |
+          ALL_MODELS='[
+            {"model": "ganblr", "torch": false},
+            {"model": "great", "torch": true},
+            {"model": "ctgan", "torch": true}
+          ]'
 
-      - uses: actions/setup-python@v5
+          # If a core file changed, run all models.
+          if [ "${{ steps.filter.outputs.core }}" == "true" ]; then
+            MATRIX=$(echo "$ALL_MODELS" | jq -c '.')
+          else
+            # Otherwise, append only the models that changed.
+            CHANGED='${{ steps.filter.outputs.changes }}'
+            MATRIX=$(echo "$ALL_MODELS" | jq -c --argjson changed "$CHANGED" \
+              '[.[] | select(.model as $m | $changed | index($m))]')
+          fi
+
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+
+
+  integration:
+    needs: [lint-and-test, changes]
+    if: ${{ needs.changes.outputs.matrix != '[]' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.changes.outputs.matrix) }}
+    name: integration-${{ matrix.model }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
-      - name: Install Poetry
-        run: pip install poetry==1.8.5
-
-      - name: Install with ganblr extra
-        run: poetry install --with dev -E ganblr
-
-      - name: Integration tests (GANBLR)
-        run: poetry run pytest -m "integration and ganblr" -q
-
-  integration-great:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
+      - name: Cache Poetry environment
+        uses: actions/cache@v6
         with:
-          python-version: "3.11"
+          path: ~/.cache/pypoetry
+          key: poetry-${{ matrix.model }}-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install Poetry
-        run: pip install poetry==1.8.5
+        run: pip install poetry==2.4.1
 
-      - name: Install with great extra
-        run: poetry install --with dev -E great
+      - name: Pre-install CPU torch
+        if: matrix.torch
+        run: poetry run pip install "torch>=2.7.1,<3.0.0" --index-url https://download.pytorch.org/whl/cpu
 
-      - name: Integration tests (GReaT)
-        run: poetry run pytest -m "integration and great" -q
+      - name: Install with ${{ matrix.model }} extra
+        run: poetry install --with dev -E ${{ matrix.model }}
+
+      - name: Integration tests (${{ matrix.model }})
+        env:
+          COVERAGE_FILE: .coverage.${{ matrix.model }}
+        run: poetry run pytest -m "integration and ${{ matrix.model }}" -q --cov=katabatic --cov-report=
+
+      - name: Upload Model Coverage
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-${{ matrix.model }}
+          path: .coverage.${{ matrix.model }}
+          include-hidden-files: true
 
   wheel-smoke:
     runs-on: ubuntu-latest
     needs: lint-and-test
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
       - name: Install Poetry and build
         run: |
-          pip install poetry==1.8.5
+          pip install poetry==2.4.1
           poetry build
 
       - name: Install wheel in clean venv
         run: |
           python -m venv /tmp/whltest
-          /tmp/whltest/bin/pip install dist/katabatic-*.whl
-          /tmp/whltest/bin/python -c "import katabatic; from katabatic.utils.preprocess import preprocess_tabular; print(katabatic.__version__)"
+          /tmp/whltest/bin/pip install dist/*.whl
+          /tmp/whltest/bin/python -c "import katabatic; print(katabatic.__version__)"
+
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build base image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          tags: katabatic:base
+          build-args: |
+            POETRY_INSTALL_ARGS=--only main
+          cache-from: type=gha,scope=base
+          cache-to: type=gha,mode=max,scope=base
+
+      - name: Smoke test image
+        run: |
+          docker run --rm katabatic:base python -c "import katabatic; print(katabatic.__version__)"
+
+  merge-coverage:
+    runs-on: ubuntu-latest
+    needs: [lint-and-test, integration]
+    if: always() && needs.lint-and-test.result == 'success'
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Install Coverage tool
+        run: pip install coverage==7.4.0
+
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@v7
+        with:
+          pattern: coverage-*
+          merge-multiple: true
+
+      - name: Combine and Report
+        run: |
+          coverage combine
+          coverage report --show-missing --fail-under=45

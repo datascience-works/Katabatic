@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import warnings
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from katabatic.artifacts.base import ArtifactStore
 from katabatic.artifacts.local import LocalArtifactStore
@@ -12,7 +12,7 @@ from katabatic.datasets.profile import infer_dataset_profile
 
 
 def _iso_now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 REGISTRY_RELPATH = "registry/datasets.json"
@@ -25,7 +25,7 @@ class DatasetRegistry:
         self._store = store
 
     @classmethod
-    def from_root(cls, root: str | Path) -> "DatasetRegistry":
+    def from_root(cls, root: str | Path) -> DatasetRegistry:
         return cls(LocalArtifactStore(root))
 
     @property
@@ -40,7 +40,7 @@ class DatasetRegistry:
     def _save_raw(self, data: dict[str, Any]) -> None:
         self._store.save_json(self._relpath, data)
 
-    def get(self, dataset_name: str) -> Optional[dict[str, Any]]:
+    def get(self, dataset_name: str) -> dict[str, Any] | None:
         key = artifact_path_segment(dataset_name)
         return self._load_raw()["datasets"].get(key)
 
@@ -49,12 +49,14 @@ class DatasetRegistry:
         dataset_name: str,
         csv_path: str | Path,
         *,
-        target_column: Optional[str] = None,
+        target_column: str | None = None,
     ) -> dict[str, Any]:
         key = artifact_path_segment(dataset_name)
         raw = self._load_raw()
         if key in raw["datasets"]:
-            raise ValueError(f"dataset name already registered: {dataset_name!r} (key {key!r})")
+            raise ValueError(
+                f"dataset name already registered: {dataset_name!r} (key {key!r})"
+            )
 
         profile = infer_dataset_profile(
             csv_path, target_column=target_column, dataset_name=dataset_name
@@ -72,13 +74,13 @@ class DatasetRegistry:
         dataset_name: str,
         csv_path: str | Path,
         *,
-        target_column: Optional[str] = None,
+        target_column: str | None = None,
     ) -> dict[str, Any]:
         """
         Register when the logical name is missing; otherwise return the existing entry.
         Emits a warning if column names differ from a fresh profile of ``csv_path``.
         """
-        key = artifact_path_segment(dataset_name)
+        _ = artifact_path_segment(dataset_name)
         existing = self.get(dataset_name)
         if existing is None:
             return self.register(dataset_name, csv_path, target_column=target_column)

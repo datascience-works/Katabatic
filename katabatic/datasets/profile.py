@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import pandas as pd
 
@@ -21,12 +21,12 @@ def _column_kind(series: pd.Series) -> str:
     return "text"
 
 
-def infer_task_for_target(y: pd.Series) -> tuple[str, Optional[int]]:
+def infer_task_for_target(y: pd.Series) -> tuple[str, int | None]:
     """Return (task_string, n_classes or None)."""
     if pd.api.types.is_numeric_dtype(y) and y.nunique(dropna=True) > 10:
         return "regression", None
     classes = pd.unique(y.dropna())
-    n_classes = int(len(classes))
+    n_classes = len(classes)
     if n_classes <= 1:
         return "multiclass_classification", n_classes
     if n_classes == 2:
@@ -37,7 +37,7 @@ def infer_task_for_target(y: pd.Series) -> tuple[str, Optional[int]]:
 def infer_dataset_profile(
     csv_path: str | Path,
     *,
-    target_column: Optional[str] = None,
+    target_column: str | None = None,
     dataset_name: str,
 ) -> dict[str, Any]:
     """
@@ -79,7 +79,7 @@ def infer_dataset_profile(
         "target_column": target_column,
         "task": task,
         "n_classes": n_classes,
-        "n_rows": int(len(df)),
+        "n_rows": len(df),
         "n_features": int(df.shape[1] - 1),
         "column_schema": column_schema,
     }
