@@ -1,19 +1,18 @@
-.PHONY: clear-cache install-core install-ganblr install-great install-all setup-dev help ci lint format security test build integration hooks
+.PHONY: clear-cache install-core install-model install-all setup-dev help ci lint format security test build integration hooks contract
 
 # Core installation (minimal dependencies)
 install-core:
 	@echo "Installing core Katabatic dependencies..."
 	poetry install
 
-# Install GANBLR model dependencies
-install-ganblr:
-	@echo "Installing GANBLR model dependencies..."
-	poetry install -E ganblr
-
-# Install GReaT model dependencies
-install-great:
-	@echo "Installing GReaT model dependencies..."
-	poetry install -E great
+# Install specified model
+install-model:
+	@if [ -z "$(MODEL)" ]; then \
+		echo "Error: specify a model, e.g. make install-model MODEL=ganblr"; \
+		exit 1; \
+	fi
+	@echo "Installing $(MODEL) model dependencies..."
+	poetry install -E $(MODEL)
 
 # Install all model dependencies
 install-all:
@@ -34,8 +33,8 @@ setup-great-dev:
 # Setup full development environment
 setup-dev:
 	@echo "Setting up full development environment..."
-	poetry install -E dev -E all
-	python dev_deps.py install all
+	poetry install --with dev -E all
+	poetry run pre-commit install
 
 clear-cache:
 	@echo "Clearing Python cache directories..."
@@ -45,8 +44,6 @@ clear-cache:
 	@echo "Cache cleared successfully!"
 
 # Quality checks (mirrors CI lint-and-test job)
-# --- Quality checks (mirror the CI lint-and-test job) ---
-
 # Run the fast CI checks locally before pushing / opening a PR
 ci: lint security test build
 	@echo "All local CI checks passed."
@@ -72,6 +69,12 @@ build:
 	@echo "Building wheel..."
 	poetry build
 
+# Run a model promotion contract test
+contract:
+	@echo "Running model promotion contract test..."
+	poetry install --with dev -E ganblr
+	poetry run pytest tests/test_model_registry.py -v
+
 # Run an integration test for a specific model.
 integration:
 	@echo "Running integration tests for $(MODEL)..."
@@ -90,9 +93,8 @@ help:
 	@echo ""
 	@echo "Installation:"
 	@echo "  make install-core       Install core dependencies only"
-	@echo "  make install-ganblr     Install with GANBLR dependencies"
-	@echo "  make install-great      Install with GReaT dependencies"
-	@echo "  make install-all        Install all model dependencies"
+	@echo "  make install-model MODEL=x   Install a specific model's deps (e.g. MODEL=ctgan)"
+	@echo "  make install-all             Install all model dependencies"
 	@echo ""
 	@echo "Development Setup:"
 	@echo "  make setup-ganblr-dev   Setup isolated GANBLR dev environment"
