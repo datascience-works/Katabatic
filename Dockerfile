@@ -1,6 +1,7 @@
 FROM python:3.11-slim
 
 ARG POETRY_INSTALL_ARGS="--only main"
+ARG MODEL_EXTRA=""
 
 # Python settings
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -27,11 +28,12 @@ COPY pyproject.toml poetry.lock README.md LICENSE ./
 COPY katabatic ./katabatic
 
 # Pre-install CPU-only torch.
-RUN pip install --no-cache-dir "torch>=2.7.1,<3.0.0" \
-    --index-url https://download.pytorch.org/whl/cpu
-
+RUN if echo "${MODEL_EXTRA}" | grep -q "great"; then \
+        pip install --no-cache-dir "torch>=2.7.1,<3.0.0" \
+        --index-url https://download.pytorch.org/whl/cpu; \
+    fi
 #Specifies which extras to install or just main.
-RUN poetry install ${POETRY_INSTALL_ARGS}
+RUN poetry install ${POETRY_INSTALL_ARGS} ${MODEL_EXTRA}
 
 #Non-root user for runtime
 RUN useradd --create-home --uid 1000 appuser
@@ -39,6 +41,6 @@ USER appuser
 
 # Verify installation
 RUN python -c "import katabatic; print('Katabatic version:', katabatic.__version__)"
- 
+
 # Default command
 CMD ["python", "-c", "import katabatic; print('Katabatic is installed and ready')"]
