@@ -132,6 +132,15 @@ class MEDGAN(Model):
         else:
             df_train = X_train
 
+        # Convert categorical columns to numeric codes for MedGAN only
+        for col in df_train.columns:
+            if df_train[col].dtype == "object":
+                df_train[col] = (
+                    df_train[col]
+                    .astype("category")
+                    .cat.codes
+        )
+
         # Convert to numpy and normalize to [0, 1]
         data = df_train.values.astype(np.float32)
         self.input_dim_ = data.shape[1]
