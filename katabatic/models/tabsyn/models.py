@@ -119,7 +119,7 @@ class TabSyn(BaseModel):
         X_cols = num_cols + cat_cols[1:]
 
         x_synth = df_s[X_cols]
-        y_synth = df_s[y_col].astype("int64")
+        y_synth = df_s[y_col]
 
         # Align synthetic feature names & order with real train CSV
         real_x_train_path = os.path.join(data_dir, "x_train.csv")
