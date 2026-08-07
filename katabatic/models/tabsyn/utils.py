@@ -31,6 +31,7 @@ class TabSynConfig:
     diffusion_epochs: int = 500
     diffusion_batch_size: int = 4096
     diffusion_steps: int = 50
+    diffusion_hidden_dim: int = 512
 
     lr: float = 1e-3
     weight_decay: float = 0.0
@@ -617,7 +618,7 @@ def train_tabsyn(
             pbar.set_postfix(loss=total / max(1, count))
 
     # ---- Train diffusion denoiser on z
-    denoise_backbone = MLPDiffusion(d_in=in_dim, dim_t=512).to(device)
+    denoise_backbone = MLPDiffusion(d_in=in_dim, dim_t=cfg.diffusion_hidden_dim).to(device)
     precond = _Precond(denoise_backbone, sigma_data=0.5).to(device)
     precond.num_steps = cfg.diffusion_steps
     edm_loss = _EDMLoss()
