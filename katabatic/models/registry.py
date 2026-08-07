@@ -43,6 +43,13 @@ class ModelRegistry:
             "extra": "tabsyn",
             "supported": False,
         },
+        "tabkde": {
+            "module": "katabatic.models.tabkde.models",
+            "class": "TabKDEModel",
+            "dependencies": ["torch", "sklearn", "scipy"],
+            "extra": "tabkde",
+            "supported": False,
+        },
         "tabddpm": {
             "module": "katabatic.models.tabddpm.models",
             "class": "Tabddpm",
