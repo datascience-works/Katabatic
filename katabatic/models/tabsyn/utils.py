@@ -7,6 +7,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from sklearn.preprocessing import LabelEncoder
 
 # all torch-related code lives here so models.py only imports from utils.py
 import torch
@@ -44,6 +45,7 @@ class TabSynState:
     info: dict[str, Any]
     n_num: int
     cat_sizes: list[int]
+    cat_encoders: list  # fitted sklearn LabelEncoders, one per categorical col
     token_dim: int
     column_order: list[int]  # numeric->cat->(target at the end)
     scaler_mean: np.ndarray | None  # for numeric inverse
@@ -171,22 +173,22 @@ def _cat_sizes(X_cat: np.ndarray | None) -> list[int]:
 
 def _categorical_to_index(
     X_cat: np.ndarray | None,
-) -> tuple[np.ndarray | None, list[dict[str, int]]]:
+) -> tuple[np.ndarray | None, list[LabelEncoder]]:
     """
-    Maps each categorical column to integer indices [0..n_classes-1].
-    Returns encoded array and per-column vocab dicts.
+    Maps each categorical column to integer indices [0..n_classes-1]
+    using sklearn LabelEncoder, so encoding is reversible via
+    encoder.inverse_transform() later.
     """
     if X_cat is None:
         return None, []
     enc = np.zeros_like(X_cat, dtype=np.int64)
-    vocabs: list[dict[str, int]] = []
+    encoders: list[LabelEncoder] = []
     for j in range(X_cat.shape[1]):
         col = X_cat[:, j].astype(str)
-        uniq = np.unique(col)
-        vocab = {v: i for i, v in enumerate(uniq)}
-        enc[:, j] = np.vectorize(vocab.get)(col)
-        vocabs.append(vocab)
-    return enc, vocabs
+        le = LabelEncoder()
+        enc[:, j] = le.fit_transform(col)
+        encoders.append(le)
+    return enc, encoders
 
 
 # =======================
@@ -466,8 +468,8 @@ def _prepare_training_mats(
     mean, std = _fit_numeric_scaler(Xn_tr)
     Xn_tr_scaled = _transform_numeric(Xn_tr, mean, std)
 
-    # Encode categoricals to indices and collect sizes
-    Xc_tr_idx, vocabs = _categorical_to_index(Xc_tr)
+# Encode categoricals to indices and collect sizes
+    Xc_tr_idx, cat_encoders = _categorical_to_index(Xc_tr)
     sizes = _cat_sizes(Xc_tr)
 
     return (
@@ -477,6 +479,9 @@ def _prepare_training_mats(
         Xc_tr_idx if Xc_tr_idx is not None else None,
         y_tr,
         sizes,
+        cat_encoders,
+        mean,
+        std,
     )
 
 
@@ -531,15 +536,13 @@ def train_tabsyn(
     info = _load_info(data_dir)
 
     # ---- Load & prepare training mats
-    Xn_tr_np, Xc_tr_idx_np, y_tr, cat_sizes = _prepare_training_mats(data_dir, info)
+    Xn_tr_np, Xc_tr_idx_np, y_tr, cat_sizes, cat_encoders, mean, std = _prepare_training_mats(data_dir, info)
     n_num = Xn_tr_np.shape[1]
     token_dim = cfg.d_token
     column_order = list(range(n_num)) + list(
         range(n_num, n_num + len(cat_sizes))
     )  # used for DF assembly
 
-    # scalers for inverse-transform
-    mean, std = _fit_numeric_scaler(None if n_num == 0 else (Xn_tr_np * 1.0))
 
     # torch tensors
     Xn_tr = torch.from_numpy(Xn_tr_np).float().to(device) if n_num > 0 else None
@@ -663,6 +666,7 @@ def train_tabsyn(
         info=info,
         n_num=n_num,
         cat_sizes=cat_sizes,
+        cat_encoders=cat_encoders,
         token_dim=token_dim,
         column_order=column_order,
         scaler_mean=mean,
@@ -812,11 +816,15 @@ def sample_tabsyn(
             Xn_hat = pred_num.cpu().numpy()
             Xn_hat = _inverse_numeric(Xn_hat, state.scaler_mean, state.scaler_std)
 
-        # categoricals argmax
+# categoricals argmax, then decode back to original string labels
         Xc_hat = None
         if len(state.cat_sizes):
             Xc_logits = [log.cpu().numpy() for log in pred_cat_logits]
-            Xc_hat = np.stack([logits.argmax(axis=1) for logits in Xc_logits], axis=1)
+            Xc_hat_idx = np.stack([logits.argmax(axis=1) for logits in Xc_logits], axis=1)
+
+            Xc_hat = np.empty(Xc_hat_idx.shape, dtype=object)
+            for j, encoder in enumerate(state.cat_encoders):
+                Xc_hat[:, j] = encoder.inverse_transform(Xc_hat_idx[:, j])
 
     # Build output
     if not return_df:
