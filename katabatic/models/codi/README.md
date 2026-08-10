@@ -12,8 +12,8 @@ CoDi, a synthetic tabular data generator that allows for rows that mix continuou
 
 ## Paper
 
-**CoDi: Co-evolving Contrastive Diffusion Models for Mixed-type Tabular Synthesis**  
-Lee et al., ICML 2023  
+**CoDi: Co-evolving Contrastive Diffusion Models for Mixed-type Tabular Synthesis**
+Lee et al., ICML 2023
 [arXiv:2304.12654](https://arxiv.org/abs/2304.12654)
 
 ## Implementation Details
@@ -53,11 +53,11 @@ See `examples/codi.ipynb` for more examples.
 
 ## References
 
-**CoDi: Co-evolving Contrastive Diffusion Models for Mixed-type Tabular Synthesis**  
-Chaejeong Lee, Jayoung Kim, Noseong Park  
-*Proceedings of the 40th International Conference on Machine Learning (ICML 2023), PMLR 202:18940–18956*  
-Paper: <https://proceedings.mlr.press/v202/lee23i.html>  
-Preprint: <https://arxiv.org/abs/2304.12654>  
+**CoDi: Co-evolving Contrastive Diffusion Models for Mixed-type Tabular Synthesis**
+Chaejeong Lee, Jayoung Kim, Noseong Park
+*Proceedings of the 40th International Conference on Machine Learning (ICML 2023), PMLR 202:18940–18956*
+Paper: <https://proceedings.mlr.press/v202/lee23i.html>
+Preprint: <https://arxiv.org/abs/2304.12654>
 Code: <https://github.com/ChaejeongLee/CoDi>
 
 ## Generative AI Acknowledgement

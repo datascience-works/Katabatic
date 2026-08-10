@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pandas as pd
+import pytest
 
 from katabatic.artifacts import LocalArtifactStore
 from katabatic.datasets.compatibility import check_dataset_for_model
@@ -14,11 +15,9 @@ def test_dataset_registry_register_and_duplicate(tmp_path):
     reg = DatasetRegistry(store)
     reg.register("myds", str(csv_path))
     assert reg.get("myds") is not None
-    try:
+
+    with pytest.raises(ValueError, match="already registered"):
         reg.register("myds", str(csv_path))
-        assert False, "expected duplicate error"
-    except ValueError as e:
-        assert "already registered" in str(e).lower()
 
 
 def test_register_if_absent_skips_duplicate(tmp_path):

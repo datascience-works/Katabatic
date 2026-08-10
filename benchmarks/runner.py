@@ -9,9 +9,11 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
-from katabatic.pipeline.evaluation_pipeline import SyntheticEvaluationPipeline
-from katabatic.utils.preprocess import preprocess_dataset
-from katabatic.utils.split_dataset import split_dataset
+from katabatic.pipeline.evaluation_pipeline import (  # noqa: E402
+    SyntheticEvaluationPipeline,
+)
+from katabatic.utils.preprocess import preprocess_dataset  # noqa: E402
+from katabatic.utils.split_dataset import split_dataset  # noqa: E402
 
 
 @dataclass

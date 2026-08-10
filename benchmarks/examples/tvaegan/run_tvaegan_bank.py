@@ -5,9 +5,8 @@ sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 
-from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
-
 from katabatic.models.tvaegan.models import TVAEGANModel
+from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
 config = RunConfig(
     dataset_name="bank_marketing",
