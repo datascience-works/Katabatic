@@ -130,9 +130,7 @@ class PATEGAN(Model):
 
         discriminator_input = tf.concat([x, y_cond], axis=1)
 
-        D_h1 = tf.nn.relu(
-            tf.matmul(discriminator_input, self.D_W1) + self.D_b1
-        )
+        D_h1 = tf.nn.relu(tf.matmul(discriminator_input, self.D_W1) + self.D_b1)
         D_h2 = tf.nn.relu(tf.matmul(D_h1, self.D_W2) + self.D_b2)
         D_out = tf.matmul(D_h2, self.D_W3) + self.D_b3
 
@@ -145,9 +143,7 @@ class PATEGAN(Model):
         params = self.teacher_params[teacher_idx]
         discriminator_input = tf.concat([x, y_cond], axis=1)
 
-        h1 = tf.nn.relu(
-            tf.matmul(discriminator_input, params["W1"]) + params["b1"]
-        )
+        h1 = tf.nn.relu(tf.matmul(discriminator_input, params["W1"]) + params["b1"])
         h2 = tf.nn.relu(tf.matmul(h1, params["W2"]) + params["b2"])
         out = tf.matmul(h2, params["W3"]) + params["b3"]
 
@@ -183,12 +179,8 @@ class PATEGAN(Model):
         generator_input_dim = self.z_dim + conditional_dim
 
         # Shared placeholders
-        self.X = tf.placeholder(
-            tf.float32, shape=[None, self._X_dim], name="X"
-        )
-        self.Z = tf.placeholder(
-            tf.float32, shape=[None, self.z_dim], name="Z"
-        )
+        self.X = tf.placeholder(tf.float32, shape=[None, self._X_dim], name="X")
+        self.Z = tf.placeholder(tf.float32, shape=[None, self.z_dim], name="Z")
         self.Y_cond = tf.placeholder(
             tf.float32,
             shape=[None, self._num_classes],
@@ -289,9 +281,7 @@ class PATEGAN(Model):
             with tf.variable_scope(f"teacher_{teacher_idx}"):
                 params = {
                     "W1": tf.Variable(
-                        self._xavier_init(
-                            [discriminator_input_dim, self._h_dim]
-                        ),
+                        self._xavier_init([discriminator_input_dim, self._h_dim]),
                         name="W1",
                     ),
                     "b1": tf.Variable(
@@ -299,9 +289,7 @@ class PATEGAN(Model):
                         name="b1",
                     ),
                     "W2": tf.Variable(
-                        self._xavier_init(
-                            [self._h_dim, self._h_dim]
-                        ),
+                        self._xavier_init([self._h_dim, self._h_dim]),
                         name="W2",
                     ),
                     "b2": tf.Variable(
@@ -406,8 +394,7 @@ class PATEGAN(Model):
         )
 
         self.teacher_vote_probs = [
-            tf.nn.sigmoid(logits)
-            for logits in self.teacher_logits_fake
+            tf.nn.sigmoid(logits) for logits in self.teacher_logits_fake
         ]
 
         self._sess = tf.Session()
@@ -449,18 +436,12 @@ class PATEGAN(Model):
 
         if isinstance(y, pd.DataFrame):
             if y.shape[1] != 1:
-                raise ValueError(
-                    "PATE-GAN currently supports one target column."
-                )
+                raise ValueError("PATE-GAN currently supports one target column.")
             y_series = y.iloc[:, 0].copy()
         else:
             y_series = y.copy()
 
-        self._target_name = (
-            y_series.name
-            if y_series.name is not None
-            else "target"
-        )
+        self._target_name = y_series.name if y_series.name is not None else "target"
 
         set_global_seed(self.random_state)
 
@@ -468,15 +449,10 @@ class PATEGAN(Model):
         # Preserve class values and empirical class distribution
         # ------------------------------------------------------------
         class_values = pd.Series(y_series).reset_index(drop=True)
-        self._target_classes = np.array(
-            sorted(class_values.unique().tolist())
-        )
+        self._target_classes = np.array(sorted(class_values.unique().tolist()))
         self._num_classes = len(self._target_classes)
 
-        class_to_index = {
-            cls: idx
-            for idx, cls in enumerate(self._target_classes)
-        }
+        class_to_index = {cls: idx for idx, cls in enumerate(self._target_classes)}
         y_indices = np.array(
             [class_to_index[value] for value in class_values],
             dtype=np.int64,
@@ -544,11 +520,7 @@ class PATEGAN(Model):
             iterator = range(self.niter)
             use_tqdm = False
 
-        print_every = (
-            max(1, self.niter // 10)
-            if verbose and not use_tqdm
-            else None
-        )
+        print_every = max(1, self.niter // 10) if verbose and not use_tqdm else None
 
         rng = np.random.RandomState(self.random_state)
 
@@ -574,8 +546,8 @@ class PATEGAN(Model):
                 )
                 batch = teacher_data[indices]
 
-                X_mb = batch[:, :self._X_dim]
-                Y_real = batch[:, self._X_dim:]
+                X_mb = batch[:, : self._X_dim]
+                Y_real = batch[:, self._X_dim :]
 
                 # Fake samples are conditioned on sampled target classes.
                 fake_class_idx = self._sample_class_indices(
@@ -656,9 +628,7 @@ class PATEGAN(Model):
                 teacher_votes,
                 axis=0,
             )
-            vote_counts_fake = (
-                self.num_teachers - vote_counts_real
-            )
+            vote_counts_fake = self.num_teachers - vote_counts_real
 
             noisy_real = self.privacy_mechanism.add_gaussian_noise(
                 vote_counts_real.astype(float)
@@ -668,8 +638,8 @@ class PATEGAN(Model):
             )
 
             private_labels = (
-                noisy_real >= noisy_fake
-            ).astype(np.float32).reshape(-1, 1)
+                (noisy_real >= noisy_fake).astype(np.float32).reshape(-1, 1)
+            )
 
             # --------------------------------------------------------
             # 3. Student learns only from private aggregated labels
@@ -744,9 +714,7 @@ class PATEGAN(Model):
         if not self.is_fitted:
             raise RuntimeError("Model must be fitted before sampling")
 
-        rng = np.random.RandomState(
-            self.random_state if seed is None else seed
-        )
+        rng = np.random.RandomState(self.random_state if seed is None else seed)
 
         if conditional is not None:
             if self._target_name not in conditional:
@@ -757,9 +725,7 @@ class PATEGAN(Model):
 
             requested_class = conditional[self._target_name]
 
-            matching = np.where(
-                self._target_classes == requested_class
-            )[0]
+            matching = np.where(self._target_classes == requested_class)[0]
 
             if len(matching) == 0:
                 raise ValueError(
@@ -813,9 +779,7 @@ class PATEGAN(Model):
 
         X_synth_all = np.vstack(all_samples)[:n]
 
-        df_synth = self.transformer.inverse_transform(
-            X_synth_all
-        )
+        df_synth = self.transformer.inverse_transform(X_synth_all)
 
         # The target comes directly from the conditioning variable rather than
         # being generated as an unconstrained continuous output.

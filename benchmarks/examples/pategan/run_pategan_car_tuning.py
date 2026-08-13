@@ -3,16 +3,12 @@ import sys
 
 sys.path.insert(
     0,
-    os.path.dirname(
-        os.path.dirname(
-            os.path.dirname(os.path.abspath(__file__))
-        )
-    ),
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
 )
 
 from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
-from katabatic.models.pategan.models import PATEGAN
 
+from katabatic.models.pategan.models import PATEGAN
 
 config = RunConfig(
     dataset_name="car",

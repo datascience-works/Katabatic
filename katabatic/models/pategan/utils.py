@@ -43,9 +43,7 @@ def infer_schema(df: pd.DataFrame) -> dict[str, Any]:
             or isinstance(df[col].dtype, pd.CategoricalDtype)
         ):
             col_info["type"] = "categorical"
-            col_info["metadata"] = {
-                "categories": df[col].astype(str).unique().tolist()
-            }
+            col_info["metadata"] = {"categories": df[col].astype(str).unique().tolist()}
 
         # Integer columns
         elif pd.api.types.is_integer_dtype(df[col]):
@@ -66,9 +64,7 @@ def infer_schema(df: pd.DataFrame) -> dict[str, Any]:
             }
 
         else:
-            raise TypeError(
-                f"Unsupported dtype for column '{col}': {df[col].dtype}"
-            )
+            raise TypeError(f"Unsupported dtype for column '{col}': {df[col].dtype}")
 
         schema["column_info"][col] = col_info
 
