@@ -6,7 +6,13 @@ import pandas as pd
 
 from katabatic.models.base_model import Model
 
-from .utils import DataTransformer, PrivacyMechanism, save_metadata, set_global_seed
+from .utils import (
+    DataTransformer,
+    PrivacyMechanism,
+    partition_data,
+    save_metadata,
+    set_global_seed,
+)
 
 
 class PATEGAN(Model):
@@ -263,6 +269,13 @@ class PATEGAN(Model):
         # Training loop
         n_samples = len(X_encoded)
 
+        # Split the encoded training data into disjoint teacher partitions.
+        # Each teacher will train only on its own partition.
+        teacher_partitions = partition_data(
+            X_encoded,
+            self.num_teachers,
+        )
+
         if verbose:
             print(f"Training PATE-GAN with ε={self.epsilon}, δ={self.delta}")
             print(f"Teachers: {self.num_teachers}, Iterations: {self.niter}")
@@ -287,9 +300,19 @@ class PATEGAN(Model):
         for it in iterator:
             # Train teacher discriminators
             for teacher_idx in range(self.num_teachers):
-                # Sample batch from data
-                indices = np.random.choice(n_samples, self.batch_size, replace=False)
-                X_mb = X_encoded[indices]
+                # Use only this teacher's disjoint partition
+                teacher_data = teacher_partitions[teacher_idx]
+
+                # If a partition is smaller than the batch size,
+                # sample with replacement so training can still continue.
+                replace = len(teacher_data) < self.batch_size
+
+                indices = np.random.choice(
+                    len(teacher_data),
+                    self.batch_size,
+                    replace=replace,
+                )
+                X_mb = teacher_data[indices]
 
                 # Sample noise
                 Z_mb = np.random.uniform(-1.0, 1.0, size=[self.batch_size, self.z_dim])

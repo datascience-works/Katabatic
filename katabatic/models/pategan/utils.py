@@ -34,43 +34,41 @@ def infer_schema(df: pd.DataFrame) -> dict[str, Any]:
     }
 
     for col in df.columns:
-    col_info = {"type": None, "metadata": {}}
+        col_info = {"type": None, "metadata": {}}
 
-    # Categorical / string columns
-    if (
-        pd.api.types.is_object_dtype(df[col])
-        or pd.api.types.is_string_dtype(df[col])
-        or isinstance(df[col].dtype, pd.CategoricalDtype)
-    ):
-        col_info["type"] = "categorical"
-        col_info["metadata"] = {
-            "categories": df[col].astype(str).unique().tolist()
-        }
+        # Categorical / string columns
+        if (
+            pd.api.types.is_object_dtype(df[col])
+            or pd.api.types.is_string_dtype(df[col])
+            or isinstance(df[col].dtype, pd.CategoricalDtype)
+        ):
+            col_info["type"] = "categorical"
+            col_info["metadata"] = {
+                "categories": df[col].astype(str).unique().tolist()
+            }
 
-    # Integer columns
-    elif pd.api.types.is_integer_dtype(df[col]):
-        col_info["type"] = "discrete"
-        col_info["metadata"] = {
-            "min": int(df[col].min()),
-            "max": int(df[col].max()),
-        }
+        # Integer columns
+        elif pd.api.types.is_integer_dtype(df[col]):
+            col_info["type"] = "discrete"
+            col_info["metadata"] = {
+                "min": int(df[col].min()),
+                "max": int(df[col].max()),
+            }
 
-    # Numeric continuous columns
-    elif pd.api.types.is_numeric_dtype(df[col]):
-        col_info["type"] = "continuous"
-        col_info["metadata"] = {
-            "min": float(df[col].min()),
-            "max": float(df[col].max()),
-            "mean": float(df[col].mean()),
-            "std": float(df[col].std()),
-        }
+        # Numeric continuous columns
+        elif pd.api.types.is_numeric_dtype(df[col]):
+            col_info["type"] = "continuous"
+            col_info["metadata"] = {
+                "min": float(df[col].min()),
+                "max": float(df[col].max()),
+                "mean": float(df[col].mean()),
+                "std": float(df[col].std()),
+            }
 
-    else:
-        raise TypeError(
-            f"Unsupported dtype for column '{col}': {df[col].dtype}"
-        )
-
-    schema["column_info"][col] = col_infopython 
+        else:
+            raise TypeError(
+                f"Unsupported dtype for column '{col}': {df[col].dtype}"
+            )
 
         schema["column_info"][col] = col_info
 
