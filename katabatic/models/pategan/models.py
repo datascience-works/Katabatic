@@ -110,15 +110,12 @@ class PATEGAN(Model):
 
         return G_out
 
-    def _discriminator(self, x):
+    def _student_discriminator(self, x):
         """
-        Discriminator network.
+        Student discriminator used by the generator.
 
-        Args:
-            x: Input samples
-
-        Returns:
-            Discriminator score
+        The student does not train directly on private real records. Instead,
+        it learns from noisy labels produced by aggregating teacher votes.
         """
         import tensorflow.compat.v1 as tf
 
@@ -128,12 +125,22 @@ class PATEGAN(Model):
 
         return D_out
 
+    def _teacher_discriminator(self, x, teacher_idx: int):
+        """Return logits from one independent teacher discriminator."""
+        import tensorflow.compat.v1 as tf
+
+        params = self.teacher_params[teacher_idx]
+        h1 = tf.nn.relu(tf.matmul(x, params["W1"]) + params["b1"])
+        h2 = tf.nn.relu(tf.matmul(h1, params["W2"]) + params["b2"])
+        out = tf.matmul(h2, params["W3"]) + params["b3"]
+        return out
+
     def _build_model(self, X_dim: int):
         """
-        Build TensorFlow computation graph.
-
-        Args:
-            X_dim: Feature dimension
+        Build TensorFlow computation graph with:
+        - one shared generator,
+        - one student discriminator,
+        - multiple independent teacher discriminators.
         """
         import tensorflow.compat.v1 as tf
 
@@ -148,35 +155,28 @@ class PATEGAN(Model):
             self.z_dim = max(int(X_dim / 4), 2)
         self._h_dim = int(X_dim)
 
-        # Placeholders
-        self.X = tf.placeholder(tf.float32, shape=[None, self._X_dim])
-        self.Z = tf.placeholder(tf.float32, shape=[None, self.z_dim])
-        self.M = tf.placeholder(tf.float32, shape=[None, 1])
+        # Shared placeholders
+        self.X = tf.placeholder(tf.float32, shape=[None, self._X_dim], name="X")
+        self.Z = tf.placeholder(tf.float32, shape=[None, self.z_dim], name="Z")
+        self.student_labels = tf.placeholder(
+            tf.float32, shape=[None, 1], name="student_labels"
+        )
 
-        # Discriminator parameters
-        self.D_W1 = tf.Variable(self._xavier_init([self._X_dim, self._h_dim]))
-        self.D_b1 = tf.Variable(tf.zeros(shape=[self._h_dim]))
-        self.D_W2 = tf.Variable(self._xavier_init([self._h_dim, self._h_dim]))
-        self.D_b2 = tf.Variable(tf.zeros(shape=[self._h_dim]))
-        self.D_W3 = tf.Variable(self._xavier_init([self._h_dim, 1]))
-        self.D_b3 = tf.Variable(tf.zeros(shape=[1]))
-
-        self.theta_D = [
-            self.D_W1,
-            self.D_W2,
-            self.D_W3,
-            self.D_b1,
-            self.D_b2,
-            self.D_b3,
-        ]
-
-        # Generator parameters
-        self.G_W1 = tf.Variable(self._xavier_init([self.z_dim, self._h_dim]))
-        self.G_b1 = tf.Variable(tf.zeros(shape=[self._h_dim]))
-        self.G_W2 = tf.Variable(self._xavier_init([self._h_dim, self._h_dim]))
-        self.G_b2 = tf.Variable(tf.zeros(shape=[self._h_dim]))
-        self.G_W3 = tf.Variable(self._xavier_init([self._h_dim, self._X_dim]))
-        self.G_b3 = tf.Variable(tf.zeros(shape=[self._X_dim]))
+        # ------------------------------------------------------------
+        # Generator
+        # ------------------------------------------------------------
+        self.G_W1 = tf.Variable(
+            self._xavier_init([self.z_dim, self._h_dim]), name="G_W1"
+        )
+        self.G_b1 = tf.Variable(tf.zeros(shape=[self._h_dim]), name="G_b1")
+        self.G_W2 = tf.Variable(
+            self._xavier_init([self._h_dim, self._h_dim]), name="G_W2"
+        )
+        self.G_b2 = tf.Variable(tf.zeros(shape=[self._h_dim]), name="G_b2")
+        self.G_W3 = tf.Variable(
+            self._xavier_init([self._h_dim, self._X_dim]), name="G_W3"
+        )
+        self.G_b3 = tf.Variable(tf.zeros(shape=[self._X_dim]), name="G_b3")
 
         self.theta_G = [
             self.G_W1,
@@ -187,61 +187,164 @@ class PATEGAN(Model):
             self.G_b3,
         ]
 
-        # Build computational graph
         self._G_sample = self._generator(self.Z)
-        D_real = self._discriminator(self.X)
-        D_fake = self._discriminator(self._G_sample)
 
-        D_entire = tf.concat(axis=0, values=[D_real, D_fake])
-
-        # Gradient penalty (WGAN-GP)
-        eps = tf.random_uniform([self.batch_size, 1], minval=0.0, maxval=1.0)
-        X_inter = eps * self.X + (1.0 - eps) * self._G_sample
-        grad = tf.gradients(self._discriminator(X_inter), [X_inter])[0]
-        grad_norm = tf.sqrt(tf.reduce_sum((grad) ** 2 + 1e-8, axis=1))
-        grad_pen = self.lambda_gp * tf.reduce_mean((grad_norm - 1) ** 2)
-
-        # Loss functions
-        D_loss = (
-            tf.reduce_mean((1 - self.M) * D_entire)
-            - tf.reduce_mean(self.M * D_entire)
-            + grad_pen
+        # ------------------------------------------------------------
+        # Student discriminator
+        # ------------------------------------------------------------
+        self.D_W1 = tf.Variable(
+            self._xavier_init([self._X_dim, self._h_dim]), name="D_W1"
         )
-        G_loss = -tf.reduce_mean(D_fake)
+        self.D_b1 = tf.Variable(tf.zeros(shape=[self._h_dim]), name="D_b1")
+        self.D_W2 = tf.Variable(
+            self._xavier_init([self._h_dim, self._h_dim]), name="D_W2"
+        )
+        self.D_b2 = tf.Variable(tf.zeros(shape=[self._h_dim]), name="D_b2")
+        self.D_W3 = tf.Variable(
+            self._xavier_init([self._h_dim, 1]), name="D_W3"
+        )
+        self.D_b3 = tf.Variable(tf.zeros(shape=[1]), name="D_b3")
 
-        # Optimizers
-        D_solver = tf.train.AdamOptimizer(
-            learning_rate=self.learning_rate, beta1=0.5
-        ).minimize(D_loss, var_list=self.theta_D)
-        G_solver = tf.train.AdamOptimizer(
-            learning_rate=self.learning_rate, beta1=0.5
-        ).minimize(G_loss, var_list=self.theta_G)
+        self.theta_D = [
+            self.D_W1,
+            self.D_W2,
+            self.D_W3,
+            self.D_b1,
+            self.D_b2,
+            self.D_b3,
+        ]
 
-        # Store for training
-        self.D_solver = D_solver
-        self.G_solver = G_solver
-        self.D_loss = D_loss
-        self.G_loss = G_loss
+        # ------------------------------------------------------------
+        # Independent teacher discriminators
+        # ------------------------------------------------------------
+        self.teacher_params = []
+        self.teacher_logits_real = []
+        self.teacher_logits_fake = []
+        self.teacher_losses = []
+        self.teacher_solvers = []
 
-        # Session
+        for teacher_idx in range(self.num_teachers):
+            with tf.variable_scope(f"teacher_{teacher_idx}"):
+                params = {
+                    "W1": tf.Variable(
+                        self._xavier_init([self._X_dim, self._h_dim]), name="W1"
+                    ),
+                    "b1": tf.Variable(tf.zeros([self._h_dim]), name="b1"),
+                    "W2": tf.Variable(
+                        self._xavier_init([self._h_dim, self._h_dim]), name="W2"
+                    ),
+                    "b2": tf.Variable(tf.zeros([self._h_dim]), name="b2"),
+                    "W3": tf.Variable(
+                        self._xavier_init([self._h_dim, 1]), name="W3"
+                    ),
+                    "b3": tf.Variable(tf.zeros([1]), name="b3"),
+                }
+
+                self.teacher_params.append(params)
+
+                t_real = self._teacher_discriminator(self.X, teacher_idx)
+                t_fake = self._teacher_discriminator(
+                    tf.stop_gradient(self._G_sample), teacher_idx
+                )
+
+                teacher_loss_real = tf.reduce_mean(
+                    tf.nn.sigmoid_cross_entropy_with_logits(
+                        logits=t_real,
+                        labels=tf.ones_like(t_real),
+                    )
+                )
+                teacher_loss_fake = tf.reduce_mean(
+                    tf.nn.sigmoid_cross_entropy_with_logits(
+                        logits=t_fake,
+                        labels=tf.zeros_like(t_fake),
+                    )
+                )
+                teacher_loss = teacher_loss_real + teacher_loss_fake
+
+                teacher_vars = [
+                    params["W1"],
+                    params["b1"],
+                    params["W2"],
+                    params["b2"],
+                    params["W3"],
+                    params["b3"],
+                ]
+
+                teacher_solver = tf.train.AdamOptimizer(
+                    learning_rate=self.learning_rate,
+                    beta1=0.5,
+                ).minimize(
+                    teacher_loss,
+                    var_list=teacher_vars,
+                )
+
+                self.teacher_logits_real.append(t_real)
+                self.teacher_logits_fake.append(t_fake)
+                self.teacher_losses.append(teacher_loss)
+                self.teacher_solvers.append(teacher_solver)
+
+        # ------------------------------------------------------------
+        # Student + generator losses
+        # ------------------------------------------------------------
+        student_fake_logits = self._student_discriminator(self._G_sample)
+
+        self.student_loss = tf.reduce_mean(
+            tf.nn.sigmoid_cross_entropy_with_logits(
+                logits=student_fake_logits,
+                labels=self.student_labels,
+            )
+        )
+
+        self.D_solver = tf.train.AdamOptimizer(
+            learning_rate=self.learning_rate,
+            beta1=0.5,
+        ).minimize(
+            self.student_loss,
+            var_list=self.theta_D,
+        )
+
+        # Generator tries to make the student classify generated samples as real.
+        self.G_loss = tf.reduce_mean(
+            tf.nn.sigmoid_cross_entropy_with_logits(
+                logits=student_fake_logits,
+                labels=tf.ones_like(student_fake_logits),
+            )
+        )
+
+        self.G_solver = tf.train.AdamOptimizer(
+            learning_rate=self.learning_rate,
+            beta1=0.5,
+        ).minimize(
+            self.G_loss,
+            var_list=self.theta_G,
+        )
+
+        # Tensor used to obtain teacher votes for a generated batch.
+        self.teacher_vote_probs = [
+            tf.nn.sigmoid(logits) for logits in self.teacher_logits_fake
+        ]
+
         self._sess = tf.Session()
         self._sess.run(tf.global_variables_initializer())
-
         self._is_built = True
 
     def fit(
-        self, X: pd.DataFrame, y: pd.Series | None = None, verbose: int = 1
+        self,
+        X: pd.DataFrame,
+        y: pd.Series | None = None,
+        verbose: int = 1,
     ) -> "PATEGAN":
         """
-        Fit PATE-GAN to data.
+        Fit PATE-GAN using independent teachers on disjoint partitions.
 
-        Args:
-            X: Feature dataframe
-            y: Target series (optional, will be concatenated to X)
-            verbose: Verbosity level (0=silent, 1=progress)
+        Each teacher:
+        - owns its own discriminator parameters,
+        - trains only on one disjoint data partition.
 
-        Returns:
-            self
+        Teacher predictions on generated samples are aggregated, Gaussian
+        privacy noise is added to the vote counts, and the resulting private
+        labels are used to train the student discriminator. The generator is
+        then trained against the student.
         """
         # Combine X and y if provided
         if y is not None:
@@ -251,26 +354,23 @@ class PATEGAN(Model):
         else:
             data = X.copy()
 
-        # Set seed
         set_global_seed(self.random_state)
 
-        # Fit transformer and encode data
+        # Transform data
         self.transformer = DataTransformer()
         X_encoded = self.transformer.fit_transform(data)
 
-        # Build model
+        # Build graph
         self._build_model(X_encoded.shape[1])
 
-        # Initialize privacy mechanism
+        # Privacy mechanism
         self.privacy_mechanism = PrivacyMechanism(
-            epsilon=self.epsilon, delta=self.delta, num_teachers=self.num_teachers
+            epsilon=self.epsilon,
+            delta=self.delta,
+            num_teachers=self.num_teachers,
         )
 
-        # Training loop
-        n_samples = len(X_encoded)
-
-        # Split the encoded training data into disjoint teacher partitions.
-        # Each teacher will train only on its own partition.
+        # Disjoint partitions: one private subset per teacher
         teacher_partitions = partition_data(
             X_encoded,
             self.num_teachers,
@@ -279,8 +379,11 @@ class PATEGAN(Model):
         if verbose:
             print(f"Training PATE-GAN with ε={self.epsilon}, δ={self.delta}")
             print(f"Teachers: {self.num_teachers}, Iterations: {self.niter}")
+            print(
+                "Teacher partition sizes:",
+                [len(partition) for partition in teacher_partitions],
+            )
 
-        # Setup progress tracking
         try:
             from tqdm import tqdm
 
@@ -294,19 +397,28 @@ class PATEGAN(Model):
             iterator = range(self.niter)
             use_tqdm = False
 
-        # For non-tqdm progress printing
-        print_every = max(1, self.niter // 10) if verbose and not use_tqdm else None
+        print_every = (
+            max(1, self.niter // 10)
+            if verbose and not use_tqdm
+            else None
+        )
 
         for it in iterator:
-            # Train teacher discriminators
+            # --------------------------------------------------------
+            # 1. Train every independent teacher on its own partition
+            # --------------------------------------------------------
+            teacher_loss_values = []
+
             for teacher_idx in range(self.num_teachers):
-                # Use only this teacher's disjoint partition
                 teacher_data = teacher_partitions[teacher_idx]
 
-                # If a partition is smaller than the batch size,
-                # sample with replacement so training can still continue.
-                replace = len(teacher_data) < self.batch_size
+                if len(teacher_data) == 0:
+                    raise ValueError(
+                        f"Teacher {teacher_idx} received an empty partition. "
+                        "Reduce num_teachers or use more training data."
+                    )
 
+                replace = len(teacher_data) < self.batch_size
                 indices = np.random.choice(
                     len(teacher_data),
                     self.batch_size,
@@ -314,47 +426,92 @@ class PATEGAN(Model):
                 )
                 X_mb = teacher_data[indices]
 
-                # Sample noise
-                Z_mb = np.random.uniform(-1.0, 1.0, size=[self.batch_size, self.z_dim])
+                Z_mb = np.random.uniform(
+                    -1.0,
+                    1.0,
+                    size=[self.batch_size, self.z_dim],
+                )
 
-                # Create teacher labels with privacy noise
-                M_real = np.ones(
+                _, teacher_loss_curr = self._sess.run(
                     [
-                        self.batch_size,
-                    ]
+                        self.teacher_solvers[teacher_idx],
+                        self.teacher_losses[teacher_idx],
+                    ],
+                    feed_dict={
+                        self.X: X_mb,
+                        self.Z: Z_mb,
+                    },
                 )
-                M_fake = np.zeros(
-                    [
-                        self.batch_size,
-                    ]
-                )
-                M_entire = np.concatenate((M_real, M_fake), 0)
+                teacher_loss_values.append(teacher_loss_curr)
 
-                # Add Gaussian noise for privacy
-                noise = self.privacy_mechanism.add_gaussian_noise(M_entire)
-                M_entire = M_entire + noise
-                M_entire = (M_entire > 0.5).astype(float)
-                M_mb = np.reshape(M_entire, (2 * self.batch_size, 1))
-
-                # Train discriminator
-                _, D_loss_curr = self._sess.run(
-                    [self.D_solver, self.D_loss],
-                    feed_dict={self.X: X_mb, self.Z: Z_mb, self.M: M_mb},
-                )
-
-            # Train generator
-            Z_mb = np.random.uniform(-1.0, 1.0, size=[self.batch_size, self.z_dim])
-            indices = np.random.choice(n_samples, self.batch_size, replace=False)
-            X_mb = X_encoded[indices]
-
-            _, G_loss_curr = self._sess.run(
-                [self.G_solver, self.G_loss], feed_dict={self.Z: Z_mb}
+            # --------------------------------------------------------
+            # 2. Generate a fresh batch and collect teacher votes
+            # --------------------------------------------------------
+            Z_vote = np.random.uniform(
+                -1.0,
+                1.0,
+                size=[self.batch_size, self.z_dim],
             )
 
-            # Print progress (only if not using tqdm)
+            teacher_prob_values = self._sess.run(
+                self.teacher_vote_probs,
+                feed_dict={self.Z: Z_vote},
+            )
+
+            # Shape: (num_teachers, batch_size)
+            teacher_votes = np.stack(
+                [
+                    (np.asarray(prob).reshape(-1) >= 0.5).astype(float)
+                    for prob in teacher_prob_values
+                ],
+                axis=0,
+            )
+
+            vote_counts_real = np.sum(teacher_votes, axis=0)
+            vote_counts_fake = self.num_teachers - vote_counts_real
+
+            # Add DP noise to both class vote counts
+            noisy_real = self.privacy_mechanism.add_gaussian_noise(
+                vote_counts_real.astype(float)
+            )
+            noisy_fake = self.privacy_mechanism.add_gaussian_noise(
+                vote_counts_fake.astype(float)
+            )
+
+            private_labels = (noisy_real >= noisy_fake).astype(np.float32)
+            private_labels = private_labels.reshape(-1, 1)
+
+            # --------------------------------------------------------
+            # 3. Train the student using only noisy aggregated labels
+            # --------------------------------------------------------
+            _, student_loss_curr = self._sess.run(
+                [self.D_solver, self.student_loss],
+                feed_dict={
+                    self.Z: Z_vote,
+                    self.student_labels: private_labels,
+                },
+            )
+
+            # --------------------------------------------------------
+            # 4. Train generator against the student
+            # --------------------------------------------------------
+            Z_gen = np.random.uniform(
+                -1.0,
+                1.0,
+                size=[self.batch_size, self.z_dim],
+            )
+
+            _, G_loss_curr = self._sess.run(
+                [self.G_solver, self.G_loss],
+                feed_dict={self.Z: Z_gen},
+            )
+
             if print_every is not None and it % print_every == 0:
                 print(
-                    f"Iter {it}/{self.niter}: D_loss={D_loss_curr:.4f}, G_loss={G_loss_curr:.4f}"
+                    f"Iter {it}/{self.niter}: "
+                    f"Teacher_loss={np.mean(teacher_loss_values):.4f}, "
+                    f"Student_loss={student_loss_curr:.4f}, "
+                    f"G_loss={G_loss_curr:.4f}"
                 )
 
         if verbose:
