@@ -44,7 +44,7 @@ model = PATEGAN(
     num_teachers=10,
     niter=5000,
     batch_size=128,
-    z_dim=16,
+    z_dim=32,
     learning_rate=5e-5,
     random_state=42,
 )
