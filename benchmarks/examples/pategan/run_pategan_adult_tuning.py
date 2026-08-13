@@ -42,11 +42,12 @@ print("=" * 60)
 model = PATEGAN(
     epsilon=1.0,
     delta=1e-5,
-    num_teachers=10,
+    num_teachers=5,       # changed
     niter=10000,
     batch_size=128,
     random_state=42,
 )
+
 model.train(
     paths["split_dir"],
     categorical_cols=config.categorical_cols,
