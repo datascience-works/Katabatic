@@ -172,28 +172,36 @@ class FlowVAEModel(BaseModel):
         synth_df = self.sample(self.n_train)
         label = self.label_column
         x_synth = synth_df[[c for c in synth_df.columns if c != label]].copy()
-        original_labels = sorted(df[self.label_column].unique())
 
-        label_to_encoded = {
-            label: idx for idx, label in enumerate(original_labels)
-        }
-        
-        encoded_y_train = df[self.label_column].map(label_to_encoded)
-        
-        label_counts = encoded_y_train.value_counts(normalize=True).sort_index()
-        
-        y_synth_values = np.random.choice(
-            label_counts.index.to_numpy(),
-            size=len(x_synth),
-            p=label_counts.values
+        # CHANGED: synthetic labels are now decoded from the model output
+        # instead of being resampled from the training marginal.
+        #
+        # The previous implementation discarded the label column produced by
+        # the decoder and drew y_synth with np.random.choice from the real
+        # label distribution. That reproduced the correct class marginals but
+        # left no relationship between synthetic features and synthetic
+        # labels, which is exactly what TSTR measures. Baseline utility on the
+        # car dataset was 0.0, with all four classifiers at or below the 0.70
+        # majority-class rate (LR 0.6994, MLP 0.6936, RF 0.6532, XGB 0.5983).
+        #
+        # synth_df already contains the label column, decoded by
+        # inverse_transform_tabular via argmax over its one-hot block, and it
+        # comes from the same generated rows as x_synth, so the pairing holds.
+
+        # The label column in the training data is already integer-encoded, so
+        # the decoded values from synth_df need no further remapping. The old
+        # label_to_encoded dict was only needed because labels were being
+        # constructed from scratch rather than decoded.
+        y_synth = synth_df[[label]].copy()
+
+        # The decoder may never emit a rare class. Report it rather than
+        # silently injecting labels, since a missing class is a real property
+        # of the model that affects downstream evaluation.
+        missing = set(df[self.label_column].astype(str).unique()) - set(
+            y_synth[label].astype(str).unique()
         )
-        
-        # Ensure every class appears at least once if possible
-        if len(x_synth) >= len(label_counts):
-            y_synth_values[:len(label_counts)] = label_counts.index.to_numpy()
-            np.random.shuffle(y_synth_values)
-        
-        y_synth = pd.DataFrame(y_synth_values, columns=[self.label_column])
+        if missing:
+            print(f"[FlowVAE] Warning: classes absent from synthetic labels: {sorted(missing)}")
 
         x_path_out = os.path.join(synth_dir, "x_synth.csv")
         y_path_out = os.path.join(synth_dir, "y_synth.csv")
