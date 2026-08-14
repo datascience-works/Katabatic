@@ -7,7 +7,7 @@ pre/post-processing helpers used by models.py.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -23,7 +23,7 @@ class PlanarFlow(nn.Module):
         self.w = nn.Parameter(torch.randn(1, dim) * 0.01)
         self.b = nn.Parameter(torch.zeros(1))
 
-    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         def m(t: torch.Tensor) -> torch.Tensor:
             return F.softplus(t) - 1.0
 
@@ -50,7 +50,7 @@ class RadialFlow(nn.Module):
         self.c = nn.Parameter(torch.randn(1, dim) * 0.01)
         self.d = dim
 
-    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         a = torch.exp(self.a)
         b = -a + F.softplus(self.b)
         r = (x - self.c).norm(dim=1, keepdim=True)
@@ -70,7 +70,7 @@ class HouseholderFlow(nn.Module):
         self.v = nn.Parameter(torch.randn(1, dim) * 0.01)
         self.d = dim
 
-    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         outer = self.v.t() @ self.v
         v_sqr = self.v.norm().pow(2) + 1e-8
         eye = torch.eye(self.d, device=x.device, dtype=x.dtype)
@@ -98,7 +98,7 @@ class NiceFlow(nn.Module):
                 nn.Linear(dim * 5, dim // 2),
             )
 
-    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         if self.final:
             z = x * torch.exp(self.scale)
             log_det = torch.sum(self.scale).expand(x.size(0), 1)
@@ -135,7 +135,7 @@ class Flow(nn.Module):
             modules = []
         self.flow = nn.ModuleList(modules)
 
-    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         log_det = torch.zeros(x.size(0), 1, device=x.device, dtype=x.dtype)
         for module in self.flow:
             x, inc = module(x)
@@ -188,12 +188,12 @@ class FlowVAE(nn.Module):
             + [nn.Linear(hidden_dim, in_dim)]
         )
 
-    def encode(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def encode(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         for layer in self.encoder:
             x = layer(x)
         return self.mean(x), torch.clamp(self.log_var(x), min=-8.0, max=8.0)
 
-    def reparameterize(self, mean: torch.Tensor, log_var: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def reparameterize(self, mean: torch.Tensor, log_var: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         std = torch.exp(0.5 * log_var)
         eps = torch.randn_like(std)
         z0 = eps.mul(std).add(mean)
@@ -205,7 +205,7 @@ class FlowVAE(nn.Module):
             z = layer(z)
         return z
 
-    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         mean, log_var = self.encode(x)
         z, log_det = self.reparameterize(mean, log_var)
         reconstruction = self.decode(z)
@@ -224,23 +224,23 @@ class FlowVAE(nn.Module):
 
 @dataclass
 class TabularSchema:
-    columns: List[str]
-    feature_columns: List[str]
+    columns: list[str]
+    feature_columns: list[str]
     label_column: str
-    numeric_columns: List[str]
-    categorical_columns: List[str]
-    encoded_columns: List[str]
-    means: Dict[str, float]
-    stds: Dict[str, float]
-    categories: Dict[str, List[Any]]
+    numeric_columns: list[str]
+    categorical_columns: list[str]
+    encoded_columns: list[str]
+    means: dict[str, float]
+    stds: dict[str, float]
+    categories: dict[str, list[Any]]
 
 
 def fit_transform_tabular(
     df: pd.DataFrame,
     label_column: str | None = None,
-    categorical_cols: List[str] | None = None,
-    continuous_cols: List[str] | None = None,
-) -> Tuple[np.ndarray, TabularSchema]:
+    categorical_cols: list[str] | None = None,
+    continuous_cols: list[str] | None = None,
+) -> tuple[np.ndarray, TabularSchema]:
     """Encode a mixed-type dataframe into a numeric matrix for VAE training."""
     df = df.copy()
     if label_column is None:
@@ -249,13 +249,13 @@ def fit_transform_tabular(
     columns = df.columns.tolist()
     feature_columns = [c for c in columns if c != label_column]
 
-    numeric_columns: List[str] = []
-    categorical_columns: List[str] = []
-    means: Dict[str, float] = {}
-    stds: Dict[str, float] = {}
-    categories: Dict[str, List[Any]] = {}
-    parts: List[pd.DataFrame] = []
-    encoded_columns: List[str] = []
+    numeric_columns: list[str] = []
+    categorical_columns: list[str] = []
+    means: dict[str, float] = {}
+    stds: dict[str, float] = {}
+    categories: dict[str, list[Any]] = {}
+    parts: list[pd.DataFrame] = []
+    encoded_columns: list[str] = []
 
     for col in columns:
         series = df[col]
@@ -304,7 +304,7 @@ def fit_transform_tabular(
 def inverse_transform_tabular(array: np.ndarray, schema: TabularSchema) -> pd.DataFrame:
     """Decode a generated numeric matrix back into the original dataframe schema."""
     array = np.asarray(array)
-    data: Dict[str, Any] = {}
+    data: dict[str, Any] = {}
     idx = 0
     for col in schema.columns:
         if col in schema.numeric_columns:

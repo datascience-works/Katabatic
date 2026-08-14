@@ -7,7 +7,6 @@ import os
 import random
 import time
 from dataclasses import asdict
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -40,7 +39,7 @@ class FlowVAEModel(BaseModel):
         epochs: int = 50,
         learning_rate: float = 1e-3,
         random_state: int = 42,
-        device: Optional[str] = None,
+        device: str | None = None,
     ) -> None:
         super().__init__()
         self.hidden_dim = hidden_dim
@@ -55,10 +54,10 @@ class FlowVAEModel(BaseModel):
         self.random_state = random_state
         self.device_name = device
 
-        self.model: Optional[FlowVAE] = None
+        self.model: FlowVAE | None = None
         self.schema = None
         self.n_train = 0
-        self.label_column: Optional[str] = None
+        self.label_column: str | None = None
         self.loss_history: list[float] = []
 
     @classmethod
@@ -99,12 +98,12 @@ class FlowVAEModel(BaseModel):
     def train(
         self,
         data_dir: str,
-        synthetic_dir: Optional[str] = None,
+        synthetic_dir: str | None = None,
         *args,
-        categorical_cols: Optional[list] = None,
-        continuous_cols: Optional[list] = None,
+        categorical_cols: list | None = None,
+        continuous_cols: list | None = None,
         **kwargs,
-    ) -> "FlowVAEModel":
+    ) -> FlowVAEModel:
         """Fit the Flow-VAE and save synthetic files expected by Katabatic."""
         self._set_seed()
         device = self._device()
@@ -231,7 +230,7 @@ class FlowVAEModel(BaseModel):
         print(f"[FlowVAE] Synthetic data saved:\n  X -> {x_path_out}\n  y -> {y_path_out}")
         return self
 
-    def sample(self, n: Optional[int] = None, *args, **kwargs) -> pd.DataFrame:
+    def sample(self, n: int | None = None, *args, **kwargs) -> pd.DataFrame:
         """Generate synthetic rows decoded back to the original columns."""
         if not self.is_fitted or self.model is None or self.schema is None:
             raise RuntimeError("Call train() before sample().")
