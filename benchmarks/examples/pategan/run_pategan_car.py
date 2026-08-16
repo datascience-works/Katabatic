@@ -10,7 +10,7 @@ sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 
-from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic 
+from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
 from katabatic.models.pategan.models import PATEGAN  # noqa: E402
 
