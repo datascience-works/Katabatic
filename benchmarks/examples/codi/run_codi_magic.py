@@ -130,7 +130,7 @@ print("=" * 60)
 model = CODI(n_steps=50, epochs=100, batch_size=256)
 model.train(
     paths["split_dir"],
-    paths["synthetic_dir"], 
+    paths["synthetic_dir"],
     categorical_cols=config.categorical_cols,
     continuous_cols=config.continuous_cols,
 )
