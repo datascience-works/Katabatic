@@ -7,17 +7,27 @@ from time import perf_counter
 import psutil
 
 sys.path.insert(
-    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    0,
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
 )
 
-from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic 
+from runner import (
+    RunConfig,
+    evaluate,
+    preprocess_and_split,
+    save_synthetic,
+)
 
 from katabatic.models.pategan.models import PATEGAN  # noqa: E402
 
+# run in cpu mode(if GPU is limited)
+# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 warnings.filterwarnings("ignore")
 start_time = perf_counter()
 
 
+# ➕ Adding in system and run duration summary
 def get_runtime_summary(
     time_diff,
     start_time,
@@ -90,12 +100,12 @@ def get_system_run_details() -> None:
 
 
 config = RunConfig(
-    dataset_name="car",
+    dataset_name="shuttle",
     model_name="pategan",
-    categorical_cols=["buying", "maint", "doors", "persons", "lug_boot", "safety"],
+    categorical_cols=["time", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8"],
     continuous_cols=[],
     target_col_raw="class",
-    constraints=None,
+    constraints={},
 )
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)
@@ -123,14 +133,30 @@ print("STEP 4 — Generate synthetic data")
 print("=" * 60)
 synthetic_df = model.sample(len(train_df))
 synthetic_df = save_synthetic(
-    synthetic_df, train_df, paths, categorical_cols=config.categorical_cols
+    synthetic_df,
+    train_df,
+    paths,
+    categorical_cols=config.categorical_cols,
 )
 
-evaluate(model, config, train_df, synthetic_df, target_col, paths, test_df)
+evaluate(
+    model,
+    config,
+    train_df,
+    synthetic_df,
+    target_col,
+    paths,
+    test_df,
+)
 
+# ➕ Adding in system and run duration summary
 end_time = perf_counter()
 time_diff = end_time - start_time
 get_runtime_summary(
-    time_diff, start_time, end_time, config.model_name, config.dataset_name
+    time_diff,
+    start_time,
+    end_time,
+    config.model_name,
+    config.dataset_name,
 )
 get_system_run_details()
