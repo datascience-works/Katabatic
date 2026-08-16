@@ -64,6 +64,13 @@ class ModelRegistry:
             "extra": "ctgan",
             "supported": False,
         },
+        "ctabgan_plus": {
+            "module": "katabatic.models.ctabgan_plus.models",
+            "class": "CtabganPlus",
+            "dependencies": ["torch"],
+            "extra": "ctabgan_plus",
+            "supported": False,
+        },
     }
 
     @classmethod
