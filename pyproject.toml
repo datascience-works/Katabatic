@@ -65,6 +65,10 @@ tabsyn = [
     "tomli>=2.0.1,<3.0.0",
     "tomli-w>=1.0.0,<2.0.0",
 ]
+gmm = []
+bayesian_network = ["pgmpy>=0.1.25"]
+tabdiff = ["torch>=2.7.1,<3.0.0"]
+tabmt = ["torch>=2.7.1,<3.0.0"]
 eval = ["xgboost>=3.0.2,<4.0.0"]
 all = [
     "tensorflow==2.19.*",

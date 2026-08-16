@@ -71,6 +71,34 @@ class ModelRegistry:
             "extra": "ctabgan_plus",
             "supported": False,
         },
+        "gmm": {
+            "module": "katabatic.models.gmm.models",
+            "class": "Gmm",
+            "dependencies": ["sklearn"],
+            "extra": "gmm",
+            "supported": False,
+        },
+        "bayesian_network": {
+            "module": "katabatic.models.bayesian_network.models",
+            "class": "BayesianNetworkModel",
+            "dependencies": ["pgmpy"],
+            "extra": "bayesian_network",
+            "supported": False,
+        },
+        "tabdiff": {
+            "module": "katabatic.models.tabdiff.models",
+            "class": "Tabdiff",
+            "dependencies": ["torch"],
+            "extra": "tabdiff",
+            "supported": False,
+        },
+        "tabmt": {
+            "module": "katabatic.models.tabmt.models",
+            "class": "Tabmt",
+            "dependencies": ["torch"],
+            "extra": "tabmt",
+            "supported": False,
+        },
     }
 
     @classmethod
