@@ -103,36 +103,23 @@ def get_system_run_details() -> None:
 
 
 config = RunConfig(
-    dataset_name="adult",
-    model_name="codi",
-    # educational-num is ordinal but treated as categorical for codi
-    # (discrete)
+    dataset_name="magic",
+    model_name="ganblr",
     categorical_cols=[
-        "workclass",
-        "education",
-        "educational-num",
-        "marital-status",
-        "occupation",
-        "relationship",
-        "race",
-        "gender",
-        "native-country",
+        "fLength",
+        "fWidth",
+        "fSize",
+        "fConc",
+        "fConc1",
+        "fAsym",
+        "fM3Long",
+        "fM3Trans",
+        "fAlpha",
+        "fDist",
     ],
-    continuous_cols=[
-        "age",
-        "fnlwgt",
-        "capital-gain",
-        "capital-loss",
-        "hours-per-week",
-    ],
+    continuous_cols=[],
     target_col_raw="class",
-    constraints={
-        "age": (17, 90),
-        "fnlwgt": (12285, 1490400),
-        "capital-gain": (0, 99999),
-        "capital-loss": (0, 4356),
-        "hours-per-week": (1, 99),
-    },
+    constraints={},
 )
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)
