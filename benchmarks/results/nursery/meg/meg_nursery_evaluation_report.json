@@ -1,0 +1,249 @@
+{
+  "composite_score": 0.6315,
+  "dimension_scores": {
+    "fidelity": 0.8073,
+    "utility": 0.564,
+    "diversity": 0.8909,
+    "privacy": 0.4157,
+    "consistency": 0.3813,
+    "stability": 0.8535
+  },
+  "weights_used": {
+    "fidelity": 0.25,
+    "utility": 0.35,
+    "diversity": 0.1,
+    "privacy": 0.15,
+    "consistency": 0.1,
+    "stability": 0.05
+  },
+  "full_results": {
+    "fidelity": {
+      "categorical_jsd": {
+        "parents": 0.0708,
+        "has_nurs": 0.304,
+        "form": 0.3096,
+        "children": 0.1843,
+        "housing": 0.3728,
+        "finance": 0.0701,
+        "social": 0.1926,
+        "health": 0.0376,
+        "avg": 0.1927
+      },
+      "continuous_wasserstein": {},
+      "correlation_diff": null,
+      "categorical_score": 0.8073,
+      "continuous_score": null,
+      "correlation_score": null,
+      "fidelity_score": 0.8073
+    },
+    "utility": {
+      "tstr": {
+        "LR": {
+          "accuracy": {
+            "mean": 0.4292,
+            "std": 0.0007
+          },
+          "f1": {
+            "mean": 0.4133,
+            "std": 0.001
+          }
+        },
+        "DT": {
+          "accuracy": {
+            "mean": 0.6393,
+            "std": 0.0
+          },
+          "f1": {
+            "mean": 0.6652,
+            "std": 0.0
+          }
+        },
+        "RF": {
+          "accuracy": {
+            "mean": 0.3806,
+            "std": 0.0054
+          },
+          "f1": {
+            "mean": 0.3604,
+            "std": 0.0063
+          }
+        },
+        "LinearSVM": {
+          "accuracy": {
+            "mean": 0.4098,
+            "std": 0.0005
+          },
+          "f1": {
+            "mean": 0.4037,
+            "std": 0.0015
+          }
+        },
+        "MLP": {
+          "accuracy": {
+            "mean": 0.4534,
+            "std": 0.0113
+          },
+          "f1": {
+            "mean": 0.4249,
+            "std": 0.0106
+          }
+        }
+      },
+      "trtr": {
+        "LR": {
+          "accuracy": {
+            "mean": 0.7616,
+            "std": 0.0006
+          },
+          "f1": {
+            "mean": 0.7544,
+            "std": 0.0007
+          }
+        },
+        "DT": {
+          "accuracy": {
+            "mean": 0.9904,
+            "std": 0.0018
+          },
+          "f1": {
+            "mean": 0.9906,
+            "std": 0.0019
+          }
+        },
+        "RF": {
+          "accuracy": {
+            "mean": 0.9767,
+            "std": 0.0023
+          },
+          "f1": {
+            "mean": 0.9763,
+            "std": 0.0023
+          }
+        },
+        "LinearSVM": {
+          "accuracy": {
+            "mean": 0.7505,
+            "std": 0.0012
+          },
+          "f1": {
+            "mean": 0.7423,
+            "std": 0.0011
+          }
+        },
+        "MLP": {
+          "accuracy": {
+            "mean": 0.9984,
+            "std": 0.0007
+          },
+          "f1": {
+            "mean": 0.9986,
+            "std": 0.0007
+          }
+        }
+      },
+      "delta": {
+        "LR": {
+          "accuracy": 0.3324,
+          "f1": 0.3411
+        },
+        "DT": {
+          "accuracy": 0.3511,
+          "f1": 0.3254
+        },
+        "RF": {
+          "accuracy": 0.5961,
+          "f1": 0.6159
+        },
+        "LinearSVM": {
+          "accuracy": 0.3407,
+          "f1": 0.3386
+        },
+        "MLP": {
+          "accuracy": 0.545,
+          "f1": 0.5737
+        }
+      },
+      "utility_score": 0.564
+    },
+    "diversity": {
+      "category_coverage": {
+        "parents": 1.0,
+        "has_nurs": 0.8,
+        "form": 0.75,
+        "children": 1.0,
+        "housing": 1.0,
+        "finance": 1.0,
+        "social": 1.0,
+        "health": 1.0,
+        "avg": 0.9437
+      },
+      "bin_coverage": {},
+      "gower_similarity": 0.8382,
+      "diversity_score": 0.8909
+    },
+    "privacy": {
+      "mean_nndr": 0.1235,
+      "exact_duplicate_rate": 0.8765,
+      "near_duplicate_rate": 0.0,
+      "nndr_score": 0.1235,
+      "exact_dup_score": 0.1235,
+      "near_dup_score": 1.0,
+      "privacy_score": 0.4157
+    },
+    "consistency": {
+      "discriminator_accuracy": 0.9997,
+      "discriminator_score": 0.0007,
+      "constraint_violations": {},
+      "constraint_score": null,
+      "feature_importance_spearman": 0.7619,
+      "consistency_score": 0.3813
+    },
+    "stability": {
+      "n_runs": 5,
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "per_run_scores": [
+        {
+          "seed": 0,
+          "fidelity_score": 0.7698,
+          "diversity_score": 0.9225
+        },
+        {
+          "seed": 1,
+          "fidelity_score": 0.7938,
+          "diversity_score": 0.9091
+        },
+        {
+          "seed": 2,
+          "fidelity_score": 0.7414,
+          "diversity_score": 0.8939
+        },
+        {
+          "seed": 3,
+          "fidelity_score": 0.7694,
+          "diversity_score": 0.9231
+        },
+        {
+          "seed": 4,
+          "fidelity_score": 0.7524,
+          "diversity_score": 0.9014
+        }
+      ],
+      "mean_scores": {
+        "fidelity": 0.7654,
+        "diversity": 0.91
+      },
+      "std_scores": {
+        "fidelity": 0.0178,
+        "diversity": 0.0115
+      },
+      "avg_std": 0.0146,
+      "stability_score": 0.8535
+    }
+  }
+}
