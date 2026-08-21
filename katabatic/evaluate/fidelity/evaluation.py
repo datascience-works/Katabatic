@@ -189,11 +189,9 @@ class FidelityEvaluation(Evaluation):
         print(f"Overall fidelity score: {results['fidelity_score']:.4f}")
 
         if results["categorical_jsd"]:
-            cat_score = results.get('categorical_score')
+            cat_score = results.get("categorical_score")
             if cat_score is not None:
-                print(
-                    f"\nCategorical JSD (lower = better)  ->  score: {cat_score:.4f}"
-                )
+                print(f"\nCategorical JSD (lower = better)  ->  score: {cat_score:.4f}")
             else:
                 print("\nCategorical JSD (lower = better)  ->  score: N/A")
             for col, val in results["categorical_jsd"].items():
@@ -202,20 +200,22 @@ class FidelityEvaluation(Evaluation):
             print(f"  {'avg':<30} JSD = {results['categorical_jsd']['avg']:.4f}")
 
         if results["continuous_wasserstein"]:
-            cont_score = results.get('continuous_score')
+            cont_score = results.get("continuous_score")
             if cont_score is not None:
                 print(
                     f"\nContinuous Wasserstein (normalised, lower = better)  ->  score: {cont_score:.4f}"
                 )
             else:
-                print("\nContinuous Wasserstein (normalised, lower = better)  ->  score: N/A")
+                print(
+                    "\nContinuous Wasserstein (normalised, lower = better)  ->  score: N/A"
+                )
             for col, val in results["continuous_wasserstein"].items():
                 if col != "avg":
                     print(f"  {col:<30} WD  = {val:.4f}")
             print(f"  {'avg':<30} WD  = {results['continuous_wasserstein']['avg']:.4f}")
 
         if results["correlation_diff"] is not None:
-            corr_score = results.get('correlation_score')
+            corr_score = results.get("correlation_score")
             if corr_score is not None:
                 print(
                     f"\nCorrelation matrix avg diff: {results['correlation_diff']:.4f}  ->  score: {corr_score:.4f}"

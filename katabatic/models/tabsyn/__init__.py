@@ -3,4 +3,3 @@
 from .models import TabSyn
 
 __all__ = ["TabSyn"]
-

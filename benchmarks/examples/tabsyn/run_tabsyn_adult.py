@@ -1,15 +1,14 @@
-import platform
-import psutil
-import sys
-import os
 import json
-import numpy as np
-from time import perf_counter
-import warnings
-import pandas as pd
 import logging
+import os
+import platform
+import sys
+import warnings
+from time import perf_counter
 
-logging.getLogger("pgmpy").setLevel(logging.ERROR)
+import numpy as np
+import pandas as pd
+import psutil
 
 # ============================================================
 # Project path setup
@@ -33,14 +32,16 @@ if BENCHMARKS_DIR not in sys.path:
     sys.path.insert(0, BENCHMARKS_DIR)
 
 
-from runner import (
+from runner import (  # noqa: E402
     RunConfig,
+    evaluate,
     preprocess_and_split,
     save_synthetic,
-    evaluate,
 )
 
-from katabatic.models.tabsyn.models import TabSyn
+from katabatic.models.tabsyn.models import TabSyn  # noqa: E402
+
+logging.getLogger("pgmpy").setLevel(logging.ERROR)
 
 # Run in CPU mode
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -51,6 +52,7 @@ start_time = perf_counter()
 # ============================================================
 # Runtime summary
 # ============================================================
+
 
 def get_runtime_summary(
     time_diff,
@@ -76,9 +78,11 @@ def get_runtime_summary(
         + " dataset."
     )
 
+
 # ============================================================
 # System information
 # ============================================================
+
 
 def get_system_run_details() -> None:
 
@@ -93,10 +97,7 @@ def get_system_run_details() -> None:
         if torch.cuda.is_available():
             gpu_info = torch.cuda.get_device_name(0)
 
-        elif (
-            hasattr(torch.backends, "mps")
-            and torch.backends.mps.is_available()
-        ):
+        elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
             gpu_info = "Apple Silicon GPU (MPS available)"
 
         else:
@@ -114,26 +115,16 @@ def get_system_run_details() -> None:
     print(f"  🔢  Version:    {results.version}")
     print(f"  🔧  Processor:  {results.processor}")
     print(f"  🎮  GPU:        {gpu_info}")
-
-    print(
-        f"  📟  Total RAM:  "
-        f"{round(ram.total / 1e9, 4)} GB"
-    )
-
-    print(
-        f"  💾  Free RAM:   "
-        f"{round(ram.available / 1e9, 4)} GB"
-    )
-
-    print(
-        f"  ⚡  Used RAM:   "
-        f"{round(ram.used / 1e9, 4)} GB"
-    )
+    print(f"  📟  Total RAM:  {round(ram.total / 1e9, 4)} GB")
+    print(f"  💾  Free RAM:   {round(ram.available / 1e9, 4)} GB")
+    print(f"  ⚡  Used RAM:   {round(ram.used / 1e9, 4)} GB")
     print("======================================================================")
+
 
 # ============================================================
 # Prepare files required by TabSyn utils.py
 # ============================================================
+
 
 def prepare_tabsyn_data(
     train_df,
@@ -145,15 +136,9 @@ def prepare_tabsyn_data(
 ):
 
     # Numerical columns
-    X_num_train = (
-        train_df[continuous_cols]
-        .apply(pd.to_numeric, errors="coerce")
-    )
+    X_num_train = train_df[continuous_cols].apply(pd.to_numeric, errors="coerce")
 
-    X_num_test = (
-        test_df[continuous_cols]
-        .apply(pd.to_numeric, errors="coerce")
-    )
+    X_num_test = test_df[continuous_cols].apply(pd.to_numeric, errors="coerce")
 
     medians = X_num_train.median()
 
@@ -161,32 +146,14 @@ def prepare_tabsyn_data(
     X_num_test = X_num_test.fillna(medians)
 
     # Categorical columns
-    X_cat_train = (
-        train_df[categorical_cols]
-        .fillna("Unknown")
-        .astype(str)
-    )
+    X_cat_train = train_df[categorical_cols].fillna("Unknown").astype(str)
 
-    X_cat_test = (
-        test_df[categorical_cols]
-        .fillna("Unknown")
-        .astype(str)
-    )
+    X_cat_test = test_df[categorical_cols].fillna("Unknown").astype(str)
 
     # Target
-    y_train = (
-        train_df[target_col]
-        .fillna("Unknown")
-        .astype(str)
-        .to_numpy()
-    )
+    y_train = train_df[target_col].fillna("Unknown").astype(str).to_numpy()
 
-    y_test = (
-        test_df[target_col]
-        .fillna("Unknown")
-        .astype(str)
-        .to_numpy()
-    )
+    y_test = test_df[target_col].fillna("Unknown").astype(str).to_numpy()
 
     np.save(
         os.path.join(
@@ -238,9 +205,7 @@ def prepare_tabsyn_data(
 
     info = {
         "task_type": "binclass",
-        "n_classes": int(
-            train_df[target_col].nunique()
-        ),
+        "n_classes": int(train_df[target_col].nunique()),
     }
 
     with open(
@@ -250,15 +215,17 @@ def prepare_tabsyn_data(
         ),
         "w",
     ) as file:
-
         json.dump(
             info,
             file,
             indent=4,
         )
+
+
 # ============================================================
 # Convert TabSyn sample into Adult dataset format
 # ============================================================
+
 
 def convert_tabsyn_output(
     sampled_df,
@@ -268,16 +235,13 @@ def convert_tabsyn_output(
     target_col,
 ):
 
-    synthetic_df = pd.DataFrame(
-        index=sampled_df.index
-    )
+    synthetic_df = pd.DataFrame(index=sampled_df.index)
 
     # --------------------------------------------------------
     # Continuous columns
     # --------------------------------------------------------
 
     for i, col in enumerate(continuous_cols):
-
         generated_values = pd.to_numeric(
             sampled_df[f"num_{i}"],
             errors="coerce",
@@ -295,10 +259,7 @@ def convert_tabsyn_output(
             std = 1.0
 
         # TabSyn output is on standardised scale.
-        values = (
-            generated_values * std
-            + mean
-        )
+        values = generated_values * std + mean
 
         # Adult numeric columns are integer based.
         values = values.round()
@@ -316,11 +277,7 @@ def convert_tabsyn_output(
     # cat_0 represents the target
     # --------------------------------------------------------
 
-    target_categories = np.unique(
-        train_df[target_col]
-        .fillna("Unknown")
-        .astype(str)
-    )
+    target_categories = np.unique(train_df[target_col].fillna("Unknown").astype(str))
 
     target_indices = (
         pd.to_numeric(
@@ -336,10 +293,7 @@ def convert_tabsyn_output(
         )
     )
 
-    synthetic_df[target_col] = [
-        target_categories[index]
-        for index in target_indices
-    ]
+    synthetic_df[target_col] = [target_categories[index] for index in target_indices]
     # --------------------------------------------------------
     # Categorical feature columns
     #
@@ -353,12 +307,7 @@ def convert_tabsyn_output(
         categorical_cols,
         start=1,
     ):
-
-        categories = np.unique(
-            train_df[col]
-            .fillna("Unknown")
-            .astype(str)
-        )
+        categories = np.unique(train_df[col].fillna("Unknown").astype(str))
 
         indices = (
             pd.to_numeric(
@@ -374,18 +323,13 @@ def convert_tabsyn_output(
             )
         )
 
-        synthetic_df[col] = [
-            categories[index]
-            for index in indices
-        ]
-
+        synthetic_df[col] = [categories[index] for index in indices]
 
     # Restore exact Adult column order.
-    synthetic_df = synthetic_df[
-        train_df.columns
-    ]
+    synthetic_df = synthetic_df[train_df.columns]
 
     return synthetic_df
+
 
 # ============================================================
 # Adult configuration
@@ -394,7 +338,6 @@ def convert_tabsyn_output(
 config = RunConfig(
     dataset_name="adult",
     model_name="tabsyn",
-
     categorical_cols=[
         "workclass",
         "education",
@@ -405,7 +348,6 @@ config = RunConfig(
         "sex",
         "native-country",
     ],
-
     continuous_cols=[
         "age",
         "fnlwgt",
@@ -414,18 +356,14 @@ config = RunConfig(
         "capital-loss",
         "hours-per-week",
     ],
-
     target_col_raw="class",
-
     constraints={},
 )
 # ============================================================
 # Preprocess and split
 # ============================================================
 
-train_df, test_df, target_col, paths = (
-    preprocess_and_split(config)
-)
+train_df, test_df, target_col, paths = preprocess_and_split(config)
 
 
 # TabSyn utils.py requires NumPy files.
@@ -449,43 +387,29 @@ print("=" * 60)
 
 model = TabSyn(
     d_token=16,
-
     decoder_epochs=50,
     decoder_batch_size=512,
-
     diffusion_epochs=300,
     diffusion_batch_size=512,
-
     diffusion_steps=50,
-
     lr=1e-3,
     weight_decay=0.0,
-
     patience=20,
     seed=42,
-
     device="cpu",
 )
 
 model.train(
     paths["split_dir"],
-
     save_dir=os.path.join(
         paths["results_dir"],
         "model_files",
     ),
-
     synthetic_dir=paths["synthetic_dir"],
-
     extra_info={
-        "categorical_cols":
-            config.categorical_cols,
-
-        "continuous_cols":
-            config.continuous_cols,
-
-        "target_col":
-            target_col,
+        "categorical_cols": config.categorical_cols,
+        "continuous_cols": config.continuous_cols,
+        "target_col": target_col,
     },
 )
 
@@ -537,10 +461,7 @@ evaluate(
 
 end_time = perf_counter()
 
-time_diff = (
-    end_time
-    - start_time
-)
+time_diff = end_time - start_time
 get_runtime_summary(
     time_diff,
     start_time,

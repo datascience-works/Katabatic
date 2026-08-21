@@ -6,10 +6,13 @@ import sys
 import warnings
 from datetime import datetime
 from time import perf_counter
+
 import numpy as np
 import pandas as pd
-import logging
+
 logging.getLogger("pgmpy").setLevel(logging.ERROR)
+
+
 # ============================================================
 # PROJECT PATH SETUP
 # ============================================================
@@ -38,24 +41,28 @@ if BENCHMARKS_DIR not in sys.path:
 
 print(f"Project root: {PROJECT_ROOT}")
 
+
 # ============================================================
 # PROJECT IMPORTS
 # ============================================================
 
-from runner import (
+from runner import (  # noqa: E402
     RunConfig,
     evaluate,
     preprocess_and_split,
     save_synthetic,
 )
-from katabatic.models.tabsyn.models import TabSyn
 
-logging.getLogger("pgmpy").setLevel(logging.ERROR)
+from katabatic.models.tabsyn.models import TabSyn  # noqa: E402
+
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 warnings.filterwarnings("ignore")
+
+
 # ============================================================
 # RUNTIME REPORT
 # ============================================================
+
 
 def print_runtime_report(
     duration_seconds,
@@ -97,10 +104,7 @@ def print_system_report():
         if torch.cuda.is_available():
             device_name = torch.cuda.get_device_name(0)
 
-        elif (
-            hasattr(torch.backends, "mps")
-            and torch.backends.mps.is_available()
-        ):
+        elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
             device_name = "Apple Silicon GPU available, training uses CPU"
 
         else:
@@ -129,6 +133,7 @@ def print_system_report():
 # ============================================================
 # TABSyn INPUT PREPARATION
 # ============================================================
+
 
 def create_tabsyn_input_files(
     train_df,
@@ -170,69 +175,69 @@ def create_tabsyn_input_files(
 
     # Convert categorical features to strings.
     train_categorical = (
-        train_df[categorical_columns]
-        .fillna("Unknown")
-        .astype(str)
-        .to_numpy(dtype=str)
+        train_df[categorical_columns].fillna("Unknown").astype(str).to_numpy(dtype=str)
     )
 
     test_categorical = (
-        test_df[categorical_columns]
-        .fillna("Unknown")
-        .astype(str)
-        .to_numpy(dtype=str)
+        test_df[categorical_columns].fillna("Unknown").astype(str).to_numpy(dtype=str)
     )
 
     # Convert targets to strings.
-    train_target = (
-        train_df[target_column]
-        .fillna("Unknown")
-        .astype(str)
-        .to_numpy()
-    )
+    train_target = train_df[target_column].fillna("Unknown").astype(str).to_numpy()
 
-    test_target = (
-        test_df[target_column]
-        .fillna("Unknown")
-        .astype(str)
-        .to_numpy()
-    )
+    test_target = test_df[target_column].fillna("Unknown").astype(str).to_numpy()
 
     np.save(
-        os.path.join(split_dir, "X_num_train.npy"),
+        os.path.join(
+            split_dir,
+            "X_num_train.npy",
+        ),
         train_numeric,
     )
 
     np.save(
-        os.path.join(split_dir, "X_cat_train.npy"),
+        os.path.join(
+            split_dir,
+            "X_cat_train.npy",
+        ),
         train_categorical,
     )
 
     np.save(
-        os.path.join(split_dir, "y_train.npy"),
+        os.path.join(
+            split_dir,
+            "y_train.npy",
+        ),
         train_target,
     )
 
     np.save(
-        os.path.join(split_dir, "X_num_test.npy"),
+        os.path.join(
+            split_dir,
+            "X_num_test.npy",
+        ),
         test_numeric,
     )
 
     np.save(
-        os.path.join(split_dir, "X_cat_test.npy"),
+        os.path.join(
+            split_dir,
+            "X_cat_test.npy",
+        ),
         test_categorical,
     )
 
     np.save(
-        os.path.join(split_dir, "y_test.npy"),
+        os.path.join(
+            split_dir,
+            "y_test.npy",
+        ),
         test_target,
     )
 
     info = {
         "task_type": "multiclass",
-        "n_classes": int(
-            train_df[target_column].nunique()
-        ),
+        "n_classes": int(train_df[target_column].nunique()),
         "dataset_name": "car",
         "continuous_columns": [],
         "categorical_columns": categorical_columns,
@@ -264,9 +269,11 @@ def create_tabsyn_input_files(
     print(f"y_test shape      : {test_target.shape}")
     print(f"Metadata          : {info_path}")
 
+
 # ============================================================
 # CATEGORICAL DECODING
 # ============================================================
+
 
 def decode_categorical_columns(
     synthetic_features,
@@ -291,16 +298,11 @@ def decode_categorical_columns(
             )
 
         categories = np.unique(
-            train_df[column]
-            .fillna("Unknown")
-            .astype(str)
-            .to_numpy()
+            train_df[column].fillna("Unknown").astype(str).to_numpy()
         )
 
         if len(categories) == 0:
-            raise ValueError(
-                f"No categories were found for column '{column}'."
-            )
+            raise ValueError(f"No categories were found for column '{column}'.")
 
         generated_indices = pd.to_numeric(
             decoded_df[column],
@@ -309,8 +311,7 @@ def decode_categorical_columns(
 
         # Replace invalid generated values with category index zero.
         generated_indices = (
-            generated_indices
-            .fillna(0)
+            generated_indices.fillna(0)
             .round()
             .astype(int)
             .clip(
@@ -319,16 +320,15 @@ def decode_categorical_columns(
             )
         )
 
-        decoded_df[column] = [
-            categories[index]
-            for index in generated_indices
-        ]
+        decoded_df[column] = [categories[index] for index in generated_indices]
 
     return decoded_df
+
 
 # ============================================================
 # LOAD MODEL-GENERATED SYNTHETIC FILES
 # ============================================================
+
 
 def load_generated_synthetic_data(
     paths,
@@ -339,8 +339,8 @@ def load_generated_synthetic_data(
     """
     Load x_synth.csv and y_synth.csv generated inside TabSyn.train().
 
-    The feature indices are decoded to the original Car categories, and
-    the feature and target files are combined into one DataFrame.
+    The feature indices are decoded to the original Car categories,
+    and the feature and target files are combined into one DataFrame.
     """
 
     x_synthetic_path = os.path.join(
@@ -355,28 +355,23 @@ def load_generated_synthetic_data(
 
     if not os.path.exists(x_synthetic_path):
         raise FileNotFoundError(
-            "Synthetic feature file was not found:\n"
-            f"{x_synthetic_path}"
+            f"Synthetic feature file was not found:\n{x_synthetic_path}"
         )
 
     if not os.path.exists(y_synthetic_path):
         raise FileNotFoundError(
-            "Synthetic target file was not found:\n"
-            f"{y_synthetic_path}"
+            f"Synthetic target file was not found:\n{y_synthetic_path}"
         )
 
-    synthetic_features = pd.read_csv(
-        x_synthetic_path
-    )
+    synthetic_features = pd.read_csv(x_synthetic_path)
 
-    synthetic_target = pd.read_csv(
-        y_synthetic_path
-    )
+    synthetic_target = pd.read_csv(y_synthetic_path)
 
     print("\nGenerated feature file:")
     print(f"Path    : {x_synthetic_path}")
     print(f"Shape   : {synthetic_features.shape}")
     print(f"Columns : {synthetic_features.columns.tolist()}")
+
     print("\nGenerated target file:")
     print(f"Path    : {y_synthetic_path}")
     print(f"Shape   : {synthetic_target.shape}")
@@ -387,8 +382,7 @@ def load_generated_synthetic_data(
     expected_feature_columns = categorical_columns
 
     if not all(
-        column in synthetic_features.columns
-        for column in expected_feature_columns
+        column in synthetic_features.columns for column in expected_feature_columns
     ):
         tabsyn_feature_columns = [
             f"cat_{index}"
@@ -399,31 +393,21 @@ def load_generated_synthetic_data(
         ]
 
         if all(
-            column in synthetic_features.columns
-            for column in tabsyn_feature_columns
+            column in synthetic_features.columns for column in tabsyn_feature_columns
         ):
-            synthetic_features = (
-                synthetic_features[
-                    tabsyn_feature_columns
-                ].copy()
-            )
+            synthetic_features = synthetic_features[tabsyn_feature_columns].copy()
 
-            synthetic_features.columns = (
-                categorical_columns
-            )
+            synthetic_features.columns = categorical_columns
 
-        elif synthetic_features.shape[1] == len(
-            categorical_columns
-        ):
-            synthetic_features.columns = (
-                categorical_columns
-            )
+        elif synthetic_features.shape[1] == len(categorical_columns):
+            synthetic_features.columns = categorical_columns
 
         else:
             raise ValueError(
                 "Unable to align synthetic feature columns.\n"
                 f"Expected: {categorical_columns}\n"
-                f"Received: {synthetic_features.columns.tolist()}"
+                f"Received: "
+                f"{synthetic_features.columns.tolist()}"
             )
 
     synthetic_features = decode_categorical_columns(
@@ -441,9 +425,7 @@ def load_generated_synthetic_data(
     synthetic_target.columns = [target_column]
 
     synthetic_target[target_column] = (
-        synthetic_target[target_column]
-        .fillna("Unknown")
-        .astype(str)
+        synthetic_target[target_column].fillna("Unknown").astype(str)
     )
 
     synthetic_df = pd.concat(
@@ -455,28 +437,27 @@ def load_generated_synthetic_data(
     )
 
     missing_columns = [
-        column
-        for column in train_df.columns
-        if column not in synthetic_df.columns
+        column for column in train_df.columns if column not in synthetic_df.columns
     ]
 
     if missing_columns:
         raise ValueError(
             "The synthetic dataset is missing columns:\n"
             f"{missing_columns}\n"
-            f"Received columns: {synthetic_df.columns.tolist()}"
+            f"Received columns: "
+            f"{synthetic_df.columns.tolist()}"
         )
 
     # Match the exact training-data column order.
-    synthetic_df = synthetic_df[
-        train_df.columns.tolist()
-    ]
+    synthetic_df = synthetic_df[train_df.columns.tolist()]
 
     return synthetic_df
+
 
 # ============================================================
 # MAIN
 # ============================================================
+
 
 def main():
     start_counter = perf_counter()
@@ -485,7 +466,14 @@ def main():
     config = RunConfig(
         dataset_name="car",
         model_name="tabsyn",
-        categorical_cols=["0","1","2","3","4","5",],
+        categorical_cols=[
+            "0",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+        ],
         continuous_cols=[],
         target_col_raw="6",
         constraints={},
@@ -505,9 +493,7 @@ def main():
     # STEP 1 AND STEP 2 — PREPROCESS AND SPLIT
     # ========================================================
 
-    train_df, test_df, target_col, paths = (
-        preprocess_and_split(config)
-    )
+    train_df, test_df, target_col, paths = preprocess_and_split(config)
 
     print("\nDataset preparation completed.")
     print(f"Training shape : {train_df.shape}")
@@ -515,22 +501,19 @@ def main():
     print(f"Target column  : {target_col}")
     print(f"Columns        : {train_df.columns.tolist()}")
 
-    required_columns = (
-        config.categorical_cols
-        + [target_col]
-    )
+    required_columns = config.categorical_cols + [target_col]
 
     missing_columns = [
-        column
-        for column in required_columns
-        if column not in train_df.columns
+        column for column in required_columns if column not in train_df.columns
     ]
 
     if missing_columns:
         raise ValueError(
-            "Configured columns are missing from the processed dataset:\n"
+            "Configured columns are missing "
+            "from the processed dataset:\n"
             f"{missing_columns}\n"
-            f"Available columns: {train_df.columns.tolist()}"
+            f"Available columns: "
+            f"{train_df.columns.tolist()}"
         )
 
     # Create only the NumPy files required by TabSyn utilities.
@@ -552,19 +535,14 @@ def main():
 
     model = TabSyn(
         d_token=16,
-
         decoder_epochs=50,
         decoder_batch_size=256,
-
         diffusion_epochs=300,
         diffusion_batch_size=256,
-
         diffusion_steps=50,
-
         lr=1e-3,
         weight_decay=0.0,
         patience=20,
-
         seed=42,
         device="cpu",
     )
@@ -637,9 +615,8 @@ def main():
     # ========================================================
 
     end_timestamp = datetime.now()
-    duration_seconds = (
-        perf_counter() - start_counter
-    )
+
+    duration_seconds = perf_counter() - start_counter
 
     print_runtime_report(
         duration_seconds=duration_seconds,
@@ -648,7 +625,9 @@ def main():
         model_name=config.model_name,
         dataset_name=config.dataset_name,
     )
+
     print_system_report()
+
 
 if __name__ == "__main__":
     main()

@@ -1,19 +1,27 @@
-import platform
-import psutil
-import sys
-import os
 import json
-import numpy as np
-from time import perf_counter
-import warnings
-import pandas as pd
 import logging
+import os
+import platform
+import sys
+import warnings
+from time import perf_counter
+
+import numpy as np
+import pandas as pd
+import psutil
+
 logging.getLogger("pgmpy").setLevel(logging.ERROR)
 
+
 # ============================================================
-# Project path setup
+# PROJECT PATH SETUP
 # ============================================================
 
+# Current script location:
+# Katabatic/benchmarks/examples/tabsyn/run_tabsyn_nursery.py
+#
+# Moving up three directories reaches:
+# Katabatic/
 PROJECT_ROOT = os.path.abspath(
     os.path.join(
         os.path.dirname(__file__),
@@ -23,7 +31,10 @@ PROJECT_ROOT = os.path.abspath(
     )
 )
 
-BENCHMARKS_DIR = os.path.join(PROJECT_ROOT, "benchmarks")
+BENCHMARKS_DIR = os.path.join(
+    PROJECT_ROOT,
+    "benchmarks",
+)
 
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
@@ -31,24 +42,28 @@ if PROJECT_ROOT not in sys.path:
 if BENCHMARKS_DIR not in sys.path:
     sys.path.insert(0, BENCHMARKS_DIR)
 
-from runner import (
+
+# These imports must come after the project path setup.
+from runner import (  # noqa: E402
     RunConfig,
+    evaluate,
     preprocess_and_split,
     save_synthetic,
-    evaluate,
 )
 
-from katabatic.models.tabsyn.models import TabSyn
+from katabatic.models.tabsyn.models import TabSyn  # noqa: E402
 
-# Run in CPU mode
+# Run in CPU mode.
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 warnings.filterwarnings("ignore")
 
 start_time = perf_counter()
 
+
 # ============================================================
-# Runtime summary
+# RUNTIME SUMMARY
 # ============================================================
+
 
 def get_runtime_summary(
     time_diff,
@@ -57,6 +72,7 @@ def get_runtime_summary(
     model_name,
     dataset_name,
 ) -> None:
+    """Print a formatted runtime summary report."""
 
     print("======================================================================")
     print("⏰ Evaluation Runtime Report 🧾")
@@ -74,11 +90,14 @@ def get_runtime_summary(
         + " dataset."
     )
 
+
 # ============================================================
-# System information
+# SYSTEM INFORMATION
 # ============================================================
 
+
 def get_system_run_details() -> None:
+    """Print system, processor, GPU, and RAM information."""
 
     results = platform.uname()
     ram = psutil.virtual_memory()
@@ -91,10 +110,7 @@ def get_system_run_details() -> None:
         if torch.cuda.is_available():
             gpu_info = torch.cuda.get_device_name(0)
 
-        elif (
-            hasattr(torch.backends, "mps")
-            and torch.backends.mps.is_available()
-        ):
+        elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
             gpu_info = "Apple Silicon GPU (MPS available)"
 
         else:
@@ -106,6 +122,7 @@ def get_system_run_details() -> None:
     print("======================================================================")
     print("💻 Computation Hardware Summary 🧾")
     print("======================================================================")
+
     print(f"  🖥️  System:     {results.system}")
     print(f"  🏠  Node:       {results.node}")
     print(f"  📦  Release:    {results.release}")
@@ -115,10 +132,14 @@ def get_system_run_details() -> None:
     print(f"  📟  Total RAM:  {round(ram.total / 1e9, 4)} GB")
     print(f"  💾  Free RAM:   {round(ram.available / 1e9, 4)} GB")
     print(f"  ⚡  Used RAM:   {round(ram.used / 1e9, 4)} GB")
+
     print("======================================================================")
+
+
 # ============================================================
-# Prepare files required by TabSyn utils.py
+# PREPARE FILES REQUIRED BY TABSyn utils.py
 # ============================================================
+
 
 def prepare_tabsyn_data(
     train_df,
@@ -127,52 +148,35 @@ def prepare_tabsyn_data(
     paths,
     categorical_cols,
 ):
+    """Create NumPy files required by the TabSyn utility code."""
 
     # Nursery has no continuous columns.
-    X_num_train = np.empty(
+    x_num_train = np.empty(
         (len(train_df), 0),
         dtype=np.float32,
     )
 
-    X_num_test = np.empty(
+    x_num_test = np.empty(
         (len(test_df), 0),
         dtype=np.float32,
     )
 
     # Categorical feature columns.
-    X_cat_train = (
-        train_df[categorical_cols]
-        .fillna("Unknown")
-        .astype(str)
-    )
+    x_cat_train = train_df[categorical_cols].fillna("Unknown").astype(str)
 
-    X_cat_test = (
-        test_df[categorical_cols]
-        .fillna("Unknown")
-        .astype(str)
-    )
+    x_cat_test = test_df[categorical_cols].fillna("Unknown").astype(str)
 
     # Target.
-    y_train = (
-        train_df[target_col]
-        .fillna("Unknown")
-        .astype(str)
-        .to_numpy()
-    )
+    y_train = train_df[target_col].fillna("Unknown").astype(str).to_numpy()
 
-    y_test = (
-        test_df[target_col]
-        .fillna("Unknown")
-        .astype(str)
-        .to_numpy()
-    )
+    y_test = test_df[target_col].fillna("Unknown").astype(str).to_numpy()
 
     np.save(
         os.path.join(
             paths["split_dir"],
             "X_num_train.npy",
         ),
-        X_num_train,
+        x_num_train,
     )
 
     np.save(
@@ -180,7 +184,7 @@ def prepare_tabsyn_data(
             paths["split_dir"],
             "X_num_test.npy",
         ),
-        X_num_test,
+        x_num_test,
     )
 
     np.save(
@@ -188,7 +192,7 @@ def prepare_tabsyn_data(
             paths["split_dir"],
             "X_cat_train.npy",
         ),
-        X_cat_train.to_numpy(dtype=str),
+        x_cat_train.to_numpy(dtype=str),
     )
 
     np.save(
@@ -196,7 +200,7 @@ def prepare_tabsyn_data(
             paths["split_dir"],
             "X_cat_test.npy",
         ),
-        X_cat_test.to_numpy(dtype=str),
+        x_cat_test.to_numpy(dtype=str),
     )
 
     np.save(
@@ -217,9 +221,7 @@ def prepare_tabsyn_data(
 
     info = {
         "task_type": "multiclass",
-        "n_classes": int(
-            train_df[target_col].nunique()
-        ),
+        "n_classes": int(train_df[target_col].nunique()),
     }
 
     with open(
@@ -228,17 +230,19 @@ def prepare_tabsyn_data(
             "info.json",
         ),
         "w",
+        encoding="utf-8",
     ) as file:
-
         json.dump(
             info,
             file,
             indent=4,
         )
 
+
 # ============================================================
-# Convert TabSyn output to Nursery dataset format
+# CONVERT TABSyn OUTPUT TO NURSERY DATASET FORMAT
 # ============================================================
+
 
 def convert_tabsyn_output(
     sampled_df,
@@ -246,10 +250,9 @@ def convert_tabsyn_output(
     categorical_cols,
     target_col,
 ):
+    """Convert TabSyn output back to the Nursery dataset schema."""
 
-    synthetic_df = pd.DataFrame(
-        index=sampled_df.index
-    )
+    synthetic_df = pd.DataFrame(index=sampled_df.index)
 
     # --------------------------------------------------------
     # Target
@@ -257,11 +260,7 @@ def convert_tabsyn_output(
     # cat_0 = target
     # --------------------------------------------------------
 
-    target_categories = np.unique(
-        train_df[target_col]
-        .fillna("Unknown")
-        .astype(str)
-    )
+    target_categories = np.unique(train_df[target_col].fillna("Unknown").astype(str))
 
     target_indices = (
         pd.to_numeric(
@@ -277,10 +276,7 @@ def convert_tabsyn_output(
         )
     )
 
-    synthetic_df[target_col] = [
-        target_categories[index]
-        for index in target_indices
-    ]
+    synthetic_df[target_col] = [target_categories[index] for index in target_indices]
 
     # --------------------------------------------------------
     # Categorical features
@@ -291,20 +287,15 @@ def convert_tabsyn_output(
     # cat_8 = column 7
     # --------------------------------------------------------
 
-    for i, col in enumerate(
+    for index, column in enumerate(
         categorical_cols,
         start=1,
     ):
+        categories = np.unique(train_df[column].fillna("Unknown").astype(str))
 
-        categories = np.unique(
-            train_df[col]
-            .fillna("Unknown")
-            .astype(str)
-        )
-
-        indices = (
+        generated_indices = (
             pd.to_numeric(
-                sampled_df[f"cat_{i}"],
+                sampled_df[f"cat_{index}"],
                 errors="coerce",
             )
             .fillna(0)
@@ -316,34 +307,45 @@ def convert_tabsyn_output(
             )
         )
 
-        synthetic_df[col] = [
-            categories[index]
-            for index in indices
-        ]
+        synthetic_df[column] = [categories[value] for value in generated_indices]
 
     # Restore exact Nursery column order.
-    synthetic_df = synthetic_df[
-        train_df.columns
-    ]
+    synthetic_df = synthetic_df[train_df.columns]
 
     return synthetic_df
 
+
 # ============================================================
-# Nursery dataset configuration
+# NURSERY DATASET CONFIGURATION
 # ============================================================
+
 
 config = RunConfig(
     dataset_name="nursery",
     model_name="tabsyn",
-    categorical_cols=["0","1","2","3","4","5","6","7",],
+    categorical_cols=[
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+    ],
     continuous_cols=[],
     target_col_raw="8",
     constraints={},
 )
 
-train_df, test_df, target_col, paths = (
-    preprocess_and_split(config)
-)
+
+# ============================================================
+# PREPROCESS AND SPLIT
+# ============================================================
+
+
+train_df, test_df, target_col, paths = preprocess_and_split(config)
+
 
 # Create NumPy files expected by TabSyn utils.py.
 prepare_tabsyn_data(
@@ -354,70 +356,65 @@ prepare_tabsyn_data(
     config.categorical_cols,
 )
 
+
 # ============================================================
-# STEP 3 — Train TabSyn
+# STEP 3 — TRAIN TABSyn
 # ============================================================
+
 
 print("\n" + "=" * 60)
 print("STEP 3 — Train TabSyn")
 print("=" * 60)
 
+
 model = TabSyn(
     d_token=16,
-
     decoder_epochs=50,
     decoder_batch_size=256,
-
     diffusion_epochs=300,
     diffusion_batch_size=256,
-
     diffusion_steps=50,
-
     lr=1e-3,
     weight_decay=0.0,
-
     patience=20,
     seed=42,
-
     device="cpu",
 )
 
+
 model.train(
     paths["split_dir"],
-
     save_dir=os.path.join(
         paths["results_dir"],
         "model_files",
     ),
-
     synthetic_dir=paths["synthetic_dir"],
-
     extra_info={
-        "categorical_cols":
-            config.categorical_cols,
-
-        "continuous_cols":
-            config.continuous_cols,
-
-        "target_col":
-            target_col,
+        "categorical_cols": config.categorical_cols,
+        "continuous_cols": config.continuous_cols,
+        "target_col": target_col,
     },
 )
 
+
 print("\nTabSyn training complete.")
 
+
 # ============================================================
-# STEP 4 — Generate synthetic data
+# STEP 4 — GENERATE SYNTHETIC DATA
 # ============================================================
+
 
 print("\n" + "=" * 60)
 print("STEP 4 — Generate synthetic data")
 print("=" * 60)
 
+
 sampled_df = model.sample(
     n_samples=len(train_df),
     return_df=True,
 )
+
 
 synthetic_df = convert_tabsyn_output(
     sampled_df,
@@ -426,12 +423,19 @@ synthetic_df = convert_tabsyn_output(
     target_col,
 )
 
+
 synthetic_df = save_synthetic(
     synthetic_df,
     train_df,
     paths,
     categorical_cols=config.categorical_cols,
 )
+
+
+# ============================================================
+# EVALUATE
+# ============================================================
+
 
 evaluate(
     model,
@@ -443,16 +447,17 @@ evaluate(
     test_df,
 )
 
+
 # ============================================================
-# Runtime and system summary
+# RUNTIME AND SYSTEM SUMMARY
 # ============================================================
+
 
 end_time = perf_counter()
 
-time_diff = (
-    end_time
-    - start_time
-)
+time_diff = end_time - start_time
+
+
 get_runtime_summary(
     time_diff,
     start_time,
@@ -460,4 +465,6 @@ get_runtime_summary(
     config.model_name,
     config.dataset_name,
 )
+
+
 get_system_run_details()

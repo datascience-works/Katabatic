@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import pandas as pd
 import pytest
-
-from katabatic.artifacts import LocalArtifactStore
 from katabatic.datasets.compatibility import check_dataset_for_model
 from katabatic.datasets.registry import DatasetRegistry
+
+from katabatic.artifacts import LocalArtifactStore
 
 
 def test_dataset_registry_register_and_duplicate(tmp_path):

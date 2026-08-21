@@ -1,7 +1,8 @@
-from typing import Any, Optional, Union, Dict
+import os
+from typing import Any
+
 import numpy as np
 import pandas as pd
-import os
 
 # Base Katabatic model interface
 from katabatic.models.base_model import Model as BaseModel
@@ -10,9 +11,9 @@ from katabatic.models.base_model import Model as BaseModel
 from .utils import (
     TabSynConfig,
     TabSynState,
-    train_tabsyn,
     evaluate_tabsyn,
     sample_tabsyn,
+    train_tabsyn,
 )
 
 
@@ -33,26 +34,21 @@ class TabSyn(BaseModel):
         *,
         # Latent representation settings
         d_token: int = 16,
-
         # Decoder training configuration
         decoder_epochs: int = 50,
         decoder_batch_size: int = 2048,
-
         # Diffusion model training configuration
         diffusion_epochs: int = 500,
         diffusion_batch_size: int = 4096,
-
         # Diffusion sampling configuration
         diffusion_steps: int = 50,
-
         # Optimisation settings
         lr: float = 1e-3,
         weight_decay: float = 0.0,
         patience: int = 20,
-
         # Reproducibility and device configuration
         seed: int = 42,
-        device: Optional[str] = None,
+        device: str | None = None,
     ) -> None:
         """
         Initialise the TabSyn model configuration.
@@ -75,7 +71,7 @@ class TabSyn(BaseModel):
         )
 
         # Model state is populated after successful training
-        self.state: Optional[TabSynState] = None
+        self.state: TabSynState | None = None
 
     @classmethod
     def get_required_dependencies(cls) -> list[str]:
@@ -88,10 +84,10 @@ class TabSyn(BaseModel):
     def train(
         self,
         data_dir: str,
-        save_dir: Optional[str] = None,
-        extra_info: Optional[Dict[str, Any]] = None,
+        save_dir: str | None = None,
+        extra_info: dict[str, Any] | None = None,
         *args,
-        **kwargs
+        **kwargs,
     ) -> "TabSyn":
         """
         Train the TabSyn model and generate synthetic outputs
@@ -115,27 +111,18 @@ class TabSyn(BaseModel):
         synth_dir = kwargs.get("synthetic_dir")
 
         if not synth_dir or not isinstance(synth_dir, str):
-            dataset_name = os.path.basename(
-                os.path.normpath(data_dir)
-            ) or "dataset"
+            dataset_name = os.path.basename(os.path.normpath(data_dir)) or "dataset"
 
-            synth_dir = os.path.join(
-                "synthetic",
-                dataset_name,
-                "tabsyn"
-            )
+            synth_dir = os.path.join("synthetic", dataset_name, "tabsyn")
 
         os.makedirs(synth_dir, exist_ok=True)
 
         # Generate synthetic samples
-        df_s = self.sample(
-            n_samples=None,
-            return_df=True
-        )
+        df_s = self.sample(n_samples=None, return_df=True)
 
         state = self.state
 
-        n_num = state.n_num
+        # n_num = state.n_num
         n_cat = len(state.cat_sizes)
 
         # TSTR requires at least one categorical target column
@@ -146,7 +133,7 @@ class TabSyn(BaseModel):
             )
 
         # Temporary synthetic column naming
-        num_cols = [f"num_{i}" for i in range(n_num)]
+        # num_cols = [f"num_{i}" for i in range(n_num)]
         cat_cols = [f"cat_{i}" for i in range(n_cat)]
 
         # First categorical column is treated as target label
@@ -160,43 +147,23 @@ class TabSyn(BaseModel):
         # Preserve original label distribution
         real_y_path = os.path.join(data_dir, "y_train.csv")
 
-        real_y = (
-            pd.read_csv(real_y_path)
-            .iloc[:, 0]
-            .astype(str)
-            .to_numpy()
-        )
+        real_y = pd.read_csv(real_y_path).iloc[:, 0].astype(str).to_numpy()
 
         classes, counts = np.unique(real_y, return_counts=True)
 
         probs = counts / counts.sum()
 
-        y_synth = np.random.choice(
-            classes,
-            size=len(x_synth),
-            p=probs
-        )
+        y_synth = np.random.choice(classes, size=len(x_synth), p=probs)
 
-        y_synth = pd.Series(
-            y_synth,
-            name=y_col
-        )
+        y_synth = pd.Series(y_synth, name=y_col)
 
         # Align synthetic feature names with real dataset
-        real_x_train_path = os.path.join(
-            data_dir,
-            "x_train.csv"
-        )
+        real_x_train_path = os.path.join(data_dir, "x_train.csv")
 
         try:
-            real_cols = (
-                pd.read_csv(real_x_train_path, nrows=0)
-                .columns
-                .tolist()
-            )
+            real_cols = pd.read_csv(real_x_train_path, nrows=0).columns.tolist()
 
             if len(real_cols) == x_synth.shape[1]:
-
                 # Rename synthetic columns
                 x_synth.columns = real_cols
 
@@ -243,32 +210,24 @@ class TabSyn(BaseModel):
         """
 
         if not self.is_fitted or self.state is None:
-            raise RuntimeError(
-                "The model must be trained before evaluation."
-            )
+            raise RuntimeError("The model must be trained before evaluation.")
 
-        return evaluate_tabsyn(
-            self.state,
-            data_dir=data_dir,
-            split=split
-        )
+        return evaluate_tabsyn(self.state, data_dir=data_dir, split=split)
 
     def sample(
         self,
-        n_samples: Optional[int] = None,
+        n_samples: int | None = None,
         return_df: bool = True,
-        save_path: Optional[str] = None,
+        save_path: str | None = None,
         *args,
-        **kwargs
-    ) -> Union[np.ndarray, pd.DataFrame]:
+        **kwargs,
+    ) -> np.ndarray | pd.DataFrame:
         """
         Generate synthetic tabular samples.
         """
 
         if not self.is_fitted or self.state is None:
-            raise RuntimeError(
-                "The model must be trained before sampling."
-            )
+            raise RuntimeError("The model must be trained before sampling.")
 
         out = sample_tabsyn(
             self.state,
@@ -278,12 +237,10 @@ class TabSyn(BaseModel):
 
         # Save generated samples if requested
         if save_path is not None:
-
             if isinstance(out, pd.DataFrame):
                 out.to_csv(save_path, index=False)
 
             else:
                 np.save(save_path, out)
-
 
         return out
