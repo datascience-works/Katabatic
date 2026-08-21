@@ -1,4 +1,5 @@
 from __future__ import annotations
+import pickle
 
 import importlib
 import json
@@ -35,6 +36,14 @@ class CTGANModel(BaseModel):
     - Torch backend: WGAN(-GP) with Gumbel-Softmax for categorical outputs.
     - NumPy backend: fast, dependency-light fallback for stability.
     """
+
+    ARTIFACT_STATE_FILES = ("ctgan_state.pt",)
+    #Rebuilt on load rather than serialised: the generator/discriminator are
+    #instances of LocalMLP, which is defined *inside* _build_torch_networks(),
+    #so pickle cannot resolve them by qualified name. _device is rebuilt from
+    #cfg because the load machine may not have the same device available.
+    _NON_SERIALISABLE = ("generator", "discriminator", "_device")
+
 
     def __init__(
         self,
@@ -146,6 +155,82 @@ class CTGANModel(BaseModel):
 
     def _forward_discriminator(self, torch, x_enc, cond):
         return self.discriminator(torch.cat([x_enc, cond], dim=1))
+
+    def _save_artifact_state(self, artifact_state_dir: str) -> None:
+        """
+        Persist fitted state so the model can be rebuilt by load_from_ref().
+
+        Called from train() when the pipeline injects artifact_state_dir, which
+        it does for any model class declaring ARTIFACT_STATE_FILES.
+        """
+        os.makedirs(artifact_state_dir, exist_ok=True)
+
+        payload = {
+            "attrs": {
+                k: v
+                for k, v in self.__dict__.items()
+                if k not in self._NON_SERIALISABLE
+            },
+            "generator_state": None,
+            "discriminator_state": None,
+        }
+
+        torch = _try_import("torch")
+        if torch is not None:
+            if self.generator is not None:
+                payload["generator_state"] = self.generator.state_dict()
+            if self.discriminator is not None:
+                payload["discriminator_state"] = self.discriminator.state_dict()
+
+        target = os.path.join(artifact_state_dir, self.ARTIFACT_STATE_FILES[0])
+        if torch is not None:
+            torch.save(payload, target)
+        else:
+            with open(target, "wb") as fh:
+                pickle.dump(payload, fh)
+        
+    @classmethod
+    def load_from_ref(cls, store: "ArtifactStore", ref: "ModelRef") -> "CTGANModel":
+        """
+        Rehydrate a fitted CTGANModel from a versioned artifact.
+
+        Restores the fitted attributes, then rebuilds the torch networks and
+        loads their weights separately, since LocalMLP cannot be unpickled.
+        """
+        state_file = cls.ARTIFACT_STATE_FILES[0]
+        state_path = store.open_path(f"{ref.state_relpath}/{state_file}")
+
+        if not state_path.is_file():
+            raise FileNotFoundError(
+                f"No CTGAN state at {state_path}. The model must be trained "
+                f"through a pipeline that passes artifact_state_dir."
+            )
+
+        torch = _try_import("torch")
+        if torch is not None:
+            # weights_only defaults to True in torch >= 2.6, but this payload
+            # holds the schema, encoders and training frame as well as tensors.
+            payload = torch.load(state_path, map_location="cpu", weights_only=False)
+        else:
+            with open(state_path, "rb") as fh:
+                payload = pickle.load(fh)
+
+        instance = cls()
+        instance.__dict__.update(payload["attrs"])
+
+        gen_state = payload.get("generator_state")
+        if gen_state is not None and torch is not None:
+            nn = _try_import("torch.nn")
+            instance._device = torch.device(instance.cfg.get("device") or "cpu")
+            instance._build_torch_networks(torch, nn)
+            instance.generator.load_state_dict(gen_state)
+            dis_state = payload.get("discriminator_state")
+            if dis_state is not None:
+                instance.discriminator.load_state_dict(dis_state)
+            instance.generator.eval()
+
+        return instance
+
 
     def train(
         self,
@@ -385,6 +470,11 @@ class CTGANModel(BaseModel):
         print(
             f"[CTGAN] Synthetic data saved:\n  X -> {x_path_out}\n  y -> {y_path_out}"
         )
+
+        artifact_state_dir = kwargs.get("artifact_state_dir")
+        if artifact_state_dir:
+            self._save_artifact_state(artifact_state_dir)
+
         return self
 
     def evaluate(self, *args, **kwargs) -> float:

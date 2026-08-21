@@ -43,3 +43,14 @@ def test_ctgan_artifact_pipeline_smoke(tmp_path, tiny_binary_csv):
     assert ev is not None
     assert Path(store.open_path(ev.metrics_relpath)).is_file()
     assert Path(store.open_path(ev.report_relpath)).is_file()
+
+    state_file = CTGANModel.ARTIFACT_STATE_FILES[0]
+    state_path = store.open_path(f"{mr.state_relpath}/{state_file}")
+    assert state_path.is_file(), f"state file was never written: {state_path}"
+
+    reloaded = CTGANModel.load_from_ref(store, mr)
+    assert reloaded.is_fitted, "reloaded model is not marked fitted"
+
+    out = reloaded.sample(10)
+    assert len(out) == 10
+    assert list(out.columns) == list(reloaded.output_order)
