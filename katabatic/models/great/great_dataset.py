@@ -1,10 +1,11 @@
 import random
 import typing as tp
+from dataclasses import dataclass
+
 import numpy as np
+from transformers import DataCollatorWithPadding
 
 from datasets import Dataset
-from dataclasses import dataclass
-from transformers import DataCollatorWithPadding
 
 
 class GReaTDataset(Dataset):
@@ -31,26 +32,26 @@ class GReaTDataset(Dataset):
 
     def _format_value(self, value):
         """Format a value based on its type.
-        
+
         For floats, applies precision formatting if float_precision is set.
-        
+
         Args:
             value: The value to format
-            
+
         Returns:
             Formatted string value
         """
-        if isinstance(value, (float, np.floating)) and self.float_precision is not None:
+        if isinstance(value, float | np.floating) and self.float_precision is not None:
             # Format to a string with specified decimal places, removing trailing zeros
             formatted_value_str = f"{value:.{self.float_precision}f}"
-            if '.' in formatted_value_str:
-                formatted_value_str = formatted_value_str.rstrip('0').rstrip('.')
+            if "." in formatted_value_str:
+                formatted_value_str = formatted_value_str.rstrip("0").rstrip(".")
             return formatted_value_str
         return str(value).strip()
 
     def _getitem(
-        self, key: tp.Union[int, slice, str], decoded: bool = True, **kwargs
-    ) -> tp.Union[tp.Dict, tp.List]:
+        self, key: int | slice | str, decoded: bool = True, **kwargs
+    ) -> dict | list:
         """Get Item from Tabular Data
 
         Get one instance of the tabular data, permuted, converted to text and tokenized.
@@ -63,15 +64,14 @@ class GReaTDataset(Dataset):
 
         shuffled_text = ", ".join(
             [
-                "%s is %s"
-                % (row.column_names[i], self._format_value(row.columns[i].to_pylist()[0]))
+                f"{row.column_names[i]} is {self._format_value(row.columns[i].to_pylist()[0])}"
                 for i in shuffle_idx
             ]
         )
         tokenized_text = self.tokenizer(shuffled_text, padding=True)
         return tokenized_text
 
-    def __getitems__(self, keys: tp.Union[int, slice, str, list]):
+    def __getitems__(self, keys: int | slice | str | list):
         if isinstance(keys, list):
             return [self._getitem(key) for key in keys]
         else:
@@ -85,7 +85,7 @@ class GReaTDataCollator(DataCollatorWithPadding):
     Overwrites the DataCollatorWithPadding to also pad the labels and not only the input_ids
     """
 
-    def __call__(self, features: tp.List[tp.Dict[str, tp.Any]]):
+    def __call__(self, features: list[dict[str, tp.Any]]):
         batch = self.tokenizer.pad(
             features,
             padding=self.padding,

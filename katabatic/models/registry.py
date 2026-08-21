@@ -7,7 +7,7 @@ Other registered models are experimental; see ``docs/EXPERIMENTAL_MODELS.md``.
 from __future__ import annotations
 
 import importlib
-from typing import Dict, Optional, Type
+from typing import ClassVar
 
 from .base_model import Model
 
@@ -15,7 +15,7 @@ from .base_model import Model
 class ModelRegistry:
     """Registry for managing available models and their dependencies."""
 
-    _models: Dict[str, Dict] = {
+    _models: ClassVar[dict[str, dict]] = {
         "ganblr": {
             "module": "katabatic.models.ganblr.models",
             "class": "GANBLR",
@@ -34,7 +34,7 @@ class ModelRegistry:
             "class": "GReaT",
             "dependencies": ["transformers", "torch"],
             "extra": "great",
-            "supported": True,
+            "supported": False,
         },
         "tabsyn": {
             "module": "katabatic.models.tabsyn.models",
@@ -77,18 +77,25 @@ class ModelRegistry:
         return [name for name, info in cls._models.items() if info.get("supported")]
 
     @classmethod
+    def get_model_config(cls, model_name: str) -> dict:
+        """Return the registry config for a model."""
+        if model_name not in cls._models:
+            raise KeyError(f"Model '{model_name}' is not registerd.")
+        return cls._models[model_name]
+
+    @classmethod
     def is_supported(cls, model_name: str) -> bool:
         """Return True if the model is officially supported."""
         info = cls._models.get(model_name.lower())
         return bool(info and info.get("supported"))
 
     @classmethod
-    def get_model_info(cls, model_name: str) -> Optional[Dict]:
+    def get_model_info(cls, model_name: str) -> dict | None:
         """Get information about a specific model."""
         return cls._models.get(model_name.lower())
 
     @classmethod
-    def load_model(cls, model_name: str) -> Type[Model]:
+    def load_model(cls, model_name: str) -> type[Model]:
         """Dynamically load a model class."""
         model_name = model_name.lower()
 
