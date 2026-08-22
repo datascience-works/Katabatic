@@ -127,6 +127,7 @@ markers = [
     "ganblr: requires ganblr extra",
     "great: requires great extra",
     "ctgan: requires ctgan extra",
+    "pategan: requires pategan extra",
 ]
 
 [tool.ruff]

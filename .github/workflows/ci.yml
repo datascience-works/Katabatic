@@ -95,13 +95,17 @@ jobs:
             ctgan:
               - 'katabatic/models/ctgan/**'
               - 'tests/test_integration_ctgan.py'
+            pategan:
+              - 'katabatic/models/pategan/**'
+              - 'tests/test_integration_pategan.py'
       - name: Build Dynamic Matrix
         id: build-matrix
         run: |
           ALL_MODELS='[
             {"model": "ganblr", "torch": false},
             {"model": "great", "torch": true},
-            {"model": "ctgan", "torch": true}
+            {"model": "ctgan", "torch": true},
+            {"model": "pategan", "torch": false},
           ]'
 
           # If a core file changed, run all models.

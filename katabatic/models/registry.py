@@ -52,10 +52,10 @@ class ModelRegistry:
         },
         "pategan": {
             "module": "katabatic.models.pategan.models",
-            "class": "PATEGANSynthesizer",
+            "class": "PATEGAN",
             "dependencies": ["tensorflow", "numpy", "pandas"],
             "extra": "pategan",
-            "supported": False,
+            "supported": True,
         },
         "ctgan": {
             "module": "katabatic.models.ctgan.models",
