@@ -12,32 +12,35 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential \
-    && rm -rf /var/lib/apt/lists/*
+# No build toolchain required. All dependencies resolve to pre-built wheels.
 
 # Install Poetry
 RUN pip install --no-cache-dir "poetry==${POETRY_VERSION}"
 
+# Pre-install CPU-only torch.
+RUN if [ -n "${MODEL_EXTRA}" ]; then \
+        pip install --no-cache-dir "torch>=2.7.1,<3.0.0" \
+        --index-url https://download.pytorch.org/whl/cpu; \
+    fi
+
 # Copy dependency files
 COPY pyproject.toml poetry.lock README.md LICENSE ./
+
+# Only install dependencies
+RUN poetry install ${POETRY_INSTALL_ARGS} ${MODEL_EXTRA} --no-root
 
 # Copy Katabatic source code
 COPY katabatic ./katabatic
 
-# Pre-install CPU-only torch.
-RUN pip install --no-cache-dir "torch>=2.7.1,<3.0.0" \
-    --index-url https://download.pytorch.org/whl/cpu
+# Install Katabatic package
+RUN poetry install --only-root
 
-#Specifies which extras to install or just main.
-RUN poetry install ${POETRY_INSTALL_ARGS}
-
-#Non-root user for runtime
-RUN useradd --create-home --uid 1000 appuser
+# Non-root user for runtime
+RUN useradd --create-home --uid 1000 appuser \
+    && chown -R appuser:appuser /app
 USER appuser
 
-# Verify installation
+# Verify installation as runtime user
 RUN python -c "import katabatic; print('Katabatic version:', katabatic.__version__)"
 
 # Default command
