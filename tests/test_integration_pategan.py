@@ -4,16 +4,15 @@ from __future__ import annotations
 
 import pandas as pd
 import pytest
-import tensorflow.compat.v1 as tf
 
 from katabatic.artifacts import LocalArtifactStore
 from katabatic.artifacts.refs import ModelRef
 from katabatic.models.pategan.models import PATEGAN
 from katabatic.models.pategan.utils import DataTransformer, save_metadata
-
-pytest.importorskip("tensorflow")
-
 from katabatic.models.registry import ModelRegistry
+
+tensorflow = pytest.importorskip("tensorflow")
+tf = tensorflow.compat.v1
 
 
 @pytest.mark.integration
