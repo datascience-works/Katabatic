@@ -160,14 +160,35 @@ def get_system_run_details() -> None:
 # Configuration
 # ============================================================
 config = RunConfig(
-    dataset_name="car",
+    dataset_name="adult",
     model_name="tabkde_updated",
-    categorical_cols=["0", "1", "2", "3", "4", "5"],
-    continuous_cols=[],
-    target_col_raw="6",
-    constraints={},
+    categorical_cols=[
+        "workclass",
+        "education",
+        "education-num",
+        "marital-status",
+        "occupation",
+        "relationship",
+        "race",
+        "sex",
+        "native-country",
+    ],
+    continuous_cols=[
+        "age",
+        "fnlwgt",
+        "capital-gain",
+        "capital-loss",
+        "hours-per-week",
+    ],
+    target_col_raw="class",
+    constraints={
+        "age": (17, 90),
+        "fnlwgt": (12285, 1490400),
+        "capital-gain": (0, 99999),
+        "capital-loss": (0, 4356),
+        "hours-per-week": (1, 99),
+    },
 )
-
 
 # ============================================================
 # STEP 1 & STEP 2 — Preprocess and split
@@ -179,7 +200,7 @@ train_df, test_df, target_col, paths = preprocess_and_split(config)
 # STEP 3 — Train TabKDE Updated
 # ============================================================
 print("\n" + "=" * 60)
-print("STEP 3 — Train TabKDE Updated - Car")
+print("STEP 3 — Train TabKDE Updated - Adult")
 print("=" * 60)
 
 model = TabKDEEvaluationAdapter()
