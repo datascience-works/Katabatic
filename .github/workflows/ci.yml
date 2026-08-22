@@ -105,7 +105,7 @@ jobs:
             {"model": "ganblr", "torch": false},
             {"model": "great", "torch": true},
             {"model": "ctgan", "torch": true},
-            {"model": "pategan", "torch": false},
+            {"model": "pategan", "torch": false}
           ]'
 
           # If a core file changed, run all models.
