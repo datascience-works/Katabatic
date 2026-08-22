@@ -10,14 +10,12 @@ import pandas as pd
 
 # all torch-related code lives here so models.py only imports from utils.py
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
-from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
 
-# =========================
 # Config and runtime state
-# =========================
 
 
 @dataclass
@@ -60,9 +58,7 @@ class TabSynState:
     train_rows: int  # default sample count
 
 
-# ===========
 # Utilities
-# ===========
 
 
 def _get_device(pref: str | None) -> torch.device:
@@ -189,9 +185,7 @@ def _categorical_to_index(
     return enc, vocabs
 
 
-# =======================
 # Latent encoder/decoder
-# =======================
 
 
 class _Encoder(nn.Module):
@@ -310,9 +304,7 @@ class _Decoder(nn.Module):
         return num_pred, cat_logits
 
 
-# ==================
 # Diffusion pieces
-# ==================
 
 
 class _PositionalEmbedding(nn.Module):
@@ -449,9 +441,7 @@ def _sample_precond(
     return x_next
 
 
-# ==========================
 # Training / Evaluation API
-# ==========================
 
 
 def _prepare_training_mats(
@@ -683,17 +673,19 @@ def train_tabsyn(
         train_rows=z_tr.shape[0],
     )
 
-    # Optional: save snapshots (single pickle-based bundle for artifact store)
+    # Optional: save snapshots
     if save_dir is not None:
         os.makedirs(save_dir, exist_ok=True)
-        bundle = {
-            "denoise_fn": state.denoise_fn.state_dict(),
-            "decoder": {
+        torch.save(
+            state.denoise_fn.state_dict(), os.path.join(save_dir, "tabsyn_denoiser.pt")
+        )
+        torch.save(
+            {
                 "num_weight": state.decoder_num_weight,
                 "cat": [h.state_dict() for h in state.decoder_cat_heads],
             },
-        }
-        torch.save(bundle, os.path.join(save_dir, "tabsyn_state.pkl"))
+            os.path.join(save_dir, "tabsyn_decoder.pt"),
+        )
 
     return state
 
@@ -790,9 +782,7 @@ def sample_tabsyn(
     decoder = _rebuild_decoder_from_state(state).to(device).eval()
 
     # Use encoder to get in_dim
-    _ = _rebuild_encoder_from_state(
-        state, device=device
-    ).eval()  # TODO - unused assignment. Check usage.
+    # enc = _rebuild_encoder_from_state(state, device=device).eval()
     # fabricate a fake batch to infer in_dim
     in_dim = (1 + state.n_num + len(state.cat_sizes)) * state.token_dim
 

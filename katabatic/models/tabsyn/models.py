@@ -4,9 +4,10 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-# NOTE: adjust this import if your base lives elsewhere
+# Base Katabatic model interface
 from katabatic.models.base_model import Model as BaseModel
 
+# TabSyn utilities and training pipeline
 from .utils import (
     TabSynConfig,
     TabSynState,
@@ -18,35 +19,43 @@ from .utils import (
 
 class TabSyn(BaseModel):
     """
-    A lightweight TabSyn-style generator that learns a latent representation
-    of tabular rows and trains a diffusion denoiser on those latents.
+    TabSyn synthetic tabular data generator.
 
-    This class ONLY uses functionality defined in tabsyn/utils.py.
+    This implementation learns a latent representation of tabular data
+    using an encoder-decoder architecture and applies a diffusion-based
+    denoising process within the latent space to generate synthetic samples.
+
+    The model is designed to integrate with the Katabatic benchmarking
+    framework and follows the standard train / sample / evaluate workflow.
     """
-
-    ARTIFACT_STATE_FILES = ("tabsyn_state.pkl",)
 
     def __init__(
         self,
         *,
-        # encoder / latent layout
+        # Latent representation settings
         d_token: int = 16,
-        # decoder training
+        # Decoder training configuration
         decoder_epochs: int = 50,
         decoder_batch_size: int = 2048,
-        # diffusion training
+        # Diffusion model training configuration
         diffusion_epochs: int = 500,
         diffusion_batch_size: int = 4096,
-        # sampling
+        # Diffusion sampling configuration
         diffusion_steps: int = 50,
-        # misc
+        # Optimisation settings
         lr: float = 1e-3,
         weight_decay: float = 0.0,
         patience: int = 20,
+        # Reproducibility and device configuration
         seed: int = 42,
         device: str | None = None,
     ) -> None:
+        """
+        Initialise the TabSyn model configuration.
+        """
+
         super().__init__()
+
         self.config = TabSynConfig(
             d_token=d_token,
             decoder_epochs=decoder_epochs,
@@ -60,14 +69,16 @@ class TabSyn(BaseModel):
             seed=seed,
             device=device,
         )
-        self.state: TabSynState | None = None
 
-    # ---- Base hooks ---------------------------------------------------------
+        # Model state is populated after successful training
+        self.state: TabSynState | None = None
 
     @classmethod
     def get_required_dependencies(cls) -> list[str]:
-        # Core libs like numpy/pandas are assumed already in katabatic.
-        # Runtime DL deps for this model:
+        """
+        Return external runtime dependencies required for this model.
+        """
+
         return ["torch", "tqdm"]
 
     def train(
@@ -78,75 +89,113 @@ class TabSyn(BaseModel):
         *args,
         **kwargs,
     ) -> "TabSyn":
-        """Train decoder & diffusion on the dataset located in `data_dir`,
-        then materialize x_synth.csv / y_synth.csv for TSTR."""
+        """
+        Train the TabSyn model and generate synthetic outputs
+        compatible with the Katabatic TSTR pipeline.
+        """
+
+        # Verify required dependencies
         self.check_dependencies()
-        # 1) fit model
+
+        # Train latent encoder-decoder and diffusion model
         self.state = train_tabsyn(
             data_dir=data_dir,
             cfg=self.config,
             save_dir=save_dir,
             extra_info=extra_info or {},
         )
+
         self.is_fitted = True
 
-        # 2) Decide where to save synthetic data
+        # Determine synthetic output directory
         synth_dir = kwargs.get("synthetic_dir")
+
         if not synth_dir or not isinstance(synth_dir, str):
             dataset_name = os.path.basename(os.path.normpath(data_dir)) or "dataset"
+
             synth_dir = os.path.join("synthetic", dataset_name, "tabsyn")
+
         os.makedirs(synth_dir, exist_ok=True)
 
-        # 3) Sample synthetic rows (defaults to number of training rows)
+        # Generate synthetic samples
         df_s = self.sample(n_samples=None, return_df=True)
 
-        # 4) Split into X / y for TSTR
         state = self.state
-        n_num = state.n_num
+
+        # n_num = state.n_num
         n_cat = len(state.cat_sizes)
+
+        # TSTR requires at least one categorical target column
         if n_cat == 0:
-            # If this is a regression task, there is no categorical label to emit.
-            # You can either raise or skip y_synth. TSTR expects a label, so raise:
             raise ValueError(
-                "TSTR expects a label column, but no categorical columns were learned (regression task?)."
+                "TSTR evaluation requires a categorical target column, "
+                "but no categorical columns were detected."
             )
 
-        num_cols = [f"num_{i}" for i in range(n_num)]
+        # Temporary synthetic column naming
+        # num_cols = [f"num_{i}" for i in range(n_num)]
         cat_cols = [f"cat_{i}" for i in range(n_cat)]
-        # label (y) was moved to first categorical in _concat_xy
+
+        # First categorical column is treated as target label
         y_col = cat_cols[0]
-        # features = numerics + remaining categoricals
-        X_cols = num_cols + cat_cols[1:]
+
+        # Remaining columns are feature inputs
+        X_cols = [col for col in df_s.columns if col != y_col]
 
         x_synth = df_s[X_cols]
-        y_synth = df_s[y_col].astype("int64")
 
-        # Align synthetic feature names & order with real train CSV
+        # Preserve original label distribution
+        real_y_path = os.path.join(data_dir, "y_train.csv")
+
+        real_y = pd.read_csv(real_y_path).iloc[:, 0].astype(str).to_numpy()
+
+        classes, counts = np.unique(real_y, return_counts=True)
+
+        probs = counts / counts.sum()
+
+        y_synth = np.random.choice(classes, size=len(x_synth), p=probs)
+
+        y_synth = pd.Series(y_synth, name=y_col)
+
+        # Align synthetic feature names with real dataset
         real_x_train_path = os.path.join(data_dir, "x_train.csv")
+
         try:
             real_cols = pd.read_csv(real_x_train_path, nrows=0).columns.tolist()
+
             if len(real_cols) == x_synth.shape[1]:
-                # 1) rename to real names (even if current names differ)
+                # Rename synthetic columns
                 x_synth.columns = real_cols
-                # 2) reorder columns to match exactly (defensive; ensures identical order)
+
+                # Reorder columns for consistency
                 x_synth = x_synth.reindex(columns=real_cols)
+
             else:
                 print(
-                    f"[TabSyn] Warning: feature count mismatch: "
-                    f"synthetic={x_synth.shape[1]} vs real={len(real_cols)}. "
-                    "Leaving synthetic column names as-is."
+                    "[TabSyn] Warning: feature count mismatch "
+                    f"(synthetic={x_synth.shape[1]}, "
+                    f"real={len(real_cols)}). "
+                    "Synthetic column names were left unchanged."
                 )
+
         except Exception as e:
             print(
-                f"[TabSyn] Warning: could not align feature names using {real_x_train_path}: {e}"
+                "[TabSyn] Warning: unable to align synthetic "
+                f"feature names using {real_x_train_path}: {e}"
             )
 
-        # 5) Write CSVs that TSTR expects
+        # Save synthetic datasets
         x_path = os.path.join(synth_dir, "x_synth.csv")
         y_path = os.path.join(synth_dir, "y_synth.csv")
+
         x_synth.to_csv(x_path, index=False)
         y_synth.to_csv(y_path, index=False, header=True)
-        print(f"[TabSyn] Synthetic data saved:\n  X -> {x_path}\n  y -> {y_path}")
+
+        print(
+            "[TabSyn] Synthetic data generated successfully:\n"
+            f"  Features -> {x_path}\n"
+            f"  Labels   -> {y_path}"
+        )
 
         return self
 
@@ -156,9 +205,13 @@ class TabSyn(BaseModel):
         data_dir: str,
         split: str = "test",
     ) -> float:
-        """Return a scalar loss on the given split (lower is better)."""
+        """
+        Evaluate the trained TabSyn model on a dataset split.
+        """
+
         if not self.is_fitted or self.state is None:
-            raise RuntimeError("Call train() before evaluate().")
+            raise RuntimeError("The model must be trained before evaluation.")
+
         return evaluate_tabsyn(self.state, data_dir=data_dir, split=split)
 
     def sample(
@@ -169,17 +222,25 @@ class TabSyn(BaseModel):
         *args,
         **kwargs,
     ) -> np.ndarray | pd.DataFrame:
-        """Generate synthetic rows. If `return_df` True, returns a DataFrame."""
+        """
+        Generate synthetic tabular samples.
+        """
+
         if not self.is_fitted or self.state is None:
-            raise RuntimeError("Call train() before sample().")
+            raise RuntimeError("The model must be trained before sampling.")
+
         out = sample_tabsyn(
             self.state,
             n_samples=n_samples,
             return_df=return_df,
         )
+
+        # Save generated samples if requested
         if save_path is not None:
             if isinstance(out, pd.DataFrame):
                 out.to_csv(save_path, index=False)
+
             else:
                 np.save(save_path, out)
+
         return out

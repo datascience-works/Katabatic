@@ -70,9 +70,9 @@ class FidelityEvaluation(Evaluation):
         # Component scores in [0, 1] — higher is better.
         # Check for actual per-column entries, not just the 'avg' sentinel key,
         # to avoid a spurious 1.0 score when all columns were skipped.
-        cat_score = round(1.0 - jsd_results["avg"], 4) if len(jsd_results) > 1 else None
-        cont_score = round(1.0 - wd_results["avg"], 4) if len(wd_results) > 1 else None
-        corr_score = round(1.0 - corr_diff, 4) if corr_diff is not None else None
+        cat_score = round(1.0 - jsd_results["avg"], 4) if len(jsd_results) > 1 else 0.0
+        cont_score = round(1.0 - wd_results["avg"], 4) if len(wd_results) > 1 else 0.0
+        corr_score = round(1.0 - corr_diff, 4) if corr_diff is not None else 0.0
 
         active = [s for s in [cat_score, cont_score, corr_score] if s is not None]
         fidelity_score = round(float(np.mean(active)), 4) if active else 0.0
@@ -189,24 +189,38 @@ class FidelityEvaluation(Evaluation):
         print(f"Overall fidelity score: {results['fidelity_score']:.4f}")
 
         if results["categorical_jsd"]:
-            print(
-                f"\nCategorical JSD (lower = better)  ->  score: {results['categorical_score']:.4f}"
-            )
+            cat_score = results.get("categorical_score")
+            if cat_score is not None:
+                print(f"\nCategorical JSD (lower = better)  ->  score: {cat_score:.4f}")
+            else:
+                print("\nCategorical JSD (lower = better)  ->  score: N/A")
             for col, val in results["categorical_jsd"].items():
                 if col != "avg":
                     print(f"  {col:<30} JSD = {val:.4f}")
             print(f"  {'avg':<30} JSD = {results['categorical_jsd']['avg']:.4f}")
 
         if results["continuous_wasserstein"]:
-            print(
-                f"\nContinuous Wasserstein (normalised, lower = better)  ->  score: {results['continuous_score']:.4f}"
-            )
+            cont_score = results.get("continuous_score")
+            if cont_score is not None:
+                print(
+                    f"\nContinuous Wasserstein (normalised, lower = better)  ->  score: {cont_score:.4f}"
+                )
+            else:
+                print(
+                    "\nContinuous Wasserstein (normalised, lower = better)  ->  score: N/A"
+                )
             for col, val in results["continuous_wasserstein"].items():
                 if col != "avg":
                     print(f"  {col:<30} WD  = {val:.4f}")
             print(f"  {'avg':<30} WD  = {results['continuous_wasserstein']['avg']:.4f}")
 
         if results["correlation_diff"] is not None:
-            print(
-                f"\nCorrelation matrix avg diff: {results['correlation_diff']:.4f}  ->  score: {results['correlation_score']:.4f}"
-            )
+            corr_score = results.get("correlation_score")
+            if corr_score is not None:
+                print(
+                    f"\nCorrelation matrix avg diff: {results['correlation_diff']:.4f}  ->  score: {corr_score:.4f}"
+                )
+            else:
+                print(
+                    f"\nCorrelation matrix avg diff: {results['correlation_diff']:.4f}  ->  score: N/A"
+                )
