@@ -154,7 +154,7 @@ jobs:
       - name: Integration tests (${{ matrix.model }})
         env:
           COVERAGE_FILE: .coverage.${{ matrix.model }}
-        run: poetry run pytest -m "integration and ${{ matrix.model }}" -q --cov=katabatic --cov-report=
+        run: poetry run pytest tests/test_integration_${{ matrix.model }}.py -q --cov=katabatic --cov-report=
 
       - name: Upload Model Coverage
         uses: actions/upload-artifact@v7
