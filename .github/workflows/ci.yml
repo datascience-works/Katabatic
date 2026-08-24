@@ -142,7 +142,7 @@ jobs:
 
       - name: Pre-install CPU torch
         if: matrix.torch
-        run: poetry run pip install "torch>=2.7.1,<3.0.0" --index-url https://download.pytorch.org/whl/cpu
+        run: poetry run pip install "torch>=2.13.0,<3.0.0" --index-url https://download.pytorch.org/whl/cpu
 
       - name: Install with ${{ matrix.model }} extra
         run: poetry install --with dev -E ${{ matrix.model }}
