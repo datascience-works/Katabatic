@@ -43,6 +43,7 @@ tomli = { version = "^2.0.1", optional = true }
 tomli-w = { version = "^1.0.0", optional = true }
 category-encoders = { version = "^2.8.1", optional = true }
 rtdl_revisiting_models = { version = "0.0.2", optional = true }
+sdv = { version = "^1.26.0", optional = true }
 
 [tool.poetry.extras]
 ganblr = ["tensorflow", "pgmpy", "pyitlib", "tf-keras", "scipy", "tqdm"]
@@ -54,6 +55,7 @@ codi = ["torch"]
 medgan = ["torch"]
 ctgan = ["torch"]
 tabsyn = ["torch", "scipy", "tqdm", "category-encoders", "tomli", "tomli-w"]
+gaussian_copula = ["sdv"]
 all = [
     "tensorflow",
     "pgmpy",
@@ -70,6 +72,7 @@ all = [
     "tomli",
     "tomli-w",
     "rtdl_revisiting_models",
+    "sdv",
 ]
 
 [tool.poetry.group.dev.dependencies]
