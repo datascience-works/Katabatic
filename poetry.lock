@@ -377,15 +377,15 @@ redis = ["redis (>=2.10.5)"]
 
 [[package]]
 name = "category-encoders"
-version = "2.8.1"
+version = "2.10.0"
 description = "A package for encoding categorical variables for machine learning"
 optional = true
-python-versions = ">=3.10"
+python-versions = ">=3.11"
 groups = ["main"]
 markers = "extra == \"all\" or extra == \"tabddpm\" or extra == \"tabsyn\""
 files = [
-    {file = "category_encoders-2.8.1-py3-none-any.whl", hash = "sha256:ba77bde0a0afe13732b04997635b1ae82569e42c9696bc361c68674197988303"},
-    {file = "category_encoders-2.8.1.tar.gz", hash = "sha256:57af8a23bde3cf622ee7e17c11547011795e4d337839d40cbd16c36b67291b33"},
+    {file = "category_encoders-2.10.0-py3-none-any.whl", hash = "sha256:e1b9e4e489af72fb2da1bc07c92b9d8ff9bba330a9e8483d39346461decf0a8b"},
+    {file = "category_encoders-2.10.0.tar.gz", hash = "sha256:28e28a01813ac56d4ed068bb8561f523a527b04abf4261be890ab9adbc5fd143"},
 ]
 
 [package.dependencies]
@@ -5527,4 +5527,4 @@ tabsyn = ["category-encoders", "tomli", "tomli-w", "torch", "tqdm"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.12"
-content-hash = "6609cc0501b4d21a93af88b9f3f37736423a130e33ccc19aba1241197db37e19"
+content-hash = "95585699bf35b64fae2d4da6faa2277b37c2d4274b06a602eb7028ff2c677fbe"
