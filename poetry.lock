@@ -4654,22 +4654,6 @@ files = [
 tests = ["pytest", "pytest-cov"]
 
 [[package]]
-name = "tf-keras"
-version = "2.19.0"
-description = "Deep learning for humans."
-optional = true
-python-versions = ">=3.9"
-groups = ["main"]
-markers = "extra == \"ganblr\" or extra == \"all\""
-files = [
-    {file = "tf_keras-2.19.0-py3-none-any.whl", hash = "sha256:4f339e800987b39d1548a8c76a7b33b6801a97ec7fcd89c299ec29741f7890bd"},
-    {file = "tf_keras-2.19.0.tar.gz", hash = "sha256:b09a407d87a4571ce1e8ca985cfc68483e3d63b2518a5d79a97ad92cb64dbe9c"},
-]
-
-[package.dependencies]
-tensorflow = ">=2.19,<2.20"
-
-[[package]]
 name = "threadpoolctl"
 version = "3.6.0"
 description = "threadpoolctl"
@@ -5503,11 +5487,11 @@ multidict = ">=4.0"
 propcache = ">=0.2.1"
 
 [extras]
-all = ["accelerate", "category-encoders", "datasets", "pgmpy", "pyitlib", "rtdl_revisiting_models", "statsmodels", "tabpfn", "tensorflow", "tensorflow-io", "tf-keras", "tomli", "tomli-w", "torch", "tqdm", "transformers", "xgboost"]
+all = ["accelerate", "category-encoders", "datasets", "pgmpy", "pyitlib", "rtdl_revisiting_models", "statsmodels", "tabpfn", "tensorflow", "tensorflow-io", "tomli", "tomli-w", "torch", "tqdm", "transformers", "xgboost"]
 codi = ["torch"]
 ctgan = ["torch"]
 eval = ["xgboost"]
-ganblr = ["pgmpy", "pyitlib", "tensorflow", "tensorflow-io", "tf-keras"]
+ganblr = ["pgmpy", "pyitlib", "tensorflow", "tensorflow-io"]
 great = ["accelerate", "datasets", "torch", "transformers"]
 medgan = ["torch"]
 pategan = ["tensorflow", "tensorflow-io"]
@@ -5518,4 +5502,4 @@ tabsyn = ["category-encoders", "tomli", "tomli-w", "torch", "tqdm"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.12"
-content-hash = "c1111adb96f683f8930900c9dffcecd56e3f367e058ba8a58bb67fdae738d89a"
+content-hash = "7898afa40436d8afb20162e35eeb66bcb251bf0787fb9776f76d6951bd7d91bc"
