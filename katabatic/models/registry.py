@@ -63,6 +63,14 @@ class ModelRegistry:
             "extra": "ctgan",
             "supported": False,
         },
+        "kde": {
+            "module": "katabatic.models.kde.models",
+            "class": "KDESynthesizer",
+            # scikit-learn is already a core dependency; no extra needed.
+            "dependencies": ["sklearn"],
+            "extra": "kde",
+            "supported": False,
+        },
     }
 
     @classmethod
