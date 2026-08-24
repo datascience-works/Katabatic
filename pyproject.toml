@@ -107,6 +107,7 @@ omit = [
 # Poetry-specific build config only.
 packages = [{ include = "katabatic" }]
 include = ["CHANGELOG.md"]
+exclude = ["katabatic/datasets/*.csv"]
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^2.3.1"
