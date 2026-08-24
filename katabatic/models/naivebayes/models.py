@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import os
+
 import numpy as np
 import pandas as pd
 
 from katabatic.models.base_model import Model as BaseModel
+
 from .utils import infer_feature_types
 
 
@@ -103,7 +105,8 @@ class NaiveBayesModel(BaseModel):
         )
         self._continuous_is_int_ = {
             c: np.issubdtype(df[c].dtype, np.integer)
-            for c, t in self.feature_types_.items() if t == "continuous"
+            for c, t in self.feature_types_.items()
+            if t == "continuous"
         }
 
         self._compute_class_distribution(df)
@@ -160,15 +163,21 @@ class NaiveBayesModel(BaseModel):
             rows.append(df_cls)
 
         if not rows:
-            raise RuntimeError("No synthetic rows generated. Check fit and class distribution.")
+            raise RuntimeError(
+                "No synthetic rows generated. Check fit and class distribution."
+            )
 
         df_synth = pd.concat(rows, ignore_index=True)
 
         if len(df_synth) > n_rows:
-            df_synth = df_synth.sample(n=n_rows, random_state=self.seed).reset_index(drop=True)
+            df_synth = df_synth.sample(n=n_rows, random_state=self.seed).reset_index(
+                drop=True
+            )
         elif len(df_synth) < n_rows:
             extra = n_rows - len(df_synth)
-            extra_rows = df_synth.sample(n=extra, replace=True, random_state=self.seed + 1)
+            extra_rows = df_synth.sample(
+                n=extra, replace=True, random_state=self.seed + 1
+            )
             df_synth = pd.concat([df_synth, extra_rows], ignore_index=True)
 
         return df_synth
@@ -183,7 +192,7 @@ class NaiveBayesModel(BaseModel):
         continuous_cols: list | None = None,
         *args,
         **kwargs,
-    ) -> "NaiveBayesModel":
+    ) -> NaiveBayesModel:
         """
         Load data from data_dir (train_full.csv, or x_train.csv + y_train.csv),
         fit the model, generate synthetic data, and save it to synthetic_dir.
@@ -205,12 +214,16 @@ class NaiveBayesModel(BaseModel):
             X = pd.read_csv(x_path)
             y = pd.read_csv(y_path)
             if y.shape[1] != 1:
-                raise ValueError("y_train.csv must have exactly one column (the target).")
+                raise ValueError(
+                    "y_train.csv must have exactly one column (the target)."
+                )
             y_col = y.columns[0]
             df = pd.concat([X, y[y_col]], axis=1)
 
         self.target_col = df.columns[-1]
-        self._fit(df, categorical_cols=categorical_cols, continuous_cols=continuous_cols)
+        self._fit(
+            df, categorical_cols=categorical_cols, continuous_cols=continuous_cols
+        )
 
         synth_dir = synthetic_dir
         if not synth_dir:

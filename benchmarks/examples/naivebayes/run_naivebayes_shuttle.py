@@ -9,7 +9,6 @@ from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
 from katabatic.models.naivebayes.models import NaiveBayesModel
 
-
 config = RunConfig(
     dataset_name="shuttle",
     model_name="naivebayes",

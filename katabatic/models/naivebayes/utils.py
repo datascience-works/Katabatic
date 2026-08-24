@@ -1,7 +1,9 @@
 import pandas as pd
 
 
-def infer_feature_types(df: pd.DataFrame, features: list, categorical_cols=None, continuous_cols=None) -> dict:
+def infer_feature_types(
+    df: pd.DataFrame, features: list, categorical_cols=None, continuous_cols=None
+) -> dict:
     """
     Determine categorical vs continuous for each feature column.
 

@@ -138,10 +138,7 @@ def preprocess_and_split(config: RunConfig):
 
     else:
         if os.path.exists(paths["processed_data"]):
-            print(
-                "[INFO] target_col_raw changed — "
-                "regenerating processed data."
-            )
+            print("[INFO] target_col_raw changed — regenerating processed data.")
 
         preprocess_dataset(
             paths["raw_data"],
@@ -158,9 +155,7 @@ def preprocess_and_split(config: RunConfig):
 
         preprocess_ran = True
 
-    processed_df = pd.read_csv(
-        paths["processed_data"]
-    )
+    processed_df = pd.read_csv(paths["processed_data"])
 
     target_col = processed_df.columns[-1]
     n_features = processed_df.shape[1] - 1
@@ -168,10 +163,7 @@ def preprocess_and_split(config: RunConfig):
     print(f"\nProcessed shape : {processed_df.shape}")
     print(f"Feature columns : {n_features}")
     print(f"Target column   : '{target_col}'")
-    print(
-        f"Target classes  : "
-        f"{sorted(processed_df[target_col].unique())}"
-    )
+    print(f"Target classes  : {sorted(processed_df[target_col].unique())}")
 
     print("\n" + "=" * 60)
     print("STEP 2 — Train / test split (80 / 20, stratified)")
@@ -196,17 +188,11 @@ def preprocess_and_split(config: RunConfig):
             config.seed,
         )
     ):
-        print(
-            "Split data already exists and parameters match, "
-            "skipping split."
-        )
+        print("Split data already exists and parameters match, skipping split.")
 
     else:
         if os.path.exists(train_full_path) and not preprocess_ran:
-            print(
-                "[INFO] test_size or seed changed — "
-                "regenerating split."
-            )
+            print("[INFO] test_size or seed changed — regenerating split.")
 
         split_dataset(
             paths["processed_data"],
@@ -237,15 +223,9 @@ def preprocess_and_split(config: RunConfig):
         )
     )
 
-    print(
-        f"\nTrain rows: {len(train_df)}   "
-        f"Test rows: {len(test_df)}"
-    )
+    print(f"\nTrain rows: {len(train_df)}   Test rows: {len(test_df)}")
 
-    if (
-        config.max_train_rows is not None
-        and len(train_df) > config.max_train_rows
-    ):
+    if config.max_train_rows is not None and len(train_df) > config.max_train_rows:
         print(
             f"\n[INFO] Training set "
             f"({len(train_df):,} rows) exceeds "
@@ -261,11 +241,7 @@ def preprocess_and_split(config: RunConfig):
                 lambda g: g.sample(
                     n=max(
                         1,
-                        round(
-                            config.max_train_rows
-                            * len(g)
-                            / len(train_df)
-                        ),
+                        round(config.max_train_rows * len(g) / len(train_df)),
                     ),
                     random_state=config.seed,
                 )
@@ -273,10 +249,7 @@ def preprocess_and_split(config: RunConfig):
             .reset_index(drop=True)
         )
 
-        print(
-            f"[INFO] Stratified sample applied -> "
-            f"{len(train_df):,} rows retained."
-        )
+        print(f"[INFO] Stratified sample applied -> {len(train_df):,} rows retained.")
 
         print(
             f"       Class distribution: "
@@ -291,17 +264,12 @@ def preprocess_and_split(config: RunConfig):
             index=False,
         )
 
-        print(
-            "[INFO] Subsampled train written to "
-            "train_sample.csv in split dir."
-        )
+        print("[INFO] Subsampled train written to train_sample.csv in split dir.")
 
     # Always write x_train.csv / y_train.csv
     # so models using the X/y split format can find them.
 
-    train_df.drop(
-        columns=[target_col]
-    ).to_csv(
+    train_df.drop(columns=[target_col]).to_csv(
         os.path.join(
             paths["split_dir"],
             "x_train.csv",
@@ -337,20 +305,12 @@ def save_synthetic(
         synthetic_df,
         pd.DataFrame,
     ):
-        raise TypeError(
-            "synthetic_df must be a pandas DataFrame"
-        )
+        raise TypeError("synthetic_df must be a pandas DataFrame")
 
     if synthetic_df.empty:
-        raise ValueError(
-            "synthetic_df is empty"
-        )
+        raise ValueError("synthetic_df is empty")
 
-    shared_cols = [
-        c
-        for c in train_df.columns
-        if c in synthetic_df.columns
-    ]
+    shared_cols = [c for c in train_df.columns if c in synthetic_df.columns]
 
     synthetic_df = synthetic_df[shared_cols]
 
@@ -369,22 +329,13 @@ def save_synthetic(
         index=False,
     )
 
-    print(
-        f"\nGenerated {len(synthetic_df)} synthetic rows"
-    )
+    print(f"\nGenerated {len(synthetic_df)} synthetic rows")
 
-    print(
-        f"Saved to  : {synthetic_path}"
-    )
+    print(f"Saved to  : {synthetic_path}")
 
-    print(
-        f"Shape     : {synthetic_df.shape}"
-    )
+    print(f"Shape     : {synthetic_df.shape}")
 
-    print(
-        f"\nSample (first 3 rows):\n"
-        f"{synthetic_df.head(3).to_string()}"
-    )
+    print(f"\nSample (first 3 rows):\n{synthetic_df.head(3).to_string()}")
 
     return synthetic_df
 
@@ -420,26 +371,18 @@ def evaluate(
         constraints=config.constraints,
         model=model,
         output_dir=paths["results_dir"],
-        report_prefix=(
-            f"{config.model_name}_"
-            f"{config.dataset_name}_"
-        ),
+        report_prefix=(f"{config.model_name}_{config.dataset_name}_"),
     )
 
     print("\n" + "=" * 60)
     print("FINAL RESULTS")
     print("=" * 60)
 
-    print(
-        f"Composite score : "
-        f"{report.composite_score:.4f}"
-    )
+    print(f"Composite score : {report.composite_score:.4f}")
 
     print("Dimension scores:")
 
     for dim, score in report.dimension_scores.items():
-        print(
-            f"  {dim:<14} {score:.4f}"
-        )
+        print(f"  {dim:<14} {score:.4f}")
 
     return report
