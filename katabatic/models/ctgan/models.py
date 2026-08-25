@@ -214,7 +214,7 @@ class CTGANModel(BaseModel):
             payload = torch.load(state_path, map_location="cpu", weights_only=False)
         else:
             with open(state_path, "rb") as fh:
-                payload = pickle.load(fh)
+                payload = pickle.load(fh)  # nosec B301: loading our own saved model artifact
 
         instance = cls()
         instance.__dict__.update(payload["attrs"])
