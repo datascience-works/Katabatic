@@ -1,14 +1,16 @@
 from __future__ import annotations
-import pickle
 
 import importlib
 import json
 import os
+import pickle
 from typing import Any
 
 import numpy as np
 import pandas as pd
 
+from katabatic.artifacts.base import ArtifactStore
+from katabatic.artifacts.refs import ModelRef
 from katabatic.models.base_model import Model as BaseModel
 
 from .utils import (
@@ -38,12 +40,11 @@ class CTGANModel(BaseModel):
     """
 
     ARTIFACT_STATE_FILES = ("ctgan_state.pt",)
-    #Rebuilt on load rather than serialised: the generator/discriminator are
-    #instances of LocalMLP, which is defined *inside* _build_torch_networks(),
-    #so pickle cannot resolve them by qualified name. _device is rebuilt from
-    #cfg because the load machine may not have the same device available.
+    # Rebuilt on load rather than serialised: the generator/discriminator are
+    # instances of LocalMLP, which is defined *inside* _build_torch_networks(),
+    # so pickle cannot resolve them by qualified name. _device is rebuilt from
+    # cfg because the load machine may not have the same device available.
     _NON_SERIALISABLE = ("generator", "discriminator", "_device")
-
 
     def __init__(
         self,
@@ -188,9 +189,9 @@ class CTGANModel(BaseModel):
         else:
             with open(target, "wb") as fh:
                 pickle.dump(payload, fh)
-        
+
     @classmethod
-    def load_from_ref(cls, store: "ArtifactStore", ref: "ModelRef") -> "CTGANModel":
+    def load_from_ref(cls, store: ArtifactStore, ref: ModelRef) -> CTGANModel:
         """
         Rehydrate a fitted CTGANModel from a versioned artifact.
 
@@ -230,7 +231,6 @@ class CTGANModel(BaseModel):
             instance.generator.eval()
 
         return instance
-
 
     def train(
         self,

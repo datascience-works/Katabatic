@@ -37,7 +37,8 @@ def test_ctgan_artifact_pipeline_smoke(tmp_path, tiny_binary_csv):
 
     x_synth = store.open_path(f"{mr.synthetic_relpath}/x_synth.csv")
     y_synth = store.open_path(f"{mr.synthetic_relpath}/y_synth.csv")
-    assert x_synth.is_file() and y_synth.is_file()
+    assert x_synth.is_file()
+    assert y_synth.is_file()
 
     ev = res["evaluation_refs"][0]
     assert ev is not None
