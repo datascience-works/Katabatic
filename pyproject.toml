@@ -122,6 +122,7 @@ markers = [
     "integration: full model stack (slow)",
     "ganblr: requires ganblr extra",
     "great: requires great extra",
+    "kde: core deps only, no extra required",
 ]
 
 [tool.ruff.lint]
