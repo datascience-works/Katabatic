@@ -3,8 +3,12 @@ name: CI
 on:
   push:
     branches: [main, development]
+    paths-ignore:
+      - 'frontend/**' #Note: To be removed once front-end moved to its own repo.
   pull_request:
     branches: [main, development]
+    paths-ignore:
+      - 'frontend/**' #Note: To be removed once front-end moved to its own repo.
 
 jobs:
   pre-commit:
