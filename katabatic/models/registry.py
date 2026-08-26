@@ -62,7 +62,7 @@ class ModelRegistry:
             "class": "CTGANModel",
             "dependencies": ["torch", "sklearn"],
             "extra": "ctgan",
-            "supported": False,
+            "supported": True,
         },
     }
 
