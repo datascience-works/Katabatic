@@ -10,6 +10,9 @@ on:
     paths-ignore:
       - 'frontend/**' #Note: To be removed once front-end moved to its own repo.
 
+permissions:
+  contents: read
+
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
