@@ -10,7 +10,7 @@
 # Triggers:
 #   - GitHub Release published (recommended): create release from tag v1.2.3
 #   - Manual: Actions → Publish to PyPI → Run workflow
-#   - Tags: v1.2.3 (semver only; no -rc / -test suffixes)
+#   - Tags: v1.2.3 (final releases only; pre-releases go to TestPyPI)
 
 name: Publish to PyPI
 

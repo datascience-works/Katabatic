@@ -5,6 +5,60 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0rc1] - 2026-08-27
+
+### Fixed
+
+- `katabatic.__version__` is now read from installed package metadata, making `pyproject.toml` the single source of truth.
+- Constrained `huggingface-hub` to `<1.0` and `fsspec` to `<=2026.2.0` in the `great` and `all` extras, resolving incompatibilities with `transformers` 4.57 and `datasets` 4.x.
+- Removed `tabpfn` from the `all` extra: it requires `huggingface-hub>=1.0`, which `transformers` 4.x rejects. The standalone `tabpfgen` extra is unaffected.
+
+### Changed
+
+- GReaT removed from the CI integration matrix while unsupported; its tests remain skipped pending modernisation to the current model contract.
+
+## [0.2.0] - 2026-08-27
+
+### Added
+
+- Six-dimension evaluation pipeline: fidelity, utility, diversity, privacy, consistency, and stability (`katabatic.pipeline.evaluation_pipeline`).
+- Six additional models registered as experimental: `codi`, `ctgan`, `medgan`, `pategan`, `tabddpm`, `tabsyn`.
+- Model promotion contract, enforced automatically by the `model-contract` CI job: registry entry with matching extra, importable module and class, pipeline interface (`train`, `sample`, `load_from_ref`), non-empty `ARTIFACT_STATE_FILES`, and an integration test.
+- Parameterised contract test harness (`tests/test_model_registry.py`) covering every model marked supported.
+- CTGAN integration test with a full artifact round-trip: state persistence, reload via `load_from_ref`, and sampling with column-order verification.
+- CI jobs: pre-commit, bandit and pip-audit security scanning, coverage gating, per-model integration matrix with path filtering, Docker build and smoke test, and combined coverage reporting across jobs.
+- Dockerfile with build-time extras selection (`MODEL_EXTRA`), CPU-only PyTorch, layer-split dependency install, and a non-root runtime user.
+- Developer tooling: pre-commit hooks, Makefile targets mirroring CI (`make ci`, `make contract`, `make hooks`), and a generic `make install-model MODEL=x`.
+- Repository governance: branch protection on `main` and `development`, CODEOWNERS restricting merges on protected branches, and Dependabot configuration.
+- `ModelRegistry.get_model_config()` public accessor.
+
+### Changed
+
+- Migrated packaging to the PEP 621 `[project]` standard; model dependencies moved from core into extras.
+- Poetry 1.x -> 2.x.
+- GANBLR promoted to supported: declares `ARTIFACT_STATE_FILES`, persists state to the artifact store, and honours the `train_epochs` keyword.
+- CTGAN promoted to supported.
+- GReaT reverted to experimental pending modernisation to the current model contract (no state persistence).
+
+### Fixed
+
+- CTGAN column-type inference treated low-cardinality integer columns as continuous on small datasets, producing continuous synthetic targets that broke TSTR evaluation.
+- GANBLR did not persist model state, so trained models could not be reloaded from an artifact reference.
+
+### Security
+
+- `torch` 2.9.0 -> 2.13.0, resolving CVE-2025-2999, CVE-2025-3001, PYSEC-2026-139, PYSEC-2026-2286, and PYSEC-2025-194.
+- `transformers` 4.53.2 -> 4.57.0, resolving PYSEC-2025-211 through -216 and -218. Remaining advisories require the v5 major upgrade and are deferred pending GReaT's modernisation.
+- `tensorflow` 2.19 -> 2.21.
+- Docker container hardened to run as a non-root user.
+- Dependency vulnerability scanning (`pip-audit`) and static analysis (`bandit`) added to CI.
+
+### Removed
+
+- Stale per-model `pyproject.toml` and `poetry.lock` files.
+- `dev_deps.py`, repo-root `main.py` and `utils.py`, and `katabatic/models/ganblr/kdb.py`.
+
+
 ## [0.1.0a1] - 2026-05-22
 
 First public **alpha** release on TestPyPI / PyPI.

@@ -8,6 +8,8 @@ from pathlib import Path
 import pytest
 
 pytest.importorskip("tensorflow")
+pytest.importorskip("pgmpy")
+pytest.importorskip("pyitlib")
 
 from katabatic.artifacts import LocalArtifactStore
 from katabatic.models.ganblr.models import GANBLR
