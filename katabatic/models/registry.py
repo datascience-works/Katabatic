@@ -19,7 +19,7 @@ class ModelRegistry:
         "ganblr": {
             "module": "katabatic.models.ganblr.models",
             "class": "GANBLR",
-            "dependencies": ["tensorflow", "pgmpy", "pyitlib", "tf_keras", "scipy"],
+            "dependencies": ["tensorflow", "pgmpy", "pyitlib", "scipy"],
             "extra": "ganblr",
             "supported": True,
             "dataset_requirements": {
@@ -62,7 +62,7 @@ class ModelRegistry:
             "class": "CTGANModel",
             "dependencies": ["torch", "sklearn"],
             "extra": "ctgan",
-            "supported": False,
+            "supported": True,
         },
     }
 
