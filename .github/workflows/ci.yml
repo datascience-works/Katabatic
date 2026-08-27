@@ -212,7 +212,9 @@ jobs:
         run: |
           python -m venv /tmp/whltest
           /tmp/whltest/bin/pip install dist/*.whl
-          /tmp/whltest/bin/python -c "import katabatic; print(katabatic.__version__)"
+          /tmp/whltest/bin/python -c "import katabatic, tomllib; \
+            expected = tomllib.load(open('pyproject.toml','rb'))['project']['version']; \
+            assert katabatic.__version__ == expected, f'{katabatic.__version__} != {expected}'"
 
   docker-build:
     runs-on: ubuntu-latest
