@@ -1,6 +1,6 @@
 [project]
 name = "katabatic"
-version = "0.2.0"
+version = "0.2.0rc1"
 description = "Framework for synthetic tabular data generation, evaluation, and artifact-based pipelines."
 readme = "README.md"
 license = "MIT"
