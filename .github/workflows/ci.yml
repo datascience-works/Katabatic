@@ -93,6 +93,8 @@ jobs:
               - 'katabatic/datasets/**'
               - 'katabatic/artifacts/**'
               - 'katabatic/evaluate/**'
+              - 'katabatic/models/registry.py'
+              - 'katabatic/models/base_model.py'
             ganblr:
               - 'katabatic/models/ganblr/**'
               - 'tests/test_integration_ganblr.py'
@@ -173,10 +175,22 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
+
+      - name: Cache Poetry environment
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-contract-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+
       - name: Install Poetry
         run: pip install poetry==2.4.1
+
+      - name: Pre-install CPU torch
+        run: poetry run pip install "torch>=2.13.0,<3.0.0" --index-url https://download.pytorch.org/whl/cpu
+
       - name: Install supported model extras
-        run: poetry install --with dev -E ganblr
+        run: poetry install --with dev -E all
+
       - name: Model promotion contract
         run: poetry run pytest tests/test_model_registry.py -v
 
