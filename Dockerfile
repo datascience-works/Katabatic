@@ -19,7 +19,7 @@ RUN pip install --no-cache-dir "poetry==${POETRY_VERSION}"
 
 # Pre-install CPU-only torch.
 RUN if [ -n "${MODEL_EXTRA}" ]; then \
-        pip install --no-cache-dir "torch>=2.7.1,<3.0.0" \
+        pip install --no-cache-dir "torch>=2.13.0,<3.0.0" \
         --index-url https://download.pytorch.org/whl/cpu; \
     fi
 
