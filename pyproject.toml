@@ -31,6 +31,7 @@ dependencies = [
 [project.optional-dependencies]
 codi = ["torch>=2.7.1,<3.0.0"]
 ctgan = ["torch>=2.7.1,<3.0.0"]
+fairtabdiffusion = ["torch>=2.7.1,<3.0.0"]
 ganblr = [
     "tensorflow==2.19.*",
     "tensorflow-io==0.31.0",
