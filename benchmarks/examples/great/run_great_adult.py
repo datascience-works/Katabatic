@@ -1,12 +1,9 @@
 import os
 import sys
-
 sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
-
 from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
-
 from katabatic.models.great.models import GReaT
 
 config = RunConfig(
@@ -36,27 +33,27 @@ config = RunConfig(
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)
 
-# Training hyperparameters
-LLM = "gpt2"  # HuggingFace model checkpoint
-EPOCHS = 2  # fine-tuning epochs (keep low for eval; raise for quality)
-BATCH_SIZE = 2  # per-device training batch size
-EXPERIMENT_DIR = "trainer_great_adult"  # output dir for HuggingFace Trainer checkpoints
-EFFICIENT_FINETUNING = ""  # "" = full fine-tune; "lora" = LoRA (requires peft)
-FLOAT_PRECISION = None  # decimal places for floats in text encoding; None = full
+# Training hyperparameters — matched to paper (Borisov et al., 2022, Appendix C)
+LLM = "gpt2"             # full GReaT variant — 355M params
+EPOCHS = 310             # paper: 310 epochs for full GReaT on Adult
+BATCH_SIZE = 128          # RTX 4090 can handle this — much faster
+EXPERIMENT_DIR = "trainer_great_adult"
+EFFICIENT_FINETUNING = ""
+FLOAT_PRECISION = None
 
 # Sampling hyperparameters
-TEMPERATURE = 0.7  # generation temperature (lower = more conservative)
-MAX_LENGTH = 100  # max tokens per generated row
-K = 100  # rows attempted per generation batch
-DEVICE = "cuda"  # "cpu" or "cuda"
-GUIDED_SAMPLING = False  # True = feature-by-feature (slower, sometimes more reliable)
-RANDOM_FEATURE_ORDER = True  # shuffle column order in guided sampling prompts
-DROP_NAN = False  # drop rows with any NaN in the output
-SEED = config.seed  # generation seed for reproducibility
+TEMPERATURE = 0.7        # paper: T=0.7 for all experiments
+MAX_LENGTH = 100
+K = 100
+DEVICE = "cuda"
+GUIDED_SAMPLING = False
+RANDOM_FEATURE_ORDER = True
+DROP_NAN = False
 
 print("\n" + "=" * 60)
 print("STEP 3 — Train GReaT")
 print("=" * 60)
+
 model = GReaT(
     llm=LLM,
     experiment_dir=EXPERIMENT_DIR,
@@ -64,17 +61,18 @@ model = GReaT(
     batch_size=BATCH_SIZE,
     efficient_finetuning=EFFICIENT_FINETUNING,
     float_precision=FLOAT_PRECISION,
+    save_steps=100000,   # avoid disk space errors
 )
-model.train(
-    paths["split_dir"],
-    categorical_cols=config.categorical_cols,
-    continuous_cols=config.continuous_cols,
-)
-print("\nGReaT training complete.")
 
+# MUST use fit(), not train()
+# model.train() triggers pipeline mode which silently overrides epochs to 2
+model.fit(train_df)
+
+print("\nGReaT training complete.")
 print("\n" + "=" * 60)
 print("STEP 4 — Generate synthetic data")
 print("=" * 60)
+
 synthetic_df = model.sample(
     len(train_df),
     temperature=TEMPERATURE,
@@ -84,8 +82,8 @@ synthetic_df = model.sample(
     guided_sampling=GUIDED_SAMPLING,
     random_feature_order=RANDOM_FEATURE_ORDER,
     drop_nan=DROP_NAN,
-    seed=SEED,
 )
+
 synthetic_df = save_synthetic(
     synthetic_df, train_df, paths, categorical_cols=config.categorical_cols
 )
