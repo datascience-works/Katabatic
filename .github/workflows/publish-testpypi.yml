@@ -9,7 +9,7 @@
 #
 # Triggers:
 #   - Manual: Actions → Publish to TestPyPI → Run workflow
-#   - Tags: v1.2.3-rc1, v1.2.3-test.1 (pre-release / test uploads)
+#   #   - Tags: v1.2.3rc1, v1.2.3a1, v1.2.3b1, v1.2.3.dev1 (pre-release / test uploads)
 
 name: Publish to TestPyPI
 
@@ -17,10 +17,10 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - "v*-rc*"
-      - "v*-test*"
-      - "v*.*.*a*"
-      - "v*.*.*b*"
+      - "v*rc*"
+      - "v*a*"
+      - "v*b*"
+      - "v*.dev*"
 
 concurrency:
   group: publish-testpypi-${{ github.workflow }}-${{ github.ref }}
@@ -37,15 +37,15 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
       - name: Install Poetry
-        run: pip install poetry==1.8.5
+        run: pip install poetry==2.4.1
 
       - name: Validate project metadata
         run: poetry check

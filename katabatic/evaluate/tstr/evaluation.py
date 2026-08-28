@@ -1,7 +1,7 @@
-import os
 import csv
+import os
 import warnings
-from typing import Any, Optional, Tuple
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -16,19 +16,17 @@ try:
 except ImportError:  # optional dependency (see pyproject.toml)
     XGBClassifier = None  # type: ignore[misc, assignment]
 
-from katabatic.evaluate.base_evaluation import Evaluation
 from katabatic.artifacts.base import ArtifactStore
 from katabatic.artifacts.ids import new_eval_id
 from katabatic.artifacts.refs import DatasetRef, EvaluationRef, ModelRef
+from katabatic.evaluate.base_evaluation import Evaluation
 
 
 def load_data(synthetic_dir, real_test_dir):
     x_synth = pd.read_csv(os.path.join(synthetic_dir, "x_synth.csv"))
-    y_synth = pd.read_csv(os.path.join(
-        synthetic_dir, "y_synth.csv")).values.ravel()
+    y_synth = pd.read_csv(os.path.join(synthetic_dir, "y_synth.csv")).values.ravel()
     x_test = pd.read_csv(os.path.join(real_test_dir, "x_test.csv"))
-    y_test = pd.read_csv(os.path.join(
-        real_test_dir, "y_test.csv")).values.ravel()
+    y_test = pd.read_csv(os.path.join(real_test_dir, "y_test.csv")).values.ravel()
     return x_synth, y_synth, x_test, y_test
 
 
@@ -37,12 +35,15 @@ class TSTREvaluation(Evaluation):
         kwargs.pop("real_train_dir", None)
         self.synthetic_dir = synthetic_dir
         self.real_test_dir = real_test_dir
-        self._artifact_store: Optional[ArtifactStore] = kwargs.pop("_artifact_store", None)
-        self._evaluation_ref: Optional[EvaluationRef] = kwargs.pop("_evaluation_ref", None)
-        self._artifact_report_relpath: Optional[str] = kwargs.pop("_artifact_report_relpath", None)
+        self._artifact_store: ArtifactStore | None = kwargs.pop("_artifact_store", None)
+        self._evaluation_ref: EvaluationRef | None = kwargs.pop("_evaluation_ref", None)
+        self._artifact_report_relpath: str | None = kwargs.pop(
+            "_artifact_report_relpath", None
+        )
 
         self.x_train, self.y_train, self.x_test, self.y_test = load_data(
-            synthetic_dir, real_test_dir)
+            synthetic_dir, real_test_dir
+        )
 
     @classmethod
     def from_artifact(
@@ -50,9 +51,9 @@ class TSTREvaluation(Evaluation):
         store: ArtifactStore,
         model_ref: ModelRef,
         dataset_ref: DatasetRef,
-        eval_run_id: Optional[str] = None,
+        eval_run_id: str | None = None,
         **kwargs,
-    ) -> Tuple["TSTREvaluation", EvaluationRef]:
+    ) -> tuple["TSTREvaluation", EvaluationRef]:
         eval_run_id = eval_run_id or new_eval_id()
         eval_ref = EvaluationRef(
             evaluation_type="tstr",
@@ -67,14 +68,16 @@ class TSTREvaluation(Evaluation):
         synthetic_dir = str(store.open_path(model_ref.synthetic_relpath))
         real_test_dir = str(store.open_path(dataset_ref.test_relpath))
         report_rel = eval_ref.report_relpath
-        skip = frozenset({
-            "_artifact_store",
-            "_evaluation_ref",
-            "_artifact_report_relpath",
-            "synthetic_dir",
-            "real_test_dir",
-            "real_train_dir",
-        })
+        skip = frozenset(
+            {
+                "_artifact_store",
+                "_evaluation_ref",
+                "_artifact_report_relpath",
+                "synthetic_dir",
+                "real_test_dir",
+                "real_train_dir",
+            }
+        )
         init_kw = {k: v for k, v in kwargs.items() if k not in skip}
         inst = cls(
             synthetic_dir,
@@ -88,6 +91,16 @@ class TSTREvaluation(Evaluation):
 
     def evaluate(self):
         results = {}
+
+        # Convert to numpy array to prevent feature name conflict
+        x_train = np.asarray(self.x_train)
+        x_test = np.asarray(self.x_test)
+
+        if x_train.shape[1] != x_test.shape[1]:
+            raise ValueError(
+                f"TSTR feature-count mismatch. Synthetic has {x_train.shape[1]} columns while real test has {x_test.shape[1]}."
+            )
+
         # Calculate class imbalance ratio for XGBoost
         num_neg = np.sum(self.y_train == 0)
         num_pos = np.sum(self.y_train == 1)
@@ -109,28 +122,32 @@ class TSTREvaluation(Evaluation):
         for name, model in models.items():
             if name in ["LR", "MLP"]:
                 scaler = StandardScaler()
-                x_train_scaled = scaler.fit_transform(self.x_train)
-                x_test_scaled = scaler.transform(self.x_test)
+                x_train_scaled = scaler.fit_transform(x_train)
+                x_test_scaled = scaler.transform(x_test)
                 model.fit(x_train_scaled, self.y_train)
                 y_pred = model.predict(x_test_scaled)
                 y_prob = model.predict_proba(x_test_scaled)[:, 1]
             else:
-                model.fit(self.x_train, self.y_train)
-                y_pred = model.predict(self.x_test)
-                y_prob = model.predict_proba(self.x_test)[:, 1]
+                model.fit(x_train, self.y_train)
+                y_pred = model.predict(x_test)
+                y_prob = model.predict_proba(x_test)[:, 1]
 
             metrics = {
-                'Accuracy': accuracy_score(self.y_test, y_pred),
-                'F1 Score': f1_score(self.y_test, y_pred, average='weighted')
+                "Accuracy": accuracy_score(self.y_test, y_pred),
+                "F1 Score": f1_score(self.y_test, y_pred, average="weighted"),
             }
 
             # Add AUC for binary classification
             if len(np.unique(self.y_test)) == 2:
-                metrics['AUC'] = roc_auc_score(self.y_test, y_prob)
+                metrics["AUC"] = roc_auc_score(self.y_test, y_prob)
 
             results[name] = metrics
 
-        if self._artifact_store is not None and self._evaluation_ref is not None and self._artifact_report_relpath is not None:
+        if (
+            self._artifact_store is not None
+            and self._evaluation_ref is not None
+            and self._artifact_report_relpath is not None
+        ):
             self._save_results_artifact(results)
         else:
             self.save_results_to_csv(results, self.synthetic_dir)
@@ -149,8 +166,7 @@ class TSTREvaluation(Evaluation):
         assert store is not None and ref is not None
 
         serializable: dict[str, Any] = {
-            k: {m: float(v) for m, v in d.items()}
-            for k, d in results.items()
+            k: {m: float(v) for m, v in d.items()} for k, d in results.items()
         }
         store.save_json(ref.metrics_relpath, serializable)
 
@@ -178,7 +194,7 @@ class TSTREvaluation(Evaluation):
         os.makedirs(results_dir, exist_ok=True)
         output_path = os.path.join(results_dir, f"{model_name}_tstr.csv")
 
-        with open(output_path, mode='w', newline='') as file:
+        with open(output_path, mode="w", newline="") as file:
             writer = csv.writer(file)
             writer.writerow(["Model", "Metric", "Value"])
             for model_name, metrics in results.items():

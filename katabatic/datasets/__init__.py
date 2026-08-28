@@ -4,6 +4,6 @@ from katabatic.datasets.registry import DatasetRegistry
 
 __all__ = [
     "DatasetRegistry",
-    "infer_dataset_profile",
     "check_dataset_for_model",
+    "infer_dataset_profile",
 ]

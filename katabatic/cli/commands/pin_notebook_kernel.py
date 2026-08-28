@@ -14,7 +14,9 @@ DEFAULT_DISPLAY = "Python (Katabatic .venv)"
 def find_project_root(start: Path | None = None) -> Path:
     """Walk up from *start* (default cwd) to find the Katabatic project root."""
     for candidate in [start or Path.cwd(), *(start or Path.cwd()).parents]:
-        if (candidate / "pyproject.toml").is_file() and (candidate / "katabatic").is_dir():
+        if (candidate / "pyproject.toml").is_file() and (
+            candidate / "katabatic"
+        ).is_dir():
             return candidate
     return start or Path.cwd()
 
@@ -93,5 +95,7 @@ def run_pin_notebook_kernel(
         return 1
 
     print("\nIn Cursor: reload window, then Select Kernel → pick", repr(display_name))
-    print("If the picker still spins, use Command Palette → Python: Select Interpreter → .venv")
+    print(
+        "If the picker still spins, use Command Palette → Python: Select Interpreter → .venv"
+    )
     return 0

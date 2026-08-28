@@ -8,6 +8,8 @@ from pathlib import Path
 import pytest
 
 pytest.importorskip("tensorflow")
+pytest.importorskip("pgmpy")
+pytest.importorskip("pyitlib")
 
 from katabatic.artifacts import LocalArtifactStore
 from katabatic.models.ganblr.models import GANBLR
@@ -31,9 +33,9 @@ def test_ganblr_artifact_pipeline_smoke(tmp_path, tiny_binary_csv):
     )
 
     mr = res["model_ref"]
-    assert re.match(
-        r"^models/ganblr_smoke_train-\d{8}-\d{6}$", mr.root_relpath
-    ), mr.root_relpath
+    assert re.match(r"^models/ganblr_smoke_train-\d{8}-\d{6}$", mr.root_relpath), (
+        mr.root_relpath
+    )
 
     state_pkl = store.open_path(f"{mr.state_relpath}/ganblr_model.pkl")
     assert state_pkl.is_file(), "Expected pickled GANBLR state"
