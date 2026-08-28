@@ -36,7 +36,7 @@ train_df, test_df, target_col, paths = preprocess_and_split(config)
 # Training hyperparameters — matched to paper (Borisov et al., 2022, Appendix C)
 LLM = "gpt2"             # full GReaT variant — 355M params
 EPOCHS = 310             # paper: 310 epochs for full GReaT on Adult
-BATCH_SIZE = 128          # RTX 4090 can handle this — much faster
+BATCH_SIZE = 128          
 EXPERIMENT_DIR = "trainer_great_adult"
 EFFICIENT_FINETUNING = ""
 FLOAT_PRECISION = None
@@ -61,7 +61,7 @@ model = GReaT(
     batch_size=BATCH_SIZE,
     efficient_finetuning=EFFICIENT_FINETUNING,
     float_precision=FLOAT_PRECISION,
-    save_steps=100000,   # avoid disk space errors
+    save_steps=100000,   # to avoid disk space errors
 )
 
 # MUST use fit(), not train()
