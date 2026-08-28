@@ -5,19 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0rc1] - 2026-08-27
-
-### Fixed
-
-- `katabatic.__version__` is now read from installed package metadata, making `pyproject.toml` the single source of truth.
-- Constrained `huggingface-hub` to `<1.0` and `fsspec` to `<=2026.2.0` in the `great` and `all` extras, resolving incompatibilities with `transformers` 4.57 and `datasets` 4.x.
-- Removed `tabpfn` from the `all` extra: it requires `huggingface-hub>=1.0`, which `transformers` 4.x rejects. The standalone `tabpfgen` extra is unaffected.
-
-### Changed
-
-- GReaT removed from the CI integration matrix while unsupported; its tests remain skipped pending modernisation to the current model contract.
-
-## [0.2.0] - 2026-08-27
+## [0.2.0] - 2026-08-28
 
 ### Added
 
@@ -39,11 +27,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GANBLR promoted to supported: declares `ARTIFACT_STATE_FILES`, persists state to the artifact store, and honours the `train_epochs` keyword.
 - CTGAN promoted to supported.
 - GReaT reverted to experimental pending modernisation to the current model contract (no state persistence).
+- GReaT removed from the CI integration matrix while unsupported; its tests remain skipped pending modernisation to the current model contract.
 
 ### Fixed
 
 - CTGAN column-type inference treated low-cardinality integer columns as continuous on small datasets, producing continuous synthetic targets that broke TSTR evaluation.
 - GANBLR did not persist model state, so trained models could not be reloaded from an artifact reference.
+- `katabatic.__version__` is now read from installed package metadata, making `pyproject.toml` the single source of truth.
+- Constrained `huggingface-hub` to `<1.0` and `fsspec` to `<=2026.2.0` in the `great` and `all` extras, resolving incompatibilities with `transformers` 4.57 and `datasets` 4.x.
+- Removed `tabpfn` from the `all` extra: it requires `huggingface-hub>=1.0`, which `transformers` 4.x rejects. The standalone `tabpfgen` extra is unaffected.
 
 ### Security
 
