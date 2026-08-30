@@ -3,10 +3,13 @@ Katabatic package initializer.
 Synthetic tabular data generation, pipelines, and evaluation.
 """
 
-__version__ = "0.1.0a1"
+from importlib.metadata import PackageNotFoundError, version
 
-from . import models
-from . import pipeline
-from . import utils
+try:
+    __version__ = version("katabatic")
+except PackageNotFoundError:
+    __version__ = "0.0.0.dev0"
+
+from . import models, pipeline, utils
 
 __all__ = ["__version__", "models", "pipeline", "utils"]
