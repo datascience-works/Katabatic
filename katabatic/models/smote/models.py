@@ -2,25 +2,30 @@
 SMOTE Model Implementation for Katabatic Pipeline
 Uses imbalanced-learn's SMOTE for synthetic oversampling
 """
+
 from __future__ import annotations
-from typing import Optional
+
 import time
 import warnings
+
 import numpy as np
 import pandas as pd
+
 from katabatic.models.base_model import Model as BaseModel
 from katabatic.models.smote.utils import (
     load_training_data,
-    save_synthetic_data,
+    resolve_synth_dir,
     save_metadata,
-    resolve_synth_dir
-    )    
+    save_synthetic_data,
+)
+
 warnings.filterwarnings("ignore")
+
 
 def adjust_k_neighbors(y_train: np.ndarray, k_neighbors: int) -> int:
     """
-        Adjust k_neighbors to be less than the smallest class size.
-        SMOTE requires k_neighbors < min_class_size.
+    Adjust k_neighbors to be less than the smallest class size.
+    SMOTE requires k_neighbors < min_class_size.
     """
     _, class_counts = np.unique(y_train, return_counts=True)
     min_class_size = class_counts.min()
@@ -40,7 +45,7 @@ def subsample_to_original_size(
     original_size: int,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
-        Subsample resampled data back down to the original dataset size.
+    Subsample resampled data back down to the original dataset size.
     """
     if len(X_resampled) > original_size:
         indices = np.random.choice(len(X_resampled), original_size, replace=False)
@@ -51,12 +56,13 @@ def subsample_to_original_size(
 
 class SMOTEModel(BaseModel):
     """
-        SMOTE: Synthetic Minority Over-sampling Technique.
-        Simple k-nearest neighbors interpolation for data augmentation.
-        Default parameters:
-            - k_neighbors: 5 (number of neighbors)
-            - sampling_strategy: 'auto' (balance classes)
+    SMOTE: Synthetic Minority Over-sampling Technique.
+    Simple k-nearest neighbors interpolation for data augmentation.
+    Default parameters:
+        - k_neighbors: 5 (number of neighbors)
+        - sampling_strategy: 'auto' (balance classes)
     """
+
     def __init__(
         self,
         *,
@@ -78,10 +84,10 @@ class SMOTEModel(BaseModel):
     def train(
         self,
         data_dir: str,
-        synthetic_dir: Optional[str] = None,
+        synthetic_dir: str | None = None,
         *args,
         **kwargs,
-    ) -> "SMOTEModel":
+    ) -> SMOTEModel:
         """Train (fit) the SMOTE model."""
 
         try:
@@ -111,7 +117,9 @@ class SMOTEModel(BaseModel):
             random_state=self.random_state,
         )
 
-        print(f"[SMOTE] Ready to generate samples from {len(X_train)} training samples...")
+        print(
+            f"[SMOTE] Ready to generate samples from {len(X_train)} training samples..."
+        )
         start_time = time.time()
         X_resampled, y_resampled = self.smote.fit_resample(X_train, y_train)
         print(f"[SMOTE] Generated samples in {time.time() - start_time:.2f} seconds.")
@@ -120,10 +128,14 @@ class SMOTEModel(BaseModel):
         self.is_fitted = True
 
         # Subsample back to original size
-        X_final, y_final = subsample_to_original_size(X_resampled, y_resampled, len(X_train))
+        X_final, y_final = subsample_to_original_size(
+            X_resampled, y_resampled, len(X_train)
+        )
 
         print(f"[SMOTE] Generated {n_synthetic} new synthetic samples...")
-        print(f"[SMOTE] Returning {len(X_final)} total samples (original size with balanced classes)...")
+        print(
+            f"[SMOTE] Returning {len(X_final)} total samples (original size with balanced classes)..."
+        )
 
         # Save outputs
         synth_dir = resolve_synth_dir(synthetic_dir, data_dir, "smote")
@@ -143,7 +155,9 @@ class SMOTEModel(BaseModel):
             n_returned=len(X_final),
         )
 
-        print(f"[SMOTE] Synthetic data saved:\n  X -> {x_path_out}\n  y -> {y_path_out}")
+        print(
+            f"[SMOTE] Synthetic data saved:\n  X -> {x_path_out}\n  y -> {y_path_out}"
+        )
         return self
 
     def evaluate(self, *args, **kwargs) -> float:
@@ -153,7 +167,7 @@ class SMOTEModel(BaseModel):
 
     def sample(
         self,
-        n: Optional[int] = None,
+        n: int | None = None,
         *args,
         **kwargs,
     ) -> pd.DataFrame:
@@ -163,9 +177,8 @@ class SMOTEModel(BaseModel):
 
         X_resampled, y_resampled = self.smote.fit_resample(self.X_train, self.y_train)
 
-        # Extract only synthetic samples
-        X_synth = X_resampled[len(self.X_train):]
-        y_synth = y_resampled[len(self.X_train):]
+        X_synth = X_resampled
+        y_synth = y_resampled
 
         if n is not None and n < len(X_synth):
             indices = np.random.choice(len(X_synth), n, replace=False)

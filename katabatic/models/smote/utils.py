@@ -1,11 +1,15 @@
 """
 Utility functions for the SMOTE model pipeline.
 """
+
 from __future__ import annotations
-import os
+
 import json
+import os
+
 import numpy as np
 import pandas as pd
+
 
 def load_training_data(data_dir: str) -> pd.DataFrame:
     """
@@ -63,9 +67,7 @@ def save_synthetic_data(
     """
     os.makedirs(synth_dir, exist_ok=True)
 
-    df_synth = pd.DataFrame(
-        np.column_stack([X_final, y_final]), columns=column_names
-    )
+    df_synth = pd.DataFrame(np.column_stack([X_final, y_final]), columns=column_names)
 
     feature_cols = [c for c in column_names if c != label]
     x_synth = df_synth[feature_cols].copy()
