@@ -1,7 +1,27 @@
-*  @Talos-1 @janudi0531-debug @ndamaj @PriyanshiDavid @zachariahchristie @InuriN @savindeehasara @ananyag270903 @s223991203 @royal2510 @Adityasuhag001 @PriyanshiDavid
+# Need someone added? Contact:
+# @Talos-1 (Alex Ryan),
+# @janudi0531-debug (Janudi Disara Ranasinghe), or
+# @laxminarsimha01 (Laxmi Narsimha Reddy Nalla)
+
+# Default fallback
+*                    @Talos-1 @janudi0531-debug @laxminarsimha01
 
 # Shared build managed by Dev/MLOps Leads
-/.github/        @Talos-1 @janudi0531-debug
-/pyproject.toml  @Talos-1 @janudi0531-debug
-/poetry.lock     @Talos-1 @janudi0531-debug
-/Makefile        @Talos-1 @janudi0531-debug
+/.github/            @Talos-1 @janudi0531-debug @laxminarsimha01
+/poetry.lock         @Talos-1 @janudi0531-debug @laxminarsimha01
+/pyproject.toml      @Talos-1 @janudi0531-debug @laxminarsimha01
+**/Makefile          @Talos-1 @janudi0531-debug @laxminarsimha01
+**/Dockerfile        @Talos-1 @janudi0531-debug @laxminarsimha01
+/tests/              @Talos-1 @janudi0531-debug @laxminarsimha01
+/*.py                @Talos-1 @janudi0531-debug @laxminarsimha01
+
+# Model Development Leads (+ Alex for support)
+/katabatic/models/   @ndamaj @PriyanshiDavid @Talos-1
+
+# Benchmarking & Evaluation Leads (+ Alex for support)
+/examples/           @royal2510 @zachariahchristie @InuriN @savindeehasara @Talos-1
+/benchmarks/         @royal2510 @zachariahchristie @InuriN @savindeehasara @Talos-1
+/katabatic/evaluate/ @royal2510 @zachariahchristie @InuriN @savindeehasara @Talos-1
+
+# Dashboard & UI Leads (+ Alex for support)
+/frontend/           @s223991203 @Dipsan49 @Talos-1

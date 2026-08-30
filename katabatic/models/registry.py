@@ -1,6 +1,6 @@
 """Model registry for dynamic model loading.
 
-Officially supported models (smoke-tested, PyPI extras): ``ganblr``, ``great``.
+Officially supported models (smoke-tested, PyPI extras): ``ganblr``, ``ctgan``.
 Other registered models are experimental; see ``docs/EXPERIMENTAL_MODELS.md``.
 """
 
@@ -19,7 +19,7 @@ class ModelRegistry:
         "ganblr": {
             "module": "katabatic.models.ganblr.models",
             "class": "GANBLR",
-            "dependencies": ["tensorflow", "pgmpy", "pyitlib", "tf_keras", "scipy"],
+            "dependencies": ["tensorflow", "pgmpy", "pyitlib", "scipy"],
             "extra": "ganblr",
             "supported": True,
             "dataset_requirements": {
@@ -62,7 +62,7 @@ class ModelRegistry:
             "class": "CTGANModel",
             "dependencies": ["torch", "sklearn"],
             "extra": "ctgan",
-            "supported": False,
+            "supported": True,
         },
     }
 
@@ -79,8 +79,9 @@ class ModelRegistry:
     @classmethod
     def get_model_config(cls, model_name: str) -> dict:
         """Return the registry config for a model."""
+        model_name = model_name.lower()
         if model_name not in cls._models:
-            raise KeyError(f"Model '{model_name}' is not registerd.")
+            raise KeyError(f"Model '{model_name}' is not registered.")
         return cls._models[model_name]
 
     @classmethod
