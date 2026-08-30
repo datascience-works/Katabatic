@@ -2,11 +2,11 @@
 
 ## Model Overview
 
-Synthetic Minority Oversampling Technique (SMOTE) model used for synthetic tabular data generation. 
+Synthetic Minority Oversampling Technique (SMOTE) model used for synthetic tabular data generation.
 
 The SMOTE model itself is a resampling method for imbalanced classification problems, example fraud detection logs. In cases like network logs, the data would be imbalanced towards the legitimate network traffic data (non-fraud); with fraud classified data being the minority class. Training on data of this nature will cause biases and result in poor fraud identification. SMOTE provides a method to level the two classes of data. This is done not by boot strapping or duplicating but instead creating new synthetic data examples for the minority class.
-Alternatively the model creates synthetic minority data sets through interpolation between the existing minority class sample and one of the nearest minority-classes neighbouring it. This process is implemented prior to the downstream classifier training, hence SMOTE is used for rebalancing the training data and excels in problem spaces where the data is imabalanced. 
-SMOTE is only applicable on feature generation for numeric data types only. Other varities are available for categorical datatypes and mix datatypes, but the SMOTE model itself can only be used on numerical data. 
+Alternatively the model creates synthetic minority data sets through interpolation between the existing minority class sample and one of the nearest minority-classes neighbouring it. This process is implemented prior to the downstream classifier training, hence SMOTE is used for rebalancing the training data and excels in problem spaces where the data is imabalanced.
+SMOTE is only applicable on feature generation for numeric data types only. Other varities are available for categorical datatypes and mix datatypes, but the SMOTE model itself can only be used on numerical data.
 
 
 ---
@@ -24,9 +24,9 @@ SMOTE is used as a tabular synthetic data generator with the following model int
 ### Research Paper
 SMOTE is based on:
 
-> N. V. Chawla, K. W. Bowyer, L. O. Hall, and W. P. Kegelmeyer,  
-> **“SMOTE: Synthetic Minority Over-sampling Technique,”**  
-> *Journal of Artificial Intelligence Research*, Volume 16, pp. 321–357, 2002.  
+> N. V. Chawla, K. W. Bowyer, L. O. Hall, and W. P. Kegelmeyer,
+> **“SMOTE: Synthetic Minority Over-sampling Technique,”**
+> *Journal of Artificial Intelligence Research*, Volume 16, pp. 321–357, 2002.
 > DOI: 10.1613/jair.953
 
 
@@ -116,8 +116,8 @@ Generated files:
 
 ## Strengths
 - Simplicity in the implemention for synethic tabular data generation.
-- Low compute requirements, example no GPU needed. 
-- Able to generate synthetic data based on imbalanced datasets. 
+- Low compute requirements, example no GPU needed.
+- Able to generate synthetic data based on imbalanced datasets.
 
 ---
 
@@ -130,7 +130,7 @@ Generated files:
 
 ## Installation
 
-Refer to the makefile. 
+Refer to the makefile.
 
 ---
 
