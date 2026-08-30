@@ -1,49 +1,40 @@
-import platform
-import psutil
-import sys
-import os
-from time import perf_counter
-import warnings
-import pandas as pd
 import logging
+import os
+import platform
 import random
-import numpy as np
+import sys
+import warnings
+from time import perf_counter
 
-logging.getLogger("pgmpy").setLevel(logging.ERROR)
+import numpy as np
+import pandas as pd
+import psutil
 
 sys.path.insert(
     0,
-    os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    ),
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
 )
 
-from runner import (
+from runner import (  # noqa: E402
     RunConfig,
+    evaluate,
     preprocess_and_split,
     save_synthetic,
-    evaluate,
 )
 
-from katabatic.models.tabkde_updated import TabKDEModel
-
+from katabatic.models.tabkde_updated import TabKDEModel  # noqa: E402
 
 # Run in CPU mode if GPU is limited
 # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+logging.getLogger("pgmpy").setLevel(logging.ERROR)
 warnings.filterwarnings("ignore")
-
 start_time = perf_counter()
 
 
-# ============================================================
-# TabKDE compatibility adapter
-# ============================================================
 class TabKDEEvaluationAdapter(TabKDEModel):
     """
-    Small adapter to make TabKDE compatible with the
-    Katabatic evaluation pipeline.
+    Make TabKDE compatible with the Katabatic evaluation pipeline.
 
     The original TabKDE sample() method may return a tuple,
     while the evaluation pipeline expects a pandas DataFrame.
@@ -52,23 +43,19 @@ class TabKDEEvaluationAdapter(TabKDEModel):
     """
 
     def sample(self, n, seed=None):
-
         if seed is not None:
             random.seed(seed)
             np.random.seed(seed)
 
         result = super().sample(n)
 
-        # TabKDE may return (synthetic_df, additional_output)
         if isinstance(result, tuple):
             return result[0]
 
         return result
 
 
-# ============================================================
-# Runtime summary
-# ============================================================
+# Adding system and run duration summary
 def get_runtime_summary(
     time_diff,
     start_time,
@@ -79,25 +66,14 @@ def get_runtime_summary(
     """
     Print a formatted runtime summary report.
 
-    Args:
-        time_diff: Total elapsed time of the run.
-        start_time: Start time of the run.
-        end_time: End time of the run.
-        model_name: Name of the model.
-        dataset_name: Name of the dataset.
+    The report includes the start time, end time, and total duration for a
+    given model and a specific dataset.
     """
-
-    print(
-        "======================================================================"
-    )
-    print("⏰ Evaluation Runtime Report 🧾")
-    print(
-        "======================================================================"
-    )
-
+    print("======================================================================")
+    print("Evaluation Runtime Report")
+    print("======================================================================")
     print("Start time:", start_time)
     print("End time:", end_time)
-
     print(
         model_name
         + " has taken "
@@ -108,14 +84,13 @@ def get_runtime_summary(
     )
 
 
-# ============================================================
-# System information
-# ============================================================
 def get_system_run_details() -> None:
     """
-    Print a summary of the hardware used to run the evaluation.
-    """
+    Print a summary of the hardware used to run the evaluations.
 
+    This report outlines the OS, CPU, GPU details, and RAM states.
+    It is compatible with any device or OS.
+    """
     results = platform.uname()
     ram = psutil.virtual_memory()
 
@@ -133,32 +108,21 @@ def get_system_run_details() -> None:
     except Exception:
         gpu_info = "No GPU or TensorFlow install has been detected."
 
-    print(
-        "======================================================================"
-    )
-    print("💻 Computation Hardware Summary 🧾")
-    print(
-        "======================================================================"
-    )
-
-    print(f"  🖥️  System:     {results.system}")
-    print(f"  🏠  Node:       {results.node}")
-    print(f"  📦  Release:    {results.release}")
-    print(f"  🔢  Version:    {results.version}")
-    print(f"  🔧  Processor:  {results.processor}")
-    print(f"  🎮  GPU:        {gpu_info}")
-    print(f"  📟  Total RAM:  {round(ram.total / 1e9, 4)} GB")
-    print(f"  💾  Free RAM:   {round(ram.available / 1e9, 4)} GB")
-    print(f"  ⚡  Used RAM:   {round(ram.used / 1e9, 4)} GB")
-
-    print(
-        "======================================================================"
-    )
+    print("======================================================================")
+    print("Computation Hardware Summary")
+    print("======================================================================")
+    print(f"  System:     {results.system}")
+    print(f"  Node:       {results.node}")
+    print(f"  Release:    {results.release}")
+    print(f"  Version:    {results.version}")
+    print(f"  Processor:  {results.processor}")
+    print(f"  GPU:        {gpu_info}")
+    print(f"  Total RAM:  {round(ram.total / 1e9, 4)} GB")
+    print(f"  Free RAM:   {round(ram.available / 1e9, 4)} GB")
+    print(f"  Used RAM:   {round(ram.used / 1e9, 4)} GB")
+    print("======================================================================")
 
 
-# ============================================================
-# Configuration
-# ============================================================
 config = RunConfig(
     dataset_name="car",
     model_name="tabkde_updated",
@@ -168,37 +132,23 @@ config = RunConfig(
     constraints={},
 )
 
-
-# ============================================================
-# STEP 1 & STEP 2 — Preprocess and split
-# ============================================================
 train_df, test_df, target_col, paths = preprocess_and_split(config)
 
-
-# ============================================================
-# STEP 3 — Train TabKDE Updated
-# ============================================================
 print("\n" + "=" * 60)
-print("STEP 3 — Train TabKDE Updated - Car")
+print("STEP 3 - Train TabKDE Updated - Car")
 print("=" * 60)
 
 model = TabKDEEvaluationAdapter()
-
 model.fit(train_df)
 
 print("\nTabKDE Updated training complete.")
 
-
-# ============================================================
-# STEP 4 — Generate synthetic data
-# ============================================================
 print("\n" + "=" * 60)
-print("STEP 4 — Generate synthetic data")
+print("STEP 4 - Generate synthetic data")
 print("=" * 60)
 
 synthetic_df = model.sample(len(train_df))
 
-# Make sure output is a DataFrame
 if not isinstance(synthetic_df, pd.DataFrame):
     synthetic_df = pd.DataFrame(
         synthetic_df,
@@ -212,10 +162,6 @@ synthetic_df = save_synthetic(
     categorical_cols=config.categorical_cols,
 )
 
-
-# ============================================================
-# STEP 5 — Evaluate synthetic data
-# ============================================================
 evaluate(
     model,
     config,
@@ -226,12 +172,8 @@ evaluate(
     test_df,
 )
 
-
-# ============================================================
-# Runtime and hardware summary
-# ============================================================
+# Adding system and run duration summary
 end_time = perf_counter()
-
 time_diff = end_time - start_time
 
 get_runtime_summary(

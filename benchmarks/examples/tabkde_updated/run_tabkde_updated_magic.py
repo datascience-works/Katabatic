@@ -124,40 +124,29 @@ def get_system_run_details() -> None:
 
 
 config = RunConfig(
-    dataset_name="adult",
+    dataset_name="magic",
     model_name="tabkde_updated",
-    categorical_cols=[
-        "workclass",
-        "education",
-        "education-num",
-        "marital-status",
-        "occupation",
-        "relationship",
-        "race",
-        "sex",
-        "native-country",
-    ],
+    categorical_cols=[],
     continuous_cols=[
-        "age",
-        "fnlwgt",
-        "capital-gain",
-        "capital-loss",
-        "hours-per-week",
+        "fLength",
+        "fWidth",
+        "fSize",
+        "fConc",
+        "fConc1",
+        "fAsym",
+        "fM3Long",
+        "fM3Trans",
+        "fAlpha",
+        "fDist",
     ],
     target_col_raw="class",
-    constraints={
-        "age": (17, 90),
-        "fnlwgt": (12285, 1490400),
-        "capital-gain": (0, 99999),
-        "capital-loss": (0, 4356),
-        "hours-per-week": (1, 99),
-    },
+    constraints={},
 )
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)
 
 print("\n" + "=" * 60)
-print("STEP 3 - Train TabKDE Updated - Adult")
+print("STEP 3 - Train TabKDE Updated - Magic")
 print("=" * 60)
 
 model = TabKDEEvaluationAdapter()

@@ -12,15 +12,13 @@ Provides helpers for:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 from scipy.spatial import KDTree
 from sklearn.preprocessing import StandardScaler
 
-
-ArrayLike = Union[np.ndarray, pd.DataFrame]
+ArrayLike = np.ndarray | pd.DataFrame
 
 
 # Basic helpers
@@ -69,7 +67,7 @@ def compute_min_distances_cpu(A: ArrayLike, B: ArrayLike, k: int = 1) -> np.ndar
 def preprocess_data(
     df: pd.DataFrame,
     normalize: bool = True,
-) -> Tuple[pd.DataFrame, Optional[np.ndarray], Optional[np.ndarray]]:
+) -> tuple[pd.DataFrame, np.ndarray | None, np.ndarray | None]:
     """
     Preprocess a DataFrame for TabKDE:
     - Encodes object/category columns as integer category codes (starting from 1)
@@ -116,9 +114,10 @@ class EmpiricalTransformer:
         Z = transformer.df_ranks.values        # latent space [0,1]^d
         df_reconstructed = transformer.convert(Z_synth)
     """
+
     df: pd.DataFrame
-    df_sorted: Optional[pd.DataFrame] = None
-    df_ranks: Optional[pd.DataFrame] = None
+    df_sorted: pd.DataFrame | None = None
+    df_ranks: pd.DataFrame | None = None
 
     def fit(self, method: str = "average") -> pd.DataFrame:
         """
@@ -187,7 +186,7 @@ def sample_points_via_dcp_distribution(
     n_samples: int,
     gmm_model,
     noise_std: float = 0.01,
-    random_state: Optional[int] = None,
+    random_state: int | None = None,
 ) -> np.ndarray:
     """
     Core TabKDE sampler:

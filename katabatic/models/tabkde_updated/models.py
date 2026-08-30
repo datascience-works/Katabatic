@@ -8,15 +8,13 @@ https://arxiv.org/abs/2605.17642
 
 from __future__ import annotations
 
-from typing import Optional, Tuple
 import numpy as np
 import pandas as pd
 from sklearn.mixture import GaussianMixture
 
 from .utils import (
-    ensure_2d,
-    compute_min_distances_cpu,
     EmpiricalTransformer,
+    compute_min_distances_cpu,
     preprocess_data,
     sample_points_via_dcp_distribution,
 )
@@ -52,7 +50,7 @@ class TabKDEModel:
         n_dcr_splits: int = 10,
         max_gmm_components: int = 10,
         noise_std: float = 0.01,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
     ):
         self.n_dcr_splits = n_dcr_splits
         self.max_gmm_components = max_gmm_components
@@ -60,18 +58,19 @@ class TabKDEModel:
         self.random_state = random_state
 
         self._fitted = False
-        self._train_df: Optional[pd.DataFrame] = None
-        self._transformer: Optional[EmpiricalTransformer] = None
-        self._Z: Optional[np.ndarray] = None
-        self._gmm: Optional[GaussianMixture] = None
+        self._train_df: pd.DataFrame | None = None
+        self._transformer: EmpiricalTransformer | None = None
+        self._Z: np.ndarray | None = None
+        self._gmm: GaussianMixture | None = None
         self._col_order: list = []
         self._categorical_mappings = {}
+
     # Fit
 
     def fit(
         self,
         x_train: pd.DataFrame,
-        y_train: Optional[pd.Series] = None,
+        y_train: pd.Series | None = None,
         **kwargs,
     ) -> None:
         """
@@ -99,15 +98,12 @@ class TabKDEModel:
             categorical = df[col].astype("category")
 
             self._categorical_mappings[col] = {
-                code + 1: value
-                for code, value in enumerate(categorical.cat.categories)
+                code + 1: value for code, value in enumerate(categorical.cat.categories)
             }
 
         # Step 1: Preprocess categorical columns into numeric values
         df_processed, _, _ = preprocess_data(df, normalize=False)
-        
-        
-        
+
         # Step 2: Fit empirical copula transformer -> Z in [0,1]^d
         self._transformer = EmpiricalTransformer(df=df_processed)
         self._transformer.fit()
@@ -123,7 +119,7 @@ class TabKDEModel:
 
     # Sample
 
-    def sample(self, n_samples: int) -> Tuple[pd.DataFrame, Optional[pd.Series]]:
+    def sample(self, n_samples: int) -> tuple[pd.DataFrame, pd.Series | None]:
         """
         Generate n_samples synthetic rows.
 
@@ -152,10 +148,8 @@ class TabKDEModel:
         # Step 5: Inverse copula -> original feature space
         synth_df = self._transformer.convert(Z_synth)
         synth_df.columns = self._col_order
-        
-        
-        
-               # Restore categorical columns
+
+        # Restore categorical columns
         for col, mapping in self._categorical_mappings.items():
             codes = np.rint(synth_df[col]).astype(int)
 
@@ -172,7 +166,6 @@ class TabKDEModel:
     # DCR GMM fitting
 
     def _fit_dcr_gmm(self, Z: np.ndarray) -> GaussianMixture:
-        
         """
         Estimate DCR distribution by random splits of Z,
         then fit GMM with BIC-selected number of components.
