@@ -97,13 +97,17 @@ class _TabEBMBackend:
 
             for _ in range(sgld_steps):
                 grad = self.compute_energy_gradient(X_sgld, X_ebm, X_real)
-
+                grad = np.clip(grad, -5.0, 5.0)
                 X_sgld -= sgld_step_size * grad
                 X_sgld += rng.normal(
                     0,
                     sgld_noise_std,
                     size=X_sgld.shape,
                 ).astype(np.float32)
+                nan_rows = np.any(np.isnan(X_sgld), axis=1)
+                if nan_rows.any():
+                    repl = rng.integers(0, X_cls.shape[0], size=int(nan_rows.sum()))
+                    X_sgld[nan_rows] = X_cls[repl]
 
             results[f"class_{class_idx}"] = X_sgld.astype(np.float32)
 
@@ -184,6 +188,10 @@ class TabEBMModel(Model):
 
     def train(self, output_dir: str, label_col=None, synthetic_dir=None, **kwargs):
         x_train = pd.read_csv(f"{output_dir}/x_train.csv")
+        # Convert pandas StringDtype -> object so ordinal encoder handles them correctly
+        str_cols = [c for c in x_train.columns if str(x_train[c].dtype).startswith("string") or str(x_train[c].dtype) == "str"]
+        if str_cols:
+            x_train[str_cols] = x_train[str_cols].astype(object)
         y_train_df = pd.read_csv(f"{output_dir}/y_train.csv")
 
         if label_col is None:

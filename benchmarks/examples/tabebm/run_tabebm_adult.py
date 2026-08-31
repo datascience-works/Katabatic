@@ -1,11 +1,7 @@
 import warnings
 warnings.filterwarnings("ignore")
-
-import os
-import sys
-sys.path.insert(
-    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-)
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 from katabatic.models.tabebm.models import TabEBMModel, TabEBMConfig
 
@@ -37,29 +33,20 @@ config = RunConfig(
 train_df, test_df, target_col, paths = preprocess_and_split(config)
 
 tabebm_config = TabEBMConfig(
-    max_data_size=1000,
+    max_data_size=1000,  # testing only
     starting_point_noise_std=0.01,
-    sgld_step_size=0.1,
+    sgld_step_size=0.01,
     sgld_noise_std=0.01,
     sgld_steps=200,
     distance_negative_class=5.0,
     seed=42,
 )
 
-model = TabEBMModel(
-    target_col=target_col,
-    config=tabebm_config,
-)
+model = TabEBMModel(target_col=target_col, config=tabebm_config)
+model.train(output_dir=paths["split_dir"], synthetic_dir=paths["synthetic_dir"])
 
-model.train(
-    output_dir=paths["split_dir"],
-    synthetic_dir=paths["synthetic_dir"],
-)
-
-x_synth, y_synth = model.sample(1000)
-
-synthetic_df = save_synthetic(
-    x_synth, train_df, paths, categorical_cols=config.categorical_cols, y_synth=y_synth
-)
+x_synth, y_synth = model.sample(1000)  # testing only
+x_synth[target_col] = y_synth.values
+synthetic_df = save_synthetic(x_synth, train_df, paths, categorical_cols=config.categorical_cols)
 
 evaluate(model, config, train_df, synthetic_df, target_col, paths, test_df)

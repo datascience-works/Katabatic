@@ -22,7 +22,7 @@ def infer_categorical_columns(df: pd.DataFrame) -> List[str]:
         s = df[col]
         dt = str(s.dtype)
 
-        if dt == "object" or dt.startswith("category"):
+        if dt == "object" or dt == "str" or dt.startswith("category") or dt.startswith("string"):
             cat_cols.append(col)
             continue
 
@@ -158,7 +158,7 @@ def decode_df(
                     row[col.name] = None
                 else:
                     raw = float(enc[i, ptr])
-                    idx = int(np.round(raw))
+                    idx = 0 if np.isnan(raw) else int(np.round(raw))
                     idx = int(np.clip(idx, 0, len(cats) - 1))
                     row[col.name] = cats[idx]
                 ptr += 1
