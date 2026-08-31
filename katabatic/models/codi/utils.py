@@ -212,17 +212,17 @@ def get_activation(activation: str) -> nn.Module:
     """Get activation function."""
     # Paper alignment:
     # Match the activation options supported by the official CoDi implementation.
-    if activation.lower() == 'elu':
+    if activation.lower() == "elu":
         return nn.ELU()
-    elif activation.lower() == 'relu':
+    elif activation.lower() == "relu":
         return nn.ReLU()
-    elif activation.lower() == 'lrelu':
+    elif activation.lower() == "lrelu":
         return nn.LeakyReLU(negative_slope=0.2)
-    elif activation.lower() in ['swish', 'silu']:
+    elif activation.lower() in ["swish", "silu"]:
         return nn.SiLU()
     elif activation.lower() == "tanh":
         return nn.Tanh()
-    elif activation.lower() == 'softplus':
+    elif activation.lower() == "softplus":
         return nn.Softplus()
     else:
         raise NotImplementedError(
@@ -259,57 +259,55 @@ class TabularUNet(nn.Module):
         # Official CoDi uses input_dim // 2 for the condition projection.
         # If the projected dimension is smaller than 2, input_dim itself is used.
         cond_out = input_dim // 2
-        
+
         if cond_out < 2:
             cond_out = input_dim
-        
+
         self.cond_proj = nn.Linear(cond_dim, cond_out)
-        
-        self.input_layer = nn.Linear(
-            input_dim + cond_out,
-            hidden_dims[0]
-        )
+
+        self.input_layer = nn.Linear(input_dim + cond_out, hidden_dims[0])
 
         # Encoder
         self.encoder = nn.ModuleList()
         for i in range(len(hidden_dims) - 1):
-            self.encoder.append(nn.ModuleList([
-                nn.Linear(hidden_dims[i], hidden_dims[i + 1]),
-                nn.Linear(time_embed_dim * 4, hidden_dims[i + 1]),
-        
-                # Paper alignment:
-                # Official CoDi uses a second fully connected layer
-                # in each encoding block.
-                nn.Linear(hidden_dims[i + 1], hidden_dims[i + 1]),
-        
-                self.activation
-            ]))
-        
+            self.encoder.append(
+                nn.ModuleList(
+                    [
+                        nn.Linear(hidden_dims[i], hidden_dims[i + 1]),
+                        nn.Linear(time_embed_dim * 4, hidden_dims[i + 1]),
+                        # Paper alignment:
+                        # Official CoDi uses a second fully connected layer
+                        # in each encoding block.
+                        nn.Linear(hidden_dims[i + 1], hidden_dims[i + 1]),
+                        self.activation,
+                    ]
+                )
+            )
+
         # Paper alignment:
         # Official CoDi includes a bottom fully connected layer
         # between the encoder and decoder.
-        self.bottom_layer = nn.Linear(
-            hidden_dims[-1],
-            hidden_dims[-1]
-        )
-        
+        self.bottom_layer = nn.Linear(hidden_dims[-1], hidden_dims[-1])
+
         # Decoder
         self.decoder = nn.ModuleList()
         for i in range(len(hidden_dims) - 1, 0, -1):
-            self.decoder.append(nn.ModuleList([
-                # Paper alignment:
-                # The first decoder layer keeps the current hidden dimension
-                # before projecting back to the previous encoder dimension.
-                nn.Linear(hidden_dims[i] * 2, hidden_dims[i]),
-                nn.Linear(time_embed_dim * 4, hidden_dims[i]),
-        
-                # Paper alignment:
-                # Official CoDi uses a second fully connected layer
-                # in each decoding block.
-                nn.Linear(hidden_dims[i], hidden_dims[i - 1]),
-        
-                self.activation
-            ]))
+            self.decoder.append(
+                nn.ModuleList(
+                    [
+                        # Paper alignment:
+                        # The first decoder layer keeps the current hidden dimension
+                        # before projecting back to the previous encoder dimension.
+                        nn.Linear(hidden_dims[i] * 2, hidden_dims[i]),
+                        nn.Linear(time_embed_dim * 4, hidden_dims[i]),
+                        # Paper alignment:
+                        # Official CoDi uses a second fully connected layer
+                        # in each decoding block.
+                        nn.Linear(hidden_dims[i], hidden_dims[i - 1]),
+                        self.activation,
+                    ]
+                )
+            )
 
         # Output
         self.output_layer = nn.Linear(hidden_dims[0], output_dim)
@@ -335,24 +333,23 @@ class TabularUNet(nn.Module):
             h = h + act(temb_proj(t_emb))
             h = act(layer2(h))
             skips.append(h)
-        
+
         # Paper alignment:
         # Official CoDi includes a bottom layer between encoder and decoder.
         h = self.bottom_layer(h)
         h = self.activation(h)
-        
+
         # Paper alignment:
         # Official CoDi decoding blocks use skip concatenation followed by
         # two fully connected layers with timestep conditioning.
         for (layer1, temb_proj, layer2, act), skip in zip(
-            self.decoder,
-            reversed(skips)
+            self.decoder, reversed(skips)
         ):
             h = torch.cat([h, skip], dim=1)
             h = act(layer1(h))
             h = h + act(temb_proj(t_emb))
             h = act(layer2(h))
-        
+
         return self.output_layer(h)
 
 
@@ -368,12 +365,9 @@ class GaussianDiffusionTrainer(nn.Module):
         alphas = 1.0 - betas
         alphas_bar = torch.cumprod(alphas, dim=0)
 
-        self.register_buffer('betas', betas)
-        self.register_buffer('sqrt_alphas_bar', torch.sqrt(alphas_bar))
-        self.register_buffer(
-            'sqrt_one_minus_alphas_bar',
-            torch.sqrt(1 - alphas_bar)
-        )
+        self.register_buffer("betas", betas)
+        self.register_buffer("sqrt_alphas_bar", torch.sqrt(alphas_bar))
+        self.register_buffer("sqrt_one_minus_alphas_bar", torch.sqrt(1 - alphas_bar))
 
     # Katabatic compatibility fix:
     # Exposes the Gaussian forward diffusion step q(x_t | x_0)
@@ -387,11 +381,7 @@ class GaussianDiffusionTrainer(nn.Module):
 
         x_t = (
             extract(self.sqrt_alphas_bar, t, x_0.shape) * x_0
-            + extract(
-                self.sqrt_one_minus_alphas_bar,
-                t,
-                x_0.shape
-            ) * noise
+            + extract(self.sqrt_one_minus_alphas_bar, t, x_0.shape) * noise
         )
 
         return x_t
@@ -406,6 +396,7 @@ class GaussianDiffusionTrainer(nn.Module):
         x_t = self.make_x_t(x_0, t, noise)
         noise_pred = self.model(x_t, t, cond)
         return F.mse_loss(noise_pred, noise)
+
 
 class GaussianDiffusionSampler(nn.Module):
     """Gaussian diffusion sampler."""
@@ -439,26 +430,9 @@ class GaussianDiffusionSampler(nn.Module):
         self.register_buffer("posterior_log_variance", posterior_log_variance)
 
     def p_mean_variance(self, x_t, t, cond):
-        """Single sampling step."""
-        eps = self.model(x_t, t, cond)
-        x_0_pred = (
-            extract(self.sqrt_recip_alphas_bar, t, x_t.shape) * x_t
-            - extract(self.sqrt_recipm1_alphas_bar, t, x_t.shape) * eps
-        )
-        x_0_pred = torch.clamp(x_0_pred, -1, 1)
-
-        mean = (
-            extract(self.posterior_mean_coef1, t, x_t.shape) * x_0_pred
-            + extract(self.posterior_mean_coef2, t, x_t.shape) * x_t
-        )
-        log_variance = extract(self.posterior_log_variance, t, x_t.shape)
-
-        return mean, log_variance
-
-    def p_mean_variance(self, x_t, t, cond):
         """
         Compute the reverse diffusion mean and log variance.
-    
+
         # Katabatic compatibility fix:
         # CODI._sample_reverse() expects the sampler to expose
         # p_mean_variance(). This method reuses the existing
@@ -466,27 +440,22 @@ class GaussianDiffusionSampler(nn.Module):
         # not change the CoDi sampling mechanism.
         """
         eps = self.model(x_t, t, cond)
-    
+
         x_0_pred = (
             extract(self.sqrt_recip_alphas_bar, t, x_t.shape) * x_t
             - extract(self.sqrt_recipm1_alphas_bar, t, x_t.shape) * eps
         )
-    
+
         x_0_pred = torch.clamp(x_0_pred, -1, 1)
-    
+
         mean = (
             extract(self.posterior_mean_coef1, t, x_t.shape) * x_0_pred
             + extract(self.posterior_mean_coef2, t, x_t.shape) * x_t
         )
-    
-        log_variance = extract(
-            self.posterior_log_variance,
-            t,
-            x_t.shape
-        )
-    
-        return mean, log_variance
 
+        log_variance = extract(self.posterior_log_variance, t, x_t.shape)
+
+        return mean, log_variance
 
     def p_sample(self, x_t, t, cond):
         """Single sampling step."""
@@ -496,9 +465,9 @@ class GaussianDiffusionSampler(nn.Module):
         mean, log_variance = self.p_mean_variance(x_t, t, cond)
         noise = torch.randn_like(x_t)
         noise[t == 0] = 0
-    
+
         return mean + torch.exp(0.5 * log_variance) * noise
-    
+
     def forward(self, x_T, cond):
         """Generate samples."""
         x_t = x_T

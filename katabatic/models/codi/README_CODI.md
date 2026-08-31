@@ -16,9 +16,9 @@ The paper also introduces contrastive learning to strengthen the relationship be
 ---
 
 ### Research Paper
-Lee, C., Kim, J., & Park, N..  
-**CoDi: Co-evolving Contrastive Diffusion Models for Mixed-type Tabular Synthesis.**  
-Paper: https://arxiv.org/abs/2304.12654 
+Lee, C., Kim, J., & Park, N..
+**CoDi: Co-evolving Contrastive Diffusion Models for Mixed-type Tabular Synthesis.**
+Paper: https://arxiv.org/abs/2304.12654
 
 ---
 
@@ -169,7 +169,7 @@ The evaluation results are also stored as a TSTR report for subsequent benchmark
 ```bash
 poetry install --extras codi
 ```
---- 
+---
 
 ## Usage
 
@@ -207,7 +207,7 @@ synthetic_data = model.sample(1000)
 
 The hyperparameters can be adjusted according to the dataset-specific configuration required for paper reproduction.
 
---- 
+---
 
 ## Model Evaluation Benchmarks Results
 
@@ -353,7 +353,7 @@ a direct dataset-level reproduction of the paper's reported scores.
 A paper-aligned evaluation would require using Macro F1 for multi-class
 classification and extending the current evaluation to support multi-class
 AUROC.
-  
+
 
 ## Model Performance Benchmarks Results
 
