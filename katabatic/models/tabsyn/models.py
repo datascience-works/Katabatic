@@ -37,6 +37,7 @@ class TabSyn(BaseModel):
         # diffusion training
         diffusion_epochs: int = 500,
         diffusion_batch_size: int = 4096,
+        diffusion_hidden_dim: int = 512,
         # sampling
         diffusion_steps: int = 50,
         # misc
@@ -53,6 +54,7 @@ class TabSyn(BaseModel):
             decoder_batch_size=decoder_batch_size,
             diffusion_epochs=diffusion_epochs,
             diffusion_batch_size=diffusion_batch_size,
+            diffusion_hidden_dim=diffusion_hidden_dim,
             diffusion_steps=diffusion_steps,
             lr=lr,
             weight_decay=weight_decay,
@@ -119,7 +121,7 @@ class TabSyn(BaseModel):
         X_cols = num_cols + cat_cols[1:]
 
         x_synth = df_s[X_cols]
-        y_synth = df_s[y_col].astype("int64")
+        y_synth = df_s[y_col]
 
         # Align synthetic feature names & order with real train CSV
         real_x_train_path = os.path.join(data_dir, "x_train.csv")
