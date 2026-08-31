@@ -76,9 +76,7 @@ class GMMModel(GMMUtilsMixin):
             Real dataset including the target column.
         """
         if self.target_col not in df.columns:
-            raise ValueError(
-                f"target_col '{self.target_col}' not in DataFrame"
-            )
+            raise ValueError(f"target_col '{self.target_col}' not in DataFrame")
 
         # 1. Detect feature types.
         self._detect_feature_types(df)
@@ -140,16 +138,12 @@ class GMMModel(GMMUtilsMixin):
             Synthetic dataset including the target column.
         """
         if self.classes_ is None:
-            raise RuntimeError(
-                "GMMModel must be fitted before calling generate()."
-            )
+            raise RuntimeError("GMMModel must be fitted before calling generate().")
 
         class_counts = self._compute_class_counts(n_rows)
         rows = []
 
-        for index, (cls, n_c) in enumerate(
-            zip(self.classes_, class_counts)
-        ):
+        for index, (cls, n_c) in enumerate(zip(self.classes_, class_counts)):
             if n_c <= 0:
                 continue
 
@@ -179,15 +173,11 @@ class GMMModel(GMMUtilsMixin):
             rows.append(df_decoded)
 
         if not rows:
-            raise RuntimeError(
-                "No samples were generated; check fitted GMMs."
-            )
+            raise RuntimeError("No samples were generated; check fitted GMMs.")
 
         synth_df = pd.concat(rows, ignore_index=True)
 
-        sampling_seed = (
-            self.random_state if seed is None else seed
-        )
+        sampling_seed = self.random_state if seed is None else seed
 
         # Ensure exactly n_rows are returned.
         if len(synth_df) > n_rows:

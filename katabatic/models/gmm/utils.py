@@ -77,10 +77,7 @@ class GMMUtilsMixin:
                 max_idx = max(i_to_v.keys())
                 vals = np.clip(vals, min_idx, max_idx)
 
-                decoded = [
-                    i_to_v.get(i, list(i_to_v.values())[0])
-                    for i in vals
-                ]
+                decoded = [i_to_v.get(i, list(i_to_v.values())[0]) for i in vals]
                 X_out[col] = decoded
 
         return X_out
