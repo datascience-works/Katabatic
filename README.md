@@ -22,6 +22,7 @@ A comprehensive framework for synthetic tabular data generation using state-of-t
 - [Quick Start](#quick-start)
 - [Usage](#usage)
 - [Models](#models)
+- [Datasets](#datasets)
 - [Evaluation](#evaluation)
 - [Development](#development)
 - [Contributing](#contributing)
@@ -329,6 +330,13 @@ results = pipeline.run(
   - Pre-trained language model fine-tuning
   - Conditional generation
   - Data imputation capabilities
+
+## 📊 Datasets
+
+### Model Evaluation Data Catalogue
+The models have been run for evalution and performance benchmarking on the five datasets found in the data catalogue. 
+See the following readme for information on the datasets used to evaluate the models.
+[Model Evalaution Data Catalogue]https://github.com/datascience-works/Katabatic/tree/main/datasets
 
 ## 📊 Evaluation
 
