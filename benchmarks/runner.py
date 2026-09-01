@@ -42,7 +42,7 @@ class RunConfig:
 def build_paths(config: RunConfig) -> dict:
     benchmarks_dir = os.path.join(REPO_ROOT, "benchmarks")
     return {
-        "raw_data": os.path.join(REPO_ROOT, "datasets", f"{config.dataset_name}.csv"),
+        "raw_data": os.path.join(REPO_ROOT, "raw_data", f"{config.dataset_name}.csv"),
         "processed_data": os.path.join(
             benchmarks_dir, "processed", f"{config.dataset_name}_processed.csv"
         ),
