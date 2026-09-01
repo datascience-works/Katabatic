@@ -64,6 +64,13 @@ class ModelRegistry:
             "extra": "ctgan",
             "supported": True,
         },
+        "arf": {
+            "module": "katabatic.models.arf.models",
+            "class": "ARFModel",
+            "dependencies": ["sklearn", "numpy", "pandas"],
+            "extra": None,
+            "supported": False,
+        },
     }
 
     @classmethod
