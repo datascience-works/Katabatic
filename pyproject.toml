@@ -37,7 +37,7 @@ ganblr = [
     "pyitlib==0.3.1",
 ]
 great = [
-    "transformers==5.5.0",
+    "transformers==5.16.1",
     "huggingface-hub",
     "torch>=2.13.0,<3.0.0",
     "datasets>=4.0.0,<5.0.0",
@@ -72,7 +72,7 @@ all = [
     "pgmpy>=0.1.25",
     "pyitlib==0.3.1",
     "statsmodels>=0.14.4,<0.15.0",
-    "transformers==5.5.0",
+    "transformers==5.16.1",
     "huggingface-hub",
     "torch>=2.13.0,<3.0.0",
     "datasets>=4.0.0,<5.0.0",
