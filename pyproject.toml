@@ -49,6 +49,7 @@ pategan = [
     "tensorflow==2.21.*",
     "tensorflow-io==0.31.0",
 ]
+smote = ["imbalanced-learn==0.14.2"]
 tabddpm = [
     "torch>=2.13.0,<3.0.0",
     "rtdl_revisiting_models==0.0.2",
