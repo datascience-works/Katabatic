@@ -47,7 +47,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install Poetry
-        run: pip install poetry==2.4.1
+        run: pip install poetry==2.4.2
 
       - name: Validate project metadata
         run: poetry check
