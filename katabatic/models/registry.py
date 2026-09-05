@@ -1,15 +1,33 @@
 """Model registry for dynamic model loading.
 
-Officially supported models (smoke-tested, PyPI extras): ``ganblr``, ``ctgan``.
+Officially supported models (smoke-tested, PyPI extras): ``ganblr``, ``ctgan``,
+``pategan``.
 Other registered models are experimental; see ``docs/EXPERIMENTAL_MODELS.md``.
 """
 
 from __future__ import annotations
 
 import importlib
+import importlib.util
 from typing import ClassVar
 
 from .base_model import Model
+
+
+def _dependency_available(dep: str) -> bool:
+    """Return True if ``dep`` is importable as a real module.
+
+    ``importlib.import_module`` alone is not enough: an interrupted uninstall can
+    leave an empty directory behind, which Python happily imports as an implicit
+    namespace package. Such a shell has ``spec.origin is None`` and no usable
+    attributes, so the dependency check would pass and the failure would instead
+    surface much later as a confusing AttributeError deep inside the model.
+    """
+    try:
+        spec = importlib.util.find_spec(dep)
+    except (ImportError, ValueError):
+        return False
+    return spec is not None and spec.origin is not None
 
 
 class ModelRegistry:
@@ -38,7 +56,7 @@ class ModelRegistry:
         },
         "tabsyn": {
             "module": "katabatic.models.tabsyn.models",
-            "class": "Tabsyn",
+            "class": "TabSyn",
             "dependencies": [],
             "extra": "tabsyn",
             "supported": False,
@@ -108,12 +126,9 @@ class ModelRegistry:
 
         model_info = cls._models[model_name]
 
-        missing_deps = []
-        for dep in model_info["dependencies"]:
-            try:
-                importlib.import_module(dep)
-            except ImportError:
-                missing_deps.append(dep)
+        missing_deps = [
+            dep for dep in model_info["dependencies"] if not _dependency_available(dep)
+        ]
 
         if missing_deps:
             raise ImportError(
