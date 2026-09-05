@@ -6,11 +6,12 @@ readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [
+    { name = "Vikum Dabare", email = "vikumdabare@gmail.com"},
     { name = "Alex Ryan", email = "alex.ryan_14@outlook.com" },
 ]
 keywords = ["synthetic-data", "tabular-data", "generative-models", "GAN", "TSTR"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
@@ -49,6 +50,7 @@ pategan = [
     "tensorflow==2.21.*",
     "tensorflow-io==0.31.0",
 ]
+smote = ["imbalanced-learn==0.14.2"]
 tabddpm = [
     "torch>=2.13.0,<3.0.0",
     "rtdl_revisiting_models==0.0.2",
@@ -111,7 +113,7 @@ include = ["CHANGELOG.md"]
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^2.3.1"
-ruff = "^0.16.4"
+ruff = "^0.16.5"
 # Development / test tooling
 ipykernel = "^7.3.0"
 pytest = "^9.1.1"
