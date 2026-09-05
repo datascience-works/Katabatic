@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-pytest.importorskip("torch")
-pytest.importorskip("transformers")
-pytest.importorskip("tensorflow")
-pytest.importorskip("pgmpy")
-pytest.importorskip("pyitlib")
+from tests.conftest import require_backend
 
-from katabatic.models.registry import ModelRegistry
+require_backend("torch", "save")
+require_backend("transformers", "AutoModelForCausalLM")
+
+from katabatic.models.registry import ModelRegistry  # noqa: E402
 
 
 @pytest.mark.integration

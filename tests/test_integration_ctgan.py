@@ -7,11 +7,15 @@ from pathlib import Path
 
 import pytest
 
-pytest.importorskip("torch")
+from tests.conftest import require_backend
 
-from katabatic.artifacts import LocalArtifactStore
-from katabatic.models.ctgan.models import CTGANModel
-from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
+require_backend("torch", "save")
+
+from katabatic.artifacts import LocalArtifactStore  # noqa: E402
+from katabatic.models.ctgan.models import CTGANModel  # noqa: E402
+from katabatic.pipeline.train_test_split.pipeline import (  # noqa: E402
+    TrainTestSplitPipeline,
+)
 
 
 @pytest.mark.integration

@@ -1,6 +1,6 @@
 # Model Contributions
 
-New models are **experimental** until they have a PyPI extra, registry entry (if applicable), integration smoke coverage, and documentation updates. Only `ganblr` and `great` are officially supported in v0.1.0; see [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md).
+New models are **experimental** until they have a PyPI extra, registry entry (if applicable), integration smoke coverage, and documentation updates. Only `ganblr`, `ctgan` and `pategan` are officially supported; see [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md).
 
 ## 🛠 Contribution Workflow
 
@@ -32,7 +32,7 @@ Inside the `katabatic/models/` directory:
    katabatic/models/<model_name>/
    ```
 
-2. Within that folder, follow the format used in existing models (like `ganblr` or `great`). Typically, this includes:
+2. Within that folder, follow the format used in existing models (like `ganblr` or `ctgan`). Typically, this includes:
 
    - `__init__.py`
    - `models.py`

@@ -98,9 +98,6 @@ jobs:
             ganblr:
               - 'katabatic/models/ganblr/**'
               - 'tests/test_integration_ganblr.py'
-            great:
-              - 'katabatic/models/great/**'
-              - 'tests/test_integration_great.py'
             ctgan:
               - 'katabatic/models/ctgan/**'
               - 'tests/test_integration_ctgan.py'
