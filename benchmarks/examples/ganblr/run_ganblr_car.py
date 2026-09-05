@@ -1,8 +1,11 @@
+import csv
 import logging
 import os
 import platform
+import shutil
 import sys
 import warnings
+from pathlib import Path
 from time import perf_counter
 
 import psutil
@@ -100,6 +103,64 @@ def get_system_run_details() -> None:
     print(f"  ⚡  Used RAM:   {round(ram.used / 1e9, 4)} GB")
     print("======================================================================")
 
+
+
+
+
+CAR_COLUMNS = [
+    "buying",
+    "maint",
+    "doors",
+    "persons",
+    "lug_boot",
+    "safety",
+    "class",
+]
+
+
+def prepare_car_dataset():
+    """Prepare the local Car Evaluation dataset for the GANBLR benchmark."""
+    repo_root = Path(__file__).resolve().parents[3]
+    source = repo_root / "raw_data" / "car.csv"
+    target = repo_root / "datasets" / "car.csv"
+
+    target.parent.mkdir(parents=True, exist_ok=True)
+
+    if not target.exists():
+        if not source.exists():
+            raise FileNotFoundError(
+                "Car dataset not found in datasets/car.csv or raw_data/car.csv"
+            )
+
+        shutil.copy2(source, target)
+        print(f"Copied car dataset from {source} to {target}")
+
+    with target.open(newline="") as f:
+        rows = list(csv.reader(f))
+
+    if not rows:
+        raise ValueError("Car dataset is empty")
+
+    numbered_header = [str(i) for i in range(7)]
+
+    if rows[0] == numbered_header:
+        rows[0] = CAR_COLUMNS
+
+        with target.open("w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerows(rows)
+
+        print("Normalised car dataset column names.")
+    elif rows[0] != CAR_COLUMNS:
+        raise ValueError(
+            f"Unexpected car dataset columns: {rows[0]}. "
+            f"Expected {CAR_COLUMNS}."
+        )
+
+    print(f"Car dataset ready: {target}")
+
+
+prepare_car_dataset()
 
 config = RunConfig(
     dataset_name="car",
