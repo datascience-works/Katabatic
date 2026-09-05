@@ -1,4 +1,5 @@
 import importlib
+import pathlib
 
 import pytest
 
@@ -80,7 +81,7 @@ def test_model_promotion_contract(model_name, config):
     )
 
     # 7. Integration test exists for model
-    test_file = f"test_integration_{model_name}.py"
+    test_file = pathlib.Path(__file__).parent / f"test_integration_{model_name}.py"
     assert test_file.is_file(), (
         f"'{model_name}' marked supported but has no integration test at {test_file}."
     )
