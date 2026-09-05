@@ -1,6 +1,7 @@
 FROM python:3.11-slim
 
 ARG POETRY_INSTALL_ARGS="--only main"
+ARG MODEL_EXTRA=""
 
 # Python settings
 ENV PYTHONDONTWRITEBYTECODE=1 \

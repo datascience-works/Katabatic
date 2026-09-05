@@ -19,17 +19,6 @@ install-all:
 	@echo "Installing all model dependencies..."
 	poetry install -E all
 
-# Setup development environment for specific model
-setup-ganblr-dev:
-	@echo "Setting up GANBLR development environment..."
-	@chmod +x scripts/setup_ganblr.sh
-	@./scripts/setup_ganblr.sh
-
-setup-great-dev:
-	@echo "Setting up GReaT development environment..."
-	@chmod +x scripts/setup_great.sh
-	@./scripts/setup_great.sh
-
 # Setup full development environment
 setup-dev:
 	@echo "Setting up full development environment..."
@@ -51,6 +40,7 @@ ci: lint security test build
 lint:
 	@echo "Running ruff..."
 	poetry run ruff check katabatic tests
+	poetry run ruff format --check katabatic tests
 
 format:
 	@echo "Auto-formatting with ruff..."
@@ -84,10 +74,11 @@ integration:
 
 test-all:
 	@echo "Running full tests..."
-	@set -e; for f in tests/test_*.py; do \
+	@for f in tests/test_*.py; do \
 		echo ""; \
 		echo "=== $$f ==="; \
-		poetry run pytest "$$f" -q || exit 1; \
+		poetry run pytest "$$f" -q; status=$$?; \
+		if [ $$status -ne 0 ] && [ $$status -ne 5 ]; then exit $$status; fi; \
 	done
 	@echo ""
 	@echo "Full suite passed."
@@ -108,9 +99,8 @@ help:
 	@echo "  make install-all             Install all model dependencies"
 	@echo ""
 	@echo "Development Setup:"
-	@echo "  make setup-ganblr-dev   Setup isolated GANBLR dev environment"
-	@echo "  make setup-great-dev    Setup isolated GReaT dev environment"
-	@echo "  make setup-dev          Setup full development environment"
+	@echo "  make setup-dev          Setup full development environment (all extras + hooks)"
+	@echo "  make hooks              Install and run pre-commit hooks"
 	@echo ""
 	@echo "Maintenance:"
 	@echo "  make clear-cache        Clear Python cache files"
