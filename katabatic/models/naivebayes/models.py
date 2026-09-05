@@ -47,8 +47,6 @@ class NaiveBayesModel(BaseModel):
     def get_required_dependencies(cls) -> list[str]:
         return ["numpy", "pandas", "sklearn"]
 
-    # ----------------- internal fitting/generation (Rishi's original logic) -----------------
-
     def _compute_class_distribution(self, df: pd.DataFrame):
         counts = df[self.target_col].value_counts(normalize=True)
         self.classes_ = counts.index.to_numpy()
