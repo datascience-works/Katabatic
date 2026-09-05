@@ -28,7 +28,7 @@ model = PATEGAN(
     delta=1e-5,
     num_teachers=10,
     niter=10000,
-    batch_size=128,
+    batch_size=64,
     random_state=42,
 )
 model.train(

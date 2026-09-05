@@ -23,6 +23,11 @@ class PATEGAN(Model):
     - Handles mixed categorical and continuous data
     """
 
+    ARTIFACT_STATE_FILES = (
+        "metadata.json",
+        "pategan.ckpt.index",
+    )
+
     def __init__(
         self,
         epsilon: float = 1.0,
@@ -121,6 +126,47 @@ class PATEGAN(Model):
         D_out = tf.matmul(D_h2, self.D_W3) + self.D_b3
 
         return D_out
+
+    @classmethod
+    def load_from_ref(cls, store, ref):
+        import os
+
+        import tensorflow.compat.v1 as tf
+
+        from .utils import load_metadata, reconstruct_transformer
+
+        state_dir = str(store.open_path(ref.state_relpath))
+        metadata_path = os.path.join(state_dir, "metadata.json")
+        checkpoint_path = os.path.join(state_dir, "pategan.ckpt")
+
+        metadata = load_metadata(metadata_path)
+
+        training_config = metadata["training_config"]
+        privacy_config = metadata["privacy_config"]
+
+        model = cls(
+            epsilon=privacy_config["epsilon"],
+            delta=privacy_config["delta"],
+            num_teachers=privacy_config["num_teachers"],
+            niter=training_config["niter"],
+            batch_size=training_config["batch_size"],
+            z_dim=training_config["z_dim"],
+            learning_rate=training_config["learning_rate"],
+            lambda_gp=training_config["lambda_gp"],
+            random_state=metadata["seed"],
+        )
+
+        model.transformer = reconstruct_transformer(metadata)
+
+        x_dim = len(model.transformer.column_order)
+        model._build_model(x_dim)
+
+        saver = tf.train.Saver()
+        saver.restore(model._sess, checkpoint_path)
+
+        model._is_fitted = True
+
+        return model
 
     def _build_model(self, X_dim: int):
         """
@@ -601,7 +647,33 @@ class PATEGAN(Model):
             )
             print(f"Saved metadata.json to {metadata_path}")
 
-        return self
+            artifact_state_dir = kwargs.get("artifact_state_dir")
+
+            if artifact_state_dir:
+                os.makedirs(artifact_state_dir, exist_ok=True)
+
+                state_metadata_path = os.path.join(
+                    artifact_state_dir,
+                    "metadata.json",
+                )
+
+                save_metadata(
+                    state_metadata_path,
+                    self.transformer,
+                    training_config,
+                    privacy_config,
+                    self.random_state,
+                )
+
+                import tensorflow.compat.v1 as tf
+
+                saver = tf.train.Saver()
+                saver.save(
+                    self._sess,
+                    os.path.join(artifact_state_dir, "pategan.ckpt"),
+                )
+
+            return self
 
     def evaluate(
         self,
