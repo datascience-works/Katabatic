@@ -90,7 +90,6 @@ katabatic/
 │       └── ganblr/
 ├── Results/                     # Evaluation results
 ├── utils.py                     # Top-level utility functions
-├── main.py                      # Command-line interface
 ├── example.ipynb               # Usage examples
 ├── pyproject.toml              # Main project dependencies
 ├── poetry.lock                 # Locked dependencies
@@ -127,7 +126,7 @@ git clone <repository-url>
 cd katabatic
 pyenv local 3.11.9
 poetry install
-poetry shell
+poetry env activate
 
 # Verify installation
 python -c "from katabatic.models.ganblr.models import GANBLR; print('Setup successful')"
@@ -679,6 +678,25 @@ print(results)
 ```
 
 ## 🧪 Testing and Quality Assurance
+
+### Running the full suite locally
+
+Do **not** run `pytest` over the whole `tests/` directory with more than one
+model backend installed. TensorFlow (`ganblr`, `pategan`) and PyTorch (`ctgan`)
+segfault when run on the same interpreter process:
+
+```
+tests/test_integration_ganblr.py + tests/test_integration_ctgan.py   -> Segmentation fault
+tests/test_integration_ganblr.py + tests/test_integration_pategan.py -> 4 passed
+```
+
+Every file passes on its own. Use `make test-all`, which runs one pytest process
+per file, or install a single extra at a time:
+
+```bash
+make test-all
+make integration MODEL=ganblr
+```
 
 ### Test Infrastructure
 

@@ -1,17 +1,18 @@
 .DS_Store
 
-# Local pipeline outputs (not for version control)
-artifacts/
-benchmarks/processed/
-benchmarks/results/
-benchmarks/splits/
-katabatic/datasets/
-datasets/
-raw_data/
-preprocessed_data/
-sample_data/
-synthetic/
-Results/
+# Local pipeline outputs (not for version control).
+/artifacts/
+/benchmarks/processed/
+/benchmarks/results/
+/benchmarks/splits/
+/datasets/*
+!/datasets/.gitkeep
+!/datasets/README.md
+/preprocessed_data/
+/discretized_data/
+/sample_data/
+/synthetic/
+/Results/
 
 
 # GReaT trainer artifacts

@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Six-dimension evaluation pipeline: fidelity, utility, diversity, privacy, consistency, and stability (`katabatic.pipeline.evaluation_pipeline`).
-- Six additional models registered as experimental: `codi`, `ctgan`, `medgan`, `pategan`, `tabddpm`, `tabsyn`.
+- Four additional models registered as experimental: `ctgan`, `pategan`, `tabddpm`, `tabsyn`. (`codi` and `medgan` ship as source but are not in the registry.)
 - Model promotion contract, enforced automatically by the `model-contract` CI job: registry entry with matching extra, importable module and class, pipeline interface (`train`, `sample`, `load_from_ref`), non-empty `ARTIFACT_STATE_FILES`, and an integration test.
 - Parameterised contract test harness (`tests/test_model_registry.py`) covering every model marked supported.
 - CTGAN integration test with a full artifact round-trip: state persistence, reload via `load_from_ref`, and sampling with column-order verification.

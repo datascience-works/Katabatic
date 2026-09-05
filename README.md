@@ -4,11 +4,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Poetry](https://img.shields.io/badge/dependency-poetry-blue)](https://python-poetry.org/)
 
-A comprehensive framework for synthetic tabular data generation using state-of-the-art machine learning models including GANBLR and GReaT (Generation of Realistic Tabular data).
+A comprehensive framework for synthetic tabular data generation using state-of-the-art machine learning models including GANBLR, CTGAN and PATE-GAN.
 
 ## 🚀 Features
 
-- **Multiple Generative Models**: Support for GANBLR (GAN-based Bayesian Learning Rules) and GReaT (transformer-based generation)
+- **Multiple Generative Models**: GANBLR (GAN-based Bayesian Learning Rules), CTGAN (conditional tabular GAN) and PATE-GAN (differentially private GAN), plus experimental transformer- and diffusion-based generators
 - **Automated Pipeline**: End-to-end training, generation, and evaluation workflows
 - **TSTR Evaluation**: Train on Synthetic, Test on Real data evaluation methodology
 - **Data Preprocessing**: Automated tabular preprocessing (discretization and encoding)
@@ -128,21 +128,22 @@ pyenv local 3.11.9
 |----------|---------|
 | Core only | `pip install katabatic` or `poetry install` |
 | GANBLR (supported) | `pip install katabatic[ganblr]` or `poetry install -E ganblr` |
-| GReaT (supported) | `pip install katabatic[great]` or `poetry install -E great` |
+| CTGAN (supported) | `pip install katabatic[ctgan]` or `poetry install -E ctgan` |
+| PATE-GAN (supported) | `pip install katabatic[pategan]` or `poetry install -E pategan` |
 | TSTR + XGBoost | `pip install katabatic[eval]` or `poetry install -E eval` |
 | Development | `poetry install --with dev` |
 | All optional deps | `pip install katabatic[all]` |
 
-Experimental models (`tabsyn`, `tabddpm`, `pategan`, `ctgan`, etc.) are documented in [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md).
+Experimental models (`great`, `tabsyn`, `tabddpm`, `codi`, `medgan`, etc.) are documented in [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md).
 
 ```bash
 # Minimal install (core + dev tools for contributors)
 poetry install --with dev
 
 # Supported models for local work
-poetry install --with dev -E ganblr -E great -E eval
+poetry install --with dev -E ganblr -E ctgan -E pategan -E eval
 
-poetry shell
+poetry env activate
 ```
 
 ### 4. GPU Support (Optional)
@@ -160,7 +161,7 @@ poetry add torch torchvision torchaudio --index-url https://download.pytorch.org
 # Core import
 python -c "import katabatic; print(katabatic.__version__)"
 
-# After installing extras, e.g. poetry install -E ganblr -E great
+# After installing extras, e.g. poetry install -E ganblr -E ctgan
 python -c "from katabatic.models.registry import ModelRegistry; print(ModelRegistry.get_supported_models())"
 ```
 
@@ -236,8 +237,7 @@ from katabatic.utils.preprocess import preprocess_tabular
 preprocess_tabular(
     file_path="raw_data/your_dataset.csv",
     output_path="preprocessed_data/your_dataset.csv",
-    bins=10,  # Number of bins for numerical discretization
-    strategy='uniform'  # 'uniform', 'quantile', or 'kmeans'
+    target_col="income",  # optional: defaults to the last column
 )
 ```
 
@@ -295,7 +295,7 @@ from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
 from katabatic.models.ganblr.models import GANBLR
 
 # Create pipeline with GANBLR
-pipeline = TrainTestSplitPipeline(model=GANBLR)
+pipeline = TrainTestSplitPipeline(model=GANBLR())
 
 # Run complete workflow: split preprocessed CSV -> train model -> TSTR evaluation.
 # Legacy mode: ``real_test_dir`` defaults to ``output_dir`` (where split_dataset
@@ -391,7 +391,7 @@ code --install-extension ms-python.isort
 git clone https://github.com/datascience-works/Katabatic.git
 cd Katabatic
 
-poetry install --with dev -E ganblr -E eval   # add -E great as needed
+poetry install --with dev -E ganblr -E eval   # add -E {model} as needed
 
 poetry check
 poetry run ruff check katabatic tests
@@ -405,7 +405,7 @@ poetry run mypy katabatic/                     # optional
 ```
 Katabatic/
 ├── katabatic/                 # Installable package (PyPI wheel)
-│   ├── models/                # GANBLR, GReaT, experimental generators
+│   ├── models/                # GANBLR, CTGAN, PATE-GAN, experimental generators
 │   ├── pipeline/              # TrainTestSplitPipeline, cross-validation
 │   ├── evaluate/              # TSTR, statistical fidelity
 │   ├── artifacts/             # Versioned store helpers
@@ -648,7 +648,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🔗 Related Projects
 
-- [GANBLR Original Paper](https://link-to-paper)
+- [GANBLR: A Tabular Data Generation Model (ICDM 2021)](https://ieeexplore.ieee.org/document/9679177)
 - [GReaT Repository](https://github.com/kathrinse/be_great)
 - [Synthetic Data Resources](https://github.com/synthetic-data-resources)
 
