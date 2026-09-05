@@ -104,12 +104,16 @@ jobs:
             ctgan:
               - 'katabatic/models/ctgan/**'
               - 'tests/test_integration_ctgan.py'
+            pategan:
+              - 'katabatic/models/pategan/**'
+              - 'tests/test_integration_pategan.py'
       - name: Build Dynamic Matrix
         id: build-matrix
         run: |
           ALL_MODELS='[
             {"model": "ganblr", "torch": false},
-            {"model": "ctgan", "torch": true}
+            {"model": "ctgan", "torch": true},
+            {"model": "pategan", "torch": false}
           ]'
 
           # If a core file changed, run all models.
@@ -158,7 +162,7 @@ jobs:
       - name: Integration tests (${{ matrix.model }})
         env:
           COVERAGE_FILE: .coverage.${{ matrix.model }}
-        run: poetry run pytest -m "integration and ${{ matrix.model }}" -q --cov=katabatic --cov-report=
+        run: poetry run pytest tests/test_integration_${{ matrix.model }}.py -q --cov=katabatic --cov-report=
 
       - name: Upload Model Coverage
         uses: actions/upload-artifact@v7
