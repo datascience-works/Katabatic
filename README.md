@@ -334,7 +334,7 @@ results = pipeline.run(
 ## 📊 Datasets
 
 ### Model Evaluation Data Catalogue
-The models have been run for evalution and performance benchmarking on the five datasets found in the data catalogue. 
+The models have been run for evalution and performance benchmarking on the five datasets found in the data catalogue.
 See the following readme for information on the datasets used to evaluate the models.
 [Model Evalaution Data Catalogue]https://github.com/datascience-works/Katabatic/tree/main/datasets
 
