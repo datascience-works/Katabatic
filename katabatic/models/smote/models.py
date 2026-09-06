@@ -108,8 +108,12 @@ class _SMOTE:
             X_cls = X[mask]
             n_cls = len(X_cls)
 
-            # k must be < n_cls; get_adjusted_k_neighbors already ensures this
-            # but guard here too in case _SMOTE is used standalone
+            # Paper alignment:
+            # Chawla et al. (2002) use five nearest minority-class neighbours.
+            #
+            # Katabatic compatibility:
+            # Reduce k only when a minority class is too small for the requested
+            # neighbour count, so nearest-neighbour search remains valid.
             k = min(self.k_neighbors, n_cls - 1)
 
             nn = NearestNeighbors(n_neighbors=k + 1, algorithm="auto")
@@ -132,17 +136,55 @@ class _SMOTE:
         neighbour_indices: np.ndarray,
         n_needed: int,
     ) -> np.ndarray:
-        """Generate n_needed synthetic points via random interpolation."""
+        """
+        Generate synthetic minority samples using paper-aligned anchor selection.
+
+        Katabatic still determines the requested number of generated samples
+        through ``sampling_strategy``. Once that number is known, complete
+        passes use every minority sample as an anchor and a partial pass uses
+        a random subset of minority samples.
+        """
         n_cls = len(X_cls)
-        # Pick a random anchor for each synthetic sample
-        anchor_idx = self._rng.integers(0, n_cls, size=n_needed)
-        # Pick a random neighbour for each anchor
+
+        if n_needed <= 0:
+            return np.empty((0, X_cls.shape[1]), dtype=X_cls.dtype)
+
+        # Paper alignment:
+        # Chawla et al. (2002) process minority samples systematically.
+        # A complete oversampling pass uses every minority sample once.
+        # If only part of another pass is required, randomly select that
+        # number of minority samples for the remaining synthetic examples.
+        complete_passes, remainder = divmod(n_needed, n_cls)
+
+        anchor_parts = []
+
+        if complete_passes > 0:
+            anchor_parts.append(
+                np.tile(np.arange(n_cls), complete_passes)
+            )
+
+        if remainder > 0:
+            random_subset = self._rng.permutation(n_cls)[:remainder]
+            anchor_parts.append(random_subset)
+
+        anchor_idx = np.concatenate(anchor_parts)
+
+        # Paper alignment:
+        # For every selected minority anchor, choose one of its k nearest
+        # minority-class neighbours at random.
         k = neighbour_indices.shape[1]
         neighbour_col = self._rng.integers(0, k, size=n_needed)
         neighbour_idx = neighbour_indices[anchor_idx, neighbour_col]
 
-        lam = self._rng.uniform(0, 1, size=(n_needed, 1))
-        X_new = X_cls[anchor_idx] + lam * (X_cls[neighbour_idx] - X_cls[anchor_idx])
+        # Paper alignment:
+        # x_new = x_i + lambda * (x_neighbour - x_i),
+        # where lambda is sampled uniformly between 0 and 1.
+        lam = self._rng.uniform(0.0, 1.0, size=(n_needed, 1))
+
+        X_new = X_cls[anchor_idx] + lam * (
+            X_cls[neighbour_idx] - X_cls[anchor_idx]
+        )
+
         return X_new
 
 
