@@ -68,15 +68,9 @@ def save_synthetic_data(
     os.makedirs(synth_dir, exist_ok=True)
 
     if label not in synthetic_df.columns:
-        raise ValueError(
-            f"Target column '{label}' not found in synthetic data."
-        )
+        raise ValueError(f"Target column '{label}' not found in synthetic data.")
 
-    feature_cols = [
-        column
-        for column in synthetic_df.columns
-        if column != label
-    ]
+    feature_cols = [column for column in synthetic_df.columns if column != label]
 
     x_path = os.path.join(synth_dir, "x_synth.csv")
     y_path = os.path.join(synth_dir, "y_synth.csv")
@@ -111,10 +105,7 @@ def save_metadata(
         "schema": {
             "columns": df.columns.tolist(),
             "label": label,
-            "dtypes": {
-                column: str(df[column].dtype)
-                for column in df.columns
-            },
+            "dtypes": {column: str(df[column].dtype) for column in df.columns},
             "categorical_columns": categorical_columns,
         },
         "privacy": {

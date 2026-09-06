@@ -57,12 +57,12 @@ class ModelRegistry:
             "extra": "pategan",
             "supported": False,
         },
-         "mst": {
-           "module": "katabatic.models.mst.models",
-           "class": "MSTModel",
-           "dependencies": ["snsynth", "mbi", "opendp"],
-           "extra": "mst",
-           "supported": False,
+        "mst": {
+            "module": "katabatic.models.mst.models",
+            "class": "MSTModel",
+            "dependencies": ["snsynth", "mbi", "opendp"],
+            "extra": "mst",
+            "supported": False,
         },
         "ctgan": {
             "module": "katabatic.models.ctgan.models",

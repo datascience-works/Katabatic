@@ -150,10 +150,7 @@ class MSTModel(BaseModel):
             if size is None:
                 return measurement(0.0)
 
-            return [
-                measurement(0.0)
-                for _ in range(size)
-            ]
+            return [measurement(0.0) for _ in range(size)]
 
         mst_module.cdp_rho = fixed_cdp_rho
         mst_module.gaussian_noise = fixed_gaussian_noise
@@ -194,11 +191,9 @@ class MSTModel(BaseModel):
             return self.delta
 
         if n_rows <= 0:
-            raise ValueError(
-                "Training data must contain at least one row."
-            )
+            raise ValueError("Training data must contain at least one row.")
 
-        return 1 / (n_rows * (n_rows ** 0.5))
+        return 1 / (n_rows * (n_rows**0.5))
 
     def train(
         self,
@@ -219,21 +214,15 @@ class MSTModel(BaseModel):
         try:
             import mbi  # noqa: F401
         except ImportError as exc:
-            raise ImportError(
-                "Private-PGM is required by SmartNoise MST."
-            ) from exc
+            raise ImportError("Private-PGM is required by SmartNoise MST.") from exc
 
         df = load_training_data(data_dir)
 
         if df.empty:
-            raise ValueError(
-                "Training data must not be empty."
-            )
+            raise ValueError("Training data must not be empty.")
 
         if df.isnull().any().any():
-            raise ValueError(
-                "MST training data must not contain missing values."
-            )
+            raise ValueError("MST training data must not contain missing values.")
 
         self.column_names = df.columns.tolist()
         self.label = df.columns[-1]
@@ -246,9 +235,7 @@ class MSTModel(BaseModel):
         )
 
         unknown_columns = [
-            column
-            for column in categorical_columns
-            if column not in df.columns
+            column for column in categorical_columns if column not in df.columns
         ]
 
         if unknown_columns:
@@ -261,7 +248,6 @@ class MSTModel(BaseModel):
         self._resolved_delta = self._resolve_delta(len(df))
 
         self._apply_opendp_compatibility_patch()
-
 
         print(
             "[MST] Initializing with "
@@ -310,11 +296,7 @@ class MSTModel(BaseModel):
             n_generated=n_generated,
         )
 
-        print(
-            "[MST] Synthetic data saved:\n"
-            f"  X -> {x_path}\n"
-            f"  y -> {y_path}"
-        )
+        print(f"[MST] Synthetic data saved:\n  X -> {x_path}\n  y -> {y_path}")
 
         return self
 
@@ -325,9 +307,7 @@ class MSTModel(BaseModel):
     ) -> float:
         """Return a placeholder evaluation score for pipeline compatibility."""
         if not self.is_fitted:
-            raise RuntimeError(
-                "Call train() before evaluate()."
-            )
+            raise RuntimeError("Call train() before evaluate().")
 
         return 0.0
 
@@ -339,22 +319,16 @@ class MSTModel(BaseModel):
     ) -> pd.DataFrame:
         """Generate synthetic samples from the fitted MST model."""
         if not self.is_fitted or self.synthesizer is None:
-            raise RuntimeError(
-                "Call train() before sample()."
-            )
+            raise RuntimeError("Call train() before sample().")
 
         if n is None:
             if self._train_df is None:
-                raise RuntimeError(
-                    "Training data is unavailable."
-                )
+                raise RuntimeError("Training data is unavailable.")
 
             n = len(self._train_df)
 
         if n <= 0:
-            raise ValueError(
-                "n must be greater than 0."
-            )
+            raise ValueError("n must be greater than 0.")
 
         synthetic = self.synthesizer.sample(
             int(n),
@@ -366,9 +340,7 @@ class MSTModel(BaseModel):
             )
 
         if self.column_names is None:
-            raise RuntimeError(
-                "Column metadata is unavailable."
-            )
+            raise RuntimeError("Column metadata is unavailable.")
 
         return pd.DataFrame(
             synthetic,
