@@ -1,12 +1,13 @@
 """Model registry for dynamic model loading.
 
-Officially supported models (smoke-tested, PyPI extras): ``ganblr``, ``great``.
+Officially supported models (smoke-tested, PyPI extras): ``ganblr``, ``ctgan``.
 Other registered models are experimental; see ``docs/EXPERIMENTAL_MODELS.md``.
 """
 
 from __future__ import annotations
 
 import importlib
+from typing import ClassVar
 
 from .base_model import Model
 
@@ -14,11 +15,11 @@ from .base_model import Model
 class ModelRegistry:
     """Registry for managing available models and their dependencies."""
 
-    _models: dict[str, dict] = {
+    _models: ClassVar[dict[str, dict]] = {
         "ganblr": {
             "module": "katabatic.models.ganblr.models",
             "class": "GANBLR",
-            "dependencies": ["tensorflow", "pgmpy", "pyitlib", "tf_keras", "scipy"],
+            "dependencies": ["tensorflow", "pgmpy", "pyitlib", "scipy"],
             "extra": "ganblr",
             "supported": True,
             "dataset_requirements": {
@@ -33,7 +34,7 @@ class ModelRegistry:
             "class": "GReaT",
             "dependencies": ["transformers", "torch"],
             "extra": "great",
-            "supported": True,
+            "supported": False,
         },
         "tabsyn": {
             "module": "katabatic.models.tabsyn.models",
@@ -51,17 +52,17 @@ class ModelRegistry:
         },
         "pategan": {
             "module": "katabatic.models.pategan.models",
-            "class": "PATEGANSynthesizer",
+            "class": "PATEGAN",
             "dependencies": ["tensorflow", "numpy", "pandas"],
             "extra": "pategan",
-            "supported": False,
+            "supported": True,
         },
         "ctgan": {
             "module": "katabatic.models.ctgan.models",
             "class": "CTGANModel",
             "dependencies": ["torch", "sklearn"],
             "extra": "ctgan",
-            "supported": False,
+            "supported": True,
         },
         "kde": {
             "module": "katabatic.models.kde.models",
@@ -82,6 +83,14 @@ class ModelRegistry:
     def get_supported_models(cls) -> list[str]:
         """Get list of officially supported model names."""
         return [name for name, info in cls._models.items() if info.get("supported")]
+
+    @classmethod
+    def get_model_config(cls, model_name: str) -> dict:
+        """Return the registry config for a model."""
+        model_name = model_name.lower()
+        if model_name not in cls._models:
+            raise KeyError(f"Model '{model_name}' is not registered.")
+        return cls._models[model_name]
 
     @classmethod
     def is_supported(cls, model_name: str) -> bool:

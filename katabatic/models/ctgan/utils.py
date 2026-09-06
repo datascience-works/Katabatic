@@ -12,7 +12,8 @@ def infer_categorical_columns(df: pd.DataFrame) -> list[str]:
 
     Rules:
     - object or category dtypes are categorical
-    - integer columns with very low cardinality (<= 20 and < 5% of rows)
+    - integer columns with very low absolute cardinality
+    (<=20 distinct values) or low relative cardinality (<5% of rows)
       are treated as categorical
     """
     cat_cols: list[str] = []
@@ -26,7 +27,7 @@ def infer_categorical_columns(df: pd.DataFrame) -> list[str]:
             continue
         if dt.startswith("int"):
             nunique = s.nunique(dropna=True)
-            if nunique <= 20 and nunique / n_rows < 0.05:
+            if nunique <= 20 or nunique / n_rows < 0.05:
                 cat_cols.append(col)
 
     return cat_cols

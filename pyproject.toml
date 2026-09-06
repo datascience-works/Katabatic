@@ -1,16 +1,17 @@
 [project]
 name = "katabatic"
-version = "0.1.0a1"
+version = "0.2.0"
 description = "Framework for synthetic tabular data generation, evaluation, and artifact-based pipelines."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [
-    { name = "Vikum Dabare", email = "vikumdabare@gmail.com" },
+    { name = "Vikum Dabare", email = "vikumdabare@gmail.com"},
+    { name = "Alex Ryan", email = "alex.ryan_14@outlook.com" },
 ]
 keywords = ["synthetic-data", "tabular-data", "generative-models", "GAN", "TSTR"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
@@ -28,52 +29,54 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-codi = ["torch>=2.7.1,<3.0.0"]
-ctgan = ["torch>=2.7.1,<3.0.0"]
+codi = ["torch>=2.13.0,<3.0.0"]
+ctgan = ["torch>=2.13.0,<3.0.0"]
 ganblr = [
-    "tensorflow==2.19.*",
+    "tensorflow==2.21.*",
     "tensorflow-io==0.31.0",
     "pgmpy>=0.1.25",
     "pyitlib==0.3.1",
-    "tf-keras>=2.19.0,<3.0.0",
 ]
 great = [
-    "transformers>=4.53.2,<5.0.0",
-    "torch>=2.7.1,<3.0.0",
+    "transformers>=4.57.0,<5.0.0",
+    "huggingface-hub>=0.34.0,<1.0",
+    "torch>=2.13.0,<3.0.0",
     "datasets>=4.0.0,<5.0.0",
     "accelerate>=0.26.0",
+    "fsspec>=2023.5.0,<=2026.2.0",
 ]
-medgan = ["torch>=2.7.1,<3.0.0"]
+medgan = ["torch>=2.13.0,<3.0.0"]
 pategan = [
-    "tensorflow==2.19.*",
+    "tensorflow==2.21.*",
     "tensorflow-io==0.31.0",
 ]
+smote = ["imbalanced-learn==0.14.2"]
 tabddpm = [
-    "torch>=2.7.1,<3.0.0",
+    "torch>=2.13.0,<3.0.0",
     "rtdl_revisiting_models==0.0.2",
     "category-encoders>=2.8.1,<3.0.0",
 ]
 tabpfgen = [
-    "torch>=2.7.1,<3.0.0",
+    "torch>=2.13.0,<3.0.0",
     "tabpfn>=2.0",
 ]
 tabsyn = [
-    "torch>=2.7.1,<3.0.0",
+    "torch>=2.13.0,<3.0.0",
     "tqdm>=4.66.0,<5.0.0",
     "category-encoders>=2.8.1,<3.0.0",
     "tomli>=2.0.1,<3.0.0",
     "tomli-w>=1.0.0,<2.0.0",
 ]
-eval = ["xgboost>=3.0.2,<4.0.0"]
+eval = ["xgboost>=3.2.0,<4.0.0"]
 all = [
-    "tensorflow==2.19.*",
+    "tensorflow==2.21.*",
     "tensorflow-io==0.31.0",
     "pgmpy>=0.1.25",
     "pyitlib==0.3.1",
-    "tf-keras>=2.19.0,<3.0.0",
     "statsmodels>=0.14.4,<0.15.0",
-    "transformers>=4.53.2,<5.0.0",
-    "torch>=2.7.1,<3.0.0",
+    "transformers>=4.57.0,<5.0.0",
+    "huggingface-hub>=0.34.0,<1.0",
+    "torch>=2.13.0,<3.0.0",
     "datasets>=4.0.0,<5.0.0",
     "xgboost>=3.0.2,<4.0.0",
     "tqdm>=4.66.0,<5.0.0",
@@ -81,8 +84,8 @@ all = [
     "tomli-w>=1.0.0,<2.0.0",
     "category-encoders>=2.8.1,<3.0.0",
     "rtdl_revisiting_models==0.0.2",
-    "tabpfn>=2.0",
-    "accelerate>=0.26.0",
+    "accelerate>=1.14.0",
+    "fsspec>=2023.5.0,<=2026.2.0",
 ]
 
 [project.urls]
@@ -95,7 +98,7 @@ Documentation = "https://github.com/datascience-works/Katabatic#readme"
 # Experimental models are excluded until they have integration tests.
 omit = [
     "katabatic/models/codi/*",
-    "katabatic/models/ctgan/*",
+    "katabatic/models/great",
     "katabatic/models/medgan/*",
     "katabatic/models/pategan/*",
     "katabatic/models/tabddpm/*",
@@ -109,21 +112,30 @@ packages = [{ include = "katabatic" }]
 include = ["CHANGELOG.md"]
 
 [tool.poetry.group.dev.dependencies]
-mypy = "^2.3.0"
-ruff = "^0.16.1"
+mypy = "^2.3.1"
+ruff = "^0.16.5"
 # Development / test tooling
-ipykernel = "^6.29.5"
+ipykernel = "^7.3.0"
 pytest = "^9.1.1"
 pytest-cov = "^7.1.0"
 pytest-mock = "^3.15.1"
+# Security tools
+bandit = "^1.9.4"
+pip-audit = "^2.10.1"
+pre-commit = "^4.6.2"
 
 [tool.pytest.ini_options]
 markers = [
     "integration: full model stack (slow)",
     "ganblr: requires ganblr extra",
     "great: requires great extra",
+    "ctgan: requires ctgan extra",
+    "pategan: requires pategan extra",
     "kde: core deps only, no extra required",
 ]
+
+[tool.ruff]
+extend-exclude = ["**/*.md", "**/README.md"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"] #E: pycodestyle error, F: flake8 error, I: isort imports, UP: Upgrade syntax
