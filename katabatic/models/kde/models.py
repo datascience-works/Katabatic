@@ -47,6 +47,8 @@ class KDESynthesizer(BaseModel):
         data_dir: str,
         synthetic_dir: str | None = None,
         *args,
+        categorical_cols: list[str] | None = None,
+        continuous_cols: list[str] | None = None,
         **kwargs,
     ) -> KDESynthesizer:
         train_full = os.path.join(data_dir, "train_full.csv")
@@ -73,11 +75,19 @@ class KDESynthesizer(BaseModel):
         self._target_col = str(y_col)
         self._feature_cols = [c for c in df.columns if c != self._target_col]
 
-        categorical_cols = self._load_categorical_cols(data_dir)
+        # Explicit categorical_cols (as passed by benchmark harnesses like
+        # benchmarks/runner.py) takes priority; otherwise fall back to this
+        # dataset's own info.json, then to dtype-based detection.
+        if categorical_cols is not None:
+            resolved_categorical_cols = {
+                c for c in categorical_cols if c in self._feature_cols
+            }
+        else:
+            resolved_categorical_cols = self._load_categorical_cols(data_dir)
 
         self._kde = KDEModel(
             target_col=self._target_col,
-            categorical_cols=categorical_cols,
+            categorical_cols=resolved_categorical_cols,
             kernel=self.cfg["kernel"],
             bandwidth=self.cfg["bandwidth"],
             random_state=self.cfg["seed"],
@@ -106,7 +116,7 @@ class KDESynthesizer(BaseModel):
                 "columns": df.columns.tolist(),
                 "label": self._target_col,
                 "dtypes": {c: str(df[c].dtype) for c in df.columns},
-                "categorical_columns": sorted(categorical_cols) if categorical_cols else [],
+                "categorical_columns": sorted(resolved_categorical_cols) if resolved_categorical_cols else [],
             },
             "training": self.cfg,
         }
@@ -128,7 +138,7 @@ class KDESynthesizer(BaseModel):
         if not os.path.exists(info_path):
             return None
 
-        with open(info_path, "r", encoding="utf-8") as f:
+        with open(info_path, encoding="utf-8") as f:
             info = json.load(f)
 
         cat_idx = info.get("cat_col_idx")

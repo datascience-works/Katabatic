@@ -2,6 +2,22 @@
 
 **KDE** (Kernel Density Estimation) is a class-conditional, non-parametric synthetic tabular data generator. It has no training loop and no GPU requirement — every "fit" is a closed-form density estimate.
 
+<img src="image.png" alt="KDE six-dimension evaluation scores on the car dataset" width="500" height="266" />
+
+## Benchmark Results
+
+Evaluated end-to-end via `benchmarks/examples/kde/run_kde_<dataset>.py` against the framework's 6-dimension evaluation pipeline (fidelity, utility, diversity, privacy, consistency, stability), across all 5 standard datasets:
+
+| Dataset | Composite | Fidelity | Utility | Diversity | Privacy | Consistency | Stability |
+|---|---|---|---|---|---|---|---|
+| car | 0.8435 | 0.9827 | 0.8874 | 0.9993 | 0.4612 | 0.6900 | 0.9825 |
+| adult | 0.9179 | 0.9932 | 0.9780 | 0.9588 | 0.9660 | 0.3676 | 0.9950 |
+| magic | 0.8916 | 0.9960 | 0.9952 | 0.8676 | 0.4216 | 0.9431 | 1.0000 |
+| nursery | 0.8642 | 0.9949 | 0.9136 | 0.9988 | 0.4587 | 0.7731 | 0.9950 |
+| shuttle | 0.9081 | 0.9964 | 0.9980 | 0.9486 | 0.5915 | 0.7608 | 1.0000 |
+
+Fidelity, diversity, and stability are consistently strong across all 5. **Privacy is the model's clearest weak point on the low-cardinality categorical datasets** (car, magic, nursery — all 0.42–0.59): class-conditional histograms over a small category space reproduce the training distribution closely enough that this trades off against privacy. `adult`, with higher-cardinality and mixed continuous features, scores far better on privacy (0.97) but noticeably worse on consistency (0.37) — worth keeping in mind before using KDE where either property specifically matters (see PATE-GAN's README for a model built around a differential-privacy guarantee instead).
+
 ## Overview
 
 For each class in the target column:
