@@ -9,9 +9,14 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
+from katabatic.datasets.specs import (  # noqa: E402
+    get_dataset_spec,
+    validate_dataset_spec,
+)
 from katabatic.pipeline.evaluation_pipeline import (  # noqa: E402
     SyntheticEvaluationPipeline,
 )
+from katabatic.utils.column_types import get_column_types  # noqa: E402
 from katabatic.utils.preprocess import preprocess_dataset  # noqa: E402
 from katabatic.utils.split_dataset import split_dataset  # noqa: E402
 
@@ -20,9 +25,9 @@ from katabatic.utils.split_dataset import split_dataset  # noqa: E402
 class RunConfig:
     dataset_name: str
     model_name: str
-    categorical_cols: list
-    continuous_cols: list
     target_col_raw: str
+    categorical_cols: list | None = None
+    continuous_cols: list | None = None
     constraints: dict | None = None
     test_size: float = 0.2
     seed: int = 42
@@ -97,6 +102,61 @@ def _split_cache_valid(meta_path: str, test_size: float, seed: int) -> bool:
 
     return meta.get("test_size") == test_size and meta.get("seed") == seed
 
+def resolve_column_types(config: RunConfig, raw_df: pd.DataFrame) -> None:
+    """
+    Resolve categorical and continuous feature columns for a benchmark run.
+
+    Resolution order:
+    1. Preserve explicit model-specific column definitions when both are supplied.
+    2. Use a known dataset specification when available.
+    3. Fall back to generic dtype-based inference for unknown datasets.
+
+    The target column is excluded from feature type detection.
+    """
+
+    manual_categorical = config.categorical_cols is not None
+    manual_continuous = config.continuous_cols is not None
+
+    if manual_categorical != manual_continuous:
+        raise ValueError(
+            "categorical_cols and continuous_cols must either both be provided "
+            "or both be omitted"
+        )
+
+    # Model-specific definitions take priority.
+    if manual_categorical and manual_continuous:
+        if config.target_col_raw not in raw_df.columns:
+            raise ValueError(
+                f"target column {config.target_col_raw!r} not found in raw dataset"
+            )
+        return
+
+    # Use authoritative metadata for known benchmark datasets.
+    dataset_spec = get_dataset_spec(config.dataset_name)
+
+    if dataset_spec is not None:
+        dataset_spec = validate_dataset_spec(raw_df, config.dataset_name)
+
+        config.target_col_raw = dataset_spec["target_col"]
+        config.categorical_cols = dataset_spec["categorical_cols"]
+        config.continuous_cols = dataset_spec["continuous_cols"]
+        return
+
+    # Generic fallback for unknown datasets.
+    if config.target_col_raw not in raw_df.columns:
+        raise ValueError(
+            f"target column {config.target_col_raw!r} not found in raw dataset"
+        )
+
+    feature_df = raw_df.drop(columns=[config.target_col_raw])
+
+    categorical_cols, continuous_cols = get_column_types(
+        feature_df,
+        exclude_last=False,
+    )
+
+    config.categorical_cols = categorical_cols
+    config.continuous_cols = continuous_cols
 
 def preprocess_and_split(config: RunConfig):
     """Preprocess raw CSV and split into train/test.
@@ -110,6 +170,17 @@ def preprocess_and_split(config: RunConfig):
             f"Raw dataset not found: {paths['raw_data']}\n"
             f"Place {config.dataset_name}.csv in the raw_data/ folder and re-run."
         )
+
+    # Column type detection must happen on the raw dataset before preprocessing,
+    # because preprocessing may alter the original dtypes.
+    raw_df = pd.read_csv(paths["raw_data"], na_values="?")
+    resolve_column_types(config, raw_df)
+
+    print("\n" + "=" * 60)
+    print("COLUMN TYPE RESOLUTION")
+    print("=" * 60)
+    print(f"Categorical columns : {config.categorical_cols}")
+    print(f"Continuous columns  : {config.continuous_cols}")
 
     print("\n" + "=" * 60)
     print("STEP 1 — Preprocess")
