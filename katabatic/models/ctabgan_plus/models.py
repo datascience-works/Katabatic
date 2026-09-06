@@ -302,11 +302,10 @@ class CTABGANSynthesizer:
     def _find_side(dim):
         """Find the smallest supported square image side."""
 
-        for side in [4, 8, 16, 32, 64]:
+        for side in [4, 8, 16, 24, 32]:
             if side * side >= dim:
-                return side
-
-        return 64
+              return side
+        return 32
 
     def _gen_layers(self):
         """Build generator layers for the selected image side."""
