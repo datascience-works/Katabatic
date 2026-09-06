@@ -121,3 +121,49 @@ model.train(
 
 X_synth, y_synth = model.sample(1000)
 ```
+
+---
+
+## Paper Alignment Validation
+
+The Katabatic SMOTE implementation was reviewed against the original
+Chawla et al. (2002) SMOTE paper.
+
+The implementation already matched several important parts of the paper:
+
+- `k_neighbors=5` as the default
+- nearest-neighbour search within the minority class
+- random neighbour selection
+- linear interpolation between the minority sample and neighbour
+
+A difference was identified in anchor selection.
+
+Previously, Katabatic selected a random minority anchor independently for
+every synthetic sample. The paper-aligned implementation now uses every
+minority sample once during each complete oversampling pass.
+
+If only part of another pass is required, a random subset of minority
+samples is selected without replacement.
+
+Katabatic's existing `sampling_strategy` interface is retained for pipeline
+compatibility. The original paper describes oversampling using an explicit
+percentage `N`, so this remains a documented difference rather than being
+presented as an exact reproduction.
+
+### Local Validation
+
+The paper-aligned change was validated before being applied to the production
+implementation.
+
+Automated tests confirmed:
+
+- default `k_neighbors=5`
+- systematic anchor use for complete passes
+- unique anchors during partial passes
+- preserved class balance
+- reproducibility with a fixed random seed
+
+Local test result:
+
+```text
+5 passed
