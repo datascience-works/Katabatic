@@ -131,6 +131,7 @@ markers = [
     "great: requires great extra",
     "ctgan: requires ctgan extra",
     "pategan: requires pategan extra",
+    "kde: core deps only, no extra required",
 ]
 
 [tool.ruff]
