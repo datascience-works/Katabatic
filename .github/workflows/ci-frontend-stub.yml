@@ -1,0 +1,43 @@
+#Note: To be removed once front-end moved to its own repo.
+name: CI
+
+on:
+  push:
+    branches: [main, development]
+    paths:
+     - 'frontend/**'
+
+  pull_request:
+    branches: [main, development]
+    paths:
+     - 'frontend/**'
+
+permissions:
+  contents: read
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Frontend change. Python checks skipped."
+
+
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Frontend change. Python checks skipped."
+
+  model-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Frontend change. Python checks skipped."
+
+  wheel-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Frontend change. Python checks skipped."
+
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Frontend change. Python checks skipped."

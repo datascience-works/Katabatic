@@ -1,4 +1,4 @@
-.PHONY: clear-cache install-core install-model install-all setup-dev help ci lint format security test build integration hooks contract
+.PHONY: clear-cache install-core install-model install-all setup-dev help ci lint format security test test-all build integration hooks contract
 
 # Core installation (minimal dependencies)
 install-core:
@@ -63,7 +63,7 @@ security:
 
 test:
 	@echo "Running fast tests with coverage..."
-	poetry run pytest -q --cov=katabatic --cov-report=term-missing
+	poetry run pytest -q --ignore=tests/test_model_registry.py --cov=katabatic --cov-report=term-missing
 
 build:
 	@echo "Building wheel..."
@@ -72,7 +72,8 @@ build:
 # Run a model promotion contract test
 contract:
 	@echo "Running model promotion contract test..."
-	poetry install --with dev -E ganblr
+	poetry run pip install "torch>=2.13.0,<3.0.0" --index-url https://download.pytorch.org/whl/cpu
+	poetry install --with dev -E all
 	poetry run pytest tests/test_model_registry.py -v
 
 # Run an integration test for a specific model.
@@ -80,6 +81,16 @@ integration:
 	@echo "Running integration tests for $(MODEL)..."
 	poetry install --with dev -E $(MODEL)
 	poetry run pytest -m "integration and $(MODEL)" -q
+
+test-all:
+	@echo "Running full tests..."
+	@set -e; for f in tests/test_*.py; do \
+		echo ""; \
+		echo "=== $$f ==="; \
+		poetry run pytest "$$f" -q || exit 1; \
+	done
+	@echo ""
+	@echo "Full suite passed."
 
 # Install and activate pre-commit hooks.
 hooks:
@@ -110,5 +121,6 @@ help:
 	@echo "  make lint               Run ruff lint + format check"
 	@echo "  make format             Auto-fix formatting and lint issues"
 	@echo "  make test               Run fast tests with coverage"
+	@echo "  make test-all           Run pytest on all supported models"
 	@echo "  make integration MODEL=ctgan   Run integration tests for a model"
 	@echo "  make hooks              Install pre-commit hooks"
