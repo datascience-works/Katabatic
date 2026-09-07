@@ -12,19 +12,7 @@ from katabatic.models.ctgan.models import CTGANModel
 config = RunConfig(
     dataset_name="adult",
     model_name="ctgan",
-    categorical_cols=[
-        "workclass",
-        "education",
-        "educational-num",
-        "marital-status",
-        "occupation",
-        "relationship",
-        "race",
-        "gender",
-        "native-country",
-    ],
-    continuous_cols=["age", "fnlwgt", "capital-gain", "capital-loss", "hours-per-week"],
-    target_col_raw="income",
+    target_col_raw="class",
     constraints={
         "age": (17, 90),  # working age range
         "fnlwgt": (12285, 1490400),  # census sampling weight, dataset min/max
