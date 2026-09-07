@@ -25,7 +25,7 @@ prepare_npy_for_tabsyn(paths["split_dir"], config.categorical_cols, config.conti
 print("\n" + "=" * 60)
 print("STEP 3 : Train TabSyn")
 print("=" * 60)
-model = TabSyn(diffusion_epochs=2000, patience=500)
+model = TabSyn()
 model.train(paths["split_dir"], paths["synthetic_dir"])
 print("\nTabSyn training complete.")
 

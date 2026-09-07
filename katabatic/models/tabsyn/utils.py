@@ -27,15 +27,14 @@ class TabSynConfig:
 
     decoder_epochs: int = 50
     decoder_batch_size: int = 2048
-
-    diffusion_epochs: int = 500
+    diffusion_epochs: int = 10000  # paper's actual training regime
     diffusion_batch_size: int = 4096
     diffusion_steps: int = 15  # paper recommends <20 for optimal results
     diffusion_hidden_dim: int = 1024  # paper's value
 
     lr: float = 1e-3
     weight_decay: float = 0.0
-    patience: int = 20
+    patience: int = 500  # paper's actual early-stop patience
     seed: int = 42
     device: str | None = None
 

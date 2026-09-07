@@ -64,11 +64,11 @@ Both stages use early stopping via `patience`. Testing found that longer trainin
 | `weight_decay` | 0.0 | Not tuned |
 | `patience` | 20 | Testing showed 500 significantly improves results when combined with more diffusion_epochs |
 
-**Best verified configuration (Car dataset):**
+**Default configuration (Car dataset, matches paper's reported hyperparameters):**
 ```python
-TabSyn(diffusion_epochs=2000, patience=500)
+TabSyn()
 ```
-Composite score: 0.8224 (fidelity 0.96, utility 0.94, diversity 0.997, consistency 0.85), with healthy label diversity and no mode collapse.
+Composite score: 0.8172 (fidelity 0.96, utility 0.92, diversity 0.998, consistency 0.87), with healthy label diversity and no mode collapse.
 
 ## Input
 - `X`: Tabular feature matrix (numeric and/or categorical columns)
@@ -143,16 +143,16 @@ X_synth, y_synth = model.sample(1000)
 
 ## Model Evaluation Benchmarks Results
 
-#### Car Dataset (diffusion_epochs=2000, patience=500)
+#### Car Dataset (default configuration, matching paper's hyperparameters)
 
-Composite score: 0.8224
+Composite score: 0.8172
 
 Dimension scores:
-- fidelity       0.9602
-- utility        0.9377
-- diversity      0.9970
-- privacy        0.4655
-- consistency    0.8466
+- fidelity       0.9553
+- utility        0.9240
+- diversity      0.9983
+- privacy        0.4530
+- consistency    0.8716
 - stability      not available, shared pipeline bug prevents this from running
 
 Note: previous results using the old, simplified architecture (frozen encoder, tuned hyperparameters) are no longer current and have been removed. 
