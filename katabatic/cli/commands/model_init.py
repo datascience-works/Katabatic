@@ -191,7 +191,6 @@ subprocess.run(
 )
 """
     )
-    # os.chmod(setup_script_path, 0o755)  # nosec B103: executable bit on generated setup script, intended
 
     print(f"""Successfully:
 1. Created {class_name} model structure in {new_model_dir}
