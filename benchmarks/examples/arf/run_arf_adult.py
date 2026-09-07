@@ -7,13 +7,7 @@ import psutil
 
 sys.path.insert(
     0,
-    os.path.dirname(
-        os.path.dirname(
-            os.path.dirname(
-                os.path.abspath(__file__)
-            )
-        )
-    ),
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
 )
 
 from runner import (
@@ -42,10 +36,7 @@ def get_runtime_summary(
     print("=" * 70)
     print(f"Model: {model_name}")
     print(f"Dataset: {dataset_name}")
-    print(
-        f"Total duration: "
-        f"{duration:.2f} seconds"
-    )
+    print(f"Total duration: {duration:.2f} seconds")
 
 
 def get_system_run_details() -> None:
@@ -62,18 +53,9 @@ def get_system_run_details() -> None:
     print(f"Release: {results.release}")
     print(f"Processor: {results.processor}")
     print("GPU: Not used by ARF")
-    print(
-        f"Total RAM: "
-        f"{ram.total / 1e9:.4f} GB"
-    )
-    print(
-        f"Available RAM: "
-        f"{ram.available / 1e9:.4f} GB"
-    )
-    print(
-        f"Used RAM: "
-        f"{ram.used / 1e9:.4f} GB"
-    )
+    print(f"Total RAM: {ram.total / 1e9:.4f} GB")
+    print(f"Available RAM: {ram.available / 1e9:.4f} GB")
+    print(f"Used RAM: {ram.used / 1e9:.4f} GB")
     print("=" * 70)
 
 
@@ -110,9 +92,7 @@ config = RunConfig(
 )
 
 
-train_df, test_df, target_col, paths = (
-    preprocess_and_split(config)
-)
+train_df, test_df, target_col, paths = preprocess_and_split(config)
 
 
 print("\n" + "=" * 60)
@@ -131,10 +111,7 @@ model.fit(
     seed=SEED,
 )
 
-print(
-    "\nARF training and FORDE "
-    "density estimation complete."
-)
+print("\nARF training and FORDE density estimation complete.")
 
 
 print("\n" + "=" * 60)

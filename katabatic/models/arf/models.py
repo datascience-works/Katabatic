@@ -78,19 +78,15 @@ class ARF(Model):
 
         set_seed(self.seed)
 
-        train_df, target_col, categorical = (
-            prepare_arf_dataframe(
-                x,
-                y,
-                categorical_cols,
-            )
+        train_df, target_col, categorical = prepare_arf_dataframe(
+            x,
+            y,
+            categorical_cols,
         )
 
         self._target_col = target_col
         self._columns = train_df.columns.tolist()
-        self._categorical_cols = categorical + [
-            target_col
-        ]
+        self._categorical_cols = categorical + [target_col]
         self._train_size = len(train_df)
 
         self._arf = ARFEngine(
@@ -120,36 +116,19 @@ class ARF(Model):
     ) -> pd.DataFrame:
         del verbose
 
-        if (
-            self._arf is None
-            or not getattr(self, "is_fitted", False)
-        ):
-            raise RuntimeError(
-                "ARF must be fitted before sample() is called."
-            )
+        if self._arf is None or not getattr(self, "is_fitted", False):
+            raise RuntimeError("ARF must be fitted before sample() is called.")
 
-        sample_size = (
-            self._train_size
-            if size is None
-            else int(size)
-        )
+        sample_size = self._train_size if size is None else int(size)
 
         if sample_size <= 0:
-            raise ValueError(
-                "size must be greater than zero."
-            )
+            raise ValueError("size must be greater than zero.")
 
-        sample_seed = (
-            self.seed
-            if seed is None
-            else int(seed)
-        )
+        sample_seed = self.seed if seed is None else int(seed)
 
         set_seed(sample_seed)
 
-        synthetic_df = self._arf.forge(
-            n=sample_size
-        )
+        synthetic_df = self._arf.forge(n=sample_size)
 
         if not isinstance(
             synthetic_df,
@@ -160,20 +139,12 @@ class ARF(Model):
                 columns=self._columns,
             )
 
-        missing = [
-            col
-            for col in self._columns
-            if col not in synthetic_df.columns
-        ]
+        missing = [col for col in self._columns if col not in synthetic_df.columns]
 
         if missing:
-            raise ValueError(
-                f"ARF output is missing columns: {missing}"
-            )
+            raise ValueError(f"ARF output is missing columns: {missing}")
 
-        synthetic_df = synthetic_df[
-            self._columns
-        ].reset_index(drop=True)
+        synthetic_df = synthetic_df[self._columns].reset_index(drop=True)
 
         return synthetic_df
 
@@ -207,13 +178,8 @@ class ARF(Model):
             Classification accuracy on the real test set.
         """
 
-        if (
-            self._arf is None
-            or not getattr(self, "is_fitted", False)
-        ):
-            raise RuntimeError(
-                "ARF must be fitted before evaluate() is called."
-            )
+        if self._arf is None or not getattr(self, "is_fitted", False):
+            raise RuntimeError("ARF must be fitted before evaluate() is called.")
 
         # Generate synthetic training data.
         synthetic_df = self.sample(
@@ -222,17 +188,11 @@ class ARF(Model):
         )
 
         if self._target_col is None:
-            raise RuntimeError(
-                "Target column is unavailable."
-            )
+            raise RuntimeError("Target column is unavailable.")
 
-        x_synth = synthetic_df.drop(
-            columns=[self._target_col]
-        ).copy()
+        x_synth = synthetic_df.drop(columns=[self._target_col]).copy()
 
-        y_synth = synthetic_df[
-            self._target_col
-        ].copy()
+        y_synth = synthetic_df[self._target_col].copy()
 
         x_test = pd.DataFrame(x).copy()
         y_test = pd.Series(y).copy()
@@ -253,44 +213,29 @@ class ARF(Model):
 
         if isinstance(model, str):
             if model not in classifiers:
-                raise ValueError(
-                    "model must be one of "
-                    "'lr', 'rf', or 'mlp'."
-                )
+                raise ValueError("model must be one of 'lr', 'rf', or 'mlp'.")
 
             estimator = classifiers[model]
 
-        elif (
-            hasattr(model, "fit")
-            and hasattr(model, "predict")
-        ):
+        elif hasattr(model, "fit") and hasattr(model, "predict"):
             estimator = model
 
         else:
-            raise ValueError(
-                "Invalid evaluation model."
-            )
+            raise ValueError("Invalid evaluation model.")
 
         categorical_cols = [
             col
             for col in self._categorical_cols
-            if col != self._target_col
-            and col in x_synth.columns
+            if col != self._target_col and col in x_synth.columns
         ]
 
-        numeric_cols = [
-            col
-            for col in x_synth.columns
-            if col not in categorical_cols
-        ]
+        numeric_cols = [col for col in x_synth.columns if col not in categorical_cols]
 
         preprocessor = ColumnTransformer(
             transformers=[
                 (
                     "categorical",
-                    OneHotEncoder(
-                        handle_unknown="ignore"
-                    ),
+                    OneHotEncoder(handle_unknown="ignore"),
                     categorical_cols,
                 ),
                 (
@@ -313,9 +258,7 @@ class ARF(Model):
             y_synth,
         )
 
-        predictions = pipeline.predict(
-            x_test
-        )
+        predictions = pipeline.predict(x_test)
 
         return accuracy_score(
             y_test,
@@ -327,7 +270,8 @@ class ARF(Model):
         dataset,
         size_category="small",
         *args,
-        **kwargs,):
+        **kwargs,
+    ):
 
         del size_category
         del args
@@ -363,9 +307,7 @@ class ARF(Model):
             )
         )
 
-        x_train, y_train = load_split_dataset(
-            data_dir
-        )
+        x_train, y_train = load_split_dataset(data_dir)
 
         self.fit(
             x_train,
@@ -376,17 +318,13 @@ class ARF(Model):
         )
 
         synthetic_df = self.sample(
-            len(x_train)
-            if n_synth is None
-            else int(n_synth),
+            len(x_train) if n_synth is None else int(n_synth),
             seed=seed,
         )
 
         if synthetic_dir is not None:
             if self._target_col is None:
-                raise RuntimeError(
-                    "Target column was not recorded during training."
-                )
+                raise RuntimeError("Target column was not recorded during training.")
 
             os.makedirs(
                 synthetic_dir,
