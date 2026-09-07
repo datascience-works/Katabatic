@@ -103,12 +103,12 @@ def get_system_run_details() -> None:
 
 
 config = RunConfig(
-    dataset_name="car",
-    model_name="ganblr",
-    categorical_cols=["buying", "maint", "doors", "persons", "lug_boot", "safety"],
-    continuous_cols=[],
+    dataset_name="shuttle",
+    model_name="codi",
+    categorical_cols=[],
+    continuous_cols=["time", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8"],
     target_col_raw="class",
-    constraints=None,
+    constraints={},
 )
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)

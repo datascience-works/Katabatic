@@ -20,7 +20,7 @@ from runner import (
     save_synthetic,
 )
 
-from katabatic.models.codi.models import CODI  # noqa: E402
+from katabatic.models.smote.models import SMOTEModel  # noqa: E402
 
 # run in cpu mode(if GPU is limited)
 # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
@@ -103,27 +103,32 @@ def get_system_run_details() -> None:
 
 
 config = RunConfig(
-    dataset_name="car",
-    model_name="ganblr",
-    categorical_cols=["buying", "maint", "doors", "persons", "lug_boot", "safety"],
+    dataset_name="shuttle",
+    model_name="smote",
+    categorical_cols=["time", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8"],
     continuous_cols=[],
     target_col_raw="class",
-    constraints=None,
+    constraints={},
 )
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)
 
 print("\n" + "=" * 60)
-print("STEP 3 — Train CODI")
+print("STEP 3 — Train SMOTE")
 print("=" * 60)
-model = CODI(n_steps=50, epochs=100, batch_size=256)
-model.train(
-    paths["split_dir"],
-    paths["synthetic_dir"],
-    categorical_cols=config.categorical_cols,
-    continuous_cols=config.continuous_cols,
+
+model = SMOTEModel(
+    k_neighbors=5,
+    sampling_strategy="auto",
+    random_state=42,
 )
-print("\nCoDi training complete.")
+
+model.train(
+    data_dir=paths["split_dir"],
+    synthetic_dir=paths.get("synthetic_dir"),
+)
+
+print("\nSMOTE training complete.")
 
 print("\n" + "=" * 60)
 print("STEP 4 — Generate synthetic data")
