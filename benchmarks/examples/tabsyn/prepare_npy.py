@@ -5,7 +5,9 @@ import numpy as np
 import pandas as pd
 
 
-def prepare_npy_for_tabsyn(split_dir: str, categorical_cols: list, continuous_cols: list):
+def prepare_npy_for_tabsyn(
+    split_dir: str, categorical_cols: list, continuous_cols: list
+):
     for split in ["train", "test"]:
         x_df = pd.read_csv(os.path.join(split_dir, f"x_{split}.csv"))
         y_df = pd.read_csv(os.path.join(split_dir, f"y_{split}.csv"))
@@ -24,7 +26,9 @@ def prepare_npy_for_tabsyn(split_dir: str, categorical_cols: list, continuous_co
         y = y_df.iloc[:, 0].astype(str).to_numpy(dtype=object)
         np.save(os.path.join(split_dir, f"y_{split}.npy"), y)
 
-        print(f"[{split}] num={len(num_cols)} cols, cat={len(cat_cols)} cols, y={len(y)} rows")
+        print(
+            f"[{split}] num={len(num_cols)} cols, cat={len(cat_cols)} cols, y={len(y)} rows"
+        )
 
     x_train_df = pd.read_csv(os.path.join(split_dir, "x_train.csv"))
     all_cols = list(x_train_df.columns)

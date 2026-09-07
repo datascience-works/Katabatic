@@ -13,7 +13,7 @@ An earlier, simpler version that used a frozen, randomly initialised encoder (ne
 ### Research Paper
 **Mixed-Type Tabular Data Synthesis with Score-based Diffusion in Latent Space**
 
-Hengrui Zhang, Jiani Zhang, Balasubramaniam Srinivasan, Zhengyuan Shen, 
+Hengrui Zhang, Jiani Zhang, Balasubramaniam Srinivasan, Zhengyuan Shen,
 Xiao Qin, Christos Faloutsos, Huzefa Rangwala, George Karypis
 ICLR 2024 (Oral Presentation)
 
@@ -27,18 +27,18 @@ This implementation adheres to Appendix D.1 and Section 4.4's architecture, whic
 
 ## Approach
 
-1. **Tokenize**: each column becomes a d-dimensional token, one token per 
-   column (numeric columns via a linear projection, categorical columns 
+1. **Tokenize**: each column becomes a d-dimensional token, one token per
+   column (numeric columns via a linear projection, categorical columns
    via embeddings).
 
-2. **Encode and decode (VAE)**: a Transformer-based encoder produces a 
-   mean and log-variance for each token, a latent vector is sampled via 
-   the reparameterization trick, and a matching Transformer decoder 
+2. **Encode and decode (VAE)**: a Transformer-based encoder produces a
+   mean and log-variance for each token, a latent vector is sampled via
+   the reparameterization trick, and a matching Transformer decoder
    reconstructs the original columns from that latent.
 
-3. **Diffusion**: a diffusion model is trained on the VAE's latent 
-   vectors, learning to generate new latents by reversing a noise 
-   process. New rows are produced by sampling noise, denoising it, and 
+3. **Diffusion**: a diffusion model is trained on the VAE's latent
+   vectors, learning to generate new latents by reversing a noise
+   process. New rows are produced by sampling noise, denoising it, and
    decoding the result.
 
 ### Training Details
@@ -100,17 +100,17 @@ Generated files (when using `train()`):
 When calling `sample()` directly, output columns are generically named (`num_0`, `num_1`, ..., `cat_0`, `cat_1`, ...) and must be renamed to match the real dataset's column order before use. See `benchmarks/examples/tabsyn/run_tabsyn_car.py` for a working example of this rename logic.
 
 ## Evaluation
-`evaluate()` returns a reconstruction loss (a blend of MSE fornumeric 
+`evaluate()` returns a reconstruction loss (a blend of MSE fornumeric
 columns and cross entropy for categorical columns), not accuracy or F1. Lower is better.
 
-The full evaluation used for validation is `SyntheticEvaluationPipeline` 
-(`katabatic/pipeline/evaluation_pipeline.py`), which reports 6 dimensions: 
+The full evaluation used for validation is `SyntheticEvaluationPipeline`
+(`katabatic/pipeline/evaluation_pipeline.py`), which reports 6 dimensions:
 fidelity, utility, diversity, privacy, consistency, and stability, combined into a single composite score.
 
 ## Strengths
 - Handles mixed numeric and categorical columns in one unified pipeline
 - Fast to train and sample compared to full diffusion-in-data-space methods
-- Once bugs were fixed, produces strong fidelity scores (JSD, Wasserstein) 
+- Once bugs were fixed, produces strong fidelity scores (JSD, Wasserstein)
   on tested datasets
 
 ## Limitations
@@ -155,7 +155,7 @@ Dimension scores:
 - consistency    0.8716
 - stability      not available, shared pipeline bug prevents this from running
 
-Note: previous results using the old, simplified architecture (frozen encoder, tuned hyperparameters) are no longer current and have been removed. 
+Note: previous results using the old, simplified architecture (frozen encoder, tuned hyperparameters) are no longer current and have been removed.
 
 ## Model Performance Benchmarks Results
 Training and inference timing not yet measured for this model.Diffusion training typically stops early via early stopping, usually well under 100 epochs on the datasets tested so far.

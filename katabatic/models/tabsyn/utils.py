@@ -7,11 +7,11 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder
 
 # all torch-related code lives here so models.py only imports from utils.py
 import torch
 import torch.nn.functional as F
+from sklearn.preprocessing import LabelEncoder
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
@@ -193,6 +193,7 @@ def _categorical_to_index(
 # Latent encoder/decoder
 # =======================
 
+
 class _Tokenizer(nn.Module):
     """
     Column-wise tokenizer: converts raw numeric/categorical columns into
@@ -289,6 +290,7 @@ class _Encoder(nn.Module):
             logsigma = layer(logsigma)
         return mu, logsigma
 
+
 class _Decoder(nn.Module):
     """
     TabSyn VAE decoder: a 2-layer Transformer (Appendix D.1), mirroring
@@ -344,7 +346,8 @@ class _Decoder(nn.Module):
             cat_tok = tokens[:, self.n_num + j]  # (B, d_token)
             cat_logits.append(head(cat_tok))
         return num_pred, cat_logits
-    
+
+
 def _reparameterize(mu: torch.Tensor, logsigma: torch.Tensor) -> torch.Tensor:
     """
     Z = mu + sigma * eps, eps ~ N(0, I) (paper Eq. in Section 3.2 / D.1)
@@ -392,6 +395,7 @@ def _scheduled_beta(epoch: int, beta_max: float, beta_min: float, lam: float) ->
     """
     beta = beta_max * (lam**epoch)
     return max(beta, beta_min)
+
 
 # ==================
 # Diffusion pieces
@@ -549,7 +553,7 @@ def _prepare_training_mats(
     mean, std = _fit_numeric_scaler(Xn_tr)
     Xn_tr_scaled = _transform_numeric(Xn_tr, mean, std)
 
-# Encode categoricals to indices and collect sizes
+    # Encode categoricals to indices and collect sizes
     Xc_tr_idx, cat_encoders = _categorical_to_index(Xc_tr)
     sizes = _cat_sizes(Xc_tr)
 
@@ -617,13 +621,14 @@ def train_tabsyn(
     info = _load_info(data_dir)
 
     # ---- Load & prepare training mats
-    Xn_tr_np, Xc_tr_idx_np, y_tr, cat_sizes, cat_encoders, mean, std = _prepare_training_mats(data_dir, info)
+    Xn_tr_np, Xc_tr_idx_np, y_tr, cat_sizes, cat_encoders, mean, std = (
+        _prepare_training_mats(data_dir, info)
+    )
     n_num = Xn_tr_np.shape[1]
     token_dim = cfg.d_token
     column_order = list(range(n_num)) + list(
         range(n_num, n_num + len(cat_sizes))
     )  # used for DF assembly
-
 
     # torch tensors
     Xn_tr = torch.from_numpy(Xn_tr_np).float().to(device) if n_num > 0 else None
@@ -633,16 +638,20 @@ def train_tabsyn(
         else None
     )
 
-       # ---- Tokenize training rows
-    tokenizer = _Tokenizer(n_num=n_num, cat_sizes=cat_sizes, d_token=token_dim).to(device)
+    # ---- Tokenize training rows
+    tokenizer = _Tokenizer(n_num=n_num, cat_sizes=cat_sizes, d_token=token_dim).to(
+        device
+    )
     E_tr = tokenizer(Xn_tr, Xc_tr)  # (B, M, d_token), M = n_num + n_cat
 
     # ---- Build trainable VAE encoder + decoder, train jointly
     encoder = _Encoder(d_token=token_dim).to(device)
     decoder = _Decoder(n_num=n_num, cat_sizes=cat_sizes, d_token=token_dim).to(device)
 
-    vae_params = list(tokenizer.parameters()) + list(encoder.parameters()) + list(
-        decoder.parameters()
+    vae_params = (
+        list(tokenizer.parameters())
+        + list(encoder.parameters())
+        + list(decoder.parameters())
     )
     vae_opt = torch.optim.Adam(vae_params, lr=cfg.lr, weight_decay=cfg.weight_decay)
 
@@ -699,7 +708,9 @@ def train_tabsyn(
 
             total += loss.item() * idx_b.size(0)
             count += idx_b.size(0)
-            pbar.set_postfix(loss=total / max(1, count), recon=recon.item(), kl=kl.item())
+            pbar.set_postfix(
+                loss=total / max(1, count), recon=recon.item(), kl=kl.item()
+            )
 
     # ---- Compute final latents z_tr for diffusion training (encoder in eval mode)
     tokenizer.eval()
@@ -707,11 +718,15 @@ def train_tabsyn(
     with torch.no_grad():
         E_tr = tokenizer(Xn_tr, Xc_tr)
         mu_tr, logsigma_tr = encoder(E_tr)
-        z_tr = mu_tr.reshape(mu_tr.shape[0], -1)  # flatten (B, M, d_token) -> (B, M*d_token)
+        z_tr = mu_tr.reshape(
+            mu_tr.shape[0], -1
+        )  # flatten (B, M, d_token) -> (B, M*d_token)
     in_dim = z_tr.shape[1]
 
     # ---- Train diffusion denoiser on z
-    denoise_backbone = MLPDiffusion(d_in=in_dim, dim_t=cfg.diffusion_hidden_dim).to(device)
+    denoise_backbone = MLPDiffusion(d_in=in_dim, dim_t=cfg.diffusion_hidden_dim).to(
+        device
+    )
     precond = _Precond(denoise_backbone, sigma_data=0.5).to(device)
     precond.num_steps = cfg.diffusion_steps
     edm_loss = _EDMLoss()
@@ -783,8 +798,9 @@ def train_tabsyn(
             "decoder": state.decoder_state,
         }
         torch.save(bundle, os.path.join(save_dir, "tabsyn_state.pkl"))
-        
+
     return state
+
 
 def evaluate_tabsyn(
     state: TabSynState,
@@ -864,6 +880,7 @@ def _rebuild_tokenizer_from_state(
         tok = tok.to(device)
     return tok
 
+
 def sample_tabsyn(
     state: TabSynState,
     *,
@@ -888,7 +905,6 @@ def sample_tabsyn(
         z = z_flat.view(n, n_cols, state.token_dim)
         # decode
         pred_num, pred_cat_logits = decoder(z)
-        
 
         # numerics inverse scale
         Xn_hat = None
@@ -900,7 +916,9 @@ def sample_tabsyn(
         Xc_hat = None
         if len(state.cat_sizes):
             Xc_logits = [log.cpu().numpy() for log in pred_cat_logits]
-            Xc_hat_idx = np.stack([logits.argmax(axis=1) for logits in Xc_logits], axis=1)
+            Xc_hat_idx = np.stack(
+                [logits.argmax(axis=1) for logits in Xc_logits], axis=1
+            )
 
             Xc_hat = np.empty(Xc_hat_idx.shape, dtype=object)
             for j, encoder in enumerate(state.cat_encoders):

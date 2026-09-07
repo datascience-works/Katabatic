@@ -5,9 +5,10 @@ sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 
-from katabatic.models.tabsyn.models import TabSyn
-from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 from prepare_npy import prepare_npy_for_tabsyn
+from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
+
+from katabatic.models.tabsyn.models import TabSyn
 
 config = RunConfig(
     dataset_name="car",
@@ -20,7 +21,9 @@ config = RunConfig(
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)
 
-prepare_npy_for_tabsyn(paths["split_dir"], config.categorical_cols, config.continuous_cols)
+prepare_npy_for_tabsyn(
+    paths["split_dir"], config.categorical_cols, config.continuous_cols
+)
 
 print("\n" + "=" * 60)
 print("STEP 3 : Train TabSyn")
