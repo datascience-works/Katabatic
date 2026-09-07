@@ -1,6 +1,9 @@
 FROM python:3.11-slim
 
 ARG POETRY_INSTALL_ARGS="--only main"
+ARG MODEL_EXTRA=""
+ARG TARGETPLATFORM
+RUN echo "Building Katabatic for ${TARGETPLATFORM}"
 
 # Python settings
 ENV PYTHONDONTWRITEBYTECODE=1 \

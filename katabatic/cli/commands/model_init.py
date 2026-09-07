@@ -1,4 +1,3 @@
-import os
 import re
 from pathlib import Path
 
@@ -8,7 +7,7 @@ def _find_models_dict_bounds(text: str) -> tuple[int, int, str]:
     Return (open_brace_idx, close_brace_idx, indent) for the _models dict.
     Uses brace counting and skips over strings.
     """
-    m = re.search(r"_models\s*:\s*Dict\[[^\]]*\]\s*=\s*{", text)
+    m = re.search(r"_models\s*:\s*[^=]+\s*=\s*{", text)
     if not m:
         m = re.search(r"_models\s*=\s*{", text)
     if not m:
@@ -178,15 +177,21 @@ class {class_name}(Model):
 
     scripts_dir = _find_project_root() / "scripts"
     scripts_dir.mkdir(parents=True, exist_ok=True)
-    setup_script_path = scripts_dir / f"setup_{dir_name}.sh"
+    setup_script_path = scripts_dir / f"setup_{dir_name}.py"
     setup_script_path.write_text(
-        f"""#!/bin/bash
+        f"""#!/usr/bin/env python3
 # Setup script for {class_name} model dependencies
 
-pip install katabatic[{dir_name}]
+import subprocess
+import sys
+
+subprocess.run(
+    [sys.executable, "-m", "pip", "install", "katabatic[{dir_name}]"],
+    check=True,
+)
 """
     )
-    os.chmod(setup_script_path, 0o755)  # nosec B103: executable bit on generated setup script, intended
+    # os.chmod(setup_script_path, 0o755)  # nosec B103: executable bit on generated setup script, intended
 
     print(f"""Successfully:
 1. Created {class_name} model structure in {new_model_dir}
