@@ -115,7 +115,6 @@ help:
 	@echo ""
 	@echo "Quality / CI:"
 	@echo "  make ci                 Run all local CI checks (lint, security, test, build)"
-	@echo "  make lint               Run ruff lint + format check"
 	@echo "  make format             Auto-fix formatting and lint issues"
 	@echo "  make test               Run fast tests with coverage"
 	@echo "  make test-all           Run pytest on all supported models"
