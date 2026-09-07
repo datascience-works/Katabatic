@@ -189,12 +189,6 @@ results = pipeline.run(
 # results["model_ref"], results["evaluation_refs"] — TSTR metrics on disk
 ```
 
-CLI:
-
-```bash
-katabatic register-dataset car preprocessed_data/car.csv --check-model ganblr
-```
-
 ### Legacy directory layout
 
 ```python
