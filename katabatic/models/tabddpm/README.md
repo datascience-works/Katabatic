@@ -45,7 +45,7 @@ The reason is that Adult is directly included in the benchmark datasets used in 
 
 Therefore, Adult provides a direct research-paper-aligned dataset for the current TabDDPM benchmarking work. This is different from MedGAN, where the original medical datasets are not available in the Katabatic project and a structurally similar dataset must be selected instead.
 
-## Current Update
+## Current Update - 2026.09.07
 
 The TabDDPM implementation has been validated with the current Katabatic training and synthetic data generation pipeline. Initial baseline testing has been completed on available datasets including Car and Nursery.
 
