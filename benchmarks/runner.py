@@ -102,6 +102,7 @@ def _split_cache_valid(meta_path: str, test_size: float, seed: int) -> bool:
 
     return meta.get("test_size") == test_size and meta.get("seed") == seed
 
+
 def resolve_column_types(config: RunConfig, raw_df: pd.DataFrame) -> None:
     """
     Resolve categorical and continuous feature columns for a benchmark run.
@@ -157,6 +158,7 @@ def resolve_column_types(config: RunConfig, raw_df: pd.DataFrame) -> None:
 
     config.categorical_cols = categorical_cols
     config.continuous_cols = continuous_cols
+
 
 def preprocess_and_split(config: RunConfig):
     """Preprocess raw CSV and split into train/test.

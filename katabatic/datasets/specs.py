@@ -99,9 +99,7 @@ def validate_dataset_spec(
         raise ValueError(f"No dataset specification found for {dataset_name!r}")
 
     expected_columns = (
-        spec["categorical_cols"]
-        + spec["continuous_cols"]
-        + [spec["target_col"]]
+        spec["categorical_cols"] + spec["continuous_cols"] + [spec["target_col"]]
     )
 
     missing_columns = [
@@ -110,8 +108,7 @@ def validate_dataset_spec(
 
     if missing_columns:
         raise ValueError(
-            f"Dataset {dataset_name!r} is missing expected columns: "
-            f"{missing_columns}"
+            f"Dataset {dataset_name!r} is missing expected columns: {missing_columns}"
         )
 
     return spec
