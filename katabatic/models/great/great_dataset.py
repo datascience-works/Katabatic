@@ -3,9 +3,8 @@ import typing as tp
 from dataclasses import dataclass
 
 import numpy as np
-from transformers import DataCollatorWithPadding
-
 from datasets import Dataset
+from transformers import DataCollatorWithPadding
 
 
 class GReaTDataset(Dataset):
