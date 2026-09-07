@@ -37,15 +37,14 @@ class ModelRegistry:
             "supported": False,
         },
         "realtabformer": {
-           "module": "katabatic.models.realtabformer.models",
-           "class": "REaLTabFormerModel",
-           "dependencies": ["realtabformer", "transformers", "torch"],
-           "extra": None,
-           "install_hint": (
-             "Install isolated dependencies from "
-             "katabatic/models/realtabformer/"
+            "module": "katabatic.models.realtabformer.models",
+            "class": "REaLTabFormerModel",
+            "dependencies": ["realtabformer", "transformers", "torch"],
+            "extra": None,
+            "install_hint": (
+                "Install isolated dependencies from katabatic/models/realtabformer/"
             ),
-           "supported": False,
+            "supported": False,
         },
         "tabsyn": {
             "module": "katabatic.models.tabsyn.models",
@@ -130,16 +129,18 @@ class ModelRegistry:
             install_hint = model_info.get("install_hint")
 
             if install_hint:
-              install_message = install_hint
+                install_message = install_hint
             elif model_info.get("extra"):
-              install_message = f"pip install katabatic[{model_info['extra']}]"
+                install_message = f"pip install katabatic[{model_info['extra']}]"
             else:
-              install_message = "See the model documentation for installation instructions."
+                install_message = (
+                    "See the model documentation for installation instructions."
+                )
 
             raise ImportError(
-              f"Missing dependencies for {model_name}: {missing_deps}. "
-              f"Install with: {install_message}"
-       )
+                f"Missing dependencies for {model_name}: {missing_deps}. "
+                f"Install with: {install_message}"
+            )
 
         try:
             module = importlib.import_module(model_info["module"])

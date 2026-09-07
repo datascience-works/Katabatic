@@ -39,9 +39,7 @@ class REaLTabFormerModel(BaseModel):
             raise ValueError("batch_size must be greater than 0.")
 
         if gradient_accumulation_steps <= 0:
-            raise ValueError(
-                "gradient_accumulation_steps must be greater than 0."
-            )
+            raise ValueError("gradient_accumulation_steps must be greater than 0.")
 
         if logging_steps <= 0:
             raise ValueError("logging_steps must be greater than 0.")
@@ -112,9 +110,9 @@ class REaLTabFormerModel(BaseModel):
         fit_kwargs = {"n_critic": 0, **self.fit_kwargs}
 
         self.model.fit(
-          training_df,
-          device=self.device,
-          **fit_kwargs,
+            training_df,
+            device=self.device,
+            **fit_kwargs,
         )
         self.is_fitted = True
 
@@ -141,9 +139,7 @@ class REaLTabFormerModel(BaseModel):
                 "batch_size": self.batch_size,
                 "random_state": self.random_state,
                 "device": self.device,
-                "gradient_accumulation_steps": (
-                    self.gradient_accumulation_steps
-                ),
+                "gradient_accumulation_steps": (self.gradient_accumulation_steps),
                 "logging_steps": self.logging_steps,
             },
         )

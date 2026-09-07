@@ -43,9 +43,7 @@ def load_training_data(data_dir: str | Path) -> pd.DataFrame:
         y_train = pd.read_csv(y_train_path)
 
         if y_train.shape[1] != 1:
-            raise ValueError(
-                "y_train.csv must contain exactly one target column."
-            )
+            raise ValueError("y_train.csv must contain exactly one target column.")
 
         return pd.concat(
             [x_train.reset_index(drop=True), y_train.reset_index(drop=True)],
