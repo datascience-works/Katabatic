@@ -13,6 +13,19 @@ sample_data/
 synthetic/
 Results/
 
+# Katabatic frontend generated files
+/frontend/Katabatic-Manya-Dashboard/node_modules/
+/frontend/Katabatic-Manya-Dashboard/.next/
+/frontend/Katabatic-Manya-Dashboard/out/
+/frontend/Katabatic-Manya-Dashboard/.env*.local
+/frontend/Katabatic-Manya-Dashboard/npm-debug.log*
+
+/frontend/Katabatic-Dipsan-ModelConfig/node_modules/
+/frontend/Katabatic-Dipsan-ModelConfig/.next/
+/frontend/Katabatic-Dipsan-ModelConfig/out/
+/frontend/Katabatic-Dipsan-ModelConfig/.env*.local
+/frontend/Katabatic-Dipsan-ModelConfig/npm-debug.log*
+
 
 # GReaT trainer artifacts
 **/trainer_great/**
