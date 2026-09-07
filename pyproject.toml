@@ -33,7 +33,7 @@ codi = ["torch>=2.13.0,<3.0.0"]
 ctgan = ["torch>=2.13.0,<3.0.0"]
 ganblr = [
     "tensorflow==2.21.*",
-    "tensorflow-io==0.31.0",
+    "tensorflow-io==0.37.1",
     "pgmpy>=0.1.25",
     "pyitlib==0.3.1",
 ]
@@ -48,7 +48,7 @@ great = [
 medgan = ["torch>=2.13.0,<3.0.0"]
 pategan = [
     "tensorflow==2.21.*",
-    "tensorflow-io==0.31.0",
+    "tensorflow-io==0.37.1",
 ]
 smote = ["imbalanced-learn==0.14.2"]
 tabddpm = [
@@ -70,7 +70,7 @@ tabsyn = [
 eval = ["xgboost>=3.2.0,<4.0.0"]
 all = [
     "tensorflow==2.21.*",
-    "tensorflow-io==0.31.0",
+    "tensorflow-io==0.37.1",
     "pgmpy>=0.1.25",
     "pyitlib==0.3.1",
     "imbalanced-learn==0.14.2",
