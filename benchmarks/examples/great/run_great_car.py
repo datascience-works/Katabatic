@@ -5,7 +5,6 @@ import sys
 import warnings
 from time import perf_counter
 
-import pandas as pd
 import psutil
 
 sys.path.insert(
@@ -121,23 +120,12 @@ DROP_NAN = False  # drop rows with any NaN in the output
 # SEED = config.seed  # generation seed for reproducibility
 
 config = RunConfig(
-    dataset_name="magic",
+    dataset_name="car",
     model_name="great",
-    categorical_cols=[
-        "fLength",
-        "fWidth",
-        "fSize",
-        "fConc",
-        "fConc1",
-        "fAsym",
-        "fM3Long",
-        "fM3Trans",
-        "fAlpha",
-        "fDist",
-    ],
+    categorical_cols=["1", "2", "3", "4", "5"],
     continuous_cols=[],
-    target_col_raw="class",
-    constraints={},
+    target_col_raw="6",
+    constraints=None,
 )
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)
@@ -164,7 +152,7 @@ print("\nGReat training complete.")
 print("\n" + "=" * 60)
 print("STEP 4 — Generate synthetic data")
 print("=" * 60)
-synthetic_df = pd.DataFrame(model.sample(len(train_df)), columns=train_df.columns)
+synthetic_df = model.sample(len(train_df))
 synthetic_df = save_synthetic(
     synthetic_df,
     train_df,
