@@ -174,8 +174,12 @@ def test_resolve_synth_dir_explicit(tmp_path):
     assert result.exists()
 
 
-@patch("realtabformer.REaLTabFormer")
-def test_train_with_mock_model(mock_realtabformer, tmp_path):
+def test_train_with_mock_model(tmp_path):
+    mock_realtabformer = MagicMock()
+
+    fake_realtabformer_module = MagicMock()
+    fake_realtabformer_module.REaLTabFormer = mock_realtabformer
+
     training_df = pd.DataFrame(
         {
             "age": [20, 30, 40],
@@ -205,21 +209,23 @@ def test_train_with_mock_model(mock_realtabformer, tmp_path):
         batch_size=2,
     )
 
-    model.train(
-        tmp_path,
-        synthetic_dir=output_dir,
-    )
+    with patch.dict(
+        "sys.modules",
+        {"realtabformer": fake_realtabformer_module},
+    ):
+        model.train(
+            tmp_path,
+            synthetic_dir=output_dir,
+        )
 
     assert model.is_fitted is True
     assert model.target_column == "class"
     assert model.training_rows == 3
 
     mock_realtabformer.assert_called_once()
-
     mock_instance.fit.assert_called_once()
 
     fit_args, fit_kwargs = mock_instance.fit.call_args
-
     assert fit_kwargs["device"] == "cpu"
     assert fit_kwargs["n_critic"] == 0
 
