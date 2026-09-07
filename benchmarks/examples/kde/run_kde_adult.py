@@ -2,8 +2,7 @@ import os
 import sys
 
 sys.path.insert(
-    0, os.path.dirname(os.path.dirname(
-        os.path.dirname(os.path.abspath(__file__))))
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 
 
@@ -25,8 +24,7 @@ config = RunConfig(
         "sex",
         "native-country",
     ],
-    continuous_cols=["age", "fnlwgt", "capital-gain",
-                     "capital-loss", "hours-per-week"],
+    continuous_cols=["age", "fnlwgt", "capital-gain", "capital-loss", "hours-per-week"],
     target_col_raw="class",
     constraints={
         "age": (17, 90),

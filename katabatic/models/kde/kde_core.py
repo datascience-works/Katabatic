@@ -59,15 +59,13 @@ class KDEModel:
                 is_categorical = col in self.categorical_cols
             else:
                 dtype = df[col].dtype
-                is_categorical = dtype == "object" or str(
-                    dtype).startswith("category")
+                is_categorical = dtype == "object" or str(dtype).startswith("category")
 
             if is_categorical:
                 self.feature_types_[col] = "categorical"
             else:
                 self.feature_types_[col] = "continuous"
-                self._continuous_is_int_[col] = np.issubdtype(
-                    df[col].dtype, np.integer)
+                self._continuous_is_int_[col] = np.issubdtype(df[col].dtype, np.integer)
 
     def _choose_bandwidth(self, x: np.ndarray) -> float:
         """Rule-of-thumb bandwidth if none is provided (Scott's rule, 1D)."""
@@ -88,7 +86,8 @@ class KDEModel:
     def fit(self, df: pd.DataFrame) -> KDEModel:
         if self.target_col not in df.columns:
             raise ValueError(
-                f"target_col '{self.target_col}' not in DataFrame columns.")
+                f"target_col '{self.target_col}' not in DataFrame columns."
+            )
 
         self._detect_feature_types(df)
 
@@ -144,8 +143,7 @@ class KDEModel:
 
     def generate(self, n_rows: int) -> pd.DataFrame:
         if self.classes_ is None:
-            raise RuntimeError(
-                "KDEModel must be fitted before calling generate().")
+            raise RuntimeError("KDEModel must be fitted before calling generate().")
 
         class_counts = self._compute_class_counts(n_rows)
         rows = []
@@ -165,8 +163,7 @@ class KDEModel:
                         data_c[col] = np.full(n_c, np.nan)
                         continue
 
-                    samples = kde.sample(
-                        n_c, random_state=self.random_state).flatten()
+                    samples = kde.sample(n_c, random_state=self.random_state).flatten()
                     if self._continuous_is_int_.get(col, False):
                         samples = np.rint(samples).astype(int)
                     data_c[col] = samples
@@ -188,8 +185,7 @@ class KDEModel:
                         all_values = np.array(all_values)
                         all_probs = np.array(all_probs)
                         all_probs = all_probs / all_probs.sum()
-                        samples = self._rng.choice(
-                            all_values, size=n_c, p=all_probs)
+                        samples = self._rng.choice(all_values, size=n_c, p=all_probs)
                     else:
                         values, probs = values_probs
                         samples = self._rng.choice(values, size=n_c, p=probs)
@@ -204,11 +200,13 @@ class KDEModel:
 
         if len(synth_df) > n_rows:
             synth_df = synth_df.sample(
-                n=n_rows, random_state=self.random_state).reset_index(drop=True)
+                n=n_rows, random_state=self.random_state
+            ).reset_index(drop=True)
         elif len(synth_df) < n_rows:
             extra = n_rows - len(synth_df)
             extra_rows = synth_df.sample(
-                n=extra, replace=True, random_state=self.random_state + 1)
+                n=extra, replace=True, random_state=self.random_state + 1
+            )
             synth_df = pd.concat([synth_df, extra_rows], ignore_index=True)
 
         return synth_df

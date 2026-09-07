@@ -97,8 +97,7 @@ class KDESynthesizer(BaseModel):
 
         synth_dir = synthetic_dir
         if not synth_dir:
-            dataset_name = os.path.basename(
-                os.path.normpath(data_dir)) or "dataset"
+            dataset_name = os.path.basename(os.path.normpath(data_dir)) or "dataset"
             synth_dir = os.path.join("synthetic", dataset_name, "kde")
         os.makedirs(synth_dir, exist_ok=True)
 
@@ -116,16 +115,16 @@ class KDESynthesizer(BaseModel):
                 "columns": df.columns.tolist(),
                 "label": self._target_col,
                 "dtypes": {c: str(df[c].dtype) for c in df.columns},
-                "categorical_columns": sorted(resolved_categorical_cols) if resolved_categorical_cols else [],
+                "categorical_columns": sorted(resolved_categorical_cols)
+                if resolved_categorical_cols
+                else [],
             },
             "training": self.cfg,
         }
         with open(os.path.join(synth_dir, "metadata.json"), "w", encoding="utf-8") as f:
             json.dump(meta, f, indent=2)
 
-        print(
-            f"[KDE] Synthetic data saved:\n  X -> {x_path_out}\n  y -> {y_path_out}"
-        )
+        print(f"[KDE] Synthetic data saved:\n  X -> {x_path_out}\n  y -> {y_path_out}")
         return self
 
     def _load_categorical_cols(self, data_dir: str) -> set[str] | None:
@@ -145,11 +144,7 @@ class KDESynthesizer(BaseModel):
         if cat_idx is None:
             return None
 
-        return {
-            self._feature_cols[i]
-            for i in cat_idx
-            if i < len(self._feature_cols)
-        }
+        return {self._feature_cols[i] for i in cat_idx if i < len(self._feature_cols)}
 
     def evaluate(self, *args, **kwargs) -> float:
         if not self.is_fitted:
