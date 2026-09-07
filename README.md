@@ -79,6 +79,22 @@ echo 'eval "$(pyenv init -)"' >> ~/.bashrc
 # Restart shell
 exec "$SHELL"
 ```
+**Windows (PowerShell):**
+
+```powershell
+# Install pyenv-win
+Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/pyenv-win/pyenv-win/master/pyenv-win/install-pyenv-win.ps1" -OutFile "./install-pyenv-win.ps1"
+& "./install-pyenv-win.ps1"
+
+# Reopen PowerShell after installation
+
+# Install and select Python 3.11.9
+pyenv install 3.11.9
+pyenv global 3.11.9
+
+# Verify installation
+python --version  # Should output: Python 3.11.9
+```
 
 #### 2. Install Python 3.11
 
@@ -336,7 +352,7 @@ results = pipeline.run(
 ### Model Evaluation Data Catalogue
 The models have been run for evalution and performance benchmarking on the five datasets found in the data catalogue.
 See the following readme for information on the datasets used to evaluate the models.
-[Model Evalaution Data Catalogue]https://github.com/datascience-works/Katabatic/tree/main/datasets
+[Model Evalaution Data Catalogue]https://github.com/datascience-works/Katabatic/tree/main/katabatic/datasets/README.md
 
 ## 📊 Evaluation
 

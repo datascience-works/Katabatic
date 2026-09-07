@@ -194,6 +194,31 @@ jobs:
       - name: Model promotion contract
         run: poetry run pytest tests/test_model_registry.py -v
 
+  setup-script:
+    # Verifies scripts/setup.py works on Linux, MacOS, and Windows.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/development'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    name: setup-script-${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Install Poetry
+        run: pip install poetry==2.4.2
+
+      - name: Run setup script
+        run: python scripts/setup.py
+
+      - name: Verify the package imports
+        run: poetry run python -c "import katabatic; print(katabatic.__version__)"
+
   wheel-smoke:
     runs-on: ubuntu-latest
     needs: lint-and-test
