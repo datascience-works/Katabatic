@@ -121,22 +121,11 @@ DROP_NAN = False  # drop rows with any NaN in the output
 # SEED = config.seed  # generation seed for reproducibility
 
 config = RunConfig(
-    dataset_name="magic",
+    dataset_name="nursery",
     model_name="great",
-    categorical_cols=[
-        "fLength",
-        "fWidth",
-        "fSize",
-        "fConc",
-        "fConc1",
-        "fAsym",
-        "fM3Long",
-        "fM3Trans",
-        "fAlpha",
-        "fDist",
-    ],
+    categorical_cols=["0", "1", "2", "3", "4", "5", "6", "7"],
     continuous_cols=[],
-    target_col_raw="class",
+    target_col_raw="8",
     constraints={},
 )
 

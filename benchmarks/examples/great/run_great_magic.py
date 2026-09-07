@@ -123,7 +123,8 @@ DROP_NAN = False  # drop rows with any NaN in the output
 config = RunConfig(
     dataset_name="magic",
     model_name="great",
-    categorical_cols=[
+    categorical_cols=[],
+    continuous_cols=[
         "fLength",
         "fWidth",
         "fSize",
@@ -135,7 +136,6 @@ config = RunConfig(
         "fAlpha",
         "fDist",
     ],
-    continuous_cols=[],
     target_col_raw="class",
     constraints={},
 )
