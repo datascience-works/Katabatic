@@ -45,17 +45,14 @@ clear-cache:
 
 # Quality checks (mirrors CI lint-and-test job)
 # Run the fast CI checks locally before pushing / opening a PR
-ci: lint security test build
+ci: format security test build
 	@echo "All local CI checks passed."
-
-lint:
-	@echo "Running ruff..."
-	poetry run ruff check katabatic tests
 
 format:
 	@echo "Auto-formatting with ruff..."
 	poetry run ruff format katabatic tests
 	poetry run ruff check --fix katabatic tests
+	poetry run pre-commit run --all-files
 
 security:
 	@echo "Running bandit security scan..."
@@ -118,7 +115,6 @@ help:
 	@echo ""
 	@echo "Quality / CI:"
 	@echo "  make ci                 Run all local CI checks (lint, security, test, build)"
-	@echo "  make lint               Run ruff lint + format check"
 	@echo "  make format             Auto-fix formatting and lint issues"
 	@echo "  make test               Run fast tests with coverage"
 	@echo "  make test-all           Run pytest on all supported models"
