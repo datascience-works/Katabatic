@@ -29,6 +29,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+arf = ["arfpy"]
 codi = ["torch>=2.13.0,<3.0.0"]
 ctgan = ["torch>=2.13.0,<3.0.0"]
 ganblr = [
