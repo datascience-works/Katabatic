@@ -12,14 +12,6 @@ from katabatic.models.ctgan.models import CTGANModel
 config = RunConfig(
     dataset_name="adult",
     model_name="ctgan",
-    target_col_raw="class",
-    constraints={
-        "age": (17, 90),  # working age range
-        "fnlwgt": (12285, 1490400),  # census sampling weight, dataset min/max
-        "capital-gain": (0, 99999),  # cannot be negative, capped at 99999 in dataset
-        "capital-loss": (0, 4356),  # cannot be negative, capped at 4356 in dataset
-        "hours-per-week": (1, 99),  # at least 1 hour, max 99 in dataset
-    },
 )
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)

@@ -25,6 +25,13 @@ DATASET_SPECS: dict[str, dict[str, Any]] = {
             "capital-loss",
             "hours-per-week",
         ],
+        "constraints": {
+            "age": (17, 90),
+            "fnlwgt": (12285, 1490400),
+            "capital-gain": (0, 99999),
+            "capital-loss": (0, 4356),
+            "hours-per-week": (1, 99),
+        },
     },
     "car": {
         "target_col": "6",
@@ -81,6 +88,7 @@ def get_dataset_spec(dataset_name: str) -> dict[str, Any] | None:
         "target_col": spec["target_col"],
         "categorical_cols": list(spec["categorical_cols"]),
         "continuous_cols": list(spec["continuous_cols"]),
+        "constraints": dict(spec.get("constraints", {})),
     }
 
 

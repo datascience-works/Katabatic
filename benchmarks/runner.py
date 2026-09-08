@@ -25,7 +25,7 @@ from katabatic.utils.split_dataset import split_dataset  # noqa: E402
 class RunConfig:
     dataset_name: str
     model_name: str
-    target_col_raw: str
+    target_col_raw: str | None = None
     categorical_cols: list | None = None
     continuous_cols: list | None = None
     constraints: dict | None = None
@@ -141,6 +141,10 @@ def resolve_column_types(config: RunConfig, raw_df: pd.DataFrame) -> None:
         config.target_col_raw = dataset_spec["target_col"]
         config.categorical_cols = dataset_spec["categorical_cols"]
         config.continuous_cols = dataset_spec["continuous_cols"]
+
+        if config.constraints is None:
+            config.constraints = dataset_spec["constraints"] or None
+
         return
 
     # Generic fallback for unknown datasets.
