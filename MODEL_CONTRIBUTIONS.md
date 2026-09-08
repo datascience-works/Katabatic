@@ -6,9 +6,7 @@ New models start **experimental**. A model is promoted to **supported** once it 
 
 Please **do not push directly to `main` or `development`** — these branches are protected and reserved for stable, integration-ready code.
 
----
-
-## Step 1: Create a Feature Branch
+### Step 1: Create a Feature Branch
 
 ```bash
 git checkout -b feature/<model_name>
@@ -16,9 +14,7 @@ git checkout -b feature/<model_name>
 
 Replace `<model_name>` with the actual name of your model (e.g., `tabddpm`).
 
----
-
-## Step 2: Add Your Model
+### Step 2: Add Your Model
 
 Inside the `katabatic/models/` directory:
 
@@ -52,9 +48,7 @@ Inside the `katabatic/models/` directory:
 
    Implement the abstract interface (`train`, `evaluate`, `sample`). If the model should work with the artifact pipeline (`LocalArtifactStore` / `TrainTestSplitPipeline`), also implement `load_from_ref` and declare a non-empty `ARTIFACT_STATE_FILES` tuple so trained state can be persisted and reloaded. See `katabatic/models/ctgan/models.py` for a reference implementation.
 
----
-
-## Step 3: Register the Model
+### Step 3: Register the Model
 
 Add an entry to `ModelRegistry._models` in [katabatic/models/registry.py](katabatic/models/registry.py):
 
@@ -70,15 +64,11 @@ Add an entry to `ModelRegistry._models` in [katabatic/models/registry.py](kataba
 
 `dataset_requirements` (e.g. `allowed_tasks`) is optional, add it if your model only supports certain task types.
 
----
-
-## Step 4: Add Tests
+### Step 4: Add Tests
 
 Add an integration smoke test at `tests/test_integration_<model_name>.py`, guarded with `pytest.importorskip(...)` for the model's heavy dependencies and marked with `@pytest.mark.integration` and a model-specific marker (register new markers under `[tool.pytest.ini_options]` in `pyproject.toml`). Follow the pattern in `tests/test_integration_ganblr.py` or `tests/test_integration_ctgan.py`: run the model through `TrainTestSplitPipeline` with a `LocalArtifactStore`, and assert the expected model/synthetic/evaluation artifacts are written.
 
----
-
-## Step 5: Push and Open a Pull Request
+### Step 5: Push and Open a Pull Request
 
 ```bash
 git add .
@@ -91,14 +81,6 @@ Open a PR into `development` and:
 - Include a summary of the model and any new dependencies
 - Confirm the model is registered with `supported: False` (promotion is a separate, deliberate step).
 
----
-
-## 🤝 Thanks for Contributing!
-
-Keep contributions modular and follow the code style used in the repo for smooth integration.
-
----
-
 ## 🧹 Code Formatting
 
 Formatting and linting run via [pre-commit](.pre-commit-config.yaml) (`ruff-check --fix`, `ruff-format`, plus conventional commit message checks) and are enforced as a required CI job. Install the hooks locally so they run automatically:
@@ -108,8 +90,6 @@ pip install pre-commit
 pre-commit install
 pre-commit run --all-files
 ```
-
----
 
 ## 🚀 Promoting a Model from Experimental to Supported
 

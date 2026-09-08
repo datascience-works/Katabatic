@@ -25,12 +25,11 @@ and CI coverage are not guaranteed**:
 | CoDi | `codi` | Not in registry; see `examples/codi.ipynb` |
 | MedGAN | `medgan` | Not in registry; see `examples/medgan.ipynb` |
 
-Models marked "In registry: No" ship as source but cannot be loaded through
-`ModelRegistry.load_model()`; import them directly from their module.
+Models noted "Not in registry" ship as source but can't be loaded through
+`ModelRegistry.load_model()` — import them directly from their module instead.
 
-Examples under `examples/` for experimental models are best-effort. New
-contributions start as experimental until a maintainer adds an extra, a registry
-entry, and integration smoke coverage.
+Examples under `examples/` are best-effort. New contributions start as experimental
+until a maintainer adds an extra, a registry entry, and integration smoke coverage.
 
 ## Promoting a model to supported
 
@@ -40,4 +39,4 @@ entry, and integration smoke coverage.
 4. Register the model in `katabatic/models/registry.py` with `supported: True`, and confirm it passes the promotion contract in `tests/test_model_registry.py::test_model_promotion_contract` (also update `test_supported_models_list`'s expected set).
 5. Update the README install matrix and this file.
 
-See [MODEL_CONTRIBUTIONS.md](../MODEL_CONTRIBUTIONS.md#-promoting-a-model-from-experimental-to-supported) for the full promotion checklist.
+See [MODEL_CONTRIBUTIONS.md](../MODEL_CONTRIBUTIONS.md#promoting-a-model-from-experimental-to-supported) for the full promotion checklist.
