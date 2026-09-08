@@ -36,6 +36,16 @@ class ModelRegistry:
             "extra": "great",
             "supported": False,
         },
+        "realtabformer": {
+            "module": "katabatic.models.realtabformer.models",
+            "class": "REaLTabFormerModel",
+            "dependencies": ["realtabformer", "transformers", "torch"],
+            "extra": None,
+            "install_hint": (
+                "Install isolated dependencies from katabatic/models/realtabformer/"
+            ),
+            "supported": False,
+        },
         "tabsyn": {
             "module": "katabatic.models.tabsyn.models",
             "class": "Tabsyn",
@@ -116,9 +126,20 @@ class ModelRegistry:
                 missing_deps.append(dep)
 
         if missing_deps:
+            install_hint = model_info.get("install_hint")
+
+            if install_hint:
+                install_message = install_hint
+            elif model_info.get("extra"):
+                install_message = f"pip install katabatic[{model_info['extra']}]"
+            else:
+                install_message = (
+                    "See the model documentation for installation instructions."
+                )
+
             raise ImportError(
                 f"Missing dependencies for {model_name}: {missing_deps}. "
-                f"Install with: pip install katabatic[{model_info['extra']}]"
+                f"Install with: {install_message}"
             )
 
         try:

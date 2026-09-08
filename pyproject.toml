@@ -104,6 +104,7 @@ omit = [
     "katabatic/models/tabddpm/*",
     "katabatic/models/tabsyn/*",
     "katabatic/cli/*",
+    "katabatic/models/realtabformer/*",
 ]
 
 [tool.poetry]
