@@ -3,7 +3,6 @@ from sklearn.utils import check_random_state
 
 from katabatic.models.smote.models import (
     SMOTEModel,
-    _PaperAlignedSamplingMixin,
     _paper_aligned_anchor_rows,
 )
 
