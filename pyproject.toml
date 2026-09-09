@@ -109,7 +109,6 @@ omit = [
     "katabatic/models/tabddpm/*",
     "katabatic/models/tabkde_updated/*",
     "katabatic/models/tabsyn/*",
-    "katabatic/cli/*",
 ]
 
 [tool.poetry]
