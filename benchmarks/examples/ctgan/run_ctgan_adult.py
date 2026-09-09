@@ -5,16 +5,13 @@ import sys
 import warnings
 from time import perf_counter
 
-import pandas as pd
 import psutil
-
 
 sys.path.insert(
     0,
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
 )
 
-from katabatic.models.ctgan.models import CTGANModel # noqa: E402
 
 from runner import (
     RunConfig,
@@ -25,17 +22,16 @@ from runner import (
 
 from katabatic.models.model_hyper_parameters import MODELS
 
-
 # Enter the model and dataset you want to run
 
 print("Models available are:")
-print(list(MODELS) , " or select 'ALL' to run all models.")
+print(list(MODELS), " or select 'ALL' to run all models.")
 print("Select the model you wish to run.")
 
 model_chosen = input().upper()
 
 if model_chosen == "ALL":
-   model_chosen = list(MODELS)
+    model_chosen = list(MODELS)
 elif model_chosen not in list(MODELS):
     sys.exit("Error: Only the outlined choices can be entered!")
 else:
@@ -44,12 +40,13 @@ else:
 all_model_results = {}
 
 # run in cpu mode( "CUDA_VISIBLE_DEVICES" = "-1" or 0 for GPU)
-#os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 logging.getLogger("pgmpy").setLevel(logging.ERROR)
 warnings.filterwarnings("ignore")
 start_time = perf_counter()
+
 
 # ➕ Adding in system and run duration summary
 def get_runtime_summary(
@@ -122,37 +119,38 @@ def get_system_run_details() -> None:
     print(f"  ⚡  Used RAM:   {round(ram.used / 1e9, 4)} GB")
     print("======================================================================")
 
-for m in model_chosen:    
+
+for m in model_chosen:
     config = RunConfig(
         dataset_name="car",
         model_name=m,
         target_col_raw="6",
         constraints={
-        #    "age": (17, 90),  # working age range
-        #    "fnlwgt": (12285, 1490400),  # census sampling weight, dataset min/max
-        #    "capital-gain": (0, 99999),  # cannot be negative, capped at 99999 in dataset
-        #    "capital-loss": (0, 4356),  # cannot be negative, capped at 4356 in dataset
-        #    "hours-per-week": (1, 99),  # at least 1 hour, max 99 in dataset
+            #    "age": (17, 90),  # working age range
+            #    "fnlwgt": (12285, 1490400),  # census sampling weight, dataset min/max
+            #    "capital-gain": (0, 99999),  # cannot be negative, capped at 99999 in dataset
+            #    "capital-loss": (0, 4356),  # cannot be negative, capped at 4356 in dataset
+            #    "hours-per-week": (1, 99),  # at least 1 hour, max 99 in dataset
         },
     )
 
     train_df, test_df, target_col, paths = preprocess_and_split(config)
 
     print("\n" + "=" * 60)
-    print("STEP 3 — Train ",m)
+    print("STEP 3 — Train ", m)
     print("=" * 60)
 
     model_config = MODELS[m]
     model_hp = model_config["class"](**model_config["params"])
 
-    model = model_hp #CTGANModel(epochs=100, batch_size=512, seed=42)
+    model = model_hp  # CTGANModel(epochs=100, batch_size=512, seed=42)
     model.train(
         paths["split_dir"],
         paths["synthetic_dir"],
         categorical_cols=config.categorical_cols,
         continuous_cols=config.continuous_cols,
     )
-    print("\n",m," training complete.")
+    print("\n", m, " training complete.")
 
     print("\n" + "=" * 60)
     print("STEP 4 — Generate synthetic data")
@@ -162,7 +160,6 @@ for m in model_chosen:
         synthetic_df, train_df, paths, categorical_cols=config.categorical_cols
     )
 
-
     composite_score = evaluate(
         model=model,
         config=config,
@@ -171,9 +168,9 @@ for m in model_chosen:
         target_col=target_col,
         paths=paths,
         test_df=test_df,
-    ).composite_score    
-    all_model_results[m] = composite_score 
-    
+    ).composite_score
+    all_model_results[m] = composite_score
+
     # ➕ Adding in system and run duration summary
     end_time = perf_counter()
     time_diff = end_time - start_time
@@ -200,5 +197,5 @@ for m_results in all_model_results:
 text_final = """
 From the data selected and hyperparameters chosen with in the file model_hyper_parameters.py
 the analysis has shown the following model best suits your data for the 6 metrics:
-"""    
+"""
 print(text_final, best_model, " with a score ", best_score)
