@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -44,12 +43,14 @@ def load_training_dataframe(data_dir: str) -> pd.DataFrame:
     return pd.concat([X, y], axis=1)
 
 
-def split_features_label(df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray, str]:
+def split_features_label(df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray, str]:
     """
     Split a dataframe into feature matrix, label array, and label column name.
     """
     if df.shape[1] < 2:
-        raise ValueError("Training data must contain at least one feature and one label column.")
+        raise ValueError(
+            "Training data must contain at least one feature and one label column."
+        )
 
     label_col = df.columns[-1]
     X = df.iloc[:, :-1].to_numpy()
@@ -80,7 +81,7 @@ def get_adjusted_k_neighbors(y: np.ndarray, requested_k: int) -> int:
     return requested_k
 
 
-def resolve_synthetic_dir(data_dir: str, synthetic_dir: Optional[str]) -> str:
+def resolve_synthetic_dir(data_dir: str, synthetic_dir: str | None) -> str:
     """
     Resolve the output directory for synthetic data.
     """
@@ -144,7 +145,9 @@ def save_metadata(
         "schema": {
             "columns": df_train.columns.tolist(),
             "label": label_col,
-            "dtypes": {column: str(df_train[column].dtype) for column in df_train.columns},
+            "dtypes": {
+                column: str(df_train[column].dtype) for column in df_train.columns
+            },
         },
         "training": {
             "k_neighbors": k_neighbors,

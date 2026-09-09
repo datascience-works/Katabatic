@@ -31,20 +31,24 @@ def test_smote_default_k_matches_paper():
 
 
 def test_complete_passes_use_each_minority_anchor_equally():
-    X_cls = np.array([
-        [0.0],
-        [10.0],
-        [20.0],
-        [30.0],
-    ])
+    X_cls = np.array(
+        [
+            [0.0],
+            [10.0],
+            [20.0],
+            [30.0],
+        ]
+    )
 
     # Neighbour identities do not affect this test because lambda=0.
-    neighbour_indices = np.array([
-        [1, 2, 3],
-        [0, 2, 3],
-        [0, 1, 3],
-        [0, 1, 2],
-    ])
+    neighbour_indices = np.array(
+        [
+            [1, 2, 3],
+            [0, 2, 3],
+            [0, 1, 3],
+            [0, 1, 2],
+        ]
+    )
 
     smote = _SMOTE(
         k_neighbors=3,
@@ -77,19 +81,23 @@ def test_complete_passes_use_each_minority_anchor_equally():
 
 
 def test_partial_pass_uses_unique_minority_anchors():
-    X_cls = np.array([
-        [0.0],
-        [10.0],
-        [20.0],
-        [30.0],
-    ])
+    X_cls = np.array(
+        [
+            [0.0],
+            [10.0],
+            [20.0],
+            [30.0],
+        ]
+    )
 
-    neighbour_indices = np.array([
-        [1, 2, 3],
-        [0, 2, 3],
-        [0, 1, 3],
-        [0, 1, 2],
-    ])
+    neighbour_indices = np.array(
+        [
+            [1, 2, 3],
+            [0, 2, 3],
+            [0, 1, 3],
+            [0, 1, 2],
+        ]
+    )
 
     smote = _SMOTE(
         k_neighbors=3,
@@ -118,20 +126,19 @@ def test_fit_resample_preserves_requested_class_balance():
         size=(18, 2),
     )
 
-    minority = np.array([
-        [1.0, 1.0],
-        [1.2, 1.1],
-        [0.9, 1.3],
-        [1.4, 0.8],
-        [0.8, 0.9],
-        [1.1, 1.5],
-    ])
+    minority = np.array(
+        [
+            [1.0, 1.0],
+            [1.2, 1.1],
+            [0.9, 1.3],
+            [1.4, 0.8],
+            [0.8, 0.9],
+            [1.1, 1.5],
+        ]
+    )
 
     X = np.vstack([majority, minority])
-    y = np.array(
-        [0] * len(majority)
-        + [1] * len(minority)
-    )
+    y = np.array([0] * len(majority) + [1] * len(minority))
 
     smote = _SMOTE(
         k_neighbors=5,
@@ -160,20 +167,19 @@ def test_same_seed_is_reproducible():
         size=(18, 2),
     )
 
-    minority = np.array([
-        [1.0, 1.0],
-        [1.2, 1.1],
-        [0.9, 1.3],
-        [1.4, 0.8],
-        [0.8, 0.9],
-        [1.1, 1.5],
-    ])
+    minority = np.array(
+        [
+            [1.0, 1.0],
+            [1.2, 1.1],
+            [0.9, 1.3],
+            [1.4, 0.8],
+            [0.8, 0.9],
+            [1.1, 1.5],
+        ]
+    )
 
     X = np.vstack([majority, minority])
-    y = np.array(
-        [0] * len(majority)
-        + [1] * len(minority)
-    )
+    y = np.array([0] * len(majority) + [1] * len(minority))
 
     first = _SMOTE(
         k_neighbors=5,

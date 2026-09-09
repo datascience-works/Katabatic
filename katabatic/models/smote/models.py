@@ -13,10 +13,8 @@ from __future__ import annotations
 
 import time
 import warnings
-from typing import Dict, Optional, Tuple
 
 import numpy as np
-import pandas as pd
 from sklearn.neighbors import NearestNeighbors
 
 from katabatic.models.base_model import Model as BaseModel
@@ -37,6 +35,7 @@ warnings.filterwarnings("ignore")
 # ---------------------------------------------------------------------------
 # Self-contained SMOTE engine
 # ---------------------------------------------------------------------------
+
 
 class _SMOTE:
     """
@@ -72,7 +71,7 @@ class _SMOTE:
 
     def fit_resample(
         self, X: np.ndarray, y: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Fit on (X, y) and return the resampled (X_res, y_res).
         Original samples are always included; synthetic rows are appended.
@@ -84,7 +83,7 @@ class _SMOTE:
         majority_count = counts.max()
 
         # Determine how many synthetic samples to generate per class
-        n_to_generate: Dict = {}
+        n_to_generate: dict = {}
         for cls, count in zip(classes, counts):
             if count == majority_count:
                 continue  # never oversample the majority class
@@ -159,9 +158,7 @@ class _SMOTE:
         anchor_parts = []
 
         if complete_passes > 0:
-            anchor_parts.append(
-                np.tile(np.arange(n_cls), complete_passes)
-            )
+            anchor_parts.append(np.tile(np.arange(n_cls), complete_passes))
 
         if remainder > 0:
             random_subset = self._rng.permutation(n_cls)[:remainder]
@@ -181,9 +178,7 @@ class _SMOTE:
         # where lambda is sampled uniformly between 0 and 1.
         lam = self._rng.uniform(0.0, 1.0, size=(n_needed, 1))
 
-        X_new = X_cls[anchor_idx] + lam * (
-            X_cls[neighbour_idx] - X_cls[anchor_idx]
-        )
+        X_new = X_cls[anchor_idx] + lam * (X_cls[neighbour_idx] - X_cls[anchor_idx])
 
         return X_new
 
@@ -191,6 +186,7 @@ class _SMOTE:
 # ---------------------------------------------------------------------------
 # Katabatic model wrapper
 # ---------------------------------------------------------------------------
+
 
 class SMOTEModel(BaseModel):
     """
@@ -218,11 +214,11 @@ class SMOTEModel(BaseModel):
         self.sampling_strategy = sampling_strategy
         self.random_state = random_state
 
-        self._smote: Optional[_SMOTE] = None
-        self.column_names: Optional[list[str]] = None
-        self.label_col: Optional[str] = None
-        self.X_train: Optional[np.ndarray] = None
-        self.y_train: Optional[np.ndarray] = None
+        self._smote: _SMOTE | None = None
+        self.column_names: list[str] | None = None
+        self.label_col: str | None = None
+        self.X_train: np.ndarray | None = None
+        self.y_train: np.ndarray | None = None
 
     @classmethod
     def get_required_dependencies(cls) -> list[str]:
@@ -231,11 +227,11 @@ class SMOTEModel(BaseModel):
     def train(
         self,
         output_dir: str,
-        synthetic_dir: Optional[str] = None,
-        label_col: Optional[str] = None,
+        synthetic_dir: str | None = None,
+        label_col: str | None = None,
         *args,
         **kwargs,
-    ) -> "SMOTEModel":
+    ) -> SMOTEModel:
         """
         Fit SMOTE on the training data and save synthetic outputs.
         """
@@ -280,7 +276,9 @@ class SMOTEModel(BaseModel):
         df_synth = build_synthetic_dataframe(X_final, y_final, self.column_names)
 
         resolved_dir = resolve_synthetic_dir(output_dir, synthetic_dir)
-        x_path, y_path = save_synthetic_outputs(df_synth, detected_label_col, resolved_dir)
+        x_path, y_path = save_synthetic_outputs(
+            df_synth, detected_label_col, resolved_dir
+        )
         metadata_path = save_metadata(
             output_dir=resolved_dir,
             df_train=df_train,
@@ -303,10 +301,10 @@ class SMOTEModel(BaseModel):
 
     def sample(
         self,
-        n: Optional[int] = None,
+        n: int | None = None,
         *args,
         **kwargs,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Return (X_synth, y_synth) as numpy arrays.
         """
@@ -331,7 +329,7 @@ class SMOTEModel(BaseModel):
 
         return X_synth, y_synth
 
-    def evaluate(self, X_real: Optional[np.ndarray] = None, **kwargs) -> float:
+    def evaluate(self, X_real: np.ndarray | None = None, **kwargs) -> float:
         """
         Mean column-wise KS statistic between real and synthetic features.
         Lower is better; 0 = identical marginal distributions.
@@ -348,7 +346,6 @@ class SMOTEModel(BaseModel):
 
         n_cols = min(X_real.shape[1], X_synth.shape[1])
         ks_stats = [
-            ks_2samp(X_real[:, i], X_synth[:, i]).statistic
-            for i in range(n_cols)
+            ks_2samp(X_real[:, i], X_synth[:, i]).statistic for i in range(n_cols)
         ]
         return float(np.mean(ks_stats))
