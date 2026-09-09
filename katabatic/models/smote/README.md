@@ -43,6 +43,27 @@ This tabular synthetic data generation of the SMOTE model is used within Katabat
 
 ---
 
+
+## Paper Alignment Notes
+
+The implementation was reviewed against Chawla et al. (2002).
+
+Core behaviour aligned with the original SMOTE method:
+
+- `k_neighbors=5` by default, matching the paper.
+- Nearest neighbours are selected from the same minority class.
+- For complete oversampling passes, each minority observation is used once as a source observation.
+- For a partial pass, source observations are selected without replacement.
+- One of the nearest minority-class neighbours is selected randomly.
+- Synthetic values are generated using interpolation between the source and neighbour with a random gap between 0 and 1.
+
+Katabatic-specific compatibility behaviour:
+
+- Katabatic uses `sampling_strategy` rather than the paper's explicit percentage-based `N` interface.
+- `k_neighbors` is reduced when a minority class is too small to support five neighbours.
+- Katabatic may subsample the resampled output back to the original dataset size.
+- Katabatic's benchmark and evaluation pipeline is not a direct reproduction of the classifiers and ROC/AUC experiments reported in the original paper.
+
 ## Approach
 The synthetic data generation pipeline is:
 
@@ -152,7 +173,7 @@ model.train(
     synthetic_dir=paths.get("synthetic_dir"),
 )
 
-X_synth, y_synth = model.sample(1000)
+synthetic_df = model.sample(1000)
 ```
 
 ---
