@@ -1,6 +1,6 @@
 import os
+import pickle
 import random
-import sys
 
 import numpy as np
 import pandas as pd
@@ -8,14 +8,12 @@ import tensorflow as tf
 from pgmpy.factors.discrete import TabularCPD
 from pgmpy.models import DiscreteBayesianNetwork
 from pgmpy.sampling import BayesianModelSampling
+from pyitlib import discrete_random_variable as drv
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder, OrdinalEncoder
 
 from katabatic.models.base_model import Model
 
 from .utils import elr_loss, get_lr, sample, softmax_weight
-
-sys.path.append(os.path.abspath("."))
-from pyitlib import discrete_random_variable as drv  # noqa: E402
 
 
 class GANBLR(Model):
@@ -23,7 +21,7 @@ class GANBLR(Model):
     The GANBLR Model.
     """
 
-    ARTIFACT_STATE_FILES = "ganblr_model.pkl"
+    ARTIFACT_STATE_FILES = ("ganblr_model.pkl",)
 
     def __init__(self) -> None:
         super().__init__()
@@ -124,6 +122,8 @@ class GANBLR(Model):
                 print(
                     f"Epoch {i + 1}/{epochs}: G_loss = {g_history['loss'][0]:.6f}, G_accuracy = {g_history['accuracy'][0]:.6f}, D_loss = {d_history['loss'][0]:.6f}, D_accuracy = {d_history['accuracy'][0]:.6f}"
                 )
+
+        self.is_fitted = True
         return self
 
     def evaluate(self, x, y, model="lr") -> float:
@@ -381,16 +381,46 @@ class GANBLR(Model):
         # persist model state for artifact reload
         artifact_state_dir = kwargs.get("artifact_state_dir")
         if artifact_state_dir:
-            os.makedirs(artifact_state_dir, exist_ok=True)
-            try:
-                import pickle
+            self._save_artifact_state(artifact_state_dir)
 
-                with open(
-                    os.path.join(artifact_state_dir, "ganblr_model.pkl"), "wb"
-                ) as f:
-                    pickle.dump(self, f)
-            except Exception as e:
-                print(f"Failed to dump pickle file: {e}")
+    def _save_artifact_state(self, artifact_state_dir: str) -> None:
+        """
+        Persist fitted state so the model can be rebuilt by load_from_ref().
+
+        Called from train() when the pipeline injects artifact_state_dir, which
+        it does for any model class declaring ARTIFACT_STATE_FILES.
+        """
+        os.makedirs(artifact_state_dir, exist_ok=True)
+        target = os.path.join(artifact_state_dir, self.ARTIFACT_STATE_FILES[0])
+        with open(target, "wb") as fh:
+            pickle.dump(self, fh)
+
+    @classmethod
+    def load_from_ref(cls, store, ref) -> "GANBLR":
+        """
+        Rehydrate a fitted GANBLR from a versioned artifact.
+
+        train() pickles the whole fitted instance, so reloading is a plain
+        unpickle rather than the attribute/weight split CTGAN needs.
+        """
+        state_file = cls.ARTIFACT_STATE_FILES[0]
+        state_path = store.open_path(f"{ref.state_relpath}/{state_file}")
+
+        if not state_path.is_file():
+            raise FileNotFoundError(
+                f"No GANBLR state at {state_path}. The model must be trained "
+                f"through a pipeline that passes artifact_state_dir."
+            )
+
+        with open(state_path, "rb") as fh:
+            # loading our own saved model artifact
+            instance = pickle.load(fh)  # nosec B301
+
+        if not isinstance(instance, cls):
+            raise TypeError(
+                f"Artifact at {state_path} holds {type(instance).__name__}, not {cls.__name__}."
+            )
+        return instance
 
 
 class DataUtils:
