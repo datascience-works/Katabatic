@@ -9,6 +9,7 @@ Paper: https://www.computer.org/csdl/proceedings-article/icdm/2021/239800a916/1A
 """
 
 from katabatic.models.ganblr.models import GANBLR
+from katabatic.models.ganblr.ganblrpp import GANBLRPP
 
-__all__ = ["GANBLR"]
+__all__ = ["GANBLR", "GANBLRPP"]
 __version__ = "1.0.0"
