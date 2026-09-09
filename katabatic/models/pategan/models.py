@@ -1,4 +1,5 @@
 import os
+import warnings
 from typing import Any
 
 import numpy as np
@@ -164,7 +165,7 @@ class PATEGAN(Model):
         saver = tf.train.Saver()
         saver.restore(model._sess, checkpoint_path)
 
-        model._is_fitted = True
+        model.is_fitted = True
 
         return model
 
@@ -354,8 +355,7 @@ class PATEGAN(Model):
                 M_entire = np.concatenate((M_real, M_fake), 0)
 
                 # Add Gaussian noise for privacy
-                noise = self.privacy_mechanism.add_gaussian_noise(M_entire)
-                M_entire = M_entire + noise
+                M_entire = self.privacy_mechanism.add_gaussian_noise(M_entire)
                 M_entire = (M_entire > 0.5).astype(float)
                 M_mb = np.reshape(M_entire, (2 * self.batch_size, 1))
 
@@ -539,16 +539,19 @@ class PATEGAN(Model):
             missing_classes = set(unique_train) - set(unique_synth)
 
             if missing_classes:
-                print(
-                    f"[PATEGAN] Adding {len(missing_classes)} dummy samples to cover classes: {sorted(missing_classes)}"
+                # Cover missing classes by relabelling generated rows.
+                warnings.warn(
+                    f"PATE-GAN produced no samples for classes {sorted(missing_classes)}; "
+                    f"relabelling generated rows to cover them. Treat utility metrics "
+                    f"for these classes with caution.",
+                    stacklevel=2,
                 )
-                for cls in missing_classes:
-                    idx = np.where(df_train[y_col].values == cls)[0]
-                    if idx.size == 0:
-                        continue
-                    row = df_train.iloc[idx[0] : idx[0] + 1]
-                    x_dummy = row.drop(columns=[y_col])
-                    y_dummy = row[[y_col]]
+                for offset, cls in enumerate(sorted(missing_classes)):
+                    if x_synth.empty:
+                        break
+                    pos = offset % len(x_synth)
+                    x_dummy = x_synth.iloc[pos : pos + 1].copy()
+                    y_dummy = pd.DataFrame({y_col: [cls]})
                     x_synth = pd.concat([x_synth, x_dummy], ignore_index=True)
                     y_synth = pd.concat([y_synth, y_dummy], ignore_index=True)
 

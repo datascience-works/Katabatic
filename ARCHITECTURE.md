@@ -11,7 +11,7 @@ Katabatic is a library of tabular data generative models with a 6-dimension eval
 ```mermaid
 flowchart TD
     %% ── Data Preparation ──────────────────────────────────────
-    A[(Raw Dataset\nCSV)] -->|encode_preprocess| B[Preprocessed Data\ncleaned, original col names + types preserved]
+    A[(Raw Dataset\nCSV)] -->|preprocess_tabular| B[Preprocessed Data\ncleaned, original col names + types preserved]
     B -->|split_dataset\nstratified 80/20| C[Train Split] & D[Test Split]
 
     %% ── Model Training ────────────────────────────────────────
@@ -123,7 +123,7 @@ classDiagram
 
 ```mermaid
 flowchart LR
-    A[raw CSV] --> B[encode_preprocess\ncleaned CSV]
+    A[raw CSV] --> B[preprocess_tabular\ncleaned CSV]
     B --> C[train_full.csv] & T[test_full.csv]
     C --> D[model.train]
     D --> E[model.sample]
@@ -167,7 +167,7 @@ katabatic/
 └── utils/
     ├── column_types.py        # Categorical/continuous auto-detection
     ├── split_dataset.py       # Stratified train/test split
-    └── preprocess.py          # encode_preprocess + data cleaning
+    └── preprocess.py          # preprocess_tabular + data cleaning
 
 benchmarks/
 ├── runner.py                  # RunConfig + shared pipeline helpers
