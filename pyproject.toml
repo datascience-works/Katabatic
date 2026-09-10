@@ -58,7 +58,7 @@ tabddpm = [
 ]
 tabpfgen = [
     "torch>=2.13.0,<3.0.0",
-    "tabpfn>=2.0",
+    "tabpfn>=8.5.0",
 ]
 tabsyn = [
     "torch>=2.13.0,<3.0.0",

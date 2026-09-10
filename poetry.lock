@@ -5335,15 +5335,15 @@ dev = ["hypothesis (>=6.70.0)", "pytest (>=7.1.0)"]
 
 [[package]]
 name = "tabpfn"
-version = "8.4.0"
+version = "8.5.0"
 description = "TabPFN: Foundation model for tabular data"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
 markers = "extra == \"tabpfgen\""
 files = [
-    {file = "tabpfn-8.4.0-py3-none-any.whl", hash = "sha256:f292cc3c57ef02da0add323474c8ae85272c857a311efbc405eb7dd4aeb065b0"},
-    {file = "tabpfn-8.4.0.tar.gz", hash = "sha256:a21d2e7b183829277e1a718eed5a894d075c43530648a9519cb1cf6728b76bda"},
+    {file = "tabpfn-8.5.0-py3-none-any.whl", hash = "sha256:4c076a019cfa5520e9c41405cecda845bdd09d909ede4a60c43839bbc83bf7a0"},
+    {file = "tabpfn-8.5.0.tar.gz", hash = "sha256:3dac11cbd54000135c8a11d12ffb1e270b8a7bb77bfa4a4647210a7f708f7c82"},
 ]
 
 [package.dependencies]
@@ -6453,4 +6453,4 @@ tabsyn = ["category-encoders", "tomli", "tomli-w", "torch", "tqdm"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.12"
-content-hash = "89be64a3bdf1b312fd4f4fcf83215930f957749cf1d8ac05a1d9818ab3fe71ca"
+content-hash = "5c53f6dde225a735d762c776e310e99c6e723ed86c978aecc0fed265923b8f48"
