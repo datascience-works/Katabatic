@@ -29,7 +29,7 @@ This implementation integrates the following core ideas, **adapted specifically 
 
 **Source Implementation**: Adapted from the PrivTree implementation contributed by **Rishi Goyal** to the Katabatic mentorship repository.
 
-**Repository branch**:  
+**Repository branch**:
 https://github.com/katabatic-mentorship/katabatic-mentorship-repo/tree/Rishi_Goyal
 
 **Original model location**:
