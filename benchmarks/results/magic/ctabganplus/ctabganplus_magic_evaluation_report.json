@@ -1,0 +1,298 @@
+{
+  "composite_score": 0.8946,
+  "dimension_scores": {
+    "fidelity": 0.9373,
+    "utility": 0.9324,
+    "diversity": 0.9563,
+    "privacy": 0.9835,
+    "consistency": 0.4257,
+    "stability": 0.9635
+  },
+  "weights_used": {
+    "fidelity": 0.25,
+    "utility": 0.35,
+    "diversity": 0.1,
+    "privacy": 0.15,
+    "consistency": 0.1,
+    "stability": 0.05
+  },
+  "full_results": {
+    "fidelity": {
+      "categorical_jsd": {},
+      "continuous_wasserstein": {
+        "fLength": 0.0348,
+        "fWidth": 0.0333,
+        "fSize": 0.033,
+        "fConc": 0.0289,
+        "fConc1": 0.0811,
+        "fAsym": 0.0048,
+        "fM3Long": 0.0194,
+        "fM3Trans": 0.0049,
+        "fAlpha": 0.0196,
+        "fDist": 0.0194,
+        "avg": 0.0279
+      },
+      "correlation_diff": 0.0974,
+      "categorical_score": null,
+      "continuous_score": 0.9721,
+      "correlation_score": 0.9026,
+      "fidelity_score": 0.9373
+    },
+    "utility": {
+      "tstr": {
+        "LR": {
+          "accuracy": {
+            "mean": 0.7602,
+            "std": 0.001
+          },
+          "f1": {
+            "mean": 0.7229,
+            "std": 0.0014
+          },
+          "auc": {
+            "mean": 0.8072,
+            "std": 0.0015
+          }
+        },
+        "DT": {
+          "accuracy": {
+            "mean": 0.737,
+            "std": 0.0115
+          },
+          "f1": {
+            "mean": 0.7306,
+            "std": 0.0116
+          },
+          "auc": {
+            "mean": 0.6924,
+            "std": 0.0124
+          }
+        },
+        "RF": {
+          "accuracy": {
+            "mean": 0.8205,
+            "std": 0.0041
+          },
+          "f1": {
+            "mean": 0.8104,
+            "std": 0.0039
+          },
+          "auc": {
+            "mean": 0.8676,
+            "std": 0.0026
+          }
+        },
+        "LinearSVM": {
+          "accuracy": {
+            "mean": 0.7597,
+            "std": 0.0005
+          },
+          "f1": {
+            "mean": 0.7224,
+            "std": 0.0009
+          },
+          "auc": {
+            "mean": 0.8049,
+            "std": 0.0016
+          }
+        },
+        "MLP": {
+          "accuracy": {
+            "mean": 0.8087,
+            "std": 0.0021
+          },
+          "f1": {
+            "mean": 0.7945,
+            "std": 0.0022
+          },
+          "auc": {
+            "mean": 0.8654,
+            "std": 0.0057
+          }
+        }
+      },
+      "trtr": {
+        "LR": {
+          "accuracy": {
+            "mean": 0.8001,
+            "std": 0.0006
+          },
+          "f1": {
+            "mean": 0.7934,
+            "std": 0.0007
+          },
+          "auc": {
+            "mean": 0.8468,
+            "std": 0.0005
+          }
+        },
+        "DT": {
+          "accuracy": {
+            "mean": 0.8192,
+            "std": 0.0044
+          },
+          "f1": {
+            "mean": 0.8191,
+            "std": 0.0044
+          },
+          "auc": {
+            "mean": 0.8012,
+            "std": 0.0051
+          }
+        },
+        "RF": {
+          "accuracy": {
+            "mean": 0.884,
+            "std": 0.0015
+          },
+          "f1": {
+            "mean": 0.882,
+            "std": 0.0016
+          },
+          "auc": {
+            "mean": 0.9368,
+            "std": 0.0009
+          }
+        },
+        "LinearSVM": {
+          "accuracy": {
+            "mean": 0.7988,
+            "std": 0.0012
+          },
+          "f1": {
+            "mean": 0.7921,
+            "std": 0.0013
+          },
+          "auc": {
+            "mean": 0.847,
+            "std": 0.0004
+          }
+        },
+        "MLP": {
+          "accuracy": {
+            "mean": 0.8811,
+            "std": 0.0005
+          },
+          "f1": {
+            "mean": 0.8794,
+            "std": 0.0005
+          },
+          "auc": {
+            "mean": 0.9367,
+            "std": 0.0018
+          }
+        }
+      },
+      "delta": {
+        "LR": {
+          "accuracy": 0.0399,
+          "f1": 0.0705,
+          "auc": 0.0396
+        },
+        "DT": {
+          "accuracy": 0.0822,
+          "f1": 0.0885,
+          "auc": 0.1088
+        },
+        "RF": {
+          "accuracy": 0.0635,
+          "f1": 0.0716,
+          "auc": 0.0692
+        },
+        "LinearSVM": {
+          "accuracy": 0.0391,
+          "f1": 0.0697,
+          "auc": 0.0421
+        },
+        "MLP": {
+          "accuracy": 0.0724,
+          "f1": 0.0849,
+          "auc": 0.0713
+        }
+      },
+      "utility_score": 0.9324
+    },
+    "diversity": {
+      "category_coverage": {},
+      "bin_coverage": {
+        "fLength": 1.0,
+        "fWidth": 1.0,
+        "fSize": 1.0,
+        "fConc": 1.0,
+        "fConc1": 0.8,
+        "fAsym": 0.9,
+        "fM3Long": 0.8,
+        "fM3Trans": 0.9,
+        "fAlpha": 1.0,
+        "fDist": 0.9,
+        "avg": 0.93
+      },
+      "gower_similarity": 0.9825,
+      "diversity_score": 0.9563
+    },
+    "privacy": {
+      "mean_nndr": 0.9505,
+      "exact_duplicate_rate": 0.0,
+      "near_duplicate_rate": 0.0,
+      "nndr_score": 0.9505,
+      "exact_dup_score": 1.0,
+      "near_dup_score": 1.0,
+      "privacy_score": 0.9835
+    },
+    "consistency": {
+      "discriminator_accuracy": 0.9712,
+      "discriminator_score": 0.0575,
+      "constraint_violations": {},
+      "constraint_score": null,
+      "feature_importance_spearman": 0.7939,
+      "consistency_score": 0.4257
+    },
+    "stability": {
+      "n_runs": 5,
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "per_run_scores": [
+        {
+          "seed": 0,
+          "fidelity_score": 0.9379,
+          "diversity_score": 0.9726
+        },
+        {
+          "seed": 1,
+          "fidelity_score": 0.9374,
+          "diversity_score": 0.9772
+        },
+        {
+          "seed": 2,
+          "fidelity_score": 0.9379,
+          "diversity_score": 0.9725
+        },
+        {
+          "seed": 3,
+          "fidelity_score": 0.937,
+          "diversity_score": 0.9569
+        },
+        {
+          "seed": 4,
+          "fidelity_score": 0.9375,
+          "diversity_score": 0.9667
+        }
+      ],
+      "mean_scores": {
+        "fidelity": 0.9375,
+        "diversity": 0.9692
+      },
+      "std_scores": {
+        "fidelity": 0.0003,
+        "diversity": 0.007
+      },
+      "avg_std": 0.0037,
+      "stability_score": 0.9635
+    }
+  }
+}
