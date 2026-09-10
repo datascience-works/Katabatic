@@ -40,7 +40,7 @@ else:
 all_model_results = {}
 
 # run in cpu mode( "CUDA_VISIBLE_DEVICES" = "-1" or 0 for GPU)
-# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 logging.getLogger("pgmpy").setLevel(logging.ERROR)
@@ -122,16 +122,9 @@ def get_system_run_details() -> None:
 
 for m in model_chosen:
     config = RunConfig(
-        dataset_name="car",
+        dataset_name="shuttle",
         model_name=m,
-        target_col_raw="6",
-        constraints={
-            #    "age": (17, 90),  # working age range
-            #    "fnlwgt": (12285, 1490400),  # census sampling weight, dataset min/max
-            #    "capital-gain": (0, 99999),  # cannot be negative, capped at 99999 in dataset
-            #    "capital-loss": (0, 4356),  # cannot be negative, capped at 4356 in dataset
-            #    "hours-per-week": (1, 99),  # at least 1 hour, max 99 in dataset
-        },
+        #target_col_raw="6",
     )
 
     train_df, test_df, target_col, paths = preprocess_and_split(config)
@@ -187,7 +180,7 @@ for m in model_chosen:
 
 # Recommend the model to used based on the highest composite score
 
-print("======= RECOMMENDED MODEL TO USE =======")
+print("\n======= RECOMMENDED MODEL TO USE =======")
 best_score = 0
 best_model = ""
 for m_results in all_model_results:
@@ -198,4 +191,31 @@ text_final = """
 From the data selected and hyperparameters chosen with in the file model_hyper_parameters.py
 the analysis has shown the following model best suits your data for the 6 metrics:
 """
-print(text_final, best_model, " with a score ", best_score)
+
+print(text_final)
+print(f"{best_model} with a score of {best_score:.4f}")
+
+print("\n======= MODEL SCORE SUMMARY =======")
+
+sorted_results = sorted(
+    all_model_results.items(),
+    key=lambda x: x[1],
+    reverse=True
+)
+
+model_width = max(
+    len("Model"),
+    max(len(str(model)) for model in all_model_results)
+)
+
+print(f"{'Rank':<5}{'Model':<{model_width + 5}}{'Score':>5}")
+print("-" * (model_width + 19))
+
+for rank, (model, score) in enumerate(sorted_results, start=1):
+    marker = " <-- Recommended" if model == best_model else ""
+    print(
+        f"{rank:<5}"
+        f"{model:<{model_width + 5}}"
+        f"{score:>5.4f}"
+        f"{marker}"
+    )

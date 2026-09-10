@@ -9,6 +9,7 @@ sys.path.insert(
 from katabatic.models.codi.models import CODI  # noqa: E402
 from katabatic.models.ctgan.models import CTGANModel  # noqa: E402
 from katabatic.models.naivebayes.models import NaiveBayesModel  # noqa: E402
+from katabatic.models.ganblr.models import GANBLR  # noqa: E402
 
 MODELS = {
     "CODI": {
@@ -33,6 +34,12 @@ MODELS = {
             "seed": 42,
         },
     },
+    # Note: Hyper parameters for GANBLR are set within the models.py for GANBLR
+    "GANBLR": {
+        "class": GANBLR,
+        "params": {
+        },
+    },          
 }
 
 

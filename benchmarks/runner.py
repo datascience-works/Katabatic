@@ -20,12 +20,11 @@ from katabatic.utils.column_types import get_column_types  # noqa: E402
 from katabatic.utils.preprocess import preprocess_dataset  # noqa: E402
 from katabatic.utils.split_dataset import split_dataset  # noqa: E402
 
-
 @dataclass
 class RunConfig:
     dataset_name: str
     model_name: str
-    target_col_raw: str
+    target_col_raw: str | None = None
     categorical_cols: list | None = None
     continuous_cols: list | None = None
     constraints: dict | None = None
