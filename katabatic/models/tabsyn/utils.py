@@ -789,6 +789,7 @@ def train_tabsyn(
     )
 
     # Optional: save snapshots (single pickle-based bundle for artifact store)
+    # Save a single pickle-based bundle for the artifact store.
     if save_dir is not None:
         os.makedirs(save_dir, exist_ok=True)
         bundle = {
@@ -796,6 +797,26 @@ def train_tabsyn(
             "tokenizer": state.tokenizer_state,
             "encoder": state.encoder_state,
             "decoder": state.decoder_state,
+            # Metadata needed to rebuild TabSynState in TabSyn.load_from_ref().
+            # State dicts alone are not enough: _Tokenizer/_Decoder need
+            # n_num/cat_sizes/token_dim at construction time, MLPDiffusion needs
+            # dim_t, and cat_encoders are required to invert categoricals back
+            # to their original labels.
+            "meta": {
+                "info": state.info,
+                "n_num": state.n_num,
+                "cat_sizes": state.cat_sizes,
+                "cat_encoders": state.cat_encoders,
+                "token_dim": state.token_dim,
+                "column_order": state.column_order,
+                "scaler_mean": state.scaler_mean,
+                "scaler_std": state.scaler_std,
+                "train_rows": state.train_rows,
+                "denoise_dim_t": denoise_backbone.dim_t,
+                "sigma_data": precond.sigma_data,
+                "num_steps": getattr(precond, "num_steps", 50),
+                "device": str(device),
+            },
         }
         torch.save(bundle, os.path.join(save_dir, "tabsyn_state.pkl"))
 

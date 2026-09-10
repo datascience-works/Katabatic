@@ -59,7 +59,7 @@ class ModelRegistry:
             "class": "TabSyn",
             "dependencies": [],
             "extra": "tabsyn",
-            "supported": False,
+            "supported": True,
         },
         "tabddpm": {
             "module": "katabatic.models.tabddpm.models",

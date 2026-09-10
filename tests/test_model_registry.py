@@ -88,4 +88,9 @@ def test_model_promotion_contract(model_name, config):
 
 
 def test_supported_models_list():
-    assert set(ModelRegistry.get_supported_models()) == {"ganblr", "ctgan", "pategan"}
+    assert set(ModelRegistry.get_supported_models()) == {
+        "ganblr",
+        "ctgan",
+        "pategan",
+        "tabsyn",
+    }
