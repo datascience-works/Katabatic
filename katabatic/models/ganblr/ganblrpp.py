@@ -93,6 +93,8 @@ class DMMDiscretizer:
             restored[:, column_index] = sampled
 
         return self.scaler.inverse_transform(restored)
+
+
 class GANBLRPP:
     """GANBLR++ wrapper with support for numerical columns."""
 
@@ -120,8 +122,7 @@ class GANBLRPP:
             raise ValueError("x must be a two-dimensional array")
 
         if any(
-            index < 0 or index >= x_array.shape[1]
-            for index in self.numerical_columns
+            index < 0 or index >= x_array.shape[1] for index in self.numerical_columns
         ):
             raise ValueError("numerical_columns contains an invalid column index")
 
@@ -159,9 +160,9 @@ class GANBLRPP:
             return synthetic
 
         if hasattr(synthetic, "iloc"):
-            numerical_data = synthetic.iloc[
-                :, self.numerical_columns
-            ].to_numpy(dtype=float)
+            numerical_data = synthetic.iloc[:, self.numerical_columns].to_numpy(
+                dtype=float
+            )
 
             restored = self.discretizer.inverse_transform(numerical_data)
 
@@ -170,13 +171,10 @@ class GANBLRPP:
 
         synthetic_array = np.asarray(synthetic).copy()
 
-        numerical_data = synthetic_array[
-            :, self.numerical_columns
-        ].astype(float)
+        numerical_data = synthetic_array[:, self.numerical_columns].astype(float)
 
         restored = self.discretizer.inverse_transform(numerical_data)
 
         synthetic_array[:, self.numerical_columns] = restored
 
         return synthetic_array
-
