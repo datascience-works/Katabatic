@@ -1,11 +1,11 @@
 """GANBLR++ support for mixed numerical and categorical tabular data."""
 
 import numpy as np
-from scipy.stats import truncnorm
 from sklearn.mixture import BayesianGaussianMixture
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 from katabatic.models.ganblr.models import GANBLR
+
 
 class DMMDiscretizer:
     """Discretize numerical columns using Bayesian Gaussian mixtures."""
