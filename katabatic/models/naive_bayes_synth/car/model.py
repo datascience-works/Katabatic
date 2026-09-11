@@ -65,11 +65,15 @@ class NaiveBayesSynth(Model):
         """
         self.smoothing = smoothing
         self._feature_names = (
-            list(x.columns) if hasattr(x, "columns") else [f"feature_{i}" for i in range(np.asarray(x).shape[1])]
+            list(x.columns)
+            if hasattr(x, "columns")
+            else [f"feature_{i}" for i in range(np.asarray(x).shape[1])]
         )
         self._target_name = y.name if hasattr(y, "name") and y.name else "target"
 
-        x_enc, self._feature_encoder = encode_features(pd.DataFrame(x, columns=self._feature_names))
+        x_enc, self._feature_encoder = encode_features(
+            pd.DataFrame(x, columns=self._feature_names)
+        )
         y_enc = self._label_encoder.fit_transform(y).astype(int)
         num_classes = len(self._label_encoder.classes_)
 
@@ -138,7 +142,9 @@ class NaiveBayesSynth(Model):
         from sklearn.pipeline import Pipeline
         from sklearn.preprocessing import OneHotEncoder
 
-        models = dict(lr=LogisticRegression, rf=RandomForestClassifier, mlp=MLPClassifier)
+        models = dict(
+            lr=LogisticRegression, rf=RandomForestClassifier, mlp=MLPClassifier
+        )
         if model in models:
             eval_model = models[model]()
         elif hasattr(model, "fit") and hasattr(model, "predict"):
@@ -154,7 +160,9 @@ class NaiveBayesSynth(Model):
 
         x_synth_enc = self._feature_encoder.transform(x_synth)
         y_synth_enc = self._label_encoder.transform(y_synth)
-        x_test_enc = self._feature_encoder.transform(pd.DataFrame(x, columns=self._feature_names))
+        x_test_enc = self._feature_encoder.transform(
+            pd.DataFrame(x, columns=self._feature_names)
+        )
         y_test_enc = self._label_encoder.transform(y)
 
         pipeline = Pipeline(
@@ -204,7 +212,9 @@ class NaiveBayesSynth(Model):
             try:
                 import pickle
 
-                with open(os.path.join(artifact_state_dir, self.ARTIFACT_STATE_FILES), "wb") as f:
+                with open(
+                    os.path.join(artifact_state_dir, self.ARTIFACT_STATE_FILES), "wb"
+                ) as f:
                     pickle.dump(self, f)
             except Exception as e:
                 print(f"Failed to dump pickle file: {e}")
