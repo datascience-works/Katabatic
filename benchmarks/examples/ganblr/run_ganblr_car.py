@@ -104,9 +104,6 @@ def get_system_run_details() -> None:
     print("======================================================================")
 
 
-
-
-
 CAR_COLUMNS = [
     "buying",
     "maint",
@@ -153,8 +150,7 @@ def prepare_car_dataset():
         print("Normalised car dataset column names.")
     elif rows[0] != CAR_COLUMNS:
         raise ValueError(
-            f"Unexpected car dataset columns: {rows[0]}. "
-            f"Expected {CAR_COLUMNS}."
+            f"Unexpected car dataset columns: {rows[0]}. Expected {CAR_COLUMNS}."
         )
 
     print(f"Car dataset ready: {target}")
