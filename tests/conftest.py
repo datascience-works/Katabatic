@@ -2,13 +2,22 @@
 
 from __future__ import annotations
 
-import pandas as pd
-import pytest
+import os
+
+# Limit native-library threads before importing pandas, NumPy,
+# XGBoost, TensorFlow or other compiled machine-learning libraries.
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+
+import pandas as pd  # noqa: E402
+import pytest  # noqa: E402
 
 
 @pytest.fixture
 def tiny_binary_csv(tmp_path):
-    """30-row binary classification CSV (last column is target)."""
+    """Create a small binary-classification CSV."""
     df = pd.DataFrame(
         {
             "f0": list(range(30)),
@@ -16,6 +25,8 @@ def tiny_binary_csv(tmp_path):
             "y": [0, 1] * 15,
         }
     )
+
     path = tmp_path / "tiny.csv"
     df.to_csv(path, index=False)
+
     return path

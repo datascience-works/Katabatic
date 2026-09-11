@@ -4,10 +4,9 @@
 name = "absl-py"
 version = "2.5.0"
 description = "Abseil Python Common Libraries, see https://github.com/abseil/abseil-py."
-optional = true
+optional = false
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
 files = [
     {file = "absl_py-2.5.0-py3-none-any.whl", hash = "sha256:0f17b89f2a4eaaedc4f28c622998aa690564b3012a396a4ffad0821007fe03ba"},
     {file = "absl_py-2.5.0.tar.gz", hash = "sha256:0c996f25c0490700fadabe6351630f6111534fa0ae252cc6d2014ea3b141135f"},
@@ -353,10 +352,9 @@ test = ["astroid (>=2,<5)", "pytest (<9.0)", "pytest-cov", "pytest-xdist"]
 name = "astunparse"
 version = "1.6.3"
 description = "An AST unparser for Python"
-optional = true
+optional = false
 python-versions = "*"
 groups = ["main"]
-markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
 files = [
     {file = "astunparse-1.6.3-py2.py3-none-any.whl", hash = "sha256:c2652417f2c8b5bb325c885ae329bdf3f86424075c4fd1a128674bc6fba4b8e8"},
     {file = "astunparse-1.6.3.tar.gz", hash = "sha256:5ad93a8456f0d084c3456d059fd9a92cce667963232cbf763eac3bc5b7940872"},
@@ -476,7 +474,6 @@ files = [
     {file = "certifi-2026.7.22-py3-none-any.whl", hash = "sha256:62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775"},
     {file = "certifi-2026.7.22.tar.gz", hash = "sha256:741e2c3b351ddf169a738da9f2c048608ff7f2c5cc02f1ebc6b118bb090d5d55"},
 ]
-markers = {main = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\" or extra == \"great\" or extra == \"tabpfgen\""}
 
 [[package]]
 name = "cffi"
@@ -785,7 +782,6 @@ files = [
     {file = "charset_normalizer-3.5.1-py3-none-any.whl", hash = "sha256:6df0ec430f9a831772c23ca5a224cba36517a58a84bb32c32bb59a9fa67c47f6"},
     {file = "charset_normalizer-3.5.1.tar.gz", hash = "sha256:6117b84ea48435e5356dc737f5121485c30920ba43375fa7b434fd753df0eac3"},
 ]
-markers = {main = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\" or extra == \"great\" or extra == \"tabpfgen\""}
 
 [[package]]
 name = "click"
@@ -1257,10 +1253,9 @@ markers = {main = "extra == \"codi\" or extra == \"ctgan\" or extra == \"great\"
 name = "flatbuffers"
 version = "25.12.19"
 description = "The FlatBuffers serialization format for Python"
-optional = true
+optional = false
 python-versions = "*"
 groups = ["main"]
-markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
 files = [
     {file = "flatbuffers-25.12.19-py2.py3-none-any.whl", hash = "sha256:7634f50c427838bb021c2d66a3d1168e9d199b0607e6329399f04846d42e20b4"},
 ]
@@ -1495,10 +1490,9 @@ tqdm = ["tqdm"]
 name = "gast"
 version = "0.7.0"
 description = "Python AST that abstracts the underlying Python version"
-optional = true
+optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,>=2.7"
 groups = ["main"]
-markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
 files = [
     {file = "gast-0.7.0-py3-none-any.whl", hash = "sha256:99cbf1365633a74099f69c59bd650476b96baa5ef196fec88032b00b31ba36f7"},
     {file = "gast-0.7.0.tar.gz", hash = "sha256:0bb14cd1b806722e91ddbab6fb86bba148c22b40e7ff11e248974e04c8adfdae"},
@@ -1508,10 +1502,9 @@ files = [
 name = "google-pasta"
 version = "0.2.0"
 description = "pasta is an AST-based Python refactoring library"
-optional = true
+optional = false
 python-versions = "*"
 groups = ["main"]
-markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
 files = [
     {file = "google-pasta-0.2.0.tar.gz", hash = "sha256:c9f2c8dfc8f96d0d5808299920721be30c9eec37f2389f28904f454565c8a16e"},
     {file = "google_pasta-0.2.0-py2-none-any.whl", hash = "sha256:4612951da876b1a10fe3960d7226f0c7682cf901e16ac06e473b267a5afa8954"},
@@ -1525,10 +1518,9 @@ six = "*"
 name = "grpcio"
 version = "1.83.0"
 description = "HTTP/2-based RPC framework"
-optional = true
+optional = false
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
 files = [
     {file = "grpcio-1.83.0-cp310-cp310-linux_armv7l.whl", hash = "sha256:fba099b716e73512d61b97f71ea3c31a72abb36904036e316bf4dd148ca8dcc8"},
     {file = "grpcio-1.83.0-cp310-cp310-macosx_11_0_universal2.whl", hash = "sha256:6755ed67cc3e454d51ae9f6e1915b80d3942fa4de956ef48dacd45ab7f40b727"},
@@ -1606,10 +1598,9 @@ files = [
 name = "h5py"
 version = "3.14.0"
 description = "Read and write HDF5 files from Python"
-optional = true
+optional = false
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
 files = [
     {file = "h5py-3.14.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:24df6b2622f426857bda88683b16630014588a0e4155cba44e872eb011c4eaed"},
     {file = "h5py-3.14.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:6ff2389961ee5872de697054dd5a033b04284afc3fb52dc51d94561ece2c10c6"},
@@ -1825,7 +1816,6 @@ files = [
     {file = "idna-3.19-py3-none-any.whl", hash = "sha256:815e7be7a7806d54abb586dc943addc79e8b2ee16915059658cbeff4b1b43bf4"},
     {file = "idna-3.19.tar.gz", hash = "sha256:5e0811a4383b21dc5838069f801c4fb62113b7447663d2530d2bd6e77b49bf15"},
 ]
-markers = {main = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\" or extra == \"great\" or extra == \"tabpfgen\""}
 
 [package.extras]
 all = ["coverage (>=7.10.0)", "hypothesis (>=6.141.1)", "mypy (>=1.11.2)", "pytest (>=8.3.2)", "ruff (>=0.16.0)", "ty (>=0.0.37)"]
@@ -2023,10 +2013,9 @@ test = ["ipykernel", "pre-commit", "pytest (<9)", "pytest-cov", "pytest-timeout"
 name = "keras"
 version = "3.15.1"
 description = "Multi-backend Keras"
-optional = true
+optional = false
 python-versions = ">=3.11"
 groups = ["main"]
-markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
 files = [
     {file = "keras-3.15.1-py3-none-any.whl", hash = "sha256:836460e480930acbd19bb7a17e62f9ecad40e8a9af9a651fc8d0586a96d27e20"},
     {file = "keras-3.15.1.tar.gz", hash = "sha256:92ae7c1dd7f61041953dc2d42253181ee099086f0b58ae36fcf98147a6f08a29"},
@@ -2046,10 +2035,9 @@ rich = "*"
 name = "libclang"
 version = "18.1.1"
 description = "Clang Python Bindings, mirrored from the official LLVM repo: https://github.com/llvm/llvm-project/tree/main/clang/bindings/python, to make the installation process easier."
-optional = true
+optional = false
 python-versions = "*"
 groups = ["main"]
-markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
 files = [
     {file = "libclang-18.1.1-1-py2.py3-none-macosx_11_0_arm64.whl", hash = "sha256:0b2e143f0fac830156feb56f9231ff8338c20aecfe72b4ffe96f19e5a1dbb69a"},
     {file = "libclang-18.1.1-py2.py3-none-macosx_10_9_x86_64.whl", hash = "sha256:6f14c3f194704e5d09769108f03185fce7acaf1d1ae4bbb2f30a72c2400cb7c5"},
@@ -2270,7 +2258,6 @@ files = [
     {file = "markdown_it_py-4.2.0-py3-none-any.whl", hash = "sha256:9f7ebbcd14fe59494226453aed97c1070d83f8d24b6fc3a3bcf9a38092641c4a"},
     {file = "markdown_it_py-4.2.0.tar.gz", hash = "sha256:04a21681d6fbb623de53f6f364d352309d4094dd4194040a10fd51833e418d49"},
 ]
-markers = {main = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""}
 
 [package.dependencies]
 mdurl = ">=0.1,<1.0"
@@ -2413,16 +2400,14 @@ files = [
     {file = "mdurl-0.1.2-py3-none-any.whl", hash = "sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8"},
     {file = "mdurl-0.1.2.tar.gz", hash = "sha256:bb413d29f5eea38f31dd4754dd7377d4465116fb207585f97bf925588687c1ba"},
 ]
-markers = {main = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""}
 
 [[package]]
 name = "ml-dtypes"
 version = "0.5.4"
 description = "ml_dtypes is a stand-alone implementation of several NumPy dtype extensions used in machine learning."
-optional = true
+optional = false
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
 files = [
     {file = "ml_dtypes-0.5.4-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:b95e97e470fe60ed493fd9ae3911d8da4ebac16bd21f87ffa2b7c588bf22ea2c"},
     {file = "ml_dtypes-0.5.4-cp310-cp310-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:b4b801ebe0b477be666696bda493a9be8356f1f0057a57f1e35cd26928823e5a"},
@@ -2950,10 +2935,9 @@ files = [
 name = "namex"
 version = "0.1.0"
 description = "A simple utility to separate the implementation of your Python package and its public API surface."
-optional = true
+optional = false
 python-versions = "*"
 groups = ["main"]
-markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
 files = [
     {file = "namex-0.1.0-py3-none-any.whl", hash = "sha256:e2012a474502f1e2251267062aae3114611f07df4224b6e06334c57b0f2ce87c"},
     {file = "namex-0.1.0.tar.gz", hash = "sha256:117f03ccd302cc48e3f5c58a296838f6b89c83455ab8683a1e85f2a430aa4306"},
@@ -3303,7 +3287,7 @@ description = "NVIDIA Collective Communication Library (NCCL) Runtime"
 optional = true
 python-versions = ">=3"
 groups = ["main"]
-markers = "(extra == \"eval\" or extra == \"all\") and platform_system == \"Linux\""
+markers = "(extra == \"forest-diffusion\" or extra == \"eval\" or extra == \"all\") and platform_system == \"Linux\""
 files = [
     {file = "nvidia_nccl_cu12-2.31.2-py3-none-manylinux_2_18_aarch64.whl", hash = "sha256:f208de397e431631eab0eca946444404a495d43a007535baa333d7de9e510ca2"},
     {file = "nvidia_nccl_cu12-2.31.2-py3-none-manylinux_2_18_x86_64.whl", hash = "sha256:f9b1dc3c2a7e20176054144ebb3b32fea83b40402ee5d7ac7045cd11ecc956c0"},
@@ -3367,10 +3351,9 @@ files = [
 name = "opt-einsum"
 version = "3.4.0"
 description = "Path optimization of einsum functions."
-optional = true
+optional = false
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
 files = [
     {file = "opt_einsum-3.4.0-py3-none-any.whl", hash = "sha256:69bb92469f86a1565195ece4ac0323943e83477171b91d24c35afe028a90d7cd"},
     {file = "opt_einsum-3.4.0.tar.gz", hash = "sha256:96ca72f1b886d148241348783498194c577fa30a8faac108586b14f1ba4473ac"},
@@ -3380,10 +3363,9 @@ files = [
 name = "optree"
 version = "0.20.0"
 description = "Optimized PyTree Utilities."
-optional = true
+optional = false
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
 files = [
     {file = "optree-0.20.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:6e3ad93828cade7cf21da2d9aa5122cfce1fdabc8a76a44387a5af7fc8f408d3"},
     {file = "optree-0.20.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:3ecb6a2ecaa7e9308b9a7676fa199829661f4a674e8dfa055fe79e9f629bd7a8"},
@@ -3551,7 +3533,6 @@ files = [
     {file = "packaging-26.3-py3-none-any.whl", hash = "sha256:d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"},
     {file = "packaging-26.3.tar.gz", hash = "sha256:94edc256424af38762eb31306eed28beb9f0efc50a8837492c9d6fd6004aed79"},
 ]
-markers = {main = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\" or extra == \"tabddpm\" or extra == \"tabsyn\" or extra == \"great\" or extra == \"tabpfgen\""}
 
 [[package]]
 name = "pandas"
@@ -4024,10 +4005,9 @@ files = [
 name = "protobuf"
 version = "7.36.0"
 description = ""
-optional = true
+optional = false
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
 files = [
     {file = "protobuf-7.36.0-cp310-abi3-macosx_10_9_universal2.whl", hash = "sha256:9103532dffd80c6fab7e50c65a31007680a06eb57537d437bb1b35812c138a37"},
     {file = "protobuf-7.36.0-cp310-abi3-manylinux2014_aarch64.whl", hash = "sha256:bf94a5917c71058262de683669bc0a797a7669d3de71f0b36d058e3194f47b44"},
@@ -4377,7 +4357,6 @@ files = [
     {file = "pygments-2.21.0-py3-none-any.whl", hash = "sha256:2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9"},
     {file = "pygments-2.21.0.tar.gz", hash = "sha256:610ca751c9bc2492b38eb9a38a7fbc93edbbb2d7182edaf34e66ae493dee5c8c"},
 ]
-markers = {main = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""}
 
 [package.extras]
 windows-terminal = ["colorama (>=0.4.6)"]
@@ -4898,7 +4877,6 @@ files = [
     {file = "requests-2.34.2-py3-none-any.whl", hash = "sha256:2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0"},
     {file = "requests-2.34.2.tar.gz", hash = "sha256:f288924cae4e29463698d6d60bc6a4da69c89185ad1e0bcc4104f584e960b9ed"},
 ]
-markers = {main = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\" or extra == \"great\" or extra == \"tabpfgen\""}
 
 [package.dependencies]
 certifi = ">=2023.5.7"
@@ -4921,7 +4899,6 @@ files = [
     {file = "rich-15.0.0-py3-none-any.whl", hash = "sha256:33bd4ef74232fb73fe9279a257718407f169c09b78a87ad3d296f548e27de0bb"},
     {file = "rich-15.0.0.tar.gz", hash = "sha256:edd07a4824c6b40189fb7ac9bc4c52536e9780fbbfbddf6f1e2502c31b068c36"},
 ]
-markers = {main = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""}
 
 [package.dependencies]
 markdown-it-py = ">=2.2.0"
@@ -5129,10 +5106,9 @@ test = ["Cython", "array-api-strict (>=2.0)", "asv", "gmpy2", "hypothesis (>=6.3
 name = "setuptools"
 version = "84.0.0"
 description = "Most extensible Python build backend with support for C/C++ extension modules"
-optional = true
+optional = false
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"codi\" or extra == \"ctgan\" or extra == \"great\" or extra == \"medgan\" or extra == \"tabddpm\" or extra == \"tabpfgen\" or extra == \"tabsyn\" or extra == \"all\" or extra == \"ganblr\" or extra == \"pategan\""
 files = [
     {file = "setuptools-84.0.0-py3-none-any.whl", hash = "sha256:51a52592b3b99e102b609654876bd65f19f999935166d1352678931132b0c670"},
     {file = "setuptools-84.0.0.tar.gz", hash = "sha256:f4695c21257f0d9b537ec2692c941d02ee143b7cc1276941349a546573b2ef73"},
@@ -5320,10 +5296,9 @@ wandb = ["wandb (>=0.25.1)"]
 name = "tensorflow"
 version = "2.21.0"
 description = "TensorFlow is an open source machine learning framework for everyone."
-optional = true
+optional = false
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
 files = [
     {file = "tensorflow-2.21.0-cp310-cp310-macosx_12_0_arm64.whl", hash = "sha256:6462632889e0e9ce1455b208c87b86a8c154e899407ef7d426ef1ec71647f565"},
     {file = "tensorflow-2.21.0-cp310-cp310-manylinux_2_27_aarch64.whl", hash = "sha256:7c97938b25cf70c80ae8619931f85abcdee2ab2eb256c2051202edb3b89e9a5d"},
@@ -5371,89 +5346,82 @@ gcs-filesystem = ["tensorflow-io-gcs-filesystem (>=0.23.1) ; sys_platform != \"w
 
 [[package]]
 name = "tensorflow-io"
-version = "0.31.0"
+version = "0.37.1"
 description = "TensorFlow IO"
 optional = true
-python-versions = ">=3.7, <3.12"
+python-versions = "<3.13,>=3.7"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
 files = [
-    {file = "tensorflow_io-0.31.0-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:1de4c5812fd5e390ecf8fb95dcf5489c95fb05b1719aa6df2f9a577ea13b940e"},
-    {file = "tensorflow_io-0.31.0-cp310-cp310-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:1f59628272c9afb4b5dbc5c989cd80d421aaa37d006b9348ef63c165c6a14c9e"},
-    {file = "tensorflow_io-0.31.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:9ca1ada09b9edbd7204b1592d9a471e748b779228ffe6fc754c28b7d0afe6e46"},
-    {file = "tensorflow_io-0.31.0-cp310-cp310-win_amd64.whl", hash = "sha256:4f3e34d823080b6843c36e94fb64d7a31e31f40b8d5352dbf2beb9da6749a390"},
-    {file = "tensorflow_io-0.31.0-cp311-cp311-macosx_10_14_x86_64.whl", hash = "sha256:a7f45e2e5d3924815d80a7d1711fb41765cdeedf51befd29f4b035c7438f3efb"},
-    {file = "tensorflow_io-0.31.0-cp311-cp311-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:0059b02fa0c39c4de04a186c190a8044008794b7ac7027d49144c6d1be02f193"},
-    {file = "tensorflow_io-0.31.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b004a5856cb06c56a0c747bba28bff81d351a9f3a3ceca2b9be98e0bae41c511"},
-    {file = "tensorflow_io-0.31.0-cp311-cp311-win_amd64.whl", hash = "sha256:2c132700fa9b01651b6b2771a1baa5214d171d4f23aba226b1a621476073d2e6"},
-    {file = "tensorflow_io-0.31.0-cp37-cp37m-macosx_10_14_x86_64.whl", hash = "sha256:0de04e61fbba8258e5c5639436ed93728b9dc2e67519ecc2859b7ad4f74d9bb6"},
-    {file = "tensorflow_io-0.31.0-cp37-cp37m-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:c1803f90597badf973138d4d702572d734f4b54f1a70864dfcc8d9154bf01ae5"},
-    {file = "tensorflow_io-0.31.0-cp37-cp37m-win_amd64.whl", hash = "sha256:cdfcc23c5bdfbb1221b3031fa0ed3129cbe6fa16fd122cd48636d05a3abc9475"},
-    {file = "tensorflow_io-0.31.0-cp38-cp38-macosx_10_14_x86_64.whl", hash = "sha256:041ab5ce726043dbe5344d63a37450db7f7a75ec5f1bb92ec1d2e0d4b96f5785"},
-    {file = "tensorflow_io-0.31.0-cp38-cp38-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:2d8b9ad7a8978ce2a63372763173b502aee1b564ffa55cdeb98f73675bf2f3ec"},
-    {file = "tensorflow_io-0.31.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a0b524224bd3d6893fcd63582a877dc30724f8313027251f5213bcac4b8a2253"},
-    {file = "tensorflow_io-0.31.0-cp38-cp38-win_amd64.whl", hash = "sha256:b6f6717f2adfba93b48730520c002a8e32f6e3055b5865a7cd22d6e49fec6a42"},
-    {file = "tensorflow_io-0.31.0-cp39-cp39-macosx_10_14_x86_64.whl", hash = "sha256:647c3fcf2eba2bf155bb513f5935ad038ef9167ef1ee2983867762c3d661a60b"},
-    {file = "tensorflow_io-0.31.0-cp39-cp39-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:ef79a870e89dd567563223dc4925e5363c702ea47d9222e5c7fee0e79001f14e"},
-    {file = "tensorflow_io-0.31.0-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:84bc1b8ca5ed0dfb9de833bef303586c1582cb2fd77e779cf53535081f6ed2ac"},
-    {file = "tensorflow_io-0.31.0-cp39-cp39-win_amd64.whl", hash = "sha256:a84b770fa62d19ecdc6111777edbe090df512d20119d9f0aff01f98ba5588fe3"},
+    {file = "tensorflow_io-0.37.1-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:dc1adb4a39a02c2d389e2711439ca7d03c4ccf0c5074af5ee123c5d5ca372dcb"},
+    {file = "tensorflow_io-0.37.1-cp310-cp310-macosx_12_0_arm64.whl", hash = "sha256:e9488e2d737057121e1218eeb34f96f2d2423ed3cf7d00eba68bc3a5b66d2366"},
+    {file = "tensorflow_io-0.37.1-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d7ce860f864e3f9ef12bb8980c4e80a941713bfe7dbfe71e6e05dbb96003c8d6"},
+    {file = "tensorflow_io-0.37.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:dee4a2d6c3586bda78d747d003d063ec503c6ac124c24d4dfcf4f105cd9309a1"},
+    {file = "tensorflow_io-0.37.1-cp311-cp311-macosx_10_14_x86_64.whl", hash = "sha256:14c7ada03c2ab8ca3beca618833d0da8de1d693598827147c56a0dde54e17d87"},
+    {file = "tensorflow_io-0.37.1-cp311-cp311-macosx_12_0_arm64.whl", hash = "sha256:410b70c108ce93f657147b8e9528353e1df5292a5e33cd6555d4cd964c856b0e"},
+    {file = "tensorflow_io-0.37.1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:144251635584e128060f7047a710e567bfac6171de03e0a79faf2b909bc689c4"},
+    {file = "tensorflow_io-0.37.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b072ae78143df8f786d3cbb9060b76f17f966824dd1e7906d3252c79525d2358"},
+    {file = "tensorflow_io-0.37.1-cp312-cp312-macosx_10_14_x86_64.whl", hash = "sha256:42c587d9962554adbcfd2da17b51415dbb04c18afb06055649b7c3be4c21a266"},
+    {file = "tensorflow_io-0.37.1-cp312-cp312-macosx_12_0_arm64.whl", hash = "sha256:1fdc5c28c038ab9ae0ad505a9fce45e6cc6dadd1133932d4f38fdea8d8a05900"},
+    {file = "tensorflow_io-0.37.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:1c51b213c8d9b933e1602fccfb8fd70e8b5719e27916fcbe088ca7f695c70f49"},
+    {file = "tensorflow_io-0.37.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1abf9b8db2faa37c94aed7fef267c93e0fba30b6ec30f857a39ea7e89bf3748d"},
+    {file = "tensorflow_io-0.37.1-cp39-cp39-macosx_10_14_x86_64.whl", hash = "sha256:c36b50eaf97f26e2918b5e983e77c872024aded7d624b9cb2dc7514ff5f4b4ff"},
+    {file = "tensorflow_io-0.37.1-cp39-cp39-macosx_12_0_arm64.whl", hash = "sha256:1f5da94e61350a3ec076b9fa2beb947ecd120a25ad3fed2817a1d150b983b30b"},
+    {file = "tensorflow_io-0.37.1-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:255e26143b254db80b6a55e1f063f83dad74046e3429d7e95e63434cc418e335"},
+    {file = "tensorflow_io-0.37.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:43e8234271e39aece83edb2595b0e47dbc056984b95f3dc3d26cd4f9433944ef"},
 ]
 
 [package.dependencies]
-tensorflow-io-gcs-filesystem = "0.31.0"
+tensorflow-io-gcs-filesystem = "0.37.1"
 
 [package.extras]
-tensorflow = ["tensorflow (>=2.11.0,<2.12.0)"]
-tensorflow-aarch64 = ["tensorflow-aarch64 (>=2.11.0,<2.12.0)"]
-tensorflow-cpu = ["tensorflow-cpu (>=2.11.0,<2.12.0)"]
-tensorflow-gpu = ["tensorflow-gpu (>=2.11.0,<2.12.0)"]
-tensorflow-rocm = ["tensorflow-rocm (>=2.11.0,<2.12.0)"]
+tensorflow = ["tensorflow (>=2.16.0,<2.17.0)"]
+tensorflow-aarch64 = ["tensorflow-aarch64 (>=2.16.0,<2.17.0)"]
+tensorflow-cpu = ["tensorflow-cpu (>=2.16.0,<2.17.0)"]
+tensorflow-gpu = ["tensorflow-gpu (>=2.16.0,<2.17.0)"]
+tensorflow-rocm = ["tensorflow-rocm (>=2.16.0,<2.17.0)"]
 
 [[package]]
 name = "tensorflow-io-gcs-filesystem"
-version = "0.31.0"
+version = "0.37.1"
 description = "TensorFlow IO"
 optional = true
-python-versions = ">=3.7, <3.12"
+python-versions = "<3.13,>=3.7"
 groups = ["main"]
 markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
 files = [
-    {file = "tensorflow_io_gcs_filesystem-0.31.0-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:a71421f8d75a093b6aac65b4c8c8d2f768c3ca6215307cf8c16192e62d992bcf"},
-    {file = "tensorflow_io_gcs_filesystem-0.31.0-cp310-cp310-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:359134ecbd3bf938bb0cf65be4526106c30da461b2e2ce05446a229ed35f6832"},
-    {file = "tensorflow_io_gcs_filesystem-0.31.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b658b33567552f155af2ed848130f787bfda29381fa78cd905d5ee8254364f3c"},
-    {file = "tensorflow_io_gcs_filesystem-0.31.0-cp310-cp310-win_amd64.whl", hash = "sha256:961353b38c76471fa296bb7d883322c66b91415e7d47087236a6706db3ab2758"},
-    {file = "tensorflow_io_gcs_filesystem-0.31.0-cp311-cp311-macosx_10_14_x86_64.whl", hash = "sha256:8909c4344b0e96aa356230ab460ffafe5900c33c1aaced65fafae71d177a1966"},
-    {file = "tensorflow_io_gcs_filesystem-0.31.0-cp311-cp311-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:e417faf8755aafe52d8f8c6b5ae5bae6e4fae8326ee3acd5e9181b83bbfbae87"},
-    {file = "tensorflow_io_gcs_filesystem-0.31.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:37c40e3c4ee1f8dda3b545deea6b8839192c82037d8021db9f589908034ad975"},
-    {file = "tensorflow_io_gcs_filesystem-0.31.0-cp311-cp311-win_amd64.whl", hash = "sha256:4bb37d23f21c434687b11059cb7ffd094d52a7813368915ba1b7057e3c16e414"},
-    {file = "tensorflow_io_gcs_filesystem-0.31.0-cp37-cp37m-macosx_10_14_x86_64.whl", hash = "sha256:a7e8d4bd0a25de7637e562997c011294d7ea595a76f315427a5dd522d56e9d49"},
-    {file = "tensorflow_io_gcs_filesystem-0.31.0-cp37-cp37m-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:fbcfb4aa2eaa9a3038d2487e570ff93feb1dbe51c3a4663d7d9ab9f9a9f9a9d8"},
-    {file = "tensorflow_io_gcs_filesystem-0.31.0-cp37-cp37m-win_amd64.whl", hash = "sha256:e3933059b1c53e062075de2e355ec136b655da5883c3c26736c45dfeb1901945"},
-    {file = "tensorflow_io_gcs_filesystem-0.31.0-cp38-cp38-macosx_10_14_x86_64.whl", hash = "sha256:f0adfbcd264262797d429311843733da2d5c1ffb119fbfa6339269b6c0414113"},
-    {file = "tensorflow_io_gcs_filesystem-0.31.0-cp38-cp38-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:20e3ee5df01f2bd81d37fc715816c329b7533ccca967c47946eb458a5b7a7280"},
-    {file = "tensorflow_io_gcs_filesystem-0.31.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:bd628609b77aee0e385eadf1628222486f19b8f1d81b5f0a344f2470204df116"},
-    {file = "tensorflow_io_gcs_filesystem-0.31.0-cp38-cp38-win_amd64.whl", hash = "sha256:b4ebb30ad7ce5f3769e3d959ea99bd95d80a44099bcf94da6042f9755ac6e850"},
-    {file = "tensorflow_io_gcs_filesystem-0.31.0-cp39-cp39-macosx_10_14_x86_64.whl", hash = "sha256:68b89ef9f63f297de1cd9d545bc45dddc7d8fe12bcda4266279b244e8cf3b7c0"},
-    {file = "tensorflow_io_gcs_filesystem-0.31.0-cp39-cp39-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:e6d8cc7b14ade870168b9704ee44f9c55b468b9a00ed40e12d20fffd321193b5"},
-    {file = "tensorflow_io_gcs_filesystem-0.31.0-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:97ebb9a8001a38f615aa1f90d2e998b7bd6eddae7aafc92897833610b039401b"},
-    {file = "tensorflow_io_gcs_filesystem-0.31.0-cp39-cp39-win_amd64.whl", hash = "sha256:cb7459c15608fe42973a78e4d3ad7ac79cfc7adae1ccb1b1846db3165fbc081a"},
+    {file = "tensorflow_io_gcs_filesystem-0.37.1-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:249c12b830165841411ba71e08215d0e94277a49c551e6dd5d72aab54fe5491b"},
+    {file = "tensorflow_io_gcs_filesystem-0.37.1-cp310-cp310-macosx_12_0_arm64.whl", hash = "sha256:257aab23470a0796978efc9c2bcf8b0bc80f22e6298612a4c0a50d3f4e88060c"},
+    {file = "tensorflow_io_gcs_filesystem-0.37.1-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:8febbfcc67c61e542a5ac1a98c7c20a91a5e1afc2e14b1ef0cb7c28bc3b6aa70"},
+    {file = "tensorflow_io_gcs_filesystem-0.37.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:9679b36e3a80921876f31685ab6f7270f3411a4cc51bc2847e80d0e4b5291e27"},
+    {file = "tensorflow_io_gcs_filesystem-0.37.1-cp311-cp311-macosx_10_14_x86_64.whl", hash = "sha256:32c50ab4e29a23c1f91cd0f9ab8c381a0ab10f45ef5c5252e94965916041737c"},
+    {file = "tensorflow_io_gcs_filesystem-0.37.1-cp311-cp311-macosx_12_0_arm64.whl", hash = "sha256:b02f9c5f94fd62773954a04f69b68c4d576d076fd0db4ca25d5479f0fbfcdbad"},
+    {file = "tensorflow_io_gcs_filesystem-0.37.1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:6e1f2796b57e799a8ca1b75bf47c2aaa437c968408cc1a402a9862929e104cda"},
+    {file = "tensorflow_io_gcs_filesystem-0.37.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ee7c8ee5fe2fd8cb6392669ef16e71841133041fee8a330eff519ad9b36e4556"},
+    {file = "tensorflow_io_gcs_filesystem-0.37.1-cp312-cp312-macosx_10_14_x86_64.whl", hash = "sha256:ffebb6666a7bfc28005f4fbbb111a455b5e7d6cd3b12752b7050863ecb27d5cc"},
+    {file = "tensorflow_io_gcs_filesystem-0.37.1-cp312-cp312-macosx_12_0_arm64.whl", hash = "sha256:fe8dcc6d222258a080ac3dfcaaaa347325ce36a7a046277f6b3e19abc1efb3c5"},
+    {file = "tensorflow_io_gcs_filesystem-0.37.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:fbb33f1745f218464a59cecd9a18e32ca927b0f4d77abd8f8671b645cc1a182f"},
+    {file = "tensorflow_io_gcs_filesystem-0.37.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:286389a203a5aee1a4fa2e53718c661091aa5fea797ff4fa6715ab8436b02e6c"},
+    {file = "tensorflow_io_gcs_filesystem-0.37.1-cp39-cp39-macosx_10_14_x86_64.whl", hash = "sha256:ee5da49019670ed364f3e5fb86b46420841a6c3cb52a300553c63841671b3e6d"},
+    {file = "tensorflow_io_gcs_filesystem-0.37.1-cp39-cp39-macosx_12_0_arm64.whl", hash = "sha256:8943036bbf84e7a2be3705cb56f9c9df7c48c9e614bb941f0936c58e3ca89d6f"},
+    {file = "tensorflow_io_gcs_filesystem-0.37.1-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:426de1173cb81fbd62becec2012fc00322a295326d90eb6c737fab636f182aed"},
+    {file = "tensorflow_io_gcs_filesystem-0.37.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0df00891669390078a003cedbdd3b8e645c718b111917535fa1d7725e95cdb95"},
 ]
 
 [package.extras]
-tensorflow = ["tensorflow (>=2.11.0,<2.12.0)"]
-tensorflow-aarch64 = ["tensorflow-aarch64 (>=2.11.0,<2.12.0)"]
-tensorflow-cpu = ["tensorflow-cpu (>=2.11.0,<2.12.0)"]
-tensorflow-gpu = ["tensorflow-gpu (>=2.11.0,<2.12.0)"]
-tensorflow-rocm = ["tensorflow-rocm (>=2.11.0,<2.12.0)"]
+tensorflow = ["tensorflow (>=2.16.0,<2.17.0)"]
+tensorflow-aarch64 = ["tensorflow-aarch64 (>=2.16.0,<2.17.0)"]
+tensorflow-cpu = ["tensorflow-cpu (>=2.16.0,<2.17.0)"]
+tensorflow-gpu = ["tensorflow-gpu (>=2.16.0,<2.17.0)"]
+tensorflow-rocm = ["tensorflow-rocm (>=2.16.0,<2.17.0)"]
 
 [[package]]
 name = "termcolor"
 version = "3.3.0"
 description = "ANSI color formatting for output in terminal"
-optional = true
+optional = false
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
 files = [
     {file = "termcolor-3.3.0-py3-none-any.whl", hash = "sha256:cf642efadaf0a8ebbbf4bc7a31cec2f9b5f21a9f726f4ccbb08192c9c26f43a5"},
     {file = "termcolor-3.3.0.tar.gz", hash = "sha256:348871ca648ec6a9a983a13ab626c0acce02f515b9e1983332b17af7979521c5"},
@@ -5461,6 +5429,21 @@ files = [
 
 [package.extras]
 tests = ["pytest", "pytest-cov"]
+
+[[package]]
+name = "tf-keras"
+version = "2.21.0"
+description = "Deep learning for humans."
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "tf_keras-2.21.0-py3-none-any.whl", hash = "sha256:f858bf3d97f892304e7fbcf5eb0942ed91674e27204f940a85de8c93cf07fe62"},
+    {file = "tf_keras-2.21.0.tar.gz", hash = "sha256:f9af0f2546cd5532de0fae7a481f34a1ca2253737d4cd1000f6b713dc733f770"},
+]
+
+[package.dependencies]
+tensorflow = ">=2.21,<2.22"
 
 [[package]]
 name = "threadpoolctl"
@@ -5817,7 +5800,6 @@ files = [
     {file = "typing_extensions-4.16.0-py3-none-any.whl", hash = "sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8"},
     {file = "typing_extensions-4.16.0.tar.gz", hash = "sha256:dc983d19a509c94dba722ee6abd33940f7c05a89e243c47e907eb4db6f1a43e5"},
 ]
-markers = {main = "extra == \"great\" or extra == \"all\" or extra == \"codi\" or extra == \"ctgan\" or extra == \"medgan\" or extra == \"tabddpm\" or extra == \"tabpfgen\" or extra == \"tabsyn\" or extra == \"ganblr\" or extra == \"pategan\""}
 
 [[package]]
 name = "typing-inspection"
@@ -5858,7 +5840,6 @@ files = [
     {file = "urllib3-2.7.0-py3-none-any.whl", hash = "sha256:9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897"},
     {file = "urllib3-2.7.0.tar.gz", hash = "sha256:231e0ec3b63ceb14667c67be60f2f2c40a518cb38b03af60abc813da26505f4c"},
 ]
-markers = {main = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\" or extra == \"great\" or extra == \"tabpfgen\""}
 
 [package.extras]
 brotli = ["brotli (>=1.2.0) ; platform_python_implementation == \"CPython\"", "brotlicffi (>=1.2.0.0) ; platform_python_implementation != \"CPython\""]
@@ -5900,10 +5881,9 @@ files = [
 name = "wheel"
 version = "0.48.0"
 description = "Command line tool for manipulating wheel files"
-optional = true
+optional = false
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
 files = [
     {file = "wheel-0.48.0-py3-none-any.whl", hash = "sha256:3217dcc807155e45db462d7ef2431f5ddda0d7273b700d05a67b271ceb1287ab"},
     {file = "wheel-0.48.0.tar.gz", hash = "sha256:94800765601e9171bf5d58d066e640662842bcedcbab982b2c90787a2c987322"},
@@ -5916,10 +5896,9 @@ packaging = ">=24.0"
 name = "wrapt"
 version = "2.3.0"
 description = "Module for decorators, wrappers and monkey patching."
-optional = true
+optional = false
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"ganblr\" or extra == \"pategan\" or extra == \"all\""
 files = [
     {file = "wrapt-2.3.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:0bb2797048db0956348cb3058c33bc4184614f13231389cfbccc16a5d32780a7"},
     {file = "wrapt-2.3.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:ce9f398f868d2b3b27aa2ea4de79645ef9077aeeac8dfc2814b0d542c6a2b87f"},
@@ -6023,7 +6002,7 @@ description = "XGBoost Python Package"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"eval\" or extra == \"all\""
+markers = "extra == \"forest-diffusion\" or extra == \"eval\" or extra == \"all\""
 files = [
     {file = "xgboost-3.2.0-py3-none-macosx_10_15_x86_64.whl", hash = "sha256:2f661966d3e322536d9c448090a870fcba1e32ee5760c10b7c46bac7a342079a"},
     {file = "xgboost-3.2.0-py3-none-macosx_12_0_arm64.whl", hash = "sha256:eabbd40d474b8dbf6cb3536325f9150b9e6f0db32d18de9914fb3227d0bef5b7"},
@@ -6395,6 +6374,7 @@ all = ["accelerate", "category-encoders", "datasets", "fsspec", "huggingface-hub
 codi = ["torch"]
 ctgan = ["torch"]
 eval = ["xgboost"]
+forest-diffusion = ["xgboost"]
 ganblr = ["pgmpy", "pyitlib", "tensorflow", "tensorflow-io"]
 great = ["accelerate", "datasets", "fsspec", "huggingface-hub", "torch", "transformers"]
 medgan = ["torch"]
@@ -6406,4 +6386,4 @@ tabsyn = ["category-encoders", "tomli", "tomli-w", "torch", "tqdm"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.12"
-content-hash = "d332f2b6bb2967ddfc643f5aff0f2320561a704605fa95091dc1f849430f8334"
+content-hash = "b2563ae2e59734aafe714031a3d5e75f248e8bebe7f4c68d88f4a753f049e278"

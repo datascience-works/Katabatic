@@ -95,6 +95,7 @@ class TSTREvaluation(Evaluation):
         # Convert to numpy array to prevent feature name conflict
         x_train = np.asarray(self.x_train)
         x_test = np.asarray(self.x_test)
+        
 
         if x_train.shape[1] != x_test.shape[1]:
             raise ValueError(
