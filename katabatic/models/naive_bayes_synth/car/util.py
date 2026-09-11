@@ -2,6 +2,7 @@
 Helper functions for NaiveBayesSynth: encoding categorical columns and
 building/sampling from per-class conditional probability tables.
 """
+
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import OrdinalEncoder
@@ -11,7 +12,9 @@ def encode_features(x: pd.DataFrame) -> tuple[np.ndarray, OrdinalEncoder]:
     """Ordinal-encode all feature columns. Returns the encoded array and the
     fitted encoder (needed later to invert sampled data back to original
     category labels)."""
-    encoder = OrdinalEncoder(dtype=int, handle_unknown="use_encoded_value", unknown_value=-1)
+    encoder = OrdinalEncoder(
+        dtype=int, handle_unknown="use_encoded_value", unknown_value=-1
+    )
     x_enc = encoder.fit_transform(x)
     return x_enc, encoder
 
