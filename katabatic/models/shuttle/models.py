@@ -71,7 +71,9 @@ class BaseModel(ABC):
         return {
             "accuracy": accuracy_score(y, preds),
             "macro_f1": f1_score(y, preds, average="macro"),
-            "classification_report": classification_report(y, preds, zero_division=0),
+            "classification_report": classification_report(
+                y, preds, zero_division=0
+            ),
             "confusion_matrix": confusion_matrix(y, preds),
         }
 
@@ -83,7 +85,7 @@ class BaseModel(ABC):
     @staticmethod
     def load(path: str) -> BaseModel:
         with open(path, "rb") as f:
-            model = pickle.load(f)
+            model = pickle.load(f)  # nosec B301: only load trusted model artifacts
         if not isinstance(model, BaseModel):
             raise TypeError(f"Object at {path} is not a BaseModel instance.")
         return model
