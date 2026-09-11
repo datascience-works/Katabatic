@@ -2,22 +2,18 @@ import os
 import sys
 from time import perf_counter
 
-
 REPO_ROOT = os.path.dirname(
-    os.path.dirname(
-        os.path.dirname(
-            os.path.dirname(os.path.abspath(__file__))
-        )
-    )
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
 
-from katabatic.models.gaussian_copula.models import GaussianCopulaModel
-from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
-
+from katabatic.models.gaussian_copula.models import GaussianCopulaModel  # noqa: E402
+from katabatic.pipeline.train_test_split.pipeline import (  # noqa: E402
+    TrainTestSplitPipeline,
+)
 
 start_time = perf_counter()
 
