@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import os
-from typing import Optional
-
 import pandas as pd
 
 from katabatic.models.base_model import Model
@@ -24,10 +21,10 @@ class GaussianCopulaModel(Model):
     def train(
         self,
         data_dir: str,
-        synthetic_dir: Optional[str] = None,
+        synthetic_dir: str | None = None,
         *args,
         **kwargs,
-    ) -> "GaussianCopulaModel":
+    ) -> GaussianCopulaModel:
 
         from sdv.metadata import SingleTableMetadata
         from sdv.single_table import GaussianCopulaSynthesizer
@@ -58,7 +55,7 @@ class GaussianCopulaModel(Model):
 
     def sample(
         self,
-        n: Optional[int] = None,
+        n: int | None = None,
         *args,
         **kwargs,
     ) -> pd.DataFrame:

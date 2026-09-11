@@ -23,9 +23,7 @@ def load_training_dataframe(data_dir: str) -> pd.DataFrame:
 
         return pd.concat([x, y], axis=1)
 
-    raise FileNotFoundError(
-        "Training files were not found in the given folder"
-    )
+    raise FileNotFoundError("Training files were not found in the given folder")
 
 
 def resolve_synthetic_dir(data_dir: str, synthetic_dir: str | None = None) -> str:
