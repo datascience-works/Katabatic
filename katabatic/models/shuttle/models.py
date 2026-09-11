@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import pickle
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -39,7 +39,7 @@ class BaseModel(ABC):
     """Common interface for all models in this package."""
 
     def __init__(self, **kwargs: Any) -> None:
-        self.params: Dict[str, Any] = kwargs
+        self.params: dict[str, Any] = kwargs
         self.estimator = self._build_estimator(**kwargs)
         self.is_fitted: bool = False
 
@@ -47,7 +47,7 @@ class BaseModel(ABC):
     def _build_estimator(self, **kwargs: Any) -> Any:
         """Construct and return the underlying sklearn estimator."""
 
-    def fit(self, X: pd.DataFrame, y: pd.Series) -> "BaseModel":
+    def fit(self, X: pd.DataFrame, y: pd.Series) -> BaseModel:
         self.estimator.fit(X, y)
         self.is_fitted = True
         return self
@@ -64,7 +64,7 @@ class BaseModel(ABC):
             )
         return self.estimator.predict_proba(X)
 
-    def evaluate(self, X: pd.DataFrame, y: pd.Series) -> Dict[str, Any]:
+    def evaluate(self, X: pd.DataFrame, y: pd.Series) -> dict[str, Any]:
         """Return accuracy, macro-F1, a classification report, and a confusion matrix."""
         self._check_fitted()
         preds = self.predict(X)
@@ -81,7 +81,7 @@ class BaseModel(ABC):
             pickle.dump(self, f)
 
     @staticmethod
-    def load(path: str) -> "BaseModel":
+    def load(path: str) -> BaseModel:
         with open(path, "rb") as f:
             model = pickle.load(f)
         if not isinstance(model, BaseModel):
@@ -106,8 +106,8 @@ class RandomForestModel(BaseModel):
     def _build_estimator(
         self,
         n_estimators: int = 200,
-        max_depth: Optional[int] = None,
-        class_weight: Optional[str] = "balanced",
+        max_depth: int | None = None,
+        class_weight: str | None = "balanced",
         random_state: int = 42,
         **kwargs: Any,
     ) -> RandomForestClassifier:
@@ -129,7 +129,7 @@ class LogisticRegressionModel(BaseModel):
         self,
         C: float = 1.0,
         max_iter: int = 1000,
-        class_weight: Optional[str] = "balanced",
+        class_weight: str | None = "balanced",
         random_state: int = 42,
         **kwargs: Any,
     ) -> LogisticRegression:
@@ -147,6 +147,6 @@ def train_model(model: BaseModel, dataset: Dataset) -> BaseModel:
     return model.fit(dataset.X_train, dataset.y_train)
 
 
-def evaluate_model(model: BaseModel, dataset: Dataset) -> Dict[str, Any]:
+def evaluate_model(model: BaseModel, dataset: Dataset) -> dict[str, Any]:
     """Evaluate `model` on dataset.X_test / dataset.y_test."""
     return model.evaluate(dataset.X_test, dataset.y_test)

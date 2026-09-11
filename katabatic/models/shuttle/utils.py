@@ -17,18 +17,24 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import Optional, Sequence, Tuple
 
-import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
-FEATURE_COLUMNS: Tuple[str, ...] = (
-    "time", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8",
+FEATURE_COLUMNS: tuple[str, ...] = (
+    "time",
+    "a1",
+    "a2",
+    "a3",
+    "a4",
+    "a5",
+    "a6",
+    "a7",
+    "a8",
 )
 TARGET_COLUMN: str = "class"
-ALL_COLUMNS: Tuple[str, ...] = FEATURE_COLUMNS + (TARGET_COLUMN,)
+ALL_COLUMNS: tuple[str, ...] = FEATURE_COLUMNS + (TARGET_COLUMN,)
 
 CLASS_NAMES = {
     1: "Rad Flow",
@@ -51,10 +57,10 @@ class Dataset:
     X_test: pd.DataFrame
     y_train: pd.Series
     y_test: pd.Series
-    scaler: Optional[StandardScaler] = None
+    scaler: StandardScaler | None = None
 
     @property
-    def feature_names(self) -> Tuple[str, ...]:
+    def feature_names(self) -> tuple[str, ...]:
         return tuple(self.X.columns)
 
 
@@ -136,7 +142,7 @@ def prepare_dataset(
         X, y, test_size=test_size, random_state=random_state, stratify=strat
     )
 
-    scaler_obj: Optional[StandardScaler] = None
+    scaler_obj: StandardScaler | None = None
     if scale:
         scaler_obj = StandardScaler()
         X_train = pd.DataFrame(
@@ -151,17 +157,16 @@ def prepare_dataset(
         )
 
     return Dataset(
-        X=X, y=y,
-        X_train=X_train, X_test=X_test,
-        y_train=y_train, y_test=y_test,
+        X=X,
+        y=y,
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
         scaler=scaler_obj,
     )
 
 
-def scale_features(
-    X: pd.DataFrame, scaler: StandardScaler
-) -> pd.DataFrame:
+def scale_features(X: pd.DataFrame, scaler: StandardScaler) -> pd.DataFrame:
     """Apply a previously-fitted scaler to new feature data."""
-    return pd.DataFrame(
-        scaler.transform(X), columns=X.columns, index=X.index
-    )
+    return pd.DataFrame(scaler.transform(X), columns=X.columns, index=X.index)
