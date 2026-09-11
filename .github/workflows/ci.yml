@@ -158,6 +158,7 @@ jobs:
       - name: Integration tests (${{ matrix.model }})
         env:
           COVERAGE_FILE: .coverage.${{ matrix.model }}
+          TORCHDYNAMO_DISABLE: "1"
         run: poetry run pytest -m "integration and ${{ matrix.model }}" -q --cov=katabatic --cov-report=
 
       - name: Upload Model Coverage

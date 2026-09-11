@@ -64,6 +64,13 @@ class ModelRegistry:
             "extra": "ctgan",
             "supported": True,
         },
+        "forest_diffusion": {
+            "module": "katabatic.models.forest_diffusion.model",
+            "class": "ForestDiffusion",
+            "dependencies": ["xgboost"],
+            "extra": "forest_diffusion",
+            "supported": False,
+        },
     }
 
     @classmethod
