@@ -71,3 +71,25 @@ Discriminator (Real vs Fake)
   year={2017}
 }
 ```
+
+## Updated - 2026.09.07
+
+The MedGAN implementation has been validated with the main datasets currently available in the Katabatic project, including Car, Nursery, Adult, MAGIC, and Shuttle.
+
+A comparison was also completed between the Katabatic datasets and the datasets used in the original MedGAN research paper.
+
+The original MedGAN paper focuses on high-dimensional discrete binary and count-based medical records. Among the datasets currently available in Katabatic, Nursery was identified as the closest structural match because it is fully categorical/discrete and contains no continuous numerical features.
+
+Car was identified as the second closest match because it is also fully categorical.
+
+Current structural matching order:
+
+1. Nursery – closest available match
+2. Car – strong discrete-data match
+3. Adult – mixed categorical and numerical features
+4. MAGIC – mainly numerical features
+5. Shuttle – numerical features
+
+The MedGAN implementation is also integrated with the Katabatic evaluation pipeline and supports evaluation across Fidelity, Utility, Diversity, Privacy, Consistency, and Stability.
+
+The Katabatic datasets are not direct replacements for the medical datasets used in the original MedGAN research paper; the comparison is based on dataset structure and feature type.

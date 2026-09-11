@@ -1,8 +1,10 @@
 """
 MedGAN Neural Network Components and Utilities.
 
-Based on "Generating Multi-label Discrete Patient Records using Generative Adversarial Networks"
-by Choi et al. (2017) - https://arxiv.org/abs/1703.06490
+Based on:
+"Generating Multi-label Discrete Patient Records using
+Generative Adversarial Networks"
+Choi et al. (2017)
 """
 
 import torch
@@ -10,14 +12,6 @@ import torch.nn as nn
 
 
 class Autoencoder(nn.Module):
-    """
-    Autoencoder for compressing high-dimensional binary/count data.
-
-    Architecture:
-        Encoder: input_dim -> encoder_dim -> latent_dim
-        Decoder: latent_dim -> encoder_dim -> input_dim
-    """
-
     def __init__(
         self,
         input_dim: int,
@@ -26,55 +20,52 @@ class Autoencoder(nn.Module):
         bn_decay: float = 0.99,
     ):
         super().__init__()
+
         self.input_dim = input_dim
         self.encoder_dim = encoder_dim
         self.latent_dim = latent_dim
 
-        # Encoder
-        self.encoder = nn.Sequential(
-            nn.Linear(input_dim, encoder_dim),
-            nn.BatchNorm1d(encoder_dim, momentum=1 - bn_decay),
-            nn.Tanh(),
-            nn.Linear(encoder_dim, latent_dim),
-            nn.BatchNorm1d(latent_dim, momentum=1 - bn_decay),
+        self.encoder_layer = nn.Linear(
+            input_dim,
+            latent_dim,
         )
 
-        # Decoder
-        self.decoder = nn.Sequential(
-            nn.Linear(latent_dim, encoder_dim),
-            nn.BatchNorm1d(encoder_dim, momentum=1 - bn_decay),
-            nn.Tanh(),
-            nn.Linear(encoder_dim, input_dim),
+        self.decoder_layer = nn.Linear(
+            latent_dim,
+            input_dim,
         )
 
-    def encode(self, x: torch.Tensor) -> torch.Tensor:
-        """Encode input to latent space."""
-        return self.encoder(x)
+    def encode(
+        self,
+        x: torch.Tensor,
+    ) -> torch.Tensor:
 
-    def decode(self, z: torch.Tensor) -> torch.Tensor:
-        """Decode latent representation to output."""
-        return torch.sigmoid(self.decoder(z))
+        return torch.tanh(
+            self.encoder_layer(x)
+        )
 
-    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """
-        Forward pass through autoencoder.
+    def decode(
+        self,
+        z: torch.Tensor,
+    ) -> torch.Tensor:
 
-        Returns:
-            Tuple of (reconstructed_output, latent_representation)
-        """
+        return torch.sigmoid(
+            self.decoder_layer(z)
+        )
+
+    def forward(
+        self,
+        x: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+
         z = self.encode(x)
+
         x_recon = self.decode(z)
+
         return x_recon, z
 
 
 class Generator(nn.Module):
-    """
-    Generator network that produces synthetic data in the latent space.
-
-    Architecture:
-        noise (latent_dim) -> hidden -> hidden -> output (latent_dim)
-    """
-
     def __init__(
         self,
         latent_dim: int = 128,
@@ -83,119 +74,254 @@ class Generator(nn.Module):
         bn_decay: float = 0.99,
     ):
         super().__init__()
-        self.latent_dim = latent_dim
 
-        layers = []
+        self.latent_dim = latent_dim
+        self.hidden_dim = hidden_dim
+        self.num_layers = num_layers
+
+        self.layers = nn.ModuleList()
+        self.batch_norms = nn.ModuleList()
+
         in_dim = latent_dim
 
         for _ in range(num_layers):
-            layers.extend(
-                [
-                    nn.Linear(in_dim, hidden_dim),
-                    nn.BatchNorm1d(hidden_dim, momentum=1 - bn_decay),
-                    nn.ReLU(),
-                ]
+
+            self.layers.append(
+                nn.Linear(
+                    in_dim,
+                    hidden_dim,
+                    bias=False,
+                )
             )
+
+            self.batch_norms.append(
+                nn.BatchNorm1d(
+                    hidden_dim,
+                    momentum=1 - bn_decay,
+                )
+            )
+
             in_dim = hidden_dim
 
-        layers.append(nn.Linear(in_dim, latent_dim))
+        self.output_layer = nn.Linear(
+            hidden_dim,
+            latent_dim,
+        )
 
-        self.model = nn.Sequential(*layers)
+    def forward(
+        self,
+        z: torch.Tensor,
+    ) -> torch.Tensor:
 
-    def forward(self, z: torch.Tensor) -> torch.Tensor:
-        """Generate latent representation from random noise."""
-        return self.model(z)
+        x = z
+
+        for layer, batch_norm in zip(
+            self.layers,
+            self.batch_norms,
+        ):
+
+            residual = x
+
+            x = layer(x)
+            x = batch_norm(x)
+            x = torch.relu(x)
+
+            if residual.shape == x.shape:
+                x = x + residual
+
+        x = self.output_layer(x)
+
+        return torch.tanh(x)
 
 
 class Discriminator(nn.Module):
-    """
-    Discriminator network to distinguish real from synthetic data.
-
-    Architecture:
-        input (latent_dim) -> hidden -> hidden -> output (1)
-    """
-
     def __init__(
         self,
-        latent_dim: int = 128,
+        input_dim: int,
         hidden_dim: int = 128,
         num_layers: int = 2,
         dropout: float = 0.0,
     ):
         super().__init__()
 
-        layers = []
-        in_dim = latent_dim
+        first_hidden = 256
+        second_hidden = 128
 
-        for _ in range(num_layers):
-            layers.extend([nn.Linear(in_dim, hidden_dim), nn.ReLU()])
-            if dropout > 0:
-                layers.append(nn.Dropout(dropout))
-            in_dim = hidden_dim
+        layers = [
+            nn.Linear(
+                input_dim * 2,
+                first_hidden,
+            ),
+            nn.ReLU(),
+        ]
 
-        layers.append(nn.Linear(in_dim, 1))
+        if dropout > 0:
+            layers.append(
+                nn.Dropout(dropout)
+            )
 
-        self.model = nn.Sequential(*layers)
+        layers.extend(
+            [
+                nn.Linear(
+                    first_hidden,
+                    second_hidden,
+                ),
+                nn.ReLU(),
+            ]
+        )
 
-    def forward(self, z: torch.Tensor) -> torch.Tensor:
-        """Predict probability that input is real (vs synthetic)."""
-        return torch.sigmoid(self.model(z))
+        if dropout > 0:
+            layers.append(
+                nn.Dropout(dropout)
+            )
+
+        layers.append(
+            nn.Linear(
+                second_hidden,
+                1,
+            )
+        )
+
+        self.model = nn.Sequential(
+            *layers
+        )
+
+    def forward(
+        self,
+        x: torch.Tensor,
+    ) -> torch.Tensor:
+
+        batch_average = torch.mean(
+            x,
+            dim=0,
+            keepdim=True,
+        )
+
+        batch_average = batch_average.expand(
+            x.size(0),
+            -1,
+        )
+
+        discriminator_input = torch.cat(
+            [
+                x,
+                batch_average,
+            ],
+            dim=1,
+        )
+
+        return torch.sigmoid(
+            self.model(
+                discriminator_input
+            )
+        )
 
 
 def compute_mmd(
-    x: torch.Tensor, y: torch.Tensor, kernel: str = "rbf", bandwidth: float = 1.0
+    x: torch.Tensor,
+    y: torch.Tensor,
+    kernel: str = "rbf",
+    bandwidth: float = 1.0,
 ) -> torch.Tensor:
-    """
-    Compute Maximum Mean Discrepancy (MMD) between two distributions.
 
-    Args:
-        x: Samples from first distribution [n, d]
-        y: Samples from second distribution [m, d]
-        kernel: Kernel type ('rbf' or 'linear')
-        bandwidth: Bandwidth parameter for RBF kernel
+    def rbf_kernel(
+        x,
+        y,
+        bandwidth,
+    ):
+        xx = torch.mm(
+            x,
+            x.t(),
+        )
 
-    Returns:
-        MMD value
-    """
+        yy = torch.mm(
+            y,
+            y.t(),
+        )
 
-    def rbf_kernel(x, y, bandwidth):
-        xx = torch.mm(x, x.t())
-        yy = torch.mm(y, y.t())
-        xy = torch.mm(x, y.t())
+        xy = torch.mm(
+            x,
+            y.t(),
+        )
 
         x_sqnorms = torch.diag(xx)
         y_sqnorms = torch.diag(yy)
 
         k_xx = torch.exp(
-            -(x_sqnorms.unsqueeze(1) + x_sqnorms.unsqueeze(0) - 2 * xx)
-            / (2 * bandwidth**2)
-        )
-        k_yy = torch.exp(
-            -(y_sqnorms.unsqueeze(1) + y_sqnorms.unsqueeze(0) - 2 * yy)
-            / (2 * bandwidth**2)
-        )
-        k_xy = torch.exp(
-            -(x_sqnorms.unsqueeze(1) + y_sqnorms.unsqueeze(0) - 2 * xy)
+            -(
+                x_sqnorms.unsqueeze(1)
+                + x_sqnorms.unsqueeze(0)
+                - 2 * xx
+            )
             / (2 * bandwidth**2)
         )
 
-        return k_xx, k_yy, k_xy
+        k_yy = torch.exp(
+            -(
+                y_sqnorms.unsqueeze(1)
+                + y_sqnorms.unsqueeze(0)
+                - 2 * yy
+            )
+            / (2 * bandwidth**2)
+        )
+
+        k_xy = torch.exp(
+            -(
+                x_sqnorms.unsqueeze(1)
+                + y_sqnorms.unsqueeze(0)
+                - 2 * xy
+            )
+            / (2 * bandwidth**2)
+        )
+
+        return (
+            k_xx,
+            k_yy,
+            k_xy,
+        )
 
     if kernel == "rbf":
-        k_xx, k_yy, k_xy = rbf_kernel(x, y, bandwidth)
-    else:  # linear kernel
-        k_xx = torch.mm(x, x.t())
-        k_yy = torch.mm(y, y.t())
-        k_xy = torch.mm(x, y.t())
+        k_xx, k_yy, k_xy = rbf_kernel(
+            x,
+            y,
+            bandwidth,
+        )
+    else:
+        k_xx = torch.mm(
+            x,
+            x.t(),
+        )
 
-    m, n = x.shape[0], y.shape[0]
-    mmd = k_xx.sum() / (m * m) + k_yy.sum() / (n * n) - 2 * k_xy.sum() / (m * n)
+        k_yy = torch.mm(
+            y,
+            y.t(),
+        )
+
+        k_xy = torch.mm(
+            x,
+            y.t(),
+        )
+
+    m = x.shape[0]
+    n = y.shape[0]
+
+    mmd = (
+        k_xx.sum() / (m * m)
+        + k_yy.sum() / (n * n)
+        - 2 * k_xy.sum() / (m * n)
+    )
 
     return mmd
 
 
 def sample_noise(
-    batch_size: int, latent_dim: int, device: torch.device
+    batch_size: int,
+    latent_dim: int,
+    device: torch.device,
 ) -> torch.Tensor:
-    """Sample random noise from normal distribution."""
-    return torch.randn(batch_size, latent_dim, device=device)
+
+    return torch.randn(
+        batch_size,
+        latent_dim,
+        device=device,
+    )
