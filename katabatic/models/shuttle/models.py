@@ -71,9 +71,7 @@ class BaseModel(ABC):
         return {
             "accuracy": accuracy_score(y, preds),
             "macro_f1": f1_score(y, preds, average="macro"),
-            "classification_report": classification_report(
-                y, preds, zero_division=0
-            ),
+            "classification_report": classification_report(y, preds, zero_division=0),
             "confusion_matrix": confusion_matrix(y, preds),
         }
 
