@@ -1,0 +1,289 @@
+:root {
+  --ink: #16152a;
+  --muted: #6f7287;
+  --line: #e8e8f0;
+  --page: #f7f7fb;
+  --panel: #ffffff;
+  --purple: #6656e8;
+  --purple-dark: #4f42ca;
+  --purple-soft: #eeeafd;
+  --red: #c23b3b;
+  --red-soft: #fdecec;
+  --red-line: #f3c9c9;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--page);
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--page);
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* ---- App shell / sidebar (shared with the rest of Katabatic) ---- */
+
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+}
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  padding: 28px 18px 20px;
+  background: #171626;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 10px 32px;
+  font-size: 1.25rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, #7669f5, #5143ca);
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(102, 86, 232, 0.3);
+}
+
+.nav-label {
+  margin: 0 12px 10px;
+  color: #868497;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.nav-item {
+  width: 100%;
+  min-height: 45px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 13px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #aaa8b8;
+  background: transparent;
+  text-align: left;
+  font-size: 0.92rem;
+  font-weight: 600;
+  transition: background 0.18s ease, color 0.18s ease;
+  text-decoration: none;
+}
+
+.nav-item:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.nav-item.active {
+  color: #fff;
+  background: var(--purple);
+  box-shadow: 0 7px 18px rgba(38, 31, 104, 0.38);
+}
+
+main {
+  min-width: 0;
+}
+
+/* ---- Upload Dataset page ---- */
+
+.upload-page {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 48px 32px;
+}
+
+.upload-heading h1 {
+  margin: 0;
+  font-size: 1.7rem;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+.upload-heading p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.upload-error-banner {
+  margin-top: 20px;
+  padding: 13px 15px;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  border: 1px solid var(--red-line);
+  background: var(--red-soft);
+  color: var(--red);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 550;
+}
+
+.upload-error-banner svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.upload-dropzone {
+  margin-top: 20px;
+  padding: 56px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 2px;
+  border: 2px dashed var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+  box-shadow: 0 2px 4px rgba(28, 24, 63, 0.02);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.upload-dropzone.dragging {
+  border-color: var(--purple);
+  background: var(--purple-soft);
+}
+
+.upload-dropzone.has-error {
+  border-color: var(--red-line);
+  background: var(--red-soft);
+}
+
+.upload-dropzone-icon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 14px;
+  border-radius: 50%;
+  background: var(--purple-soft);
+  color: var(--purple);
+}
+
+.upload-dropzone.has-error .upload-dropzone-icon {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.upload-dropzone p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.upload-dropzone .or {
+  color: #b5b6c4;
+  font-weight: 600;
+}
+
+.upload-browse-button {
+  margin-top: 16px;
+  min-height: 40px;
+  padding: 0 18px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #ffffff;
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 650;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.upload-browse-button:hover {
+  border-color: #c9c4f4;
+  color: var(--purple-dark);
+}
+
+.upload-supported-format {
+  margin-top: 12px;
+  color: #a5a6b8;
+  font-size: 0.76rem;
+}
+
+.upload-file-name {
+  margin-top: 6px;
+  font-weight: 650;
+  font-size: 0.92rem;
+  color: var(--ink);
+}
+
+.upload-file-size {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.upload-remove-button {
+  margin-top: 10px;
+  border: 0;
+  background: transparent;
+  color: var(--red);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.upload-remove-button:hover {
+  text-decoration: underline;
+}
+
+.upload-actions {
+  margin-top: 28px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.upload-submit-button {
+  min-height: 44px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--purple);
+  color: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 700;
+  box-shadow: 0 8px 18px rgba(102, 86, 232, 0.23);
+  transition: background 0.15s ease;
+}
+
+.upload-submit-button:hover:not(:disabled) {
+  background: var(--purple-dark);
+}
+
+.upload-submit-button:disabled {
+  cursor: not-allowed;
+  background: #d4d3e0;
+  box-shadow: none;
+}
