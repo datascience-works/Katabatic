@@ -27,6 +27,7 @@ def _dependency_available(dep: str) -> bool:
         spec = importlib.util.find_spec(dep)
     except (ImportError, ValueError):
         return False
+
     return spec is not None and spec.origin is not None
 
 
@@ -37,7 +38,12 @@ class ModelRegistry:
         "ganblr": {
             "module": "katabatic.models.ganblr.models",
             "class": "GANBLR",
-            "dependencies": ["tensorflow", "pgmpy", "pyitlib", "scipy"],
+            "dependencies": [
+                "tensorflow",
+                "pgmpy",
+                "pyitlib",
+                "scipy",
+            ],
             "extra": "ganblr",
             "supported": True,
             "dataset_requirements": {
@@ -50,7 +56,10 @@ class ModelRegistry:
         "great": {
             "module": "katabatic.models.great.models",
             "class": "GReaT",
-            "dependencies": ["transformers", "torch"],
+            "dependencies": [
+                "transformers",
+                "torch",
+            ],
             "extra": "great",
             "supported": False,
         },
@@ -71,16 +80,35 @@ class ModelRegistry:
         "pategan": {
             "module": "katabatic.models.pategan.models",
             "class": "PATEGAN",
-            "dependencies": ["tensorflow", "numpy", "pandas"],
+            "dependencies": [
+                "tensorflow",
+                "numpy",
+                "pandas",
+            ],
             "extra": "pategan",
             "supported": True,
         },
         "ctgan": {
             "module": "katabatic.models.ctgan.models",
             "class": "CTGANModel",
-            "dependencies": ["torch", "sklearn"],
+            "dependencies": [
+                "torch",
+                "sklearn",
+            ],
             "extra": "ctgan",
             "supported": True,
+        },
+        "tabula": {
+            "module": "katabatic.models.tabula.models",
+            "class": "TABULA",
+            "dependencies": [
+                "transformers",
+                "torch",
+                "datasets",
+                "tqdm",
+            ],
+            "extra": "tabula",
+            "supported": False,
         },
     }
 
@@ -98,28 +126,38 @@ class ModelRegistry:
     def get_model_config(cls, model_name: str) -> dict:
         """Return the registry config for a model."""
         model_name = model_name.lower()
+
         if model_name not in cls._models:
             raise KeyError(f"Model '{model_name}' is not registered.")
+
         return cls._models[model_name]
 
     @classmethod
     def is_supported(cls, model_name: str) -> bool:
         """Return True if the model is officially supported."""
         info = cls._models.get(model_name.lower())
+
         return bool(info and info.get("supported"))
 
     @classmethod
-    def get_model_info(cls, model_name: str) -> dict | None:
+    def get_model_info(
+        cls,
+        model_name: str,
+    ) -> dict | None:
         """Get information about a specific model."""
         return cls._models.get(model_name.lower())
 
     @classmethod
-    def load_model(cls, model_name: str) -> type[Model]:
+    def load_model(
+        cls,
+        model_name: str,
+    ) -> type[Model]:
         """Dynamically load a model class."""
         model_name = model_name.lower()
 
         if model_name not in cls._models:
             available = ", ".join(cls.get_available_models())
+
             raise ValueError(
                 f"Unknown model '{model_name}'. Available models: {available}"
             )
@@ -132,27 +170,55 @@ class ModelRegistry:
 
         if missing_deps:
             raise ImportError(
-                f"Missing dependencies for {model_name}: {missing_deps}. "
-                f"Install with: pip install katabatic[{model_info['extra']}]"
+                f"Missing dependencies for {model_name}: "
+                f"{missing_deps}. "
+                f"Install with: "
+                f"pip install katabatic[{model_info['extra']}]"
             )
 
         try:
             module = importlib.import_module(model_info["module"])
-            model_class = getattr(module, model_info["class"])
+
+            model_class = getattr(
+                module,
+                model_info["class"],
+            )
+
             return model_class
-        except (ImportError, AttributeError) as e:
+
+        except (
+            ImportError,
+            AttributeError,
+        ) as e:
             raise ImportError(f"Failed to load model {model_name}: {e}")
 
     @classmethod
-    def create_model(cls, model_name: str, *args, **kwargs) -> Model:
+    def create_model(
+        cls,
+        model_name: str,
+        *args,
+        **kwargs,
+    ) -> Model:
         """Create an instance of the specified model."""
         model_class = cls.load_model(model_name)
-        return model_class(*args, **kwargs)
+
+        return model_class(
+            *args,
+            **kwargs,
+        )
 
 
-def get_model(model_name: str, *args, **kwargs) -> Model:
+def get_model(
+    model_name: str,
+    *args,
+    **kwargs,
+) -> Model:
     """Convenience function to create a model instance."""
-    return ModelRegistry.create_model(model_name, *args, **kwargs)
+    return ModelRegistry.create_model(
+        model_name,
+        *args,
+        **kwargs,
+    )
 
 
 def list_models() -> list[str]:
