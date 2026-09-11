@@ -170,6 +170,9 @@ jobs:
 
   model-contract:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.build-matrix.outputs.matrix }}
+      core: ${{ steps.filter.outputs.core }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -209,6 +212,12 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
+
+      - name: Cache Poetry environment
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ matrix.model }}-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install Poetry
         run: pip install poetry==2.4.2

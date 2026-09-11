@@ -362,7 +362,6 @@ def evaluate(
         categorical_cols=config.categorical_cols,
         continuous_cols=config.continuous_cols,
     )
-
     report = pipeline.run(
         real_data=train_df,
         synthetic_data=synthetic_df,

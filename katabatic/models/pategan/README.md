@@ -257,4 +257,46 @@ PATE-GAN should be validated through Katabatic's standard evaluation pipeline af
 
 Validation results should be interpreted separately from the results reported in the original PATE-GAN paper because Katabatic uses its own datasets, preprocessing, train/test splits, and evaluation framework.
 
-Therefore, differences between Katabatic scores and the paper's reported results do not by themselves indicate an implementation mismatch.
+### Training Issues
+
+**Slow Training**: Reduce `niter` or increase `batch_size`
+
+**Poor Quality**: Increase `niter`, reduce `epsilon` noise, or tune `num_teachers`
+
+**Memory Issues**: Reduce `batch_size` or sample fewer synthetic records
+
+### TensorFlow Warnings
+
+PATE-GAN uses TensorFlow 1.x compatibility mode. You may see warnings like:
+
+```
+WARNING:tensorflow:From ...
+```
+
+These are expected and can be safely ignored.
+
+## Reference
+
+**Paper**: "PATE-GAN: Generating Synthetic Data with Differential Privacy Guarantees"
+**Authors**: Jinsung Yoon, James Jordon, Mihaela van der Schaar
+**Year**: 2018
+**Venue**: ICLR 2019
+
+**Original Implementation**: https://bitbucket.org/mvdschaar/mlforhealthlabpub/
+
+## Citation
+
+If you use PATE-GAN in your research, please cite:
+
+```bibtex
+@inproceedings{yoon2018pategan,
+  title={PATE-GAN: Generating Synthetic Data with Differential Privacy Guarantees},
+  author={Yoon, Jinsung and Jordon, James and van der Schaar, Mihaela},
+  booktitle={International Conference on Learning Representations},
+  year={2019}
+}
+```
+
+## License
+
+PATE-GAN implementation is part of the Katabatic framework and follows the project's MIT license.
