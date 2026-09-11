@@ -1,4 +1,5 @@
 import os
+import warnings
 from typing import Any
 
 import numpy as np
@@ -22,6 +23,11 @@ class PATEGAN(Model):
     - WGAN-GP for stable training
     - Handles mixed categorical and continuous data
     """
+
+    ARTIFACT_STATE_FILES = (
+        "metadata.json",
+        "pategan.ckpt.index",
+    )
 
     def __init__(
         self,
@@ -121,6 +127,47 @@ class PATEGAN(Model):
         D_out = tf.matmul(D_h2, self.D_W3) + self.D_b3
 
         return D_out
+
+    @classmethod
+    def load_from_ref(cls, store, ref):
+        import os
+
+        import tensorflow.compat.v1 as tf
+
+        from .utils import load_metadata, reconstruct_transformer
+
+        state_dir = str(store.open_path(ref.state_relpath))
+        metadata_path = os.path.join(state_dir, "metadata.json")
+        checkpoint_path = os.path.join(state_dir, "pategan.ckpt")
+
+        metadata = load_metadata(metadata_path)
+
+        training_config = metadata["training_config"]
+        privacy_config = metadata["privacy_config"]
+
+        model = cls(
+            epsilon=privacy_config["epsilon"],
+            delta=privacy_config["delta"],
+            num_teachers=privacy_config["num_teachers"],
+            niter=training_config["niter"],
+            batch_size=training_config["batch_size"],
+            z_dim=training_config["z_dim"],
+            learning_rate=training_config["learning_rate"],
+            lambda_gp=training_config["lambda_gp"],
+            random_state=metadata["seed"],
+        )
+
+        model.transformer = reconstruct_transformer(metadata)
+
+        x_dim = len(model.transformer.column_order)
+        model._build_model(x_dim)
+
+        saver = tf.train.Saver()
+        saver.restore(model._sess, checkpoint_path)
+
+        model.is_fitted = True
+
+        return model
 
     def _build_model(self, X_dim: int):
         """
@@ -308,8 +355,7 @@ class PATEGAN(Model):
                 M_entire = np.concatenate((M_real, M_fake), 0)
 
                 # Add Gaussian noise for privacy
-                noise = self.privacy_mechanism.add_gaussian_noise(M_entire)
-                M_entire = M_entire + noise
+                M_entire = self.privacy_mechanism.add_gaussian_noise(M_entire)
                 M_entire = (M_entire > 0.5).astype(float)
                 M_mb = np.reshape(M_entire, (2 * self.batch_size, 1))
 
@@ -493,16 +539,19 @@ class PATEGAN(Model):
             missing_classes = set(unique_train) - set(unique_synth)
 
             if missing_classes:
-                print(
-                    f"[PATEGAN] Adding {len(missing_classes)} dummy samples to cover classes: {sorted(missing_classes)}"
+                # Cover missing classes by relabelling generated rows.
+                warnings.warn(
+                    f"PATE-GAN produced no samples for classes {sorted(missing_classes)}; "
+                    f"relabelling generated rows to cover them. Treat utility metrics "
+                    f"for these classes with caution.",
+                    stacklevel=2,
                 )
-                for cls in missing_classes:
-                    idx = np.where(df_train[y_col].values == cls)[0]
-                    if idx.size == 0:
-                        continue
-                    row = df_train.iloc[idx[0] : idx[0] + 1]
-                    x_dummy = row.drop(columns=[y_col])
-                    y_dummy = row[[y_col]]
+                for offset, cls in enumerate(sorted(missing_classes)):
+                    if x_synth.empty:
+                        break
+                    pos = offset % len(x_synth)
+                    x_dummy = x_synth.iloc[pos : pos + 1].copy()
+                    y_dummy = pd.DataFrame({y_col: [cls]})
                     x_synth = pd.concat([x_synth, x_dummy], ignore_index=True)
                     y_synth = pd.concat([y_synth, y_dummy], ignore_index=True)
 
@@ -601,7 +650,33 @@ class PATEGAN(Model):
             )
             print(f"Saved metadata.json to {metadata_path}")
 
-        return self
+            artifact_state_dir = kwargs.get("artifact_state_dir")
+
+            if artifact_state_dir:
+                os.makedirs(artifact_state_dir, exist_ok=True)
+
+                state_metadata_path = os.path.join(
+                    artifact_state_dir,
+                    "metadata.json",
+                )
+
+                save_metadata(
+                    state_metadata_path,
+                    self.transformer,
+                    training_config,
+                    privacy_config,
+                    self.random_state,
+                )
+
+                import tensorflow.compat.v1 as tf
+
+                saver = tf.train.Saver()
+                saver.save(
+                    self._sess,
+                    os.path.join(artifact_state_dir, "pategan.ckpt"),
+                )
+
+            return self
 
     def evaluate(
         self,
