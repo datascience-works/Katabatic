@@ -61,12 +61,10 @@ class Tabula:
 
         self.llm = llm
 
-        self.tokenizer = AutoTokenizer.from_pretrained(self.llm)
-
+        self.tokenizer = AutoTokenizer.from_pretrained(self.llm)  # nosec B615: trusted HF base model
         self.tokenizer.pad_token = self.tokenizer.eos_token
 
-        self.config = AutoConfig.from_pretrained(self.llm)
-
+        self.config = AutoConfig.from_pretrained(self.llm)  # nosec B615: trusted HF base model
         self.model = AutoModelForCausalLM.from_config(self.config)
 
         self.experiment_dir = experiment_dir
@@ -370,7 +368,7 @@ class Tabula:
         self,
         path: str,
     ):
-        self.model.load_state_dict(torch.load(path))
+        self.model.load_state_dict(torch.load(path))  # nosec B614: loading our own saved weights
 
     @classmethod
     def load_from_dir(
@@ -398,7 +396,7 @@ class Tabula:
             torch.load(
                 path + "/model.pt",
                 map_location="cpu",
-            )
+            )  # nosec B614: loading our own saved weights
         )
 
         return tabula
