@@ -1,40 +1,59 @@
+import logging
 import os
 import platform
 import sys
-from datetime import datetime
+import warnings
+from time import perf_counter
 
+import pandas as pd
 import psutil
 
 sys.path.insert(
-    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    0,
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
 )
-from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
-from katabatic.models.codi.models import CODI
+from runner import (
+    RunConfig,
+    evaluate,
+    preprocess_and_split,
+    save_synthetic,
+)
+
+from katabatic.models.codi.models import CODI  # noqa: E402
+
+# run in cpu mode(if GPU is limited)
+# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+logging.getLogger("pgmpy").setLevel(logging.ERROR)
+warnings.filterwarnings("ignore")
+start_time = perf_counter()
 
 
 # ➕ Adding in system and run duration summary
 def get_runtime_summary(
-    time_diff, start_time, end_time, model_name, dataset_name
+    time_diff,
+    start_time,
+    end_time,
+    model_name,
+    dataset_name,
 ) -> None:
     """
-    Prints a formatted runtime summary report including start time, end time
-    and total duration for a given model and a specific dataset.
+    Print a formatted runtime summary report.
+
+    The report includes the start time, end time, and total duration for a
+    given model and a specific dataset.
 
     Args:
-        time_diff    (timedelta): Total elapsed time of the run
-        start_time   (datetime):  Start timestamp of the run
-        end_time     (datetime):  End timestamp of the run
-        model_name   (str):       Name of the model used
-        dataset_name (str):       Name of the dataset used
+        time_diff (timedelta): Total elapsed time of the run.
+        start_time (datetime): Start timestamp of the run.
+        end_time (datetime): End timestamp of the run.
+        model_name (str): Name of the model used.
+        dataset_name (str): Name of the dataset used.
     """
-    print(
-        "=================================================================================="
-    )
+    print("======================================================================")
     print("⏰ Evaluation Runtime Report 🧾")
-    print(
-        "=================================================================================="
-    )
+    print("======================================================================")
     print("Start time:", start_time)
     print("End time:", end_time)
     print(
@@ -49,9 +68,10 @@ def get_runtime_summary(
 
 def get_system_run_details() -> None:
     """
-    Prints a summary of the hardware used to run the evalautions on.
-    This report outlines the OS, CPU, GPU details and RAM states.
-    Compatible with any device or OS.
+    Print a summary of the hardware used to run the evaluations.
+
+    This report outlines the OS, CPU, GPU details, and RAM states.
+    It is compatible with any device or OS.
     """
     results = platform.uname()
     ram = psutil.virtual_memory()
@@ -67,13 +87,9 @@ def get_system_run_details() -> None:
     except Exception:
         gpu_info = "No GPU or Tensorflow install has been detected."
 
-    print(
-        "=================================================================================="
-    )
+    print("======================================================================")
     print("💻 Computation Hardware Summary 🧾")
-    print(
-        "=================================================================================="
-    )
+    print("======================================================================")
     print(f"  🖥️  System:     {results.system}")
     print(f"  🏠  Node:       {results.node}")
     print(f"  📦  Release:    {results.release}")
@@ -83,16 +99,14 @@ def get_system_run_details() -> None:
     print(f"  📟  Total RAM:  {round(ram.total / 1e9, 4)} GB")
     print(f"  💾  Free RAM:   {round(ram.available / 1e9, 4)} GB")
     print(f"  ⚡  Used RAM:   {round(ram.used / 1e9, 4)} GB")
-    print(
-        "=================================================================================="
-    )
+    print("======================================================================")
 
-
-start_time = datetime.now()
 
 config = RunConfig(
     dataset_name="adult",
     model_name="codi",
+    # educational-num is ordinal but treated as categorical for codi
+    # (discrete)
     categorical_cols=[
         "workclass",
         "education",
@@ -104,38 +118,66 @@ config = RunConfig(
         "gender",
         "native-country",
     ],
-    continuous_cols=["age", "fnlwgt", "capital-gain", "capital-loss", "hours-per-week"],
+    continuous_cols=[
+        "age",
+        "fnlwgt",
+        "capital-gain",
+        "capital-loss",
+        "hours-per-week",
+    ],
     target_col_raw="class",
     constraints={
-        "age": (17, 90),  # working age range
-        "fnlwgt": (12285, 1490400),  # census sampling weight, dataset min/max
-        "capital-gain": (0, 99999),  # cannot be negative, capped at 99999 in dataset
-        "capital-loss": (0, 4356),  # cannot be negative, capped at 4356 in dataset
-        "hours-per-week": (1, 99),  # at least 1 hour, max 99 in dataset
+        "age": (17, 90),
+        "fnlwgt": (12285, 1490400),
+        "capital-gain": (0, 99999),
+        "capital-loss": (0, 4356),
+        "hours-per-week": (1, 99),
     },
 )
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)
 
 print("\n" + "=" * 60)
-print("STEP 3 — Train Codi Model")
+print("STEP 3 — Train CODI")
 print("=" * 60)
 model = CODI(n_steps=50, epochs=100, batch_size=256)
-model.train(paths["split_dir"], paths["synthetic_dir"])
-print("\CODI training complete.")
+model.train(
+    paths["split_dir"],
+    paths["synthetic_dir"],
+    categorical_cols=config.categorical_cols,
+    continuous_cols=config.continuous_cols,
+)
+print("\nCoDi training complete.")
+
 print("\n" + "=" * 60)
 print("STEP 4 — Generate synthetic data")
 print("=" * 60)
-synthetic_df = model.sample(len(train_df))
+synthetic_df = pd.DataFrame(model.sample(len(train_df)), columns=train_df.columns)
 synthetic_df = save_synthetic(
-    synthetic_df, train_df, paths, categorical_cols=config.categorical_cols
+    synthetic_df,
+    train_df,
+    paths,
+    categorical_cols=config.categorical_cols,
 )
-evaluate(model, config, train_df, synthetic_df, target_col, paths, test_df)
+
+evaluate(
+    model,
+    config,
+    train_df,
+    synthetic_df,
+    target_col,
+    paths,
+    test_df,
+)
 
 # ➕ Adding in system and run duration summary
-end_time = datetime.now()
+end_time = perf_counter()
 time_diff = end_time - start_time
 get_runtime_summary(
-    time_diff, start_time, end_time, config.model_name, config.dataset_name
+    time_diff,
+    start_time,
+    end_time,
+    config.model_name,
+    config.dataset_name,
 )
 get_system_run_details()
