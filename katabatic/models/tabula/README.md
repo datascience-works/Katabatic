@@ -112,3 +112,34 @@ The author’s contribution focuses on **evaluation design, pipeline integration
 **ChatGPT (OpenAI)** was used to assist with interpreting the TaBuLa paper and repository, and to support reasoning about implementation and experimental design.
 
 All generated guidance was **manually verified** against the original sources. The final decisions regarding implementation scope, code reuse, and result inclusion were made independently by the author.
+# TabuLa
+
+**TabuLa** is a language-model-based approach for synthetic tabular data
+generation. It represents tabular rows as text, trains a causal language model
+on the resulting token sequences, and generates synthetic rows that are parsed
+back into tabular data.
+
+## Overview
+
+The TabuLa workflow is:
+
+1. Convert tabular rows into textual representations.
+2. Randomise column order during training.
+3. Tokenise the textual rows.
+4. Train a causal language model.
+5. Generate new textual rows.
+6. Parse the generated text back into tabular data.
+
+The Katabatic integration preserves the original TabuLa implementation as much
+as possible while adapting it to Katabatic's model interface.
+
+## Implementation
+
+The implementation is integrated into:
+
+```text
+katabatic/models/tabula/
+├── __init__.py
+├── models.py
+├── utils.py
+└── README.md
