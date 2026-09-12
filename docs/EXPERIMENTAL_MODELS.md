@@ -20,6 +20,7 @@ and CI coverage are not guaranteed**:
 | Model | Extra | Notes |
 |-------|-------|-------|
 | GReaT | `great` | Has an integration test and CI job, but registered with `supported: False` — not yet promoted |
+| AIM | `aim` | Differentially private marginal-based synthesis using Private-PGM; has an artifact pipeline integration test and is registered with `supported: False` |
 | TabSyn | `tabsyn` | Heavy torch stack |
 | TabDDPM | `tabddpm` | Uses external `tabddpm` or local fallback |
 | CoDi | `codi` | Not in registry; see `examples/codi.ipynb` |

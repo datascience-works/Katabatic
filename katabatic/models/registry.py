@@ -47,6 +47,13 @@ class ModelRegistry:
                 ],
             },
         },
+        "aim": {
+            "module": "katabatic.models.aim.models",
+            "class": "AIMModel",
+            "dependencies": ["mbi"],
+            "extra": "aim",
+            "supported": False,
+        },
         "great": {
             "module": "katabatic.models.great.models",
             "class": "GReaT",
