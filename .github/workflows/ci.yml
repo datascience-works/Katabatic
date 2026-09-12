@@ -104,7 +104,7 @@ jobs:
             pategan:
               - 'katabatic/models/pategan/**'
               - 'tests/test_integration_pategan.py'
-            pategan:
+            tabsyn:
               - 'katabatic/models/tabsyn/**'
               - 'tests/test_integration_tabsyn.py'
       - name: Build Dynamic Matrix
