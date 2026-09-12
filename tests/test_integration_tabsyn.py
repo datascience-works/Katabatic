@@ -1,5 +1,3 @@
-"""Integration tests for TabSyn (artifact round-trip; full train is manual)."""
-
 from __future__ import annotations
 
 import numpy as np

@@ -798,10 +798,6 @@ def train_tabsyn(
             "encoder": state.encoder_state,
             "decoder": state.decoder_state,
             # Metadata needed to rebuild TabSynState in TabSyn.load_from_ref().
-            # State dicts alone are not enough: _Tokenizer/_Decoder need
-            # n_num/cat_sizes/token_dim at construction time, MLPDiffusion needs
-            # dim_t, and cat_encoders are required to invert categoricals back
-            # to their original labels.
             "meta": {
                 "info": state.info,
                 "n_num": state.n_num,

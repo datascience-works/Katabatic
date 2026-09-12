@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from dataclasses import replace
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -90,9 +91,17 @@ class TabSyn(BaseModel):
         then materialize x_synth.csv / y_synth.csv for TSTR."""
         self.check_dependencies()
         # 1) fit model
+        cfg = replace(
+            self.config,
+            decoder_epochs=kwargs.get("decoder_epochs", self.config.decoder_epochs),
+            diffusion_epochs=kwargs.get(
+                "diffusion_epochs", self.config.diffusion_epochs
+            ),
+            diffusion_steps=kwargs.get("diffusion_steps", self.config.diffusion_steps),
+        )
         self.state = train_tabsyn(
             data_dir=data_dir,
-            cfg=self.config,
+            cfg=cfg,
             save_dir=save_dir,
             extra_info=extra_info or {},
         )
