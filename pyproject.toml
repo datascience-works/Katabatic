@@ -88,9 +88,6 @@ all = [
     "fsspec>=2023.5.0,<=2026.2.0",
 ]
 
-[project.scripts]
-katabatic = "katabatic.cli.main:main"
-
 [project.urls]
 Homepage = "https://github.com/datascience-works/Katabatic"
 Repository = "https://github.com/datascience-works/Katabatic"
