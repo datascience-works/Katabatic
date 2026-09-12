@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from typing import TYPE_CHECKING, Any
 
@@ -83,7 +85,7 @@ class TabSyn(BaseModel):
         extra_info: dict[str, Any] | None = None,
         *args,
         **kwargs,
-    ) -> "TabSyn":
+    ) -> TabSyn:
         """Train decoder & diffusion on the dataset located in `data_dir`,
         then materialize x_synth.csv / y_synth.csv for TSTR."""
         self.check_dependencies()
@@ -124,7 +126,7 @@ class TabSyn(BaseModel):
         # features = numerics + remaining categoricals
         X_cols = num_cols + cat_cols[1:]
 
-        x_synth = df_s[X_cols]
+        x_synth = df_s[X_cols].copy()
         y_synth = df_s[y_col]
 
         # Align synthetic feature names & order with real train CSV
@@ -191,13 +193,9 @@ class TabSyn(BaseModel):
         return out
 
     @classmethod
-    def load_from_ref(cls, store: "ArtifactStore", ref: "ModelRef") -> "TabSyn":
+    def load_from_ref(cls, store: ArtifactStore, ref: ModelRef) -> TabSyn:
         """
         Rehydrate a trained TabSyn from a versioned artifact.
-
-        The bundle stores state_dicts plus the metadata needed to construct the
-        modules they load into, since _Tokenizer/_Decoder and MLPDiffusion all
-        need their dimensions at construction time.
         """
         import torch
 
@@ -212,9 +210,7 @@ class TabSyn(BaseModel):
                 f"The model must be trained through a pipeline that passes save_dir."
             )
 
-        # weights_only defaults to True in torch >= 2.6, but the bundle also
-        # carries the info dict, scalers and fitted sklearn LabelEncoders.
-        bundle = torch.load(state_path, map_location="cpu", weights_only=False)
+        bundle = torch.load(state_path, map_location="cpu", weights_only=False)  # nosec B614: loading our own saved artifact store
 
         if "meta" not in bundle:
             raise ValueError(
