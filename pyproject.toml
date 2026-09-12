@@ -108,7 +108,6 @@ omit = [
     "katabatic/models/smote/*",
     "katabatic/models/tabddpm/*",
     "katabatic/models/tabkde_updated/*",
-    "katabatic/models/tabsyn/*",
 ]
 
 [tool.poetry]
@@ -136,6 +135,7 @@ markers = [
     "great: requires great extra",
     "ctgan: requires ctgan extra",
     "pategan: requires pategan extra",
+    "tabsyn: requires tabsyn extra",
 ]
 
 [tool.ruff]

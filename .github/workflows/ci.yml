@@ -104,13 +104,17 @@ jobs:
             pategan:
               - 'katabatic/models/pategan/**'
               - 'tests/test_integration_pategan.py'
+            tabsyn:
+              - 'katabatic/models/tabsyn/**'
+              - 'tests/test_integration_tabsyn.py'
       - name: Build Dynamic Matrix
         id: build-matrix
         run: |
           ALL_MODELS='[
             {"model": "ganblr", "torch": false},
             {"model": "ctgan", "torch": true},
-            {"model": "pategan", "torch": false}
+            {"model": "pategan", "torch": false},
+            {"model": "tabsyn", "torch": true}
           ]'
 
           # If a core file changed, run all models.

@@ -57,9 +57,9 @@ class ModelRegistry:
         "tabsyn": {
             "module": "katabatic.models.tabsyn.models",
             "class": "TabSyn",
-            "dependencies": [],
+            "dependencies": ["torch", "tqdm"],
             "extra": "tabsyn",
-            "supported": False,
+            "supported": True,
         },
         "tabddpm": {
             "module": "katabatic.models.tabddpm.models",

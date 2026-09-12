@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import os
-from typing import Any
+from dataclasses import replace
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pandas as pd
@@ -14,6 +17,10 @@ from .utils import (
     sample_tabsyn,
     train_tabsyn,
 )
+
+if TYPE_CHECKING:
+    from katabatic.artifacts.base import ArtifactStore
+    from katabatic.artifacts.refs import ModelRef
 
 
 class TabSyn(BaseModel):
@@ -79,14 +86,22 @@ class TabSyn(BaseModel):
         extra_info: dict[str, Any] | None = None,
         *args,
         **kwargs,
-    ) -> "TabSyn":
+    ) -> TabSyn:
         """Train decoder & diffusion on the dataset located in `data_dir`,
         then materialize x_synth.csv / y_synth.csv for TSTR."""
         self.check_dependencies()
         # 1) fit model
+        cfg = replace(
+            self.config,
+            decoder_epochs=kwargs.get("decoder_epochs", self.config.decoder_epochs),
+            diffusion_epochs=kwargs.get(
+                "diffusion_epochs", self.config.diffusion_epochs
+            ),
+            diffusion_steps=kwargs.get("diffusion_steps", self.config.diffusion_steps),
+        )
         self.state = train_tabsyn(
             data_dir=data_dir,
-            cfg=self.config,
+            cfg=cfg,
             save_dir=save_dir,
             extra_info=extra_info or {},
         )
@@ -120,7 +135,7 @@ class TabSyn(BaseModel):
         # features = numerics + remaining categoricals
         X_cols = num_cols + cat_cols[1:]
 
-        x_synth = df_s[X_cols]
+        x_synth = df_s[X_cols].copy()
         y_synth = df_s[y_col]
 
         # Align synthetic feature names & order with real train CSV
@@ -185,3 +200,64 @@ class TabSyn(BaseModel):
             else:
                 np.save(save_path, out)
         return out
+
+    @classmethod
+    def load_from_ref(cls, store: ArtifactStore, ref: ModelRef) -> TabSyn:
+        """
+        Rehydrate a trained TabSyn from a versioned artifact.
+        """
+        import torch
+
+        from .utils import MLPDiffusion, TabSynState, _Precond
+
+        state_file = cls.ARTIFACT_STATE_FILES[0]
+        state_path = store.open_path(f"{ref.state_relpath}/{state_file}")
+
+        if not state_path.is_file():
+            raise FileNotFoundError(
+                f"No TabSyn artifact for ref {ref!r} at {state_path}. "
+                f"The model must be trained through a pipeline that passes save_dir."
+            )
+
+        bundle = torch.load(state_path, map_location="cpu", weights_only=False)  # nosec B614: loading our own saved artifact store
+
+        if "meta" not in bundle:
+            raise ValueError(
+                f"TabSyn artifact at {state_path} predates the metadata bundle "
+                f"and cannot be reloaded. Retrain to regenerate it."
+            )
+
+        meta = bundle["meta"]
+        device = torch.device("cpu")
+
+        # Same in_dim formula sample_tabsyn() uses: one token per column.
+        n_cols = meta["n_num"] + len(meta["cat_sizes"])
+        d_in = n_cols * meta["token_dim"]
+
+        precond = _Precond(
+            MLPDiffusion(d_in=d_in, dim_t=meta["denoise_dim_t"]),
+            sigma_data=meta["sigma_data"],
+        )
+        precond.load_state_dict(bundle["denoise_fn"])
+        precond.num_steps = meta["num_steps"]
+        precond = precond.to(device).eval()
+
+        instance = cls()
+        instance.state = TabSynState(
+            info=meta["info"],
+            n_num=meta["n_num"],
+            cat_sizes=meta["cat_sizes"],
+            cat_encoders=meta["cat_encoders"],
+            token_dim=meta["token_dim"],
+            column_order=meta["column_order"],
+            scaler_mean=meta["scaler_mean"],
+            scaler_std=meta["scaler_std"],
+            tokenizer_state=bundle["tokenizer"],
+            encoder_state=bundle["encoder"],
+            decoder_state=bundle["decoder"],
+            denoise_fn=precond,
+            device=device,
+            train_rows=meta["train_rows"],
+        )
+        instance.is_fitted = True
+        return instance
