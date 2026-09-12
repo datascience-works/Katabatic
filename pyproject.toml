@@ -29,6 +29,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+aim = [
+    "private-pgm @ git+https://github.com/ryan112358/private-pgm.git@01f02f17eba440f4e76c1d06fa5ee9eed0bd2bca",
+]
 codi = ["torch>=2.14.0,<3.0.0"]
 ctgan = ["torch>=2.14.0,<3.0.0"]
 ganblr = [
@@ -69,6 +72,7 @@ tabsyn = [
 ]
 eval = ["xgboost>=3.2.0,<4.0.0"]
 all = [
+    "private-pgm @ git+https://github.com/ryan112358/private-pgm.git@01f02f17eba440f4e76c1d06fa5ee9eed0bd2bca",
     "tensorflow==2.21.*",
     "tensorflow-io==0.37.1",
     "pgmpy>=0.1.25",
@@ -100,6 +104,7 @@ Documentation = "https://github.com/datascience-works/Katabatic#readme"
 [tool.coverage.run]
 # Experimental models are excluded until they have integration tests.
 omit = [
+    "katabatic/models/aim/*",
     "katabatic/models/codi/*",
     "katabatic/models/gmm/*",
     "katabatic/models/great/*",
@@ -136,6 +141,7 @@ markers = [
     "great: requires great extra",
     "ctgan: requires ctgan extra",
     "pategan: requires pategan extra",
+    "aim: requires aim extra",
 ]
 
 [tool.ruff]
