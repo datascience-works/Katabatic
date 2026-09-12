@@ -38,6 +38,7 @@ from katabatic.models.base_model import Model
 
 
 class GReaT(Model):
+    ARTIFACT_STATE_FILES = ("config.json", "model.pt")
     """GReaT Class
 
     The GReaT class handles the whole generation flow. It is used to fine-tune a large language model for tabular data,
@@ -61,7 +62,7 @@ class GReaT(Model):
 
     def __init__(
         self,
-        llm: str,
+        llm: str = "sshleifer/tiny-gpt2",
         experiment_dir: str = "trainer_great",
         epochs: int = 100,
         batch_size: int = 8,
@@ -152,6 +153,7 @@ class GReaT(Model):
         1) Array/DataFrame mode: train(df, ...)
         2) Pipeline mode:       train(dataset_dir: str, synthetic_dir: str)
         """
+        artifact_state_dir = kwargs.pop("artifact_state_dir", None)
         # Pipeline mode: dataset_dir path
         if len(args) >= 1 and isinstance(args[0], str):
             dataset_dir = args[0]
@@ -214,11 +216,21 @@ class GReaT(Model):
             y_name = y_train.name if hasattr(
                 y_train, 'name') and y_train.name else 'target'
             pd.DataFrame(y_synth, columns=[y_name]).to_csv(y_path, index=False)
+            if artifact_state_dir:
+                self._save_artifact_state(artifact_state_dir)
 
             return self
 
-        # Array/DataFrame mode: fallback to fit
-        return self.fit(*args, **kwargs)
+
+
+
+
+    # Array/DataFrame mode: fallback to fit
+        result = self.fit(*args, **kwargs)
+
+        if artifact_state_dir:
+            self._save_artifact_state(artifact_state_dir)
+        return result
 
     def evaluate(self, *args, **kwargs) -> float:
         """Evaluate the model performance."""
@@ -812,6 +824,9 @@ class GReaT(Model):
 
         # Save model weights
         torch.save(self.model.state_dict(), fs.open(path + "/model.pt", "wb"))
+    def _save_artifact_state(self, state_dir: str) -> None:
+        """Persist fitted GReaT state for the Katabatic artifact pipeline."""
+        self.save(state_dir)
 
     def load_finetuned_model(self, path: str):
         """Load fine-tuned model
@@ -822,6 +837,25 @@ class GReaT(Model):
             path: Path to the fine-tuned model
         """
         self.model.load_state_dict(torch.load(fsspec.open(path, "rb")))
+
+    @classmethod
+    def load_from_ref(cls, store, ref):
+        """Load a trained GReaT model from a Katabatic artifact reference."""
+        state_dir = store.open_path(ref.state_relpath)
+
+        if not state_dir.is_dir():
+            raise FileNotFoundError(
+                f"GReaT artifact state directory not found: "
+                f"{ref.state_relpath}"
+            )
+
+        for filename in cls.ARTIFACT_STATE_FILES:
+            if not (state_dir / filename).is_file():
+                raise FileNotFoundError(
+                    f"Missing GReaT artifact state file: {filename}"
+                )
+
+        return cls.load_from_dir(str(state_dir))
 
     @classmethod
     def load_from_dir(cls, path: str):
