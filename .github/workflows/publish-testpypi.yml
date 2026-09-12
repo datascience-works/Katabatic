@@ -58,4 +58,4 @@ jobs:
         with:
           repository-url: https://test.pypi.org/legacy/
           packages-dir: dist/
-          # password: ${{ secrets.TEST_PYPI_API_TOKEN }}  # if not using trusted publishing
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}  # if not using trusted publishing

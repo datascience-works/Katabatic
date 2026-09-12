@@ -1,6 +1,6 @@
 [project]
 name = "katabatic"
-version = "0.2.0"
+version = "0.3.0"
 description = "Framework for synthetic tabular data generation, evaluation, and artifact-based pipelines."
 readme = "README.md"
 license = "MIT"
@@ -87,9 +87,6 @@ all = [
     "accelerate>=1.14.0",
     "fsspec>=2023.5.0,<=2026.2.0",
 ]
-
-[project.scripts]
-katabatic = "katabatic.cli.main:main"
 
 [project.urls]
 Homepage = "https://github.com/datascience-works/Katabatic"

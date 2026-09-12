@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-09-12
+
+### Added
+
+- New experimental models: SynthPop (`katabatic.models.synthpop`), GMM, Naive Bayes, SMOTE (numeric-only oversampling), and an updated TabKDE, each with a benchmark evaluation script.
+- PATE-GAN and TabSyn promoted to supported: rebuilt/aligned with their original paper and reference implementations, `load_from_ref` implemented, integration tests added, and new `pategan`/`tabsyn` pytest markers registered. The registry now lists four supported models: `ganblr`, `ctgan`, `pategan`, `tabsyn`.
+- `smote` PyPI extra (`imbalanced-learn`).
+- Cross-platform setup with Windows support, including a CI job that verifies installs across operating systems.
+- Data dictionary documenting the five benchmark datasets (`datasets/README.md`).
+- `pre-commit` check folded into the local `make ci` run, matching CI.
+
+### Changed
+
+- PyPI classifier moved from Alpha to Beta.
+- Poetry 2.4.1 -> 2.4.2; `torch` 2.13.0 -> 2.14.0; `tensorflow-io` 0.31.0 -> 0.37.1; `xgboost` 3.0.2 -> 3.2.0; `ruff` 0.16.4 -> 0.16.6.
+- `statsmodels` dropped from the `all` extra in favour of `imbalanced-learn` (for SMOTE).
+- Coverage `omit` list updated to reflect current promotions: `pategan` and `tabsyn` now covered; `gmm`, `naivebayes`, and `smote` added as newly-registered experimental models.
+
+### Fixed
+
+- Removed a dangling `katabatic` console-script entry point in `pyproject.toml` left over after the legacy CLI (`init-model`, `register-dataset`, `pin-notebook-kernel`) was removed; installing the package and running `katabatic` would otherwise fail with `ModuleNotFoundError`.
+
+### Removed
+
+- Legacy CLI (`katabatic/cli/`): `init-model`, `register-dataset`, and `pin-notebook-kernel` commands.
+- Large tracked data files no longer needed in version control: stale `sample_data/`, `discretized_data/`, `Results/`, `benchmarks/results/` artifacts, `.DS_Store` files, notebook checkpoint output, and outdated setup/pin scripts. `katabatic/datasets/` is now gitignored (aside from its `README.md`).
+- TabEBM model, added and removed within this release cycle; not shipped.
+
 ## [0.2.0] - 2026-08-28
 
 ### Added
