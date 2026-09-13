@@ -16,6 +16,7 @@ from .utils import ensure_dir, load_train_df, split_x_y, try_align_columns
 # Internal ARF engine (pure sklearn/numpy — no arfpy dependency)
 # ---------------------------------------------------------------------------
 
+
 class _ARFEngine:
     """
     Minimal Adversarial Random Forest implementation.
@@ -53,7 +54,7 @@ class _ARFEngine:
         self.min_node_size = min_node_size
         self.verbose = verbose
         self.seed = seed
-        self.leaf_thresh = leaf_thresh   # fraction of trees that must agree
+        self.leaf_thresh = leaf_thresh  # fraction of trees that must agree
 
         self._rf: RandomForestClassifier | None = None
         self._col_names: list[str] | None = None
@@ -95,7 +96,9 @@ class _ARFEngine:
             # Early stop: no improvement from last round
             if prev_oob is not None and oob_acc >= prev_oob:
                 if self.verbose:
-                    print(f"[ARF] No improvement at iteration {iteration + 1}, stopping.")
+                    print(
+                        f"[ARF] No improvement at iteration {iteration + 1}, stopping."
+                    )
                 break
 
             prev_oob = oob_acc
@@ -142,9 +145,9 @@ class _ARFEngine:
                     le = LabelEncoder()
                     le.fit(X[col].astype(str))
                     self._encoders[i] = le
-                out[:, i] = self._encoders[i].transform(
-                    X[col].astype(str)
-                ).astype(float)
+                out[:, i] = (
+                    self._encoders[i].transform(X[col].astype(str)).astype(float)
+                )
             else:
                 out[:, i] = X[col].to_numpy(dtype=float)
         return out
@@ -168,9 +171,7 @@ class _ARFEngine:
     ) -> np.ndarray:
         """Sample each column independently from its empirical distribution."""
         idx = rng.integers(0, len(X_enc), size=(n, X_enc.shape[1]))
-        return np.stack(
-            [X_enc[idx[:, j], j] for j in range(X_enc.shape[1])], axis=1
-        )
+        return np.stack([X_enc[idx[:, j], j] for j in range(X_enc.shape[1])], axis=1)
 
     def _train_discriminator(
         self, X_real_enc: np.ndarray, X_synth_enc: np.ndarray
@@ -206,7 +207,7 @@ class _ARFEngine:
         This is much more robust than requiring all-tree agreement, which
         fails silently on larger / higher-dimensional datasets.
         """
-        real_leaves = rf.apply(X_real_enc)    # (n_real,  n_trees)
+        real_leaves = rf.apply(X_real_enc)  # (n_real,  n_trees)
         synth_leaves = rf.apply(X_synth_enc)  # (n_synth, n_trees)
         n_trees = real_leaves.shape[1]
         threshold = int(np.ceil(self.leaf_thresh * n_trees))
@@ -235,6 +236,7 @@ class _ARFEngine:
 # Katabatic ARFModel — public API unchanged
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class ARFModel(Model):
     """
@@ -247,6 +249,7 @@ class ARFModel(Model):
     Writes:
       - x_synth.csv, y_synth.csv into synthetic_dir
     """
+
     num_trees: int = 30
     max_iters: int = 10
     delta: float = 0.0
@@ -315,6 +318,7 @@ class ARFModel(Model):
             meta_path = os.path.join(synthetic_dir, "metadata.json")
             try:
                 import json
+
                 meta = {
                     "model": "arf",
                     "num_trees": self.num_trees,
@@ -334,19 +338,17 @@ class ARFModel(Model):
         return self
 
     def sample(self, n: int = 100, **kwargs) -> pd.DataFrame:
-       if not self.is_fitted:
-          raise RuntimeError("Call train() before sample().")
+        if not self.is_fitted:
+            raise RuntimeError("Call train() before sample().")
 
-       X_synth = self._arf.forge(n=n)
-       y_synth = (
-        self._y_train
-        .sample(n=n, replace=True, random_state=self.seed)
-        .reset_index(drop=True)
-       )
-       result = X_synth.copy()
-       if self._y_train is not None:
+        X_synth = self._arf.forge(n=n)
+        y_synth = self._y_train.sample(
+            n=n, replace=True, random_state=self.seed
+        ).reset_index(drop=True)
+        result = X_synth.copy()
+        if self._y_train is not None:
             result[self._y_train.name] = y_synth
-       return result
+        return result
 
     def evaluate(self, X_real: pd.DataFrame | None = None, **kwargs) -> float:
         """
