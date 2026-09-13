@@ -1,3 +1,5 @@
+"""Class-conditional KDE synthetic data generator (core algorithm)."""
+
 from __future__ import annotations
 
 import numpy as np

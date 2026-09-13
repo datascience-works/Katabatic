@@ -7,7 +7,7 @@ import pandas as pd
 
 from katabatic.models.base_model import Model as BaseModel
 
-from .kde_core import KDEModel
+from .utils import KDEModel
 
 
 class KDESynthesizer(BaseModel):
@@ -21,8 +21,7 @@ class KDESynthesizer(BaseModel):
 
     Ported from the katabatic-mentorship registry (Rishi_Goyal branch)
     and adapted to Katabatic's ``Model`` interface and artifact I/O
-    conventions (see ``katabatic/models/ctgan/models.py`` for the same
-    pattern in a different model).
+    conventions.
     """
 
     def __init__(
