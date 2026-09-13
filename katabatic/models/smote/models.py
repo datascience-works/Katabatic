@@ -54,6 +54,83 @@ def subsample_to_original_size(
     return X_resampled, y_resampled
 
 
+def _paper_aligned_anchor_rows(
+    n_anchors: int,
+    n_samples: int,
+    random_state,
+) -> np.ndarray:
+    """Select source rows following the SMOTE paper's sampling schedule."""
+    if n_anchors <= 0:
+        raise ValueError("n_anchors must be greater than zero")
+
+    complete_passes, remainder = divmod(n_samples, n_anchors)
+    parts = []
+
+    # Paper alignment:
+    # For each complete 100% oversampling pass, use every minority sample once.
+    if complete_passes:
+        parts.append(np.tile(np.arange(n_anchors), complete_passes))
+
+    # For a partial pass, use a random subset without replacement.
+    if remainder:
+        parts.append(random_state.permutation(n_anchors)[:remainder])
+
+    if not parts:
+        return np.empty(0, dtype=int)
+
+    return np.concatenate(parts).astype(int, copy=False)
+
+
+class _PaperAlignedSamplingMixin:
+    """Paper-aligned source-sample scheduling for imbalanced-learn SMOTE."""
+
+    def _make_samples(
+        self,
+        X,
+        y_dtype,
+        y_type,
+        nn_data,
+        nn_num,
+        n_samples,
+        step_size=1.0,
+        y=None,
+    ):
+        from sklearn.utils import check_random_state
+
+        random_state = check_random_state(self.random_state)
+
+        rows = _paper_aligned_anchor_rows(
+            nn_num.shape[0],
+            n_samples,
+            random_state,
+        )
+
+        # Randomly select one of the k minority-class neighbours.
+        cols = random_state.randint(
+            low=0,
+            high=nn_num.shape[1],
+            size=n_samples,
+        )
+
+        # Original SMOTE interpolation:
+        # synthetic = anchor + gap * (neighbour - anchor)
+        steps = step_size * random_state.uniform(size=n_samples)[:, np.newaxis]
+
+        X_new = self._generate_samples(
+            X,
+            nn_data,
+            nn_num,
+            rows,
+            cols,
+            steps,
+            y_type,
+            y,
+        )
+        y_new = np.full(n_samples, fill_value=y_type, dtype=y_dtype)
+
+        return X_new, y_new
+
+
 class SMOTEModel(BaseModel):
     """
     SMOTE: Synthetic Minority Over-sampling Technique.
@@ -97,6 +174,9 @@ class SMOTEModel(BaseModel):
                 "imbalanced-learn not found. Install with: pip install imbalanced-learn"
             )
 
+        class PaperAlignedSMOTE(_PaperAlignedSamplingMixin, SMOTE):
+            """SMOTE with source-sample scheduling aligned to the 2002 paper."""
+
         # Load data
         df = load_training_data(data_dir)
         self.column_names = df.columns.tolist()
@@ -111,7 +191,7 @@ class SMOTEModel(BaseModel):
 
         # Initialise and fit SMOTE
         print(f"[SMOTE] Initializing with k_neighbors={adjusted_k}...")
-        self.smote = SMOTE(
+        self.smote = PaperAlignedSMOTE(
             k_neighbors=adjusted_k,
             sampling_strategy=self.sampling_strategy,
             random_state=self.random_state,
