@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -10,8 +9,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 
 from katabatic.models.base_model import Model
-from .utils import load_train_df, split_x_y, ensure_dir, try_align_columns
 
+from .utils import ensure_dir, load_train_df, split_x_y, try_align_columns
 
 # ---------------------------------------------------------------------------
 # Internal ARF engine (pure sklearn/numpy — no arfpy dependency)
@@ -56,17 +55,17 @@ class _ARFEngine:
         self.seed = seed
         self.leaf_thresh = leaf_thresh   # fraction of trees that must agree
 
-        self._rf: Optional[RandomForestClassifier] = None
-        self._col_names: Optional[list[str]] = None
-        self._col_types: Optional[dict] = None
+        self._rf: RandomForestClassifier | None = None
+        self._col_names: list[str] | None = None
+        self._col_types: dict | None = None
         self._encoders: dict[int, LabelEncoder] = {}
-        self._X_real_enc: Optional[np.ndarray] = None
+        self._X_real_enc: np.ndarray | None = None
 
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
 
-    def fit(self, X: pd.DataFrame) -> "_ARFEngine":
+    def fit(self, X: pd.DataFrame) -> _ARFEngine:
         """Adversarial training loop with a single persistent RNG."""
         self._col_names = list(X.columns)
         self._classify_columns(X)
@@ -111,7 +110,7 @@ class _ARFEngine:
         if self._rf is None:
             raise RuntimeError("Call fit() before forde().")
 
-    def forge(self, n: int, seed: Optional[int] = None) -> pd.DataFrame:
+    def forge(self, n: int, seed: int | None = None) -> pd.DataFrame:
         """Generate n synthetic rows via leaf-conditional sampling."""
         if self._rf is None:
             raise RuntimeError("Call fit() (and forde()) before forge().")
@@ -256,9 +255,9 @@ class ARFModel(Model):
     seed: int = 42
     leaf_thresh: float = 0.5
 
-    _arf: Optional[_ARFEngine] = field(default=None, init=False, repr=False)
-    _y_train: Optional[pd.Series] = field(default=None, init=False, repr=False)
-    _data_dir: Optional[str] = field(default=None, init=False, repr=False)
+    _arf: _ARFEngine | None = field(default=None, init=False, repr=False)
+    _y_train: pd.Series | None = field(default=None, init=False, repr=False)
+    _data_dir: str | None = field(default=None, init=False, repr=False)
 
     def __post_init__(self):
         super().__init__()
@@ -270,10 +269,10 @@ class ARFModel(Model):
     def train(
         self,
         data_dir: str,
-        synthetic_dir: Optional[str] = None,
-        n_synth: Optional[int] = None,
+        synthetic_dir: str | None = None,
+        n_synth: int | None = None,
         **kwargs,
-    ) -> "ARFModel":
+    ) -> ARFModel:
         self.check_dependencies()
 
         df = load_train_df(data_dir)
@@ -300,7 +299,10 @@ class ARFModel(Model):
         if n_synth is None:
             n_synth = len(X)
 
-        X_synth, y_synth = self.sample(n=n_synth)
+        synth_df = self.sample(n=n_synth)
+        label_col = self._y_train.name
+        y_synth = synth_df[label_col]
+        X_synth = synth_df.drop(columns=[label_col])
         X_synth = try_align_columns(data_dir, X_synth)
 
         if synthetic_dir is not None:
@@ -331,19 +333,22 @@ class ARFModel(Model):
 
         return self
 
-    def sample(self, n: int = 100, **kwargs) -> tuple[pd.DataFrame, pd.Series]:
-        if not self.is_fitted:
-            raise RuntimeError("Call train() before sample().")
+    def sample(self, n: int = 100, **kwargs) -> pd.DataFrame:
+       if not self.is_fitted:
+          raise RuntimeError("Call train() before sample().")
 
-        X_synth = self._arf.forge(n=n)
-        y_synth = (
-            self._y_train
-            .sample(n=n, replace=True, random_state=self.seed)
-            .reset_index(drop=True)
-        )
-        return X_synth, y_synth
+       X_synth = self._arf.forge(n=n)
+       y_synth = (
+        self._y_train
+        .sample(n=n, replace=True, random_state=self.seed)
+        .reset_index(drop=True)
+       )
+       result = X_synth.copy()
+       if self._y_train is not None:
+            result[self._y_train.name] = y_synth
+       return result
 
-    def evaluate(self, X_real: Optional[pd.DataFrame] = None, **kwargs) -> float:
+    def evaluate(self, X_real: pd.DataFrame | None = None, **kwargs) -> float:
         """
         Mean column-wise KS statistic between real and synthetic features.
         Lower is better; 0 = identical marginal distributions.

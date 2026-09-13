@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import Tuple, Optional
+
 import pandas as pd
 
 
@@ -38,7 +38,7 @@ def load_train_df(data_dir: str) -> pd.DataFrame:
     return pd.concat([X, y[[y_col]]], axis=1)
 
 
-def split_x_y(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series, str]:
+def split_x_y(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series, str]:
     """
     Split a full dataframe into X and y.
     Assumption: label is last column (common in Katabatic).
