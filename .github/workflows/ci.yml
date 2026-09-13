@@ -46,7 +46,7 @@ jobs:
         run: poetry check --lock
 
       - name: Install dependencies
-        run: poetry install --with dev
+        run: poetry install --with dev -E smote
 
       - name: Ruff
         run: poetry run ruff check katabatic tests
