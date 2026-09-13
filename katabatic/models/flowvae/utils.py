@@ -172,9 +172,17 @@ class FlowVAE(nn.Module):
         gate: bool = False,
         flow_type: str = "planar",
         flow_length: int = 2,
+        numeric_indices: list[int] | None = None,
+        categorical_blocks: list[tuple[int, int]] | None = None,
+        kl_weight: float = 1.0,
+        categorical_weight: float = 1.0,
     ) -> None:
         super().__init__()
         self.latent_dim = latent_dim
+        self.numeric_indices = list(numeric_indices) if numeric_indices else []
+        self.categorical_blocks = list(categorical_blocks) if categorical_blocks else []
+        self.kl_weight = kl_weight
+        self.categorical_weight = categorical_weight
         self.encoder = nn.ModuleList(
             [MLPLayer(in_dim, hidden_dim, gate)]
             + [MLPLayer(hidden_dim, hidden_dim, gate) for _ in range(max(0, layers - 1))]
@@ -213,9 +221,43 @@ class FlowVAE(nn.Module):
 
     def loss(self, x: torch.Tensor) -> torch.Tensor:
         reconstruction, mean, log_var, log_det = self.forward(x)
-        recon_loss = F.mse_loss(reconstruction, x, reduction="none").sum(dim=1, keepdim=True)
-        kl = -0.5 * torch.sum(1.0 + log_var - mean.pow(2) - log_var.exp(), dim=1, keepdim=True)
-        return (recon_loss + kl - log_det).mean()
+        kl = -0.5 * torch.sum(
+            1.0 + log_var - mean.pow(2) - log_var.exp(), dim=1, keepdim=True
+        )
+
+        if not self.categorical_blocks:
+            recon = F.mse_loss(reconstruction, x, reduction="none").sum(
+                dim=1, keepdim=True
+            )
+            return (recon + self.kl_weight * kl - log_det).mean()
+
+        # MSE minimises towards the conditional mean. On a one-hot block that
+        # means predicting the class marginal for every row, so argmax at decode
+        # time always returns the majority class. Cross-entropy scores the
+        # probability placed on the true class instead, which removes the
+        # incentive to hedge.
+        recon = torch.zeros(x.size(0), 1, device=x.device, dtype=x.dtype)
+
+        if self.numeric_indices:
+            idx = torch.as_tensor(
+                self.numeric_indices, device=x.device, dtype=torch.long
+            )
+            recon = recon + F.mse_loss(
+                reconstruction.index_select(1, idx),
+                x.index_select(1, idx),
+                reduction="none",
+            ).sum(dim=1, keepdim=True)
+
+        for start, end in self.categorical_blocks:
+            # The decoder's final layer is linear, so this slice is already
+            # logits and needs no activation before cross_entropy.
+            logits = reconstruction[:, start:end]
+            target = x[:, start:end].argmax(dim=1)
+            ce = F.cross_entropy(logits, target, reduction="none").unsqueeze(1)
+            recon = recon + self.categorical_weight * ce
+
+        return (recon + self.kl_weight * kl - log_det).mean()
+
 
     def sample(self, n: int, device: torch.device) -> torch.Tensor:
         z = torch.randn(n, self.latent_dim, device=device)
@@ -319,3 +361,26 @@ def inverse_transform_tabular(array: np.ndarray, schema: TabularSchema) -> pd.Da
             data[col] = [cats[i] for i in chosen]
             idx += width
     return pd.DataFrame(data, columns=schema.columns)
+
+def encoded_column_blocks(
+    schema: TabularSchema,
+) -> tuple[list[int], list[tuple[int, int]]]:
+    """Map each original column to its position in the encoded matrix.
+
+    Returns the column indices of the standardised numeric features, and the
+    (start, end) index range of each one-hot block. The iteration order matches
+    fit_transform_tabular and inverse_transform_tabular, so the ranges line up
+    with the columns the decoder actually produces.
+    """
+    numeric_indices: list[int] = []
+    categorical_blocks: list[tuple[int, int]] = []
+    idx = 0
+    for col in schema.columns:
+        if col in schema.numeric_columns:
+            numeric_indices.append(idx)
+            idx += 1
+        else:
+            width = len(schema.categories[col])
+            categorical_blocks.append((idx, idx + width))
+            idx += width
+    return numeric_indices, categorical_blocks

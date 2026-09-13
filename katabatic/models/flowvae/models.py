@@ -15,7 +15,12 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from katabatic.models.base_model import Model as BaseModel
 
-from .utils import FlowVAE, fit_transform_tabular, inverse_transform_tabular
+from .utils import (
+    FlowVAE,
+    encoded_column_blocks,
+    fit_transform_tabular,
+    inverse_transform_tabular,
+)
 
 
 class FlowVAEModel(BaseModel):
@@ -39,6 +44,8 @@ class FlowVAEModel(BaseModel):
         epochs: int = 50,
         learning_rate: float = 1e-3,
         random_state: int = 42,
+        kl_weight: float = 1.0,
+        categorical_weight: float = 1.0,
         device: str | None = None,
     ) -> None:
         super().__init__()
@@ -52,6 +59,8 @@ class FlowVAEModel(BaseModel):
         self.epochs = epochs
         self.learning_rate = learning_rate
         self.random_state = random_state
+        self.kl_weight = kl_weight
+        self.categorical_weight = categorical_weight
         self.device_name = device
 
         self.model: FlowVAE | None = None
@@ -118,6 +127,13 @@ class FlowVAEModel(BaseModel):
             continuous_cols=continuous_cols,
         )
         self.schema = schema
+        numeric_indices, categorical_blocks = encoded_column_blocks(schema)
+        covered = len(numeric_indices) + sum(e - s for s, e in categorical_blocks)
+        if covered != matrix.shape[1]:
+            raise ValueError(
+                f"Encoded block layout covers {covered} columns but the matrix has "
+                f"{matrix.shape[1]}. The schema and encoder are out of sync."
+            )        
 
         dataset = TensorDataset(torch.tensor(matrix, dtype=torch.float32))
         loader = DataLoader(
@@ -135,6 +151,10 @@ class FlowVAEModel(BaseModel):
             gate=self.gate,
             flow_type=self.flow_type,
             flow_length=self.flow_length,
+            numeric_indices=numeric_indices,
+            categorical_blocks=categorical_blocks,
+            kl_weight=self.kl_weight,
+            categorical_weight=self.categorical_weight,
         ).to(device)
 
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
@@ -221,6 +241,8 @@ class FlowVAEModel(BaseModel):
                 "batch_size": self.batch_size,
                 "epochs": self.epochs,
                 "learning_rate": self.learning_rate,
+                "kl_weight": self.kl_weight,
+                "categorical_weight": self.categorical_weight,
                 "loss_history": self.loss_history,
             },
         }
