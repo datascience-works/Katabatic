@@ -79,9 +79,8 @@ class ModelRegistry:
     @classmethod
     def get_model_config(cls, model_name: str) -> dict:
         """Return the registry config for a model."""
-        model_name = model_name.lower()
         if model_name not in cls._models:
-            raise KeyError(f"Model '{model_name}' is not registered.")
+            raise KeyError(f"Model '{model_name}' is not registerd.")
         return cls._models[model_name]
 
     @classmethod

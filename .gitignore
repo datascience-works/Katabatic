@@ -13,7 +13,6 @@ sample_data/
 synthetic/
 Results/
 
-
 # GReaT trainer artifacts
 **/trainer_great/**
 **/checkpoint-*/
