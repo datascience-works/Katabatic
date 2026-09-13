@@ -6,6 +6,9 @@ import pytest
 
 pytest.importorskip("torch")
 pytest.importorskip("transformers")
+pytest.importorskip("tensorflow")
+pytest.importorskip("pgmpy")
+pytest.importorskip("pyitlib")
 
 from katabatic.models.registry import ModelRegistry
 

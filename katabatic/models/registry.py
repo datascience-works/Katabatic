@@ -1,6 +1,6 @@
 """Model registry for dynamic model loading.
 
-Officially supported models (smoke-tested, PyPI extras): ``ganblr``, ``great``.
+Officially supported models (smoke-tested, PyPI extras): ``ganblr``, ``ctgan``.
 Other registered models are experimental; see ``docs/EXPERIMENTAL_MODELS.md``.
 """
 
@@ -19,7 +19,7 @@ class ModelRegistry:
         "ganblr": {
             "module": "katabatic.models.ganblr.models",
             "class": "GANBLR",
-            "dependencies": ["tensorflow", "pgmpy", "pyitlib", "tf_keras", "scipy"],
+            "dependencies": ["tensorflow", "pgmpy", "pyitlib", "scipy"],
             "extra": "ganblr",
             "supported": True,
             "dataset_requirements": {
