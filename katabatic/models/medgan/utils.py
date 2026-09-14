@@ -41,9 +41,16 @@ class Autoencoder(nn.Module):
         x: torch.Tensor,
     ) -> torch.Tensor:
 
-        return torch.tanh(
-            self.encoder_layer(x)
-        )
+        x = self.encoder_layer(x)
+
+        if self.data_type == "binary":
+            return torch.tanh(x)
+        elif self.data_type == "count":
+            return torch.relu(x)
+        else:
+            raise ValueError(
+                "data_type must be either 'binary' or 'count'"
+            )
 
     def decode(
         self,
