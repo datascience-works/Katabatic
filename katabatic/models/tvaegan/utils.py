@@ -233,6 +233,7 @@ def gan_loss(
 class TVAEGANConfig:
     latent_dim: int = 32
     hidden_dims: list[int] = field(default_factory=lambda: [128, 64])
+    discriminator_hidden_dims: list[int] | None = None  
     epochs: int = 50
     batch_size: int = 64          # paper's value
     lr: float = 3e-4              # paper's value (0.0003)
@@ -269,8 +270,8 @@ def train_vaegan(
 
     encoder = Encoder(data_dim, cfg.hidden_dims, cfg.latent_dim).to(device)
     decoder_generator = DecoderGenerator(cfg.latent_dim, list(reversed(cfg.hidden_dims)), data_dim).to(device)
-    discriminator = Discriminator(data_dim, cfg.hidden_dims).to(device)
-
+    disc_hidden = cfg.discriminator_hidden_dims or cfg.hidden_dims
+    discriminator = Discriminator(data_dim, disc_hidden).to(device)    
     # Paper: single RMSProp learning rate for all networks (Section 4)
     enc_opt = torch.optim.RMSprop(encoder.parameters(), lr=cfg.lr)
     dec_opt = torch.optim.RMSprop(decoder_generator.parameters(), lr=cfg.lr)

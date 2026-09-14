@@ -57,6 +57,7 @@ Found in `katabatic/models/tvaegan/models.py` (`TVAEGANModel.__init__`).
 | `lr` | 3e-4 | Matches paper's 0.0003 (Section 4) |
 | `gamma` | 1.0 | Paper describes this weighting (Eq. 9) but doesn't give a specific value, this is an inferred default |
 | `seed` | 42 | For reproducibility |
+| `discriminator_hidden_dims` | None (uses hidden_dims) | Testing showed a smaller discriminator ([32,16] vs default) significantly improves consistency and resolves class collapse on imbalanced datasets |
 
 ## Input
 - `X`: Tabular feature matrix (numeric and/or categorical columns)
@@ -93,8 +94,9 @@ The full evaluation used for validation is `SyntheticEvaluationPipeline`, which 
 - Very stable results across different random seeds (stability score 0.97 in testing)
 
 ## Limitations
-- Consistency score was low in testing (0.22), a separate discriminator could tell real from synthetic data 85% of the time, this needs 
-  further investigation (longer training, gamma tuning, or both)
+- Consistency remains poor (discriminator detects synthetic data ~99.96% of the time on Adult), though reducing the discriminator's capacity relative to the encoder/decoder (discriminator_hidden_dims=[32,16]) substantially improved overall results: composite score 0.43 to 0.79, utility went from crashing to 0.89, consistency nearly doubled. Not fully resolved.
+- Severe mode collapse can occur on imbalanced datasets under default 
+  settings ,resolved via more training epochs and/or a smaller discriminator.
 - No early stopping implemented yet
 
 ## Installation

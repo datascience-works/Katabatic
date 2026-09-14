@@ -33,6 +33,7 @@ class TVAEGANModel(Model):
         self,
         latent_dim: int = 32,
         hidden_dims: Optional[list[int]] = None,
+        discriminator_hidden_dims: Optional[list[int]] = None,
         epochs: int = 50,
         batch_size: int = 64,
         lr: float = 3e-4,
@@ -44,6 +45,7 @@ class TVAEGANModel(Model):
         self.config = TVAEGANConfig(
             latent_dim=latent_dim,
             hidden_dims=hidden_dims or [128, 64],
+            discriminator_hidden_dims=discriminator_hidden_dims,
             epochs=epochs,
             batch_size=batch_size,
             lr=lr,

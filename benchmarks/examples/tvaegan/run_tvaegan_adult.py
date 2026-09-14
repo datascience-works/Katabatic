@@ -25,7 +25,7 @@ train_df, test_df, target_col, paths = preprocess_and_split(config)
 print("\n" + "=" * 60)
 print("STEP 3 : Train TVAE-GAN")
 print("=" * 60)
-model = TVAEGANModel()
+model = TVAEGANModel(epochs=200, discriminator_hidden_dims=[32, 16])
 model.train(paths["split_dir"], paths["synthetic_dir"])
 print("\nTVAE-GAN training complete.")
 
