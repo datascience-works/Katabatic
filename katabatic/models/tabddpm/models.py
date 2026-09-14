@@ -85,6 +85,7 @@ class Tabddpm(Model):
         self._is_classification: bool = True
         self._y_classes_: np.ndarray | None = None
         self._y_le: LabelEncoder | None = None
+        self._target_name: str = "label"
 
         # feature schema for roundtripping to DataFrame on sample()
         self._feature_names_num: list[str] = []
@@ -211,6 +212,8 @@ class Tabddpm(Model):
             y_train = pd.read_csv(y_train_path)
             if isinstance(y_train, pd.DataFrame) and y_train.shape[1] == 1:
                 y_train = y_train.iloc[:, 0]
+            if hasattr(y_train, "name") and y_train.name:
+                self._target_name = str(y_train.name)
 
             # Train using array mode
             self.train(X_train, y_train, config=config)
@@ -226,9 +229,9 @@ class Tabddpm(Model):
                     if hasattr(y_train, "name") and y_train.name
                     else "label"
                 )
-                if "label" in df_synth.columns:
-                    y_synth = df_synth["label"]
-                    x_synth = df_synth.drop(columns=["label"])  # features only
+                if y_col_name in df_synth.columns:
+                    y_synth = df_synth[y_col_name]
+                    x_synth = df_synth.drop(columns=[y_col_name])
                 else:
                     # Fallback: sample labels from training distribution
                     vals, counts = np.unique(
@@ -324,15 +327,13 @@ class Tabddpm(Model):
         self._is_classification = self._infer_task_type(y_np)
 
         # label-encode y if classification and not already int
-        if self._is_classification and not np.issubdtype(y_np.dtype, np.integer):
+        if self._is_classification:
             self._y_le = LabelEncoder().fit(y_np)
             y_enc = self._y_le.transform(y_np)
             self._y_classes_ = self._y_le.classes_
         else:
-            y_enc = (
-                y_np.astype(int) if self._is_classification else y_np.astype(np.float32)
-            )
-            self._y_classes_ = np.unique(y_enc) if self._is_classification else None
+            y_enc = y_np.astype(np.float32)
+            self._y_classes_ = None
 
         # find categorical columns
         if isinstance(X, pd.DataFrame):
@@ -587,10 +588,11 @@ class Tabddpm(Model):
         *,
         batch_size: int | None = None,
         as_dataframe: bool = True,
+        seed: int | None = None,
     ) -> np.ndarray | pd.DataFrame:
         """Generate `n` synthetic samples.
 
-        Args:
+        Args:if not self.is_fitted or self._diffusion is None:
             n: number of rows to sample.
             batch_size: micro-batch for sampler (defaults to training batch_size).
             as_dataframe: if True, returns a DataFrame with reconstructed columns;
@@ -602,6 +604,9 @@ class Tabddpm(Model):
         if not self.is_fitted or self._diffusion is None:
             raise RuntimeError("Call train() before sample().")
 
+        if seed is not None:
+            self._set_seed(seed)
+        
         self._diffusion.eval()
 
         bsz = int(batch_size or self._cfg["batch_size"])
@@ -658,7 +663,11 @@ class Tabddpm(Model):
                 if self._y_le is not None
                 else Yn.astype(int)
             )
-            X_df.insert(len(X_df.columns), "label", y_out)
+            X_df.insert(
+                len(X_df.columns),
+                self._target_name,
+                y_out
+            )
 
         return X_df
 

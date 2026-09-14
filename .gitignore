@@ -241,3 +241,5 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+katabatic/models/medgan/*.ipynb
+katabatic/models/tabddpm/*.ipynb
