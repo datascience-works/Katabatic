@@ -1,11 +1,14 @@
 FROM python:3.11-slim
 
 ARG POETRY_INSTALL_ARGS="--only main"
+ARG MODEL_EXTRA=""
+ARG TARGETARCH
+RUN echo "Building Katabatic for ${TARGETARCH}"
 
 # Python settings
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    POETRY_VERSION=2.4.1 \
+    POETRY_VERSION=2.4.2 \
     POETRY_NO_INTERACTION=1 \
     POETRY_VIRTUALENVS_CREATE=false
 
@@ -18,7 +21,7 @@ WORKDIR /app
 RUN pip install --no-cache-dir "poetry==${POETRY_VERSION}"
 
 # Pre-install CPU-only torch.
-RUN if [ -n "${MODEL_EXTRA}" ]; then \
+RUN if [ -n "${MODEL_EXTRA}" ] && [ "${TARGETARCH}" = "amd64" ]; then \
         pip install --no-cache-dir "torch>=2.13.0,<3.0.0" \
         --index-url https://download.pytorch.org/whl/cpu; \
     fi
