@@ -56,6 +56,7 @@ class MEDGAN(Model):
         discriminator_lr: float = 1e-3,
         dropout: float = 0.0,
         bn_decay: float = 0.99,
+        data_type: str = "binary",
         random_state: int = 42,
         device: str | None = None,
     ):
@@ -77,6 +78,7 @@ class MEDGAN(Model):
 
         self.dropout = dropout
         self.bn_decay = bn_decay
+        self.data_type = data_type
         self.random_state = random_state
 
         if device is None:
@@ -424,6 +426,7 @@ class MEDGAN(Model):
             encoder_dim=self.encoder_dim,
             latent_dim=self.latent_dim,
             bn_decay=self.bn_decay,
+            data_type=self.data_type,
         ).to(self.device)
 
         self.generator = Generator(
@@ -471,7 +474,14 @@ class MEDGAN(Model):
             lr=self.ae_lr,
         )
 
-        criterion = nn.BCELoss()
+        if self.data_type == "binary":
+            criterion = nn.BCELoss()
+        elif self.data_type == "count":
+            criterion = nn.MSELoss()
+        else:
+            raise ValueError(
+                "data_type must be either 'binary' or 'count'"
+            )
 
         dataset = torch.tensor(
             data,

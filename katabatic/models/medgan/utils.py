@@ -18,12 +18,13 @@ class Autoencoder(nn.Module):
         encoder_dim: int = 128,
         latent_dim: int = 128,
         bn_decay: float = 0.99,
+        data_type: str = "binary",
     ):
         super().__init__()
 
         self.input_dim = input_dim
         self.encoder_dim = encoder_dim
-        self.latent_dim = latent_dim
+        self.data_type = data_type
 
         self.encoder_layer = nn.Linear(
             input_dim,
@@ -49,9 +50,18 @@ class Autoencoder(nn.Module):
         z: torch.Tensor,
     ) -> torch.Tensor:
 
-        return torch.sigmoid(
-            self.decoder_layer(z)
-        )
+        x = self.decoder_layer(z)
+
+        if self.data_type == "binary":
+            return torch.sigmoid(x)
+
+        elif self.data_type == "count":
+            return torch.relu(x)
+
+        else:
+            raise ValueError(
+                "data_type must be either 'binary' or 'count'"
+            )
 
     def forward(
         self,
