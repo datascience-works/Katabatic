@@ -88,12 +88,12 @@ class TabularPreprocessor:
 
         out = pd.concat(frames, axis=1)[self._col_order]
         for col, dtype in self._dtypes.items():
-            if np.issubdtype(dtype, np.integer):
+            if col in self.numeric_cols and np.issubdtype(dtype, np.integer):
                 out[col] = out[col].round().astype(dtype)
-            elif np.issubdtype(dtype, np.floating):
+            elif col in self.numeric_cols and np.issubdtype(dtype, np.floating):
                 out[col] = out[col].astype(dtype)
             else:
-                out[col] = out[col].astype(dtype)
+                out[col] = pd.to_numeric(out[col], errors="ignore").astype(dtype, errors="ignore")
         return out
 
 
