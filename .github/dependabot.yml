@@ -42,3 +42,11 @@ updates:
           - "*"
     commit-message:
       prefix: "chore(ci)"
+
+  - package-ecosystem: "pre-commit"
+    directory: "/"
+    target-branch: "development"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"
