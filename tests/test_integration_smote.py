@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import re
+from pathlib import Path
 
 import pandas as pd
 import pytest
@@ -11,8 +13,12 @@ from tests.conftest import require_backend
 
 require_backend("imblearn", "over_sampling")
 
+from katabatic.artifacts import LocalArtifactStore  # noqa: E402
 from katabatic.models.smote import models as smote_models  # noqa: E402
 from katabatic.models.smote.models import SMOTEModel  # noqa: E402
+from katabatic.pipeline.train_test_split.pipeline import (  # noqa: E402
+    TrainTestSplitPipeline,
+)
 
 
 def _write_training_data(tmp_path, df):
@@ -25,6 +31,48 @@ def _write_training_data(tmp_path, df):
     df.to_csv(data_dir / "train_full.csv", index=False)
 
     return str(data_dir), str(synth_dir)
+
+
+@pytest.mark.integration
+@pytest.mark.smote
+def test_smote_artifact_pipeline_smoke(tmp_path, tiny_binary_csv):
+    store = LocalArtifactStore(tmp_path / "artifacts")
+    pipe = TrainTestSplitPipeline(model=SMOTEModel())
+
+    res = pipe.run(
+        input_csv=str(tiny_binary_csv),
+        dataset_name="smoke",
+        artifact_store=store,
+        model_name="smote",
+        test_size=0.3,
+        seed=42,
+    )
+
+    mr = res["model_ref"]
+    assert re.match(r"^models/smote_smoke_train-\d{8}-\d{6}$", mr.root_relpath), (
+        mr.root_relpath
+    )
+
+    x_synth = store.open_path(f"{mr.synthetic_relpath}/x_synth.csv")
+    y_synth = store.open_path(f"{mr.synthetic_relpath}/y_synth.csv")
+    assert x_synth.is_file()
+    assert y_synth.is_file()
+
+    ev = res["evaluation_refs"][0]
+    assert ev is not None
+    assert Path(store.open_path(ev.metrics_relpath)).is_file()
+    assert Path(store.open_path(ev.report_relpath)).is_file()
+
+    state_file = SMOTEModel.ARTIFACT_STATE_FILES[0]
+    state_path = store.open_path(f"{mr.state_relpath}/{state_file}")
+    assert state_path.is_file(), f"state file was never written: {state_path}"
+
+    reloaded = SMOTEModel.load_from_ref(store, mr)
+    assert reloaded.is_fitted, "reloaded model is not marked fitted"
+
+    out = reloaded.sample(10)
+    assert len(out) == 10
+    assert list(out.columns) == list(reloaded.column_names)
 
 
 @pytest.mark.integration

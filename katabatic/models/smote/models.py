@@ -5,8 +5,11 @@ Uses imbalanced-learn's SMOTE for synthetic oversampling
 
 from __future__ import annotations
 
+import os
+import pickle
 import time
 import warnings
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -18,6 +21,10 @@ from katabatic.models.smote.utils import (
     save_metadata,
     save_synthetic_data,
 )
+
+if TYPE_CHECKING:
+    from katabatic.artifacts.base import ArtifactStore
+    from katabatic.artifacts.refs import ModelRef
 
 warnings.filterwarnings("ignore")
 
@@ -131,6 +138,95 @@ class _PaperAlignedSamplingMixin:
         return X_new, y_new
 
 
+def _build_smote_estimator(
+    variant: str,
+    k_neighbors: int,
+    sampling_strategy: str,
+    random_state: int,
+    categorical_features: list[str] | list[int] | None,
+):
+    """Construct the paper-aligned SMOTE-family estimator for a variant.
+
+    Used both by SMOTEModel.train() and SMOTEModel.load_from_ref(), since the
+    estimator itself isn't picklable (its class is defined locally here, so
+    pickle can't resolve it by qualified name) and must be rebuilt fresh.
+    """
+    from imblearn.over_sampling import SMOTE, SMOTEN, SMOTENC
+
+    class PaperAlignedSMOTE(_PaperAlignedSamplingMixin, SMOTE):
+        """Numeric SMOTE with paper-aligned source scheduling."""
+
+    class PaperAlignedSMOTENC(_PaperAlignedSamplingMixin, SMOTENC):
+        """SMOTE-NC with paper-aligned source scheduling."""
+
+    class PaperAlignedSMOTEN(SMOTEN):
+        """
+        SMOTE-N with systematic source-sample scheduling.
+
+        The categorical sample-generation rule remains the SMOTEN
+        implementation from imbalanced-learn. Only source-sample
+        scheduling is changed to use complete passes followed by
+        a partial pass without replacement.
+        """
+
+        def _make_samples(
+            self,
+            X_class,
+            klass,
+            y_dtype,
+            nn_indices,
+            n_samples,
+        ):
+            from scipy.stats import mode
+            from sklearn.utils import check_random_state
+
+            random_state = check_random_state(self.random_state)
+
+            samples_indices = _paper_aligned_anchor_rows(
+                X_class.shape[0],
+                n_samples,
+                random_state,
+            )
+
+            X_new = np.squeeze(
+                mode(
+                    X_class[nn_indices[samples_indices]],
+                    axis=1,
+                    keepdims=True,
+                ).mode,
+                axis=1,
+            )
+
+            y_new = np.full(
+                n_samples,
+                fill_value=klass,
+                dtype=y_dtype,
+            )
+
+            return X_new, y_new
+
+    if variant == "smote":
+        return PaperAlignedSMOTE(
+            k_neighbors=k_neighbors,
+            sampling_strategy=sampling_strategy,
+            random_state=random_state,
+        )
+
+    if variant == "smotenc":
+        return PaperAlignedSMOTENC(
+            categorical_features=categorical_features,
+            k_neighbors=k_neighbors,
+            sampling_strategy=sampling_strategy,
+            random_state=random_state,
+        )
+
+    return PaperAlignedSMOTEN(
+        k_neighbors=k_neighbors,
+        sampling_strategy=sampling_strategy,
+        random_state=random_state,
+    )
+
+
 class SMOTEModel(BaseModel):
     """
     SMOTE-family synthetic oversampling model.
@@ -145,6 +241,8 @@ class SMOTEModel(BaseModel):
         - sampling_strategy: "auto"
         - random_state: 42
     """
+
+    ARTIFACT_STATE_FILES = ("smote_state.pkl",)
 
     def __init__(
         self,
@@ -172,6 +270,8 @@ class SMOTEModel(BaseModel):
         self.column_names = None
         self.X_train = None
         self.y_train = None
+        self.k_neighbors_ = None
+        self.categorical_features_ = None
 
     def train(
         self,
@@ -183,63 +283,11 @@ class SMOTEModel(BaseModel):
         """Train the selected SMOTE-family model."""
 
         try:
-            from imblearn.over_sampling import SMOTE, SMOTEN, SMOTENC
+            import imblearn  # noqa: F401
         except ImportError:
             raise ImportError(
                 "imbalanced-learn not found. Install with: pip install imbalanced-learn"
             )
-
-        class PaperAlignedSMOTE(_PaperAlignedSamplingMixin, SMOTE):
-            """Numeric SMOTE with paper-aligned source scheduling."""
-
-        class PaperAlignedSMOTENC(_PaperAlignedSamplingMixin, SMOTENC):
-            """SMOTE-NC with paper-aligned source scheduling."""
-
-        class PaperAlignedSMOTEN(SMOTEN):
-            """
-            SMOTE-N with systematic source-sample scheduling.
-
-            The categorical sample-generation rule remains the SMOTEN
-            implementation from imbalanced-learn. Only source-sample
-            scheduling is changed to use complete passes followed by
-            a partial pass without replacement.
-            """
-
-            def _make_samples(
-                self,
-                X_class,
-                klass,
-                y_dtype,
-                nn_indices,
-                n_samples,
-            ):
-                from scipy.stats import mode
-                from sklearn.utils import check_random_state
-
-                random_state = check_random_state(self.random_state)
-
-                samples_indices = _paper_aligned_anchor_rows(
-                    X_class.shape[0],
-                    n_samples,
-                    random_state,
-                )
-
-                X_new = np.squeeze(
-                    mode(
-                        X_class[nn_indices[samples_indices]],
-                        axis=1,
-                        keepdims=True,
-                    ).mode,
-                    axis=1,
-                )
-
-                y_new = np.full(
-                    n_samples,
-                    fill_value=klass,
-                    dtype=y_dtype,
-                )
-
-                return X_new, y_new
 
         # Load training data.
         df = load_training_data(data_dir)
@@ -255,6 +303,7 @@ class SMOTEModel(BaseModel):
             y_train,
             self.k_neighbors,
         )
+        self.k_neighbors_ = adjusted_k
 
         variant_label = {
             "smote": "SMOTE",
@@ -274,12 +323,7 @@ class SMOTEModel(BaseModel):
                 )
 
             X_train = X_df.to_numpy()
-
-            self.smote = PaperAlignedSMOTE(
-                k_neighbors=adjusted_k,
-                sampling_strategy=self.sampling_strategy,
-                random_state=self.random_state,
-            )
+            self.categorical_features_ = None
 
         elif self.variant == "smotenc":
             categorical_features = self.categorical_features
@@ -300,24 +344,21 @@ class SMOTEModel(BaseModel):
 
             # Keep the DataFrame so SMOTENC can use column names.
             X_train = X_df
-
-            self.smote = PaperAlignedSMOTENC(
-                categorical_features=categorical_features,
-                k_neighbors=adjusted_k,
-                sampling_strategy=self.sampling_strategy,
-                random_state=self.random_state,
-            )
+            self.categorical_features_ = categorical_features
 
         else:
             # SMOTEN handles categorical data using its categorical
             # encoder and Value Difference Metric.
             X_train = X_df
+            self.categorical_features_ = None
 
-            self.smote = PaperAlignedSMOTEN(
-                k_neighbors=adjusted_k,
-                sampling_strategy=self.sampling_strategy,
-                random_state=self.random_state,
-            )
+        self.smote = _build_smote_estimator(
+            self.variant,
+            adjusted_k,
+            self.sampling_strategy,
+            self.random_state,
+            self.categorical_features_,
+        )
 
         self.X_train = X_train
 
@@ -399,7 +440,57 @@ class SMOTEModel(BaseModel):
             f"  y -> {y_path_out}"
         )
 
+        artifact_state_dir = kwargs.get("artifact_state_dir")
+        if artifact_state_dir:
+            self._save_artifact_state(artifact_state_dir)
+
         return self
+
+    def _save_artifact_state(self, artifact_state_dir: str) -> None:
+        """
+        Persist fitted state so the model can be rebuilt by load_from_ref().
+
+        self.smote isn't included: it's an instance of a class built locally
+        inside _build_smote_estimator(), so pickle can't resolve it by
+        qualified name. load_from_ref() rebuilds it instead from the
+        persisted variant/k_neighbors_/categorical_features_ attributes.
+        """
+        os.makedirs(artifact_state_dir, exist_ok=True)
+
+        payload = {
+            "attrs": {k: v for k, v in self.__dict__.items() if k != "smote"},
+        }
+
+        target = os.path.join(artifact_state_dir, self.ARTIFACT_STATE_FILES[0])
+        with open(target, "wb") as fh:
+            pickle.dump(payload, fh)
+
+    @classmethod
+    def load_from_ref(cls, store: ArtifactStore, ref: ModelRef) -> SMOTEModel:
+        """Rehydrate a fitted SMOTEModel from a versioned artifact."""
+        state_file = cls.ARTIFACT_STATE_FILES[0]
+        state_path = store.open_path(f"{ref.state_relpath}/{state_file}")
+
+        if not state_path.is_file():
+            raise FileNotFoundError(
+                f"No SMOTE state at {state_path}. The model must be trained "
+                f"through a pipeline that passes artifact_state_dir."
+            )
+
+        with open(state_path, "rb") as fh:
+            payload = pickle.load(fh)  # nosec B301: loading our own saved model artifact
+
+        instance = cls()
+        instance.__dict__.update(payload["attrs"])
+        instance.smote = _build_smote_estimator(
+            instance.variant,
+            instance.k_neighbors_,
+            instance.sampling_strategy,
+            instance.random_state,
+            instance.categorical_features_,
+        )
+
+        return instance
 
     def evaluate(self, *args, **kwargs) -> float:
         if not self.is_fitted:
