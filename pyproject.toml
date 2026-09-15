@@ -107,7 +107,6 @@ omit = [
     "katabatic/models/gmm/*",
     "katabatic/models/medgan/*",
     "katabatic/models/naivebayes/*",
-    "katabatic/models/smote/*",
     "katabatic/models/synthpop/*",
     "katabatic/models/tabddpm/*",
     "katabatic/models/tabkde_updated/*",
@@ -140,6 +139,7 @@ markers = [
     "ctgan: requires ctgan extra",
     "pategan: requires pategan extra",
     "tabsyn: requires tabsyn extra",
+    "smote: requires smote extra",
 ]
 
 [tool.ruff]

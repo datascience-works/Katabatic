@@ -110,6 +110,9 @@ jobs:
             great:
               - 'katabatic/models/great/**'
               - 'tests/test_integration_great.py'
+            smote:
+              - 'katabatic/models/smote/**'
+              - 'tests/test_integration_smote.py'
       - name: Build Dynamic Matrix
         id: build-matrix
         run: |
@@ -118,7 +121,8 @@ jobs:
             {"model": "ctgan", "torch": true},
             {"model": "pategan", "torch": false},
             {"model": "tabsyn", "torch": true},
-            {"model": "great", "torch": true}
+            {"model": "great", "torch": true},
+            {"model": "smote", "torch": false}
           ]'
 
           # If a core file changed, run all models.
