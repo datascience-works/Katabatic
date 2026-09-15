@@ -1,6 +1,6 @@
 [project]
 name = "katabatic"
-version = "0.2.0"
+version = "0.3.1"
 description = "Framework for synthetic tabular data generation, evaluation, and artifact-based pipelines."
 readme = "README.md"
 license = "MIT"
@@ -29,26 +29,26 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-codi = ["torch>=2.13.0,<3.0.0"]
-ctgan = ["torch>=2.13.0,<3.0.0"]
+codi = ["torch>=2.14.0,<3.0.0"]
+ctgan = ["torch>=2.14.0,<3.0.0"]
 ganblr = [
     "tensorflow==2.21.*",
-    "tensorflow-io==0.31.0",
+    "tensorflow-io==0.37.1",
     "pgmpy>=0.1.25",
     "pyitlib==0.3.1",
 ]
 great = [
     "transformers>=4.57.0,<5.0.0",
     "huggingface-hub>=0.34.0,<1.0",
-    "torch>=2.13.0,<3.0.0",
+    "torch>=2.14.0,<3.0.0",
     "datasets>=4.0.0,<5.0.0",
     "accelerate>=0.26.0",
     "fsspec>=2023.5.0,<=2026.2.0",
 ]
-medgan = ["torch>=2.13.0,<3.0.0"]
+medgan = ["torch>=2.14.0,<3.0.0"]
 pategan = [
     "tensorflow==2.21.*",
-    "tensorflow-io==0.31.0",
+    "tensorflow-io==0.37.1",
 ]
 smote = ["imbalanced-learn==0.14.2"]
 mst = [
@@ -57,16 +57,16 @@ mst = [
     "private-pgm @ git+https://github.com/ryan112358/private-pgm.git@01f02f17eba440f4e76c1d06fa5ee9eed0bd2bca",
 ]
 tabddpm = [
-    "torch>=2.13.0,<3.0.0",
+    "torch>=2.14.0,<3.0.0",
     "rtdl_revisiting_models==0.0.2",
     "category-encoders>=2.8.1,<3.0.0",
 ]
 tabpfgen = [
-    "torch>=2.13.0,<3.0.0",
+    "torch>=2.14.0,<3.0.0",
     "tabpfn>=2.0",
 ]
 tabsyn = [
-    "torch>=2.13.0,<3.0.0",
+    "torch>=2.14.0,<3.0.0",
     "tqdm>=4.66.0,<5.0.0",
     "category-encoders>=2.8.1,<3.0.0",
     "tomli>=2.0.1,<3.0.0",
@@ -75,15 +75,15 @@ tabsyn = [
 eval = ["xgboost>=3.2.0,<4.0.0"]
 all = [
     "tensorflow==2.21.*",
-    "tensorflow-io==0.31.0",
+    "tensorflow-io==0.37.1",
     "pgmpy>=0.1.25",
     "pyitlib==0.3.1",
-    "statsmodels>=0.14.4,<0.15.0",
+    "imbalanced-learn==0.14.2",
     "transformers>=4.57.0,<5.0.0",
     "huggingface-hub>=0.34.0,<1.0",
-    "torch>=2.13.0,<3.0.0",
+    "torch>=2.14.0,<3.0.0",
     "datasets>=4.0.0,<5.0.0",
-    "xgboost>=3.0.2,<4.0.0",
+    "xgboost>=3.2.0,<4.0.0",
     "tqdm>=4.66.0,<5.0.0",
     "tomli>=2.0.1,<3.0.0",
     "tomli-w>=1.0.0,<2.0.0",
@@ -103,12 +103,12 @@ Documentation = "https://github.com/datascience-works/Katabatic#readme"
 # Experimental models are excluded until they have integration tests.
 omit = [
     "katabatic/models/codi/*",
-    "katabatic/models/great",
+    "katabatic/models/gmm/*",
+    "katabatic/models/great/*",
     "katabatic/models/medgan/*",
-    "katabatic/models/pategan/*",
+    "katabatic/models/naivebayes/*",
+    "katabatic/models/smote/*",
     "katabatic/models/tabddpm/*",
-    "katabatic/models/tabsyn/*",
-    "katabatic/cli/*",
     "katabatic/models/mst/*",
 ]
 
@@ -119,7 +119,7 @@ include = ["CHANGELOG.md"]
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^2.3.1"
-ruff = "^0.16.5"
+ruff = "^0.16.6"
 # Development / test tooling
 ipykernel = "^7.3.0"
 pytest = "^9.1.1"
@@ -136,6 +136,8 @@ markers = [
     "ganblr: requires ganblr extra",
     "great: requires great extra",
     "ctgan: requires ctgan extra",
+    "pategan: requires pategan extra",
+    "tabsyn: requires tabsyn extra",
 ]
 
 [tool.ruff]
