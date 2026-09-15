@@ -51,6 +51,11 @@ pategan = [
     "tensorflow-io==0.37.1",
 ]
 smote = ["imbalanced-learn==0.14.2"]
+mst = [
+    "smartnoise-synth==1.0.5",
+    "opendp>=0.14.1,<0.15",
+    "private-pgm @ git+https://github.com/ryan112358/private-pgm.git@01f02f17eba440f4e76c1d06fa5ee9eed0bd2bca",
+]
 tabddpm = [
     "torch>=2.14.0,<3.0.0",
     "rtdl_revisiting_models==0.0.2",
@@ -104,7 +109,7 @@ omit = [
     "katabatic/models/naivebayes/*",
     "katabatic/models/smote/*",
     "katabatic/models/tabddpm/*",
-    "katabatic/models/tabkde_updated/*",
+    "katabatic/models/mst/*",
 ]
 
 [tool.poetry]
