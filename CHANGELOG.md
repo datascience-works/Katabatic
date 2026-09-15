@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-09-12
+
+### Fixed
+
+- `publish-pypi.yml` triggered on both `release: published` and `push: tags: v*`, so publishing a GitHub Release from a fresh tag fired both events and started two runs against the same version; only the first could succeed since PyPI rejects re-uploading an existing version/filename, even from a legitimate rebuild. Removed the redundant tag-push trigger, leaving `release: published` (and manual dispatch) as the only ways to publish.
+- `publish-pypi.yml` unconditionally passed `password: ${{ secrets.PYPI_API_TOKEN }}`, which disables PyPI Trusted Publishing even when configured. Reverted to Trusted Publishing (the workflow already carries the required `id-token: write` permission) and added `skip-existing: true` as a safety net against future duplicate-publish attempts.
+- Ruff import-order violation in `katabatic/models/great/great_dataset.py`.
+
 ## [0.3.0] - 2026-09-12
 
 ### Added
