@@ -5,17 +5,31 @@ sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 
-from katabatic.models.tvaegan.models import TVAEGANModel
 from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
+
+from katabatic.models.tvaegan.models import TVAEGANModel
 
 config = RunConfig(
     dataset_name="adult",
     model_name="tvaegan",
     categorical_cols=[
-        "workclass", "education", "marital-status", "occupation",
-        "relationship", "race", "sex", "native-country",
+        "workclass",
+        "education",
+        "marital-status",
+        "occupation",
+        "relationship",
+        "race",
+        "sex",
+        "native-country",
     ],
-    continuous_cols=["age", "fnlwgt", "education-num", "capital-gain", "capital-loss", "hours-per-week"],
+    continuous_cols=[
+        "age",
+        "fnlwgt",
+        "education-num",
+        "capital-gain",
+        "capital-loss",
+        "hours-per-week",
+    ],
     target_col_raw="class",
     constraints=None,
 )

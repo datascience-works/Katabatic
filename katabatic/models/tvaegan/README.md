@@ -2,7 +2,7 @@
 
 ## Model Overview
 
-TVAE-GAN generates synthetic tabular data by combining a Variational Autoencoder with a Generative Adversarial Network. A single shared network acts as both the VAE's decoder and the GAN's generator, and reconstruction quality is measured using the discriminator's internal 
+TVAE-GAN generates synthetic tabular data by combining a Variational Autoencoder with a Generative Adversarial Network. A single shared network acts as both the VAE's decoder and the GAN's generator, and reconstruction quality is measured using the discriminator's internal
 features rather than raw data values, a "learned similarity metric" rather than a fixed one like MSE.
 
 This implementation was built from scratch to match the original paper's architecture, since no working implementation existed in this project's main codebase.
@@ -21,7 +21,7 @@ Paper: https://arxiv.org/abs/1512.09300
 
 **What was kept the same, what was changed:**
 
-This implementation follows the paper's core architecture, a VAE encoder, a single shared decoder/generator network, and a discriminator whose hidden-layer features are used for the reconstruction loss, along with the paper's three-part training objective (KL prior discriminator-feature reconstruction, adversarial loss). 
+This implementation follows the paper's core architecture, a VAE encoder, a single shared decoder/generator network, and a discriminator whose hidden-layer features are used for the reconstruction loss, along with the paper's three-part training objective (KL prior discriminator-feature reconstruction, adversarial loss).
 The main change is the data type: the paper is written for 64x64 images (CelebA faces) using convolutional networks, this implementation uses simple MLPs, since tabular columns have no spatial structure to convolve over.
 
 **Parts not specified in the paper:**
@@ -34,7 +34,7 @@ TVAE-GAN trains three networks together:
 
 2. **Decoder/Generator**: one shared network reconstructs real rows from their latent code, and generates new rows from random latent vectors.
 
-3. **Discriminator**: tells real rows apart from reconstructed or generated ones, and its internal features are used to judge 
+3. **Discriminator**: tells real rows apart from reconstructed or generated ones, and its internal features are used to judge
    reconstruction quality.
 
 ### Training Details
@@ -83,7 +83,7 @@ Generated files (when using `train()`):
 - `synthetic.csv` (combined)
 
 ## Evaluation
-`evaluate()` returns a reconstruction loss, measured in the discriminator's feature space rather than raw data space (matching the 
+`evaluate()` returns a reconstruction loss, measured in the discriminator's feature space rather than raw data space (matching the
 paper's own similarity metric, Eq. 6-7). Lower is better.
 
 The full evaluation used for validation is `SyntheticEvaluationPipeline`, which reports 6 dimensions (fidelity, utility, diversity, privacy, consistency, stability) combined into a composite score.
@@ -95,12 +95,12 @@ The full evaluation used for validation is `SyntheticEvaluationPipeline`, which 
 
 ## Limitations
 - Consistency remains poor (discriminator detects synthetic data ~99.96% of the time on Adult), though reducing the discriminator's capacity relative to the encoder/decoder (discriminator_hidden_dims=[32,16]) substantially improved overall results: composite score 0.43 to 0.79, utility went from crashing to 0.89, consistency nearly doubled. Not fully resolved.
-- Severe mode collapse can occur on imbalanced datasets under default 
+- Severe mode collapse can occur on imbalanced datasets under default
   settings ,resolved via more training epochs and/or a smaller discriminator.
 - No early stopping implemented yet
 
 ## Installation
-No extra dependencies required beyond the core project setup 
+No extra dependencies required beyond the core project setup
 (uses `torch` and `sklearn`, already required elsewhere).
 
 ## Usage

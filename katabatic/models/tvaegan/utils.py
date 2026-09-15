@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass, field
-from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -39,12 +38,19 @@ class TabularPreprocessor:
 
     @classmethod
     def infer_and_fit(
-        cls, df: pd.DataFrame, force_categorical: list[str] | None = None, max_unique: int = 20
-    ) -> "TabularPreprocessor":
+        cls,
+        df: pd.DataFrame,
+        force_categorical: list[str] | None = None,
+        max_unique: int = 20,
+    ) -> TabularPreprocessor:
         force_categorical = set(force_categorical or [])
         cat_cols, num_cols = [], []
         for col in df.columns:
-            if col in force_categorical or df[col].dtype == object or df[col].nunique() <= max_unique:
+            if (
+                col in force_categorical
+                or df[col].dtype == object
+                or df[col].nunique() <= max_unique
+            ):
                 cat_cols.append(col)
             else:
                 num_cols.append(col)
@@ -74,7 +80,9 @@ class TabularPreprocessor:
 
     def decode(self, arr: np.ndarray) -> pd.DataFrame:
         cat_width = (
-            sum(len(c) for c in self._encoder.categories_) if self.categorical_cols else 0
+            sum(len(c) for c in self._encoder.categories_)
+            if self.categorical_cols
+            else 0
         )
         cat_part, num_part = arr[:, :cat_width], arr[:, cat_width:]
 
@@ -93,7 +101,9 @@ class TabularPreprocessor:
             elif col in self.numeric_cols and np.issubdtype(dtype, np.floating):
                 out[col] = out[col].astype(dtype)
             else:
-                out[col] = pd.to_numeric(out[col], errors="ignore").astype(dtype, errors="ignore")
+                out[col] = pd.to_numeric(out[col], errors="ignore").astype(
+                    dtype, errors="ignore"
+                )
         return out
 
 
@@ -123,7 +133,9 @@ class Encoder(torch.nn.Module):
 
     def __init__(self, data_dim: int, hidden_dims: list[int], latent_dim: int) -> None:
         super().__init__()
-        self.body = _MLP(data_dim, hidden_dims, hidden_dims[-1] if hidden_dims else data_dim)
+        self.body = _MLP(
+            data_dim, hidden_dims, hidden_dims[-1] if hidden_dims else data_dim
+        )
         feat_dim = hidden_dims[-1] if hidden_dims else data_dim
         self.to_mu = torch.nn.Linear(feat_dim, latent_dim)
         self.to_logsigma = torch.nn.Linear(feat_dim, latent_dim)
@@ -148,7 +160,8 @@ class DecoderGenerator(torch.nn.Module):
 
     def forward(self, z: torch.Tensor) -> torch.Tensor:
         return self.out_activation(self.net(z))
-    
+
+
 class Discriminator(torch.nn.Module):
     """
     GAN discriminator (paper Section 2.2), with the hidden-layer feature
@@ -164,7 +177,9 @@ class Discriminator(torch.nn.Module):
         blocks = []
         for i in range(len(dims) - 1):
             blocks.append(
-                torch.nn.Sequential(torch.nn.Linear(dims[i], dims[i + 1]), torch.nn.LeakyReLU(0.2))
+                torch.nn.Sequential(
+                    torch.nn.Linear(dims[i], dims[i + 1]), torch.nn.LeakyReLU(0.2)
+                )
             )
         self.blocks = torch.nn.ModuleList(blocks)
         self.classifier = torch.nn.Linear(dims[-1], 1)
@@ -185,7 +200,8 @@ class Discriminator(torch.nn.Module):
         for block in self.blocks:
             h = block(h)
         return torch.sigmoid(self.classifier(h))
-    
+
+
 def reparameterize(mu: torch.Tensor, logsigma: torch.Tensor) -> torch.Tensor:
     """z = mu + sigma * eps, eps ~ N(0, I) (paper Eq. 1)."""
     sigma = torch.exp(logsigma)
@@ -199,7 +215,7 @@ def kl_prior_loss(mu: torch.Tensor, logsigma: torch.Tensor) -> torch.Tensor:
 
 
 def discriminator_feature_loss(
-    disc: "Discriminator", x_real: torch.Tensor, x_recon: torch.Tensor
+    disc: Discriminator, x_real: torch.Tensor, x_recon: torch.Tensor
 ) -> torch.Tensor:
     """
     L_dis_like: reconstruction error measured in the discriminator's
@@ -214,7 +230,10 @@ def discriminator_feature_loss(
 
 
 def gan_loss(
-    disc: "Discriminator", x_real: torch.Tensor, x_recon: torch.Tensor, x_prior: torch.Tensor
+    disc: Discriminator,
+    x_real: torch.Tensor,
+    x_recon: torch.Tensor,
+    x_prior: torch.Tensor,
 ) -> torch.Tensor:
     """
     L_GAN (paper Eq. 10): standard binary cross-entropy adversarial loss,
@@ -229,17 +248,18 @@ def gan_loss(
     prior_loss = F.binary_cross_entropy(prior_pred, torch.zeros_like(prior_pred))
     return real_loss + recon_loss + prior_loss
 
+
 @dataclass
 class TVAEGANConfig:
     latent_dim: int = 32
     hidden_dims: list[int] = field(default_factory=lambda: [128, 64])
-    discriminator_hidden_dims: list[int] | None = None  
+    discriminator_hidden_dims: list[int] | None = None
     epochs: int = 50
-    batch_size: int = 64          # paper's value
-    lr: float = 3e-4              # paper's value (0.0003)
-    gamma: float = 1.0            # paper's Dec weighting (Eq. 9); not given a
-                                   # specific value in the paper's main text,
-                                   # 1.0 is an inferred, documented default
+    batch_size: int = 64  # paper's value
+    lr: float = 3e-4  # paper's value (0.0003)
+    gamma: float = 1.0  # paper's Dec weighting (Eq. 9); not given a
+    # specific value in the paper's main text,
+    # 1.0 is an inferred, documented default
     seed: int = 42
 
 
@@ -269,9 +289,11 @@ def train_vaegan(
     data_dim = data.shape[1]
 
     encoder = Encoder(data_dim, cfg.hidden_dims, cfg.latent_dim).to(device)
-    decoder_generator = DecoderGenerator(cfg.latent_dim, list(reversed(cfg.hidden_dims)), data_dim).to(device)
+    decoder_generator = DecoderGenerator(
+        cfg.latent_dim, list(reversed(cfg.hidden_dims)), data_dim
+    ).to(device)
     disc_hidden = cfg.discriminator_hidden_dims or cfg.hidden_dims
-    discriminator = Discriminator(data_dim, disc_hidden).to(device)    
+    discriminator = Discriminator(data_dim, disc_hidden).to(device)
     # Paper: single RMSProp learning rate for all networks (Section 4)
     enc_opt = torch.optim.RMSprop(encoder.parameters(), lr=cfg.lr)
     dec_opt = torch.optim.RMSprop(decoder_generator.parameters(), lr=cfg.lr)
@@ -290,15 +312,12 @@ def train_vaegan(
             x = tensor_data[idx]
             batch_size = x.shape[0]
 
-            
             mu, logsigma = encoder(x)
             z = reparameterize(mu, logsigma)
             x_recon = decoder_generator(z)
 
             z_prior = torch.randn(batch_size, cfg.latent_dim, device=device)
-            x_prior = decoder_generator(z_prior)
 
-            
             enc_opt.zero_grad()
             l_prior = kl_prior_loss(mu, logsigma)
             l_dis_like_enc = discriminator_feature_loss(discriminator, x, x_recon)
@@ -306,13 +325,14 @@ def train_vaegan(
             encoder_loss.backward(retain_graph=True)
             enc_opt.step()
 
-            
             dec_opt.zero_grad()
             # Recompute reconstruction/prior with fresh graph tied to decoder
             mu_d, logsigma_d = encoder(x)
             z_d = reparameterize(mu_d, logsigma_d)
             x_recon_d = decoder_generator(z_d)
-            x_prior_d = decoder_generator(torch.randn(batch_size, cfg.latent_dim, device=device))
+            x_prior_d = decoder_generator(
+                torch.randn(batch_size, cfg.latent_dim, device=device)
+            )
 
             l_dis_like_dec = discriminator_feature_loss(discriminator, x, x_recon_d)
             l_gan_dec = gan_loss(discriminator, x, x_recon_d, x_prior_d)
@@ -320,11 +340,12 @@ def train_vaegan(
             decoder_loss.backward(retain_graph=True)
             dec_opt.step()
 
-            
             dis_opt.zero_grad()
             x_recon_dis = decoder_generator(z.detach())
             x_prior_dis = decoder_generator(z_prior.detach())
-            l_gan_dis = gan_loss(discriminator, x, x_recon_dis.detach(), x_prior_dis.detach())
+            l_gan_dis = gan_loss(
+                discriminator, x, x_recon_dis.detach(), x_prior_dis.detach()
+            )
             l_gan_dis.backward()
             dis_opt.step()
 

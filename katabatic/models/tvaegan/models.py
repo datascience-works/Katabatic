@@ -4,13 +4,12 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Optional
 
-import numpy as np
 import pandas as pd
 import torch
 
 from katabatic.models.base_model import Model
+
 from .utils import (
     DecoderGenerator,
     Discriminator,
@@ -32,8 +31,8 @@ class TVAEGANModel(Model):
     def __init__(
         self,
         latent_dim: int = 32,
-        hidden_dims: Optional[list[int]] = None,
-        discriminator_hidden_dims: Optional[list[int]] = None,
+        hidden_dims: list[int] | None = None,
+        discriminator_hidden_dims: list[int] | None = None,
         epochs: int = 50,
         batch_size: int = 64,
         lr: float = 3e-4,
@@ -53,14 +52,16 @@ class TVAEGANModel(Model):
             seed=seed,
         )
 
-        self.preprocessor: Optional[TabularPreprocessor] = None
-        self.encoder: Optional[Encoder] = None
-        self.decoder_generator: Optional[DecoderGenerator] = None
-        self.discriminator: Optional[Discriminator] = None
-        self.y_col_name_: Optional[str] = None
+        self.preprocessor: TabularPreprocessor | None = None
+        self.encoder: Encoder | None = None
+        self.decoder_generator: DecoderGenerator | None = None
+        self.discriminator: Discriminator | None = None
+        self.y_col_name_: str | None = None
         self.is_fitted = False
 
-    def train(self, dataset_dir: str | Path, synthetic_dir: str | Path, **kwargs) -> "TVAEGANModel":
+    def train(
+        self, dataset_dir: str | Path, synthetic_dir: str | Path, **kwargs
+    ) -> TVAEGANModel:
         dataset_dir = Path(dataset_dir)
         synthetic_dir = Path(synthetic_dir)
         synthetic_dir.mkdir(parents=True, exist_ok=True)
@@ -101,7 +102,7 @@ class TVAEGANModel(Model):
 
         return self
 
-    def sample(self, n: int, seed: Optional[int] = None, **kwargs) -> pd.DataFrame:
+    def sample(self, n: int, seed: int | None = None, **kwargs) -> pd.DataFrame:
         if not self.is_fitted:
             raise RuntimeError("TVAEGANModel must be trained before calling sample().")
 
@@ -114,8 +115,7 @@ class TVAEGANModel(Model):
             x_gen = self.decoder_generator(z).cpu().numpy()
 
         return self.preprocessor.decode(x_gen)
-    
-    
+
     def evaluate(self, *, data_dir: str, split: str = "test", **kwargs) -> float:
         """
         Returns a reconstruction loss (lower is better), consistent with
@@ -123,17 +123,23 @@ class TVAEGANModel(Model):
         loss from training (paper Eq. 6-7), applied to the given split.
         """
         if not self.is_fitted:
-            raise RuntimeError("TVAEGANModel must be trained before calling evaluate().")
+            raise RuntimeError(
+                "TVAEGANModel must be trained before calling evaluate()."
+            )
 
         from pathlib import Path
+
         import pandas as pd
-        from .utils import reparameterize, discriminator_feature_loss
+
+        from .utils import discriminator_feature_loss, reparameterize
 
         data_dir = Path(data_dir)
         x_path = data_dir / f"x_{split}.csv"
         y_path = data_dir / f"y_{split}.csv"
         if not x_path.exists() or not y_path.exists():
-            raise FileNotFoundError(f"Expected x_{split}.csv and y_{split}.csv in {data_dir}")
+            raise FileNotFoundError(
+                f"Expected x_{split}.csv and y_{split}.csv in {data_dir}"
+            )
 
         x_df = pd.read_csv(x_path)
         y_df = pd.read_csv(y_path)
