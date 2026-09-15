@@ -93,4 +93,5 @@ def test_supported_models_list():
         "ctgan",
         "pategan",
         "tabsyn",
+        "great",
     }

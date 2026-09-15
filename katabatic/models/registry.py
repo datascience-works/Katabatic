@@ -1,7 +1,7 @@
 """Model registry for dynamic model loading.
 
 Officially supported models (smoke-tested, PyPI extras): ``ganblr``, ``ctgan``,
-``pategan``.
+``pategan``, ``tabsyn``, ``great``.
 Other registered models are experimental; see ``docs/EXPERIMENTAL_MODELS.md``.
 """
 
@@ -52,7 +52,7 @@ class ModelRegistry:
             "class": "GReaT",
             "dependencies": ["transformers", "torch"],
             "extra": "great",
-            "supported": False,
+            "supported": True,
         },
         "tabsyn": {
             "module": "katabatic.models.tabsyn.models",
