@@ -38,7 +38,9 @@ class PlanarFlow(nn.Module):
         activation = (self.w * x).sum(dim=1, keepdim=True) + self.b
         z = x + u_hat * h(activation)
         psi = h_prime(activation) * self.w
-        log_det = torch.log(torch.abs(1.0 + (u_hat * psi).sum(dim=1, keepdim=True)) + 1e-8)
+        log_det = torch.log(
+            torch.abs(1.0 + (u_hat * psi).sum(dim=1, keepdim=True)) + 1e-8
+        )
         return z, log_det
 
 
@@ -156,7 +158,11 @@ class GatedLayer(nn.Module):
 class MLPLayer(nn.Module):
     def __init__(self, in_dim: int, out_dim: int, gate: bool) -> None:
         super().__init__()
-        self.layer = GatedLayer(in_dim, out_dim) if gate else nn.Sequential(nn.Linear(in_dim, out_dim), nn.ReLU())
+        self.layer = (
+            GatedLayer(in_dim, out_dim)
+            if gate
+            else nn.Sequential(nn.Linear(in_dim, out_dim), nn.ReLU())
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.layer(x)
@@ -185,14 +191,20 @@ class FlowVAE(nn.Module):
         self.categorical_weight = categorical_weight
         self.encoder = nn.ModuleList(
             [MLPLayer(in_dim, hidden_dim, gate)]
-            + [MLPLayer(hidden_dim, hidden_dim, gate) for _ in range(max(0, layers - 1))]
+            + [
+                MLPLayer(hidden_dim, hidden_dim, gate)
+                for _ in range(max(0, layers - 1))
+            ]
         )
         self.mean = nn.Linear(hidden_dim, latent_dim)
         self.log_var = nn.Linear(hidden_dim, latent_dim)
         self.flow = Flow(latent_dim, flow_type, flow_length)
         self.decoder = nn.ModuleList(
             [MLPLayer(latent_dim, hidden_dim, gate)]
-            + [MLPLayer(hidden_dim, hidden_dim, gate) for _ in range(max(0, layers - 1))]
+            + [
+                MLPLayer(hidden_dim, hidden_dim, gate)
+                for _ in range(max(0, layers - 1))
+            ]
             + [nn.Linear(hidden_dim, in_dim)]
         )
 
@@ -201,7 +213,9 @@ class FlowVAE(nn.Module):
             x = layer(x)
         return self.mean(x), torch.clamp(self.log_var(x), min=-8.0, max=8.0)
 
-    def reparameterize(self, mean: torch.Tensor, log_var: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def reparameterize(
+        self, mean: torch.Tensor, log_var: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         std = torch.exp(0.5 * log_var)
         eps = torch.randn_like(std)
         z0 = eps.mul(std).add(mean)
@@ -213,7 +227,9 @@ class FlowVAE(nn.Module):
             z = layer(z)
         return z
 
-    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    def forward(
+        self, x: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         mean, log_var = self.encode(x)
         z, log_det = self.reparameterize(mean, log_var)
         reconstruction = self.decode(z)
@@ -257,7 +273,6 @@ class FlowVAE(nn.Module):
             recon = recon + self.categorical_weight * ce
 
         return (recon + self.kl_weight * kl - log_det).mean()
-
 
     def sample(self, n: int, device: torch.device) -> torch.Tensor:
         z = torch.randn(n, self.latent_dim, device=device)
@@ -306,12 +321,19 @@ def fit_transform_tabular(
         elif continuous_cols is not None and col in continuous_cols:
             is_numeric = True
         else:
-            is_numeric = pd.api.types.is_numeric_dtype(series) and series.nunique(dropna=True) > 10
+            is_numeric = (
+                pd.api.types.is_numeric_dtype(series)
+                and series.nunique(dropna=True) > 10
+            )
         if is_numeric:
             numeric_columns.append(col)
             values = pd.to_numeric(series, errors="coerce")
             mean = float(values.mean()) if not np.isnan(values.mean()) else 0.0
-            std = float(values.std()) if values.std() and not np.isnan(values.std()) else 1.0
+            std = (
+                float(values.std())
+                if values.std() and not np.isnan(values.std())
+                else 1.0
+            )
             means[col] = mean
             stds[col] = std
             encoded = ((values.fillna(mean) - mean) / std).to_frame(col)
@@ -319,7 +341,9 @@ def fit_transform_tabular(
             encoded_columns.append(col)
         else:
             categorical_columns.append(col)
-            filled = series.astype("object").where(series.notna(), "__MISSING__").astype(str)
+            filled = (
+                series.astype("object").where(series.notna(), "__MISSING__").astype(str)
+            )
             cats = sorted(filled.unique().tolist())
             categories[col] = cats
             one_hot = pd.get_dummies(filled, prefix=col, prefix_sep="__", dtype=float)
@@ -361,6 +385,7 @@ def inverse_transform_tabular(array: np.ndarray, schema: TabularSchema) -> pd.Da
             data[col] = [cats[i] for i in chosen]
             idx += width
     return pd.DataFrame(data, columns=schema.columns)
+
 
 def encoded_column_blocks(
     schema: TabularSchema,

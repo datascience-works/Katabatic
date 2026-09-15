@@ -3,8 +3,8 @@
 ## Model Overview
 Flow-VAE (Flow-based Variational Autoencoder) is a **deep generative model** for tabular data that combines:
 
-- **Variational Autoencoders (VAE)** for latent representation learning  
-- **Normalizing Flows** for improving the flexibility of the latent distribution  
+- **Variational Autoencoders (VAE)** for latent representation learning
+- **Normalizing Flows** for improving the flexibility of the latent distribution
 
 The model learns a **latent space representation** of tabular data and generates synthetic samples by decoding transformed latent vectors sampled from a learned probabilistic distribution.
 
@@ -90,12 +90,12 @@ Normalizing flows require a Jacobian determinant correction:
 ---
 
 ## Training Loop
-- Encode batch → obtain μ and logσ²  
-- Sample latent vector z₀  
-- Apply flow transformations z₀ → zₖ  
-- Decode zₖ → reconstructed samples  
-- Compute total loss  
-- Backpropagate and update parameters  
+- Encode batch → obtain μ and logσ²
+- Sample latent vector z₀
+- Apply flow transformations z₀ → zₖ
+- Decode zₖ → reconstructed samples
+- Compute total loss
+- Backpropagate and update parameters
 
 ---
 

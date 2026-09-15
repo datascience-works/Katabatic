@@ -133,7 +133,7 @@ class FlowVAEModel(BaseModel):
             raise ValueError(
                 f"Encoded block layout covers {covered} columns but the matrix has "
                 f"{matrix.shape[1]}. The schema and encoder are out of sync."
-            )        
+            )
 
         dataset = TensorDataset(torch.tensor(matrix, dtype=torch.float32))
         loader = DataLoader(
@@ -176,7 +176,11 @@ class FlowVAEModel(BaseModel):
                 epoch_losses.append(float(loss.detach().cpu()))
             mean_loss = float(np.mean(epoch_losses)) if epoch_losses else 0.0
             self.loss_history.append(mean_loss)
-            if epoch == 1 or epoch == self.epochs or epoch % max(1, self.epochs // 5) == 0:
+            if (
+                epoch == 1
+                or epoch == self.epochs
+                or epoch % max(1, self.epochs // 5) == 0
+            ):
                 print(f"[FlowVAE] Epoch {epoch}/{self.epochs} - loss={mean_loss:.4f}")
 
         self.is_fitted = True
@@ -220,7 +224,9 @@ class FlowVAEModel(BaseModel):
             y_synth[label].astype(str).unique()
         )
         if missing:
-            print(f"[FlowVAE] Warning: classes absent from synthetic labels: {sorted(missing)}")
+            print(
+                f"[FlowVAE] Warning: classes absent from synthetic labels: {sorted(missing)}"
+            )
 
         x_path_out = os.path.join(synth_dir, "x_synth.csv")
         y_path_out = os.path.join(synth_dir, "y_synth.csv")
@@ -249,7 +255,9 @@ class FlowVAEModel(BaseModel):
         with open(os.path.join(synth_dir, "metadata.json"), "w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2)
 
-        print(f"[FlowVAE] Synthetic data saved:\n  X -> {x_path_out}\n  y -> {y_path_out}")
+        print(
+            f"[FlowVAE] Synthetic data saved:\n  X -> {x_path_out}\n  y -> {y_path_out}"
+        )
         return self
 
     def sample(self, n: int | None = None, *args, **kwargs) -> pd.DataFrame:
@@ -265,7 +273,9 @@ class FlowVAEModel(BaseModel):
             remaining = n_samples
             while remaining > 0:
                 batch_n = min(self.batch_size, remaining)
-                generated = self.model.sample(batch_n, device=device).detach().cpu().numpy()
+                generated = (
+                    self.model.sample(batch_n, device=device).detach().cpu().numpy()
+                )
                 chunks.append(generated)
                 remaining -= batch_n
         generated_matrix = np.vstack(chunks)
