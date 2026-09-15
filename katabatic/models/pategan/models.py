@@ -1,18 +1,13 @@
 import os
-import json
+import warnings
+from typing import Any
+
 import numpy as np
 import pandas as pd
-from typing import Optional, Dict, Any, Union
+
 from katabatic.models.base_model import Model
-from .utils import (
-    DataTransformer,
-    PrivacyMechanism,
-    set_global_seed,
-    save_metadata,
-    load_metadata,
-    reconstruct_transformer,
-    partition_data
-)
+
+from .utils import DataTransformer, PrivacyMechanism, save_metadata, set_global_seed
 
 
 class PATEGAN(Model):
@@ -29,6 +24,11 @@ class PATEGAN(Model):
     - Handles mixed categorical and continuous data
     """
 
+    ARTIFACT_STATE_FILES = (
+        "metadata.json",
+        "pategan.ckpt.index",
+    )
+
     def __init__(
         self,
         epsilon: float = 1.0,
@@ -36,10 +36,10 @@ class PATEGAN(Model):
         num_teachers: int = 10,
         niter: int = 10000,
         batch_size: int = 128,
-        z_dim: Optional[int] = None,
+        z_dim: int | None = None,
         learning_rate: float = 1e-4,
         lambda_gp: float = 10.0,
-        random_state: int = 42
+        random_state: int = 42,
     ):
         """
         Initialize PATE-GAN model.
@@ -71,8 +71,8 @@ class PATEGAN(Model):
         self.random_state = random_state
 
         # State
-        self.transformer: Optional[DataTransformer] = None
-        self.privacy_mechanism: Optional[PrivacyMechanism] = None
+        self.transformer: DataTransformer | None = None
+        self.privacy_mechanism: PrivacyMechanism | None = None
         self._sess = None
         self._G_sample = None
         self._is_built = False
@@ -82,13 +82,14 @@ class PATEGAN(Model):
     @classmethod
     def get_required_dependencies(cls) -> list[str]:
         """Return required dependencies for PATE-GAN."""
-        return ['tensorflow', 'scipy', 'sklearn', 'pandas', 'numpy']
+        return ["tensorflow", "scipy", "sklearn", "pandas", "numpy"]
 
     def _xavier_init(self, size):
         """Xavier initialization for network weights."""
         import tensorflow.compat.v1 as tf
+
         in_dim = size[0]
-        xavier_stddev = 1. / tf.sqrt(in_dim / 2.)
+        xavier_stddev = 1.0 / tf.sqrt(in_dim / 2.0)
         return tf.random_normal(shape=size, stddev=xavier_stddev)
 
     def _generator(self, z):
@@ -127,6 +128,47 @@ class PATEGAN(Model):
 
         return D_out
 
+    @classmethod
+    def load_from_ref(cls, store, ref):
+        import os
+
+        import tensorflow.compat.v1 as tf
+
+        from .utils import load_metadata, reconstruct_transformer
+
+        state_dir = str(store.open_path(ref.state_relpath))
+        metadata_path = os.path.join(state_dir, "metadata.json")
+        checkpoint_path = os.path.join(state_dir, "pategan.ckpt")
+
+        metadata = load_metadata(metadata_path)
+
+        training_config = metadata["training_config"]
+        privacy_config = metadata["privacy_config"]
+
+        model = cls(
+            epsilon=privacy_config["epsilon"],
+            delta=privacy_config["delta"],
+            num_teachers=privacy_config["num_teachers"],
+            niter=training_config["niter"],
+            batch_size=training_config["batch_size"],
+            z_dim=training_config["z_dim"],
+            learning_rate=training_config["learning_rate"],
+            lambda_gp=training_config["lambda_gp"],
+            random_state=metadata["seed"],
+        )
+
+        model.transformer = reconstruct_transformer(metadata)
+
+        x_dim = len(model.transformer.column_order)
+        model._build_model(x_dim)
+
+        saver = tf.train.Saver()
+        saver.restore(model._sess, checkpoint_path)
+
+        model.is_fitted = True
+
+        return model
+
     def _build_model(self, X_dim: int):
         """
         Build TensorFlow computation graph.
@@ -160,8 +202,14 @@ class PATEGAN(Model):
         self.D_W3 = tf.Variable(self._xavier_init([self._h_dim, 1]))
         self.D_b3 = tf.Variable(tf.zeros(shape=[1]))
 
-        self.theta_D = [self.D_W1, self.D_W2, self.D_W3,
-                        self.D_b1, self.D_b2, self.D_b3]
+        self.theta_D = [
+            self.D_W1,
+            self.D_W2,
+            self.D_W3,
+            self.D_b1,
+            self.D_b2,
+            self.D_b3,
+        ]
 
         # Generator parameters
         self.G_W1 = tf.Variable(self._xavier_init([self.z_dim, self._h_dim]))
@@ -171,8 +219,14 @@ class PATEGAN(Model):
         self.G_W3 = tf.Variable(self._xavier_init([self._h_dim, self._X_dim]))
         self.G_b3 = tf.Variable(tf.zeros(shape=[self._X_dim]))
 
-        self.theta_G = [self.G_W1, self.G_W2, self.G_W3,
-                        self.G_b1, self.G_b2, self.G_b3]
+        self.theta_G = [
+            self.G_W1,
+            self.G_W2,
+            self.G_W3,
+            self.G_b1,
+            self.G_b2,
+            self.G_b3,
+        ]
 
         # Build computational graph
         self._G_sample = self._generator(self.Z)
@@ -182,15 +236,18 @@ class PATEGAN(Model):
         D_entire = tf.concat(axis=0, values=[D_real, D_fake])
 
         # Gradient penalty (WGAN-GP)
-        eps = tf.random_uniform([self.batch_size, 1], minval=0., maxval=1.)
-        X_inter = eps * self.X + (1. - eps) * self._G_sample
+        eps = tf.random_uniform([self.batch_size, 1], minval=0.0, maxval=1.0)
+        X_inter = eps * self.X + (1.0 - eps) * self._G_sample
         grad = tf.gradients(self._discriminator(X_inter), [X_inter])[0]
-        grad_norm = tf.sqrt(tf.reduce_sum((grad)**2 + 1e-8, axis=1))
-        grad_pen = self.lambda_gp * tf.reduce_mean((grad_norm - 1)**2)
+        grad_norm = tf.sqrt(tf.reduce_sum((grad) ** 2 + 1e-8, axis=1))
+        grad_pen = self.lambda_gp * tf.reduce_mean((grad_norm - 1) ** 2)
 
         # Loss functions
-        D_loss = (tf.reduce_mean((1 - self.M) * D_entire) -
-                  tf.reduce_mean(self.M * D_entire) + grad_pen)
+        D_loss = (
+            tf.reduce_mean((1 - self.M) * D_entire)
+            - tf.reduce_mean(self.M * D_entire)
+            + grad_pen
+        )
         G_loss = -tf.reduce_mean(D_fake)
 
         # Optimizers
@@ -213,7 +270,9 @@ class PATEGAN(Model):
 
         self._is_built = True
 
-    def fit(self, X: pd.DataFrame, y: Optional[pd.Series] = None, verbose: int = 1) -> 'PATEGAN':
+    def fit(
+        self, X: pd.DataFrame, y: pd.Series | None = None, verbose: int = 1
+    ) -> "PATEGAN":
         """
         Fit PATE-GAN to data.
 
@@ -245,9 +304,7 @@ class PATEGAN(Model):
 
         # Initialize privacy mechanism
         self.privacy_mechanism = PrivacyMechanism(
-            epsilon=self.epsilon,
-            delta=self.delta,
-            num_teachers=self.num_teachers
+            epsilon=self.epsilon, delta=self.delta, num_teachers=self.num_teachers
         )
 
         # Training loop
@@ -260,62 +317,68 @@ class PATEGAN(Model):
         # Setup progress tracking
         try:
             from tqdm import tqdm
-            iterator = tqdm(range(self.niter),
-                            desc="Training") if verbose else range(self.niter)
+
+            iterator = (
+                tqdm(range(self.niter), desc="Training")
+                if verbose
+                else range(self.niter)
+            )
             use_tqdm = True
         except ImportError:
             iterator = range(self.niter)
             use_tqdm = False
 
         # For non-tqdm progress printing
-        print_every = max(
-            1, self.niter // 10) if verbose and not use_tqdm else None
+        print_every = max(1, self.niter // 10) if verbose and not use_tqdm else None
 
         for it in iterator:
             # Train teacher discriminators
             for teacher_idx in range(self.num_teachers):
                 # Sample batch from data
-                indices = np.random.choice(
-                    n_samples, self.batch_size, replace=False)
+                indices = np.random.choice(n_samples, self.batch_size, replace=False)
                 X_mb = X_encoded[indices]
 
                 # Sample noise
-                Z_mb = np.random.uniform(-1., 1.,
-                                         size=[self.batch_size, self.z_dim])
+                Z_mb = np.random.uniform(-1.0, 1.0, size=[self.batch_size, self.z_dim])
 
                 # Create teacher labels with privacy noise
-                M_real = np.ones([self.batch_size,])
-                M_fake = np.zeros([self.batch_size,])
+                M_real = np.ones(
+                    [
+                        self.batch_size,
+                    ]
+                )
+                M_fake = np.zeros(
+                    [
+                        self.batch_size,
+                    ]
+                )
                 M_entire = np.concatenate((M_real, M_fake), 0)
 
                 # Add Gaussian noise for privacy
-                noise = self.privacy_mechanism.add_gaussian_noise(M_entire)
-                M_entire = M_entire + noise
+                M_entire = self.privacy_mechanism.add_gaussian_noise(M_entire)
                 M_entire = (M_entire > 0.5).astype(float)
                 M_mb = np.reshape(M_entire, (2 * self.batch_size, 1))
 
                 # Train discriminator
                 _, D_loss_curr = self._sess.run(
                     [self.D_solver, self.D_loss],
-                    feed_dict={self.X: X_mb, self.Z: Z_mb, self.M: M_mb}
+                    feed_dict={self.X: X_mb, self.Z: Z_mb, self.M: M_mb},
                 )
 
             # Train generator
-            Z_mb = np.random.uniform(-1., 1.,
-                                     size=[self.batch_size, self.z_dim])
-            indices = np.random.choice(
-                n_samples, self.batch_size, replace=False)
+            Z_mb = np.random.uniform(-1.0, 1.0, size=[self.batch_size, self.z_dim])
+            indices = np.random.choice(n_samples, self.batch_size, replace=False)
             X_mb = X_encoded[indices]
 
             _, G_loss_curr = self._sess.run(
-                [self.G_solver, self.G_loss],
-                feed_dict={self.Z: Z_mb}
+                [self.G_solver, self.G_loss], feed_dict={self.Z: Z_mb}
             )
 
             # Print progress (only if not using tqdm)
             if print_every is not None and it % print_every == 0:
                 print(
-                    f"Iter {it}/{self.niter}: D_loss={D_loss_curr:.4f}, G_loss={G_loss_curr:.4f}")
+                    f"Iter {it}/{self.niter}: D_loss={D_loss_curr:.4f}, G_loss={G_loss_curr:.4f}"
+                )
 
         if verbose:
             print("Training completed!")
@@ -323,11 +386,7 @@ class PATEGAN(Model):
         self.is_fitted = True
         return self
 
-    def sample(
-        self,
-        n: int,
-        conditional: Optional[Dict[str, Any]] = None
-    ) -> pd.DataFrame:
+    def sample(self, n: int, conditional: dict[str, Any] | None = None) -> pd.DataFrame:
         """
         Generate synthetic samples.
 
@@ -350,13 +409,9 @@ class PATEGAN(Model):
 
         for i in range(n_batches):
             batch_size = min(self.batch_size, n - i * self.batch_size)
-            Z_sample = np.random.uniform(-1., 1.,
-                                         size=[batch_size, self.z_dim])
+            Z_sample = np.random.uniform(-1.0, 1.0, size=[batch_size, self.z_dim])
 
-            X_synth = self._sess.run(
-                [self._G_sample],
-                feed_dict={self.Z: Z_sample}
-            )[0]
+            X_synth = self._sess.run([self._G_sample], feed_dict={self.Z: Z_sample})[0]
 
             all_samples.append(X_synth)
 
@@ -369,11 +424,8 @@ class PATEGAN(Model):
         return df_synth
 
     def train(
-        self,
-        dataset_dir: str,
-        synthetic_dir: Optional[str] = None,
-        **kwargs
-    ) -> 'PATEGAN':
+        self, dataset_dir: str, synthetic_dir: str | None = None, **kwargs
+    ) -> "PATEGAN":
         """
         Train PATE-GAN following Katabatic pipeline contract.
 
@@ -391,24 +443,24 @@ class PATEGAN(Model):
         """
         # Override model parameters from kwargs if provided
         # Pop them so they don't propagate to evaluations
-        if 'epsilon' in kwargs:
-            self.epsilon = kwargs.pop('epsilon')
-        if 'delta' in kwargs:
-            self.delta = kwargs.pop('delta')
-        if 'num_teachers' in kwargs:
-            self.num_teachers = kwargs.pop('num_teachers')
-        if 'niter' in kwargs:
-            self.niter = kwargs.pop('niter')
-        if 'batch_size' in kwargs:
-            self.batch_size = kwargs.pop('batch_size')
-        if 'learning_rate' in kwargs:
-            self.learning_rate = kwargs.pop('learning_rate')
-        if 'lambda_gp' in kwargs:
-            self.lambda_gp = kwargs.pop('lambda_gp')
-        if 'z_dim' in kwargs:
-            self.z_dim = kwargs.pop('z_dim')
-        if 'random_state' in kwargs:
-            self.random_state = kwargs.pop('random_state')
+        if "epsilon" in kwargs:
+            self.epsilon = kwargs.pop("epsilon")
+        if "delta" in kwargs:
+            self.delta = kwargs.pop("delta")
+        if "num_teachers" in kwargs:
+            self.num_teachers = kwargs.pop("num_teachers")
+        if "niter" in kwargs:
+            self.niter = kwargs.pop("niter")
+        if "batch_size" in kwargs:
+            self.batch_size = kwargs.pop("batch_size")
+        if "learning_rate" in kwargs:
+            self.learning_rate = kwargs.pop("learning_rate")
+        if "lambda_gp" in kwargs:
+            self.lambda_gp = kwargs.pop("lambda_gp")
+        if "z_dim" in kwargs:
+            self.z_dim = kwargs.pop("z_dim")
+        if "random_state" in kwargs:
+            self.random_state = kwargs.pop("random_state")
 
         # Read training data
         x_train_path = os.path.join(dataset_dir, "x_train.csv")
@@ -430,23 +482,28 @@ class PATEGAN(Model):
             # Remap y_train classes to consecutive integers [0, 1, 2, ...]
             # This is required for ML models like XGBoost which expect consecutive classes
             from sklearn.preprocessing import LabelEncoder
+
             y_label_encoder = LabelEncoder()
             original_classes = y_train.unique()
             y_train_remapped = y_label_encoder.fit_transform(y_train)
-            y_train = pd.Series(y_train_remapped, name=y_train.name if hasattr(
-                y_train, 'name') else 'target')
+            y_train = pd.Series(
+                y_train_remapped,
+                name=y_train.name if hasattr(y_train, "name") else "target",
+            )
             print(
-                f"Remapped y classes: {sorted(original_classes)} -> {sorted(y_label_encoder.transform(original_classes))}")
+                f"Remapped y classes: {sorted(original_classes)} -> {sorted(y_label_encoder.transform(original_classes))}"
+            )
 
         print(f"Loaded training data: X shape={X_train.shape}", end="")
         if y_train is not None:
             print(
-                f", y shape={y_train.shape if isinstance(y_train, pd.DataFrame) else (len(y_train),)}")
+                f", y shape={y_train.shape if isinstance(y_train, pd.DataFrame) else (len(y_train),)}"
+            )
         else:
             print()
 
         # Fit model
-        self.fit(X_train, y_train, verbose=kwargs.get('verbose', 1))
+        self.fit(X_train, y_train, verbose=kwargs.get("verbose", 1))
 
         # Generate synthetic data
         n_samples = len(X_train)
@@ -455,44 +512,57 @@ class PATEGAN(Model):
 
         # Split into X and y
         if y_train is not None:
-            target_cols = y_train.columns.tolist() if isinstance(
-                y_train, pd.DataFrame) else [y_train.name]
+            target_cols = (
+                y_train.columns.tolist()
+                if isinstance(y_train, pd.DataFrame)
+                else [y_train.name]
+            )
             x_synth = df_synth.drop(columns=target_cols)
             y_synth = df_synth[target_cols]
 
             # Ensure all training classes are present in synthetic data (robustness for TSTR)
             y_col = target_cols[0]
-            df_train = pd.concat([
-                X_train.copy(),
-                (y_train if isinstance(y_train, pd.DataFrame)
-                 else y_train.to_frame(name=y_col))
-            ], axis=1)
+            df_train = pd.concat(
+                [
+                    X_train.copy(),
+                    (
+                        y_train
+                        if isinstance(y_train, pd.DataFrame)
+                        else y_train.to_frame(name=y_col)
+                    ),
+                ],
+                axis=1,
+            )
 
             unique_train = np.unique(df_train[y_col].values)
             unique_synth = np.unique(y_synth[y_col].values)
             missing_classes = set(unique_train) - set(unique_synth)
 
             if missing_classes:
-                print(
-                    f"[PATEGAN] Adding {len(missing_classes)} dummy samples to cover classes: {sorted(missing_classes)}")
-                for cls in missing_classes:
-                    idx = np.where(df_train[y_col].values == cls)[0]
-                    if idx.size == 0:
-                        continue
-                    row = df_train.iloc[idx[0]:idx[0]+1]
-                    x_dummy = row.drop(columns=[y_col])
-                    y_dummy = row[[y_col]]
+                # Cover missing classes by relabelling generated rows.
+                warnings.warn(
+                    f"PATE-GAN produced no samples for classes {sorted(missing_classes)}; "
+                    f"relabelling generated rows to cover them. Treat utility metrics "
+                    f"for these classes with caution.",
+                    stacklevel=2,
+                )
+                for offset, cls in enumerate(sorted(missing_classes)):
+                    if x_synth.empty:
+                        break
+                    pos = offset % len(x_synth)
+                    x_dummy = x_synth.iloc[pos : pos + 1].copy()
+                    y_dummy = pd.DataFrame({y_col: [cls]})
                     x_synth = pd.concat([x_synth, x_dummy], ignore_index=True)
                     y_synth = pd.concat([y_synth, y_dummy], ignore_index=True)
 
             # Final guard: ensure at least 2 classes
             if np.unique(y_synth[y_col].values).size < 2 and unique_train.size >= 2:
-                alt_classes = [c for c in unique_train if c !=
-                               y_synth[y_col].iloc[0]]
+                alt_classes = [c for c in unique_train if c != y_synth[y_col].iloc[0]]
                 if alt_classes:
                     y_synth.loc[y_synth.index[0], y_col] = alt_classes[0]
                     print(
-                        f"[PATEGAN] Forced presence of a second class: {alt_classes[0]}")
+                        f"[PATEGAN] Forced presence of a second class: {alt_classes[0]}"
+                    )
 
             # Cast to integers to ensure proper class labels and discrete features
             for col in x_synth.columns:
@@ -510,7 +580,7 @@ class PATEGAN(Model):
 
         # Also remap y_test.csv to match the synthetic data's class encoding
         # Get real_test_dir from kwargs (passed by pipeline)
-        real_test_dir = kwargs.get('real_test_dir')
+        real_test_dir = kwargs.get("real_test_dir")
         if y_label_encoder is not None and real_test_dir is not None:
             y_test_path = os.path.join(real_test_dir, "y_test.csv")
             if os.path.exists(y_test_path):
@@ -522,7 +592,8 @@ class PATEGAN(Model):
                 test_mask = y_test.isin(y_label_encoder.classes_)
                 if not test_mask.all():
                     print(
-                        f"Warning: Filtering {(~test_mask).sum()} test samples with unseen classes")
+                        f"Warning: Filtering {(~test_mask).sum()} test samples with unseen classes"
+                    )
                     # Also filter x_test
                     x_test_path = os.path.join(real_test_dir, "x_test.csv")
                     if os.path.exists(x_test_path):
@@ -533,10 +604,14 @@ class PATEGAN(Model):
 
                 # Transform y_test with same encoder
                 y_test_remapped = y_label_encoder.transform(y_test)
-                y_test = pd.DataFrame(y_test_remapped, columns=y_test.columns if isinstance(
-                    y_test, pd.DataFrame) else [y_test.name])
+                y_test = pd.DataFrame(
+                    y_test_remapped,
+                    columns=y_test.columns
+                    if isinstance(y_test, pd.DataFrame)
+                    else [y_test.name],
+                )
                 y_test.to_csv(y_test_path, index=False)
-                print(f"Remapped y_test.csv to match synthetic data encoding")
+                print("Remapped y_test.csv to match synthetic data encoding")
 
         # Save synthetic data
         if synthetic_dir is not None:
@@ -554,39 +629,65 @@ class PATEGAN(Model):
             # Save metadata
             metadata_path = os.path.join(synthetic_dir, "metadata.json")
             training_config = {
-                'niter': self.niter,
-                'batch_size': self.batch_size,
-                'learning_rate': self.learning_rate,
-                'lambda_gp': self.lambda_gp,
-                'z_dim': self.z_dim
+                "niter": self.niter,
+                "batch_size": self.batch_size,
+                "learning_rate": self.learning_rate,
+                "lambda_gp": self.lambda_gp,
+                "z_dim": self.z_dim,
             }
             privacy_config = {
-                'epsilon': self.epsilon,
-                'delta': self.delta,
-                'num_teachers': self.num_teachers,
-                'lambda_noise': self.privacy_mechanism.lambda_noise
+                "epsilon": self.epsilon,
+                "delta": self.delta,
+                "num_teachers": self.num_teachers,
+                "lambda_noise": self.privacy_mechanism.lambda_noise,
             }
             save_metadata(
                 metadata_path,
                 self.transformer,
                 training_config,
                 privacy_config,
-                self.random_state
+                self.random_state,
             )
             print(f"Saved metadata.json to {metadata_path}")
 
-        return self
+            artifact_state_dir = kwargs.get("artifact_state_dir")
+
+            if artifact_state_dir:
+                os.makedirs(artifact_state_dir, exist_ok=True)
+
+                state_metadata_path = os.path.join(
+                    artifact_state_dir,
+                    "metadata.json",
+                )
+
+                save_metadata(
+                    state_metadata_path,
+                    self.transformer,
+                    training_config,
+                    privacy_config,
+                    self.random_state,
+                )
+
+                import tensorflow.compat.v1 as tf
+
+                saver = tf.train.Saver()
+                saver.save(
+                    self._sess,
+                    os.path.join(artifact_state_dir, "pategan.ckpt"),
+                )
+
+            return self
 
     def evaluate(
         self,
         x: pd.DataFrame,
         y: pd.Series,
         model: str = "lr",
-        metrics: Optional[list] = None,
-        task: Optional[str] = None,
+        metrics: list | None = None,
+        task: str | None = None,
         random_state: int = 42,
-        **kwargs
-    ) -> Dict[str, float]:
+        **kwargs,
+    ) -> dict[str, float]:
         """
         In-memory TSTR-style check: sample synthetic rows, fit a downstream model
         on synthetic data, and score on the provided real ``(x, y)``.
@@ -607,26 +708,30 @@ class PATEGAN(Model):
         Returns:
             Dictionary of metric scores
         """
-        from sklearn.metrics import (
-            accuracy_score, f1_score, roc_auc_score,
-            mean_squared_error, mean_absolute_error, r2_score
-        )
-        from sklearn.linear_model import LogisticRegression, LinearRegression
         from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+        from sklearn.linear_model import LinearRegression, LogisticRegression
+        from sklearn.metrics import (
+            accuracy_score,
+            f1_score,
+            mean_absolute_error,
+            mean_squared_error,
+            r2_score,
+            roc_auc_score,
+        )
 
         # Auto-detect task
         if task is None:
-            if y.dtype in ['object', 'category'] or y.nunique() < 20:
-                task = 'classification'
+            if y.dtype in ["object", "category"] or y.nunique() < 20:
+                task = "classification"
             else:
-                task = 'regression'
+                task = "regression"
 
         # Generate synthetic training data
         n_train = len(x)
         df_synth = self.sample(n_train)
 
         # Assuming y is the last column(s)
-        if task == 'classification':
+        if task == "classification":
             X_synth = df_synth.iloc[:, :-1]
             y_synth = df_synth.iloc[:, -1]
         else:
@@ -634,38 +739,36 @@ class PATEGAN(Model):
             y_synth = df_synth.iloc[:, -1]
 
         # Train downstream model
-        if task == 'classification':
-            if model == 'lr':
-                clf = LogisticRegression(
-                    random_state=random_state, max_iter=1000)
-            elif model == 'rf':
+        if task == "classification":
+            if model == "lr":
+                clf = LogisticRegression(random_state=random_state, max_iter=1000)
+            elif model == "rf":
                 clf = RandomForestClassifier(
-                    random_state=random_state, n_estimators=100)
+                    random_state=random_state, n_estimators=100
+                )
             else:
-                clf = LogisticRegression(
-                    random_state=random_state, max_iter=1000)
+                clf = LogisticRegression(random_state=random_state, max_iter=1000)
 
             clf.fit(X_synth, y_synth)
             y_pred = clf.predict(x)
 
             results = {
-                'accuracy': accuracy_score(y, y_pred),
-                'f1_macro': f1_score(y, y_pred, average='macro', zero_division=0)
+                "accuracy": accuracy_score(y, y_pred),
+                "f1_macro": f1_score(y, y_pred, average="macro", zero_division=0),
             }
 
             # Add AUC if binary
             if y.nunique() == 2:
                 try:
                     y_proba = clf.predict_proba(x)[:, 1]
-                    results['roc_auc'] = roc_auc_score(y, y_proba)
-                except:
+                    results["roc_auc"] = roc_auc_score(y, y_proba)
+                except (AttributeError, ValueError):
                     pass
         else:
-            if model == 'lr':
+            if model == "lr":
                 reg = LinearRegression()
-            elif model == 'rf':
-                reg = RandomForestRegressor(
-                    random_state=random_state, n_estimators=100)
+            elif model == "rf":
+                reg = RandomForestRegressor(random_state=random_state, n_estimators=100)
             else:
                 reg = LinearRegression()
 
@@ -673,9 +776,9 @@ class PATEGAN(Model):
             y_pred = reg.predict(x)
 
             results = {
-                'r2': r2_score(y, y_pred),
-                'mae': mean_absolute_error(y, y_pred),
-                'rmse': np.sqrt(mean_squared_error(y, y_pred))
+                "r2": r2_score(y, y_pred),
+                "mae": mean_absolute_error(y, y_pred),
+                "rmse": np.sqrt(mean_squared_error(y, y_pred)),
             }
 
         return results
@@ -685,5 +788,5 @@ class PATEGAN(Model):
         if self._sess is not None:
             try:
                 self._sess.close()
-            except:
+            except Exception:
                 pass

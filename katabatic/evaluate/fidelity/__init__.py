@@ -1,3 +1,3 @@
-from katabatic.evaluate.fidelity.evaluation import StatisticalFidelityEvaluation
+from katabatic.evaluate.fidelity.evaluation import FidelityEvaluation
 
-__all__ = ["StatisticalFidelityEvaluation"]
+__all__ = ["FidelityEvaluation"]

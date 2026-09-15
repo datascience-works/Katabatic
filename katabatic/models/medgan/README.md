@@ -4,8 +4,8 @@ Production-level implementation of MedGAN for the Katabatic framework.
 
 ## Paper
 
-**Generating Multi-label Discrete Patient Records using Generative Adversarial Networks**  
-Edward Choi et al., MLHC 2017  
+**Generating Multi-label Discrete Patient Records using Generative Adversarial Networks**
+Edward Choi et al., MLHC 2017
 [arXiv:1703.06490](https://arxiv.org/abs/1703.06490)
 
 ## Overview

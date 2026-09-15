@@ -1,9 +1,9 @@
-import pandas as pd
-import numpy as np
 import argparse
 import os
 import random
-from typing import Tuple
+
+import numpy as np
+import pandas as pd
 from sklearn.model_selection import train_test_split
 
 from katabatic.utils.train_test_consistency import sanity_check_train_test
@@ -13,7 +13,7 @@ def compute_train_test_split(
     df: pd.DataFrame,
     test_size: float = 0.2,
     seed: int = 42,
-) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series, pd.Series, pd.Series]:
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series, pd.Series, pd.Series]:
     """
     Stratified split on the last column as label. Sets y_train/y_test .name to label column name.
     """
@@ -54,8 +54,8 @@ def split_dataset(input_csv, output_dir, test_size=0.2, seed=42, *args, **kwargs
     )
 
     # Save full datasets
-    df_train.to_csv(os.path.join(output_dir, 'train_full.csv'), index=False)
-    df_test.to_csv(os.path.join(output_dir, 'test_full.csv'), index=False)
+    df_train.to_csv(os.path.join(output_dir, "train_full.csv"), index=False)
+    df_test.to_csv(os.path.join(output_dir, "test_full.csv"), index=False)
     print("Saved train/test full data")
     print(f"Train size: {df_train.shape}, Test size: {df_test.shape}")
 
@@ -63,12 +63,10 @@ def split_dataset(input_csv, output_dir, test_size=0.2, seed=42, *args, **kwargs
     print("Train label distribution:\n", y_train.value_counts(normalize=True))
     print("Test label distribution:\n", y_test.value_counts(normalize=True))
 
-    X_train.to_csv(os.path.join(output_dir, 'x_train.csv'), index=False)
-    y_train.to_csv(os.path.join(output_dir, 'y_train.csv'),
-                   index=False, header=True)
-    X_test.to_csv(os.path.join(output_dir, 'x_test.csv'), index=False)
-    y_test.to_csv(os.path.join(output_dir, 'y_test.csv'),
-                  index=False, header=True)
+    X_train.to_csv(os.path.join(output_dir, "x_train.csv"), index=False)
+    y_train.to_csv(os.path.join(output_dir, "y_train.csv"), index=False, header=True)
+    X_test.to_csv(os.path.join(output_dir, "x_test.csv"), index=False)
+    y_test.to_csv(os.path.join(output_dir, "y_test.csv"), index=False, header=True)
     print("Saved X/y split")
     print("Training shape:", X_train.shape, y_train.shape)
     print("Test shape:", X_test.shape, y_test.shape)
@@ -107,9 +105,7 @@ def split_dataset_presplit(
     print("Test label distribution:\n", y_test.value_counts(normalize=True))
 
     X_train.to_csv(os.path.join(output_dir, "x_train.csv"), index=False)
-    y_train.to_csv(
-        os.path.join(output_dir, "y_train.csv"), index=False, header=True
-    )
+    y_train.to_csv(os.path.join(output_dir, "y_train.csv"), index=False, header=True)
     X_test.to_csv(os.path.join(output_dir, "x_test.csv"), index=False)
     y_test.to_csv(os.path.join(output_dir, "y_test.csv"), index=False, header=True)
     print("Saved X/y split")
@@ -117,21 +113,21 @@ def split_dataset_presplit(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Split dataset for benchmarking tabular data generation models")
-    parser.add_argument('--input_csv', type=str,
-                        required=True, help="Path to preprocessed CSV")
-    parser.add_argument('--output_dir', type=str, required=True,
-                        help="Directory to save split datasets")
-    parser.add_argument('--test_size', type=float,
-                        default=0.2, help="Proportion for test set")
-    parser.add_argument('--seed', type=int, default=42,
-                        help="Random seed for splitting")
+        description="Split dataset for benchmarking tabular data generation models"
+    )
+    parser.add_argument(
+        "--input_csv", type=str, required=True, help="Path to preprocessed CSV"
+    )
+    parser.add_argument(
+        "--output_dir", type=str, required=True, help="Directory to save split datasets"
+    )
+    parser.add_argument(
+        "--test_size", type=float, default=0.2, help="Proportion for test set"
+    )
+    parser.add_argument(
+        "--seed", type=int, default=42, help="Random seed for splitting"
+    )
 
     args = parser.parse_args()
 
-    split_dataset(
-        args.input_csv,
-        args.output_dir,
-        args.test_size,
-        args.seed
-    )
+    split_dataset(args.input_csv, args.output_dir, args.test_size, args.seed)

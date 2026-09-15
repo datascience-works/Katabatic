@@ -1,25 +1,43 @@
 """Model registry for dynamic model loading.
 
-Officially supported models (smoke-tested, PyPI extras): ``ganblr``, ``great``.
+Officially supported models (smoke-tested, PyPI extras): ``ganblr``, ``ctgan``,
+``pategan``.
 Other registered models are experimental; see ``docs/EXPERIMENTAL_MODELS.md``.
 """
 
 from __future__ import annotations
 
 import importlib
-from typing import Dict, Optional, Type
+import importlib.util
+from typing import ClassVar
 
 from .base_model import Model
+
+
+def _dependency_available(dep: str) -> bool:
+    """Return True if ``dep`` is importable as a real module.
+
+    ``importlib.import_module`` alone is not enough: an interrupted uninstall can
+    leave an empty directory behind, which Python happily imports as an implicit
+    namespace package. Such a shell has ``spec.origin is None`` and no usable
+    attributes, so the dependency check would pass and the failure would instead
+    surface much later as a confusing AttributeError deep inside the model.
+    """
+    try:
+        spec = importlib.util.find_spec(dep)
+    except (ImportError, ValueError):
+        return False
+    return spec is not None and spec.origin is not None
 
 
 class ModelRegistry:
     """Registry for managing available models and their dependencies."""
 
-    _models: Dict[str, Dict] = {
+    _models: ClassVar[dict[str, dict]] = {
         "ganblr": {
             "module": "katabatic.models.ganblr.models",
             "class": "GANBLR",
-            "dependencies": ["tensorflow", "pgmpy", "pyitlib", "tf_keras", "scipy"],
+            "dependencies": ["tensorflow", "pgmpy", "pyitlib", "scipy"],
             "extra": "ganblr",
             "supported": True,
             "dataset_requirements": {
@@ -34,14 +52,14 @@ class ModelRegistry:
             "class": "GReaT",
             "dependencies": ["transformers", "torch"],
             "extra": "great",
-            "supported": True,
+            "supported": False,
         },
         "tabsyn": {
             "module": "katabatic.models.tabsyn.models",
-            "class": "Tabsyn",
-            "dependencies": [],
+            "class": "TabSyn",
+            "dependencies": ["torch", "tqdm"],
             "extra": "tabsyn",
-            "supported": False,
+            "supported": True,
         },
         "tabddpm": {
             "module": "katabatic.models.tabddpm.models",
@@ -52,9 +70,16 @@ class ModelRegistry:
         },
         "pategan": {
             "module": "katabatic.models.pategan.models",
-            "class": "PATEGANSynthesizer",
+            "class": "PATEGAN",
             "dependencies": ["tensorflow", "numpy", "pandas"],
             "extra": "pategan",
+            "supported": True,
+        },
+        "mst": {
+            "module": "katabatic.models.mst.models",
+            "class": "MSTModel",
+            "dependencies": ["snsynth", "mbi", "opendp"],
+            "extra": "mst",
             "supported": False,
         },
         "ctgan": {
@@ -62,6 +87,13 @@ class ModelRegistry:
             "class": "CTGANModel",
             "dependencies": ["torch", "sklearn"],
             "extra": "ctgan",
+            "supported": True,
+        },
+        "arf": {
+            "module": "katabatic.models.arf.models",
+            "class": "ARFModel",
+            "dependencies": ["sklearn", "numpy", "pandas"],
+            "extra": None,
             "supported": False,
         },
     }
@@ -77,18 +109,26 @@ class ModelRegistry:
         return [name for name, info in cls._models.items() if info.get("supported")]
 
     @classmethod
+    def get_model_config(cls, model_name: str) -> dict:
+        """Return the registry config for a model."""
+        model_name = model_name.lower()
+        if model_name not in cls._models:
+            raise KeyError(f"Model '{model_name}' is not registered.")
+        return cls._models[model_name]
+
+    @classmethod
     def is_supported(cls, model_name: str) -> bool:
         """Return True if the model is officially supported."""
         info = cls._models.get(model_name.lower())
         return bool(info and info.get("supported"))
 
     @classmethod
-    def get_model_info(cls, model_name: str) -> Optional[Dict]:
+    def get_model_info(cls, model_name: str) -> dict | None:
         """Get information about a specific model."""
         return cls._models.get(model_name.lower())
 
     @classmethod
-    def load_model(cls, model_name: str) -> Type[Model]:
+    def load_model(cls, model_name: str) -> type[Model]:
         """Dynamically load a model class."""
         model_name = model_name.lower()
 
@@ -100,12 +140,9 @@ class ModelRegistry:
 
         model_info = cls._models[model_name]
 
-        missing_deps = []
-        for dep in model_info["dependencies"]:
-            try:
-                importlib.import_module(dep)
-            except ImportError:
-                missing_deps.append(dep)
+        missing_deps = [
+            dep for dep in model_info["dependencies"] if not _dependency_available(dep)
+        ]
 
         if missing_deps:
             raise ImportError(

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
-from typing import Optional
 
 import pandas as pd
 
@@ -14,7 +13,7 @@ from katabatic.utils.train_test_consistency import sanity_check_train_test
 
 
 def _copy_extra_assets(
-    source_dir: Optional[Path],
+    source_dir: Path | None,
     extra_dir: Path,
 ) -> None:
     """Copy info.json and TabSyn-style *.npy from source_dir into extra_dir if present."""
@@ -42,7 +41,7 @@ def _persist_frames_to_store(
     ref: DatasetRef,
     df_train: pd.DataFrame,
     df_test: pd.DataFrame,
-    extra_source_dir: Optional[Path],
+    extra_source_dir: Path | None,
 ) -> tuple[pd.Series, pd.Series]:
     label_name = df_train.columns[-1]
     X_train, y_train = df_train.iloc[:, :-1], df_train.iloc[:, -1]
@@ -80,8 +79,8 @@ def write_dataset_artifact(
     dataset_name: str,
     test_size: float = 0.2,
     seed: int = 42,
-    dataset_version: Optional[str] = None,
-    extra_source_dir: Optional[str | Path] = None,
+    dataset_version: str | None = None,
+    extra_source_dir: str | Path | None = None,
 ) -> DatasetRef:
     """
     Split input_csv into train/ and test/ under datasets/<name>/<version>/,
@@ -113,8 +112,8 @@ def write_dataset_artifact_presplit(
     train_csv: str | Path,
     test_csv: str | Path,
     dataset_name: str,
-    dataset_version: Optional[str] = None,
-    extra_source_dir: Optional[str | Path] = None,
+    dataset_version: str | None = None,
+    extra_source_dir: str | Path | None = None,
 ) -> DatasetRef:
     """
     Write user-provided train/test CSVs under datasets/<name>/<version>/

@@ -5,22 +5,21 @@ Based on "Generating Multi-label Discrete Patient Records using Generative Adver
 by Choi et al. (2017) - https://arxiv.org/abs/1703.06490
 """
 
-import os
 import logging
+import os
+
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from typing import Optional, Tuple
-from pathlib import Path
 
 from katabatic.models.base_model import Model
 from katabatic.models.medgan.utils import (
     Autoencoder,
-    Generator,
     Discriminator,
-    sample_noise
+    Generator,
+    sample_noise,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -50,7 +49,6 @@ class MEDGAN(Model):
         discriminator_hidden_dim: int = 128,
         generator_num_layers: int = 2,
         discriminator_num_layers: int = 2,
-
         # Training hyperparameters
         ae_pretrain_epochs: int = 100,
         gan_epochs: int = 1000,
@@ -58,14 +56,12 @@ class MEDGAN(Model):
         ae_lr: float = 1e-3,
         generator_lr: float = 1e-3,
         discriminator_lr: float = 1e-3,
-
         # Regularization
         dropout: float = 0.1,
         bn_decay: float = 0.99,
-
         # Other
         random_state: int = 42,
-        device: Optional[str] = None
+        device: str | None = None,
     ):
         super().__init__()
 
@@ -90,8 +86,7 @@ class MEDGAN(Model):
 
         # Device
         if device is None:
-            self.device = torch.device(
-                'cuda' if torch.cuda.is_available() else 'cpu')
+            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         else:
             self.device = torch.device(device)
 
@@ -107,7 +102,7 @@ class MEDGAN(Model):
         self.discriminator = None
         self.input_dim_ = None
 
-    def train(self, dataset_dir: str, synthetic_dir: Optional[str] = None, **kwargs):
+    def train(self, dataset_dir: str, synthetic_dir: str | None = None, **kwargs):
         """
         Train MedGAN model following Katabatic framework.
 
@@ -150,10 +145,11 @@ class MEDGAN(Model):
         data_range[data_range == 0] = 1  # Avoid division by zero
         data_normalized = (data - self.data_min_) / data_range
 
-        logger.info(f"Data normalized to [0, 1] range")
+        logger.info("Data normalized to [0, 1] range")
         logger.info(f"Original range: [{data.min():.2f}, {data.max():.2f}]")
         logger.info(
-            f"Normalized range: [{data_normalized.min():.2f}, {data_normalized.max():.2f}]")
+            f"Normalized range: [{data_normalized.min():.2f}, {data_normalized.max():.2f}]"
+        )
 
         # Train the model
         self._fit(data_normalized)
@@ -178,24 +174,20 @@ class MEDGAN(Model):
             # Ensure all training classes are present in synthetic data
             unique_train_classes = np.unique(df_train[y_name].values)
             unique_synth_classes = np.unique(y_synth[y_name].values)
-            missing_classes = set(unique_train_classes) - \
-                set(unique_synth_classes)
+            missing_classes = set(unique_train_classes) - set(unique_synth_classes)
 
             if missing_classes:
-                logger.warning(
-                    f"Missing classes in synthetic data: {missing_classes}")
-                logger.info(
-                    "Adding dummy samples to ensure all classes are present...")
+                logger.warning(f"Missing classes in synthetic data: {missing_classes}")
+                logger.info("Adding dummy samples to ensure all classes are present...")
 
                 # Add one sample for each missing class
                 for cls in missing_classes:
                     # Find a training sample with this class
                     cls_idx = np.where(df_train[y_name].values == cls)[0][0]
-                    dummy_row = df_train.iloc[cls_idx:cls_idx+1].values
+                    dummy_row = df_train.iloc[cls_idx : cls_idx + 1].values
 
                     # Append to synthetic data
-                    dummy_x = pd.DataFrame(
-                        dummy_row[:, :-1], columns=X_train.columns)
+                    dummy_x = pd.DataFrame(dummy_row[:, :-1], columns=X_train.columns)
                     dummy_y = pd.DataFrame(dummy_row[:, -1:], columns=[y_name])
                     x_synth = pd.concat([x_synth, dummy_x], ignore_index=True)
                     y_synth = pd.concat([y_synth, dummy_y], ignore_index=True)
@@ -207,17 +199,14 @@ class MEDGAN(Model):
                 x_synth[col] = x_synth[col].astype(int)
             y_synth[y_name] = y_synth[y_name].astype(int)
 
-            x_synth.to_csv(os.path.join(
-                synthetic_dir, "x_synth.csv"), index=False)
-            y_synth.to_csv(os.path.join(
-                synthetic_dir, "y_synth.csv"), index=False)
+            x_synth.to_csv(os.path.join(synthetic_dir, "x_synth.csv"), index=False)
+            y_synth.to_csv(os.path.join(synthetic_dir, "y_synth.csv"), index=False)
         else:
             synth_df = pd.DataFrame(synth_data, columns=df_train.columns)
             # Convert all columns to int
             for col in synth_df.columns:
                 synth_df[col] = synth_df[col].astype(int)
-            synth_df.to_csv(os.path.join(
-                synthetic_dir, "x_synth.csv"), index=False)
+            synth_df.to_csv(os.path.join(synthetic_dir, "x_synth.csv"), index=False)
 
         logger.info(f"\nSynthetic data saved to: {synthetic_dir}")
         logger.info("Training complete!")
@@ -231,26 +220,27 @@ class MEDGAN(Model):
             input_dim=self.input_dim_,
             encoder_dim=self.encoder_dim,
             latent_dim=self.latent_dim,
-            bn_decay=self.bn_decay
+            bn_decay=self.bn_decay,
         ).to(self.device)
 
         self.generator = Generator(
             latent_dim=self.latent_dim,
             hidden_dim=self.generator_hidden_dim,
             num_layers=self.generator_num_layers,
-            bn_decay=self.bn_decay
+            bn_decay=self.bn_decay,
         ).to(self.device)
 
         self.discriminator = Discriminator(
             latent_dim=self.latent_dim,
             hidden_dim=self.discriminator_hidden_dim,
             num_layers=self.discriminator_num_layers,
-            dropout=self.dropout
+            dropout=self.dropout,
         ).to(self.device)
 
         # Phase 1: Pretrain Autoencoder
         logger.info(
-            f"\nPhase 1: Pretraining Autoencoder for {self.ae_pretrain_epochs} epochs...")
+            f"\nPhase 1: Pretraining Autoencoder for {self.ae_pretrain_epochs} epochs..."
+        )
         self._pretrain_autoencoder(data)
 
         # Phase 2: Train GAN
@@ -271,8 +261,7 @@ class MEDGAN(Model):
 
             indices = torch.randperm(len(dataset))
             for i in range(n_batches):
-                batch_idx = indices[i *
-                                    self.batch_size:(i + 1) * self.batch_size]
+                batch_idx = indices[i * self.batch_size : (i + 1) * self.batch_size]
                 batch = dataset[batch_idx].to(self.device)
 
                 optimizer.zero_grad()
@@ -286,14 +275,15 @@ class MEDGAN(Model):
             if (epoch + 1) % 10 == 0 or epoch == 0:
                 avg_loss = total_loss / n_batches
                 logger.info(
-                    f"Epoch {epoch+1}/{self.ae_pretrain_epochs}: AE Loss = {avg_loss:.6f}")
+                    f"Epoch {epoch + 1}/{self.ae_pretrain_epochs}: AE Loss = {avg_loss:.6f}"
+                )
 
     def _train_gan(self, data: np.ndarray):
         """Train the GAN in the latent space."""
-        optimizer_g = optim.Adam(
-            self.generator.parameters(), lr=self.generator_lr)
+        optimizer_g = optim.Adam(self.generator.parameters(), lr=self.generator_lr)
         optimizer_d = optim.Adam(
-            self.discriminator.parameters(), lr=self.discriminator_lr)
+            self.discriminator.parameters(), lr=self.discriminator_lr
+        )
         criterion = nn.BCELoss()
 
         dataset = torch.tensor(data, dtype=torch.float32)
@@ -310,8 +300,7 @@ class MEDGAN(Model):
 
             indices = torch.randperm(len(dataset))
             for i in range(n_batches):
-                batch_idx = indices[i *
-                                    self.batch_size:(i + 1) * self.batch_size]
+                batch_idx = indices[i * self.batch_size : (i + 1) * self.batch_size]
                 real_data = dataset[batch_idx].to(self.device)
                 batch_len = len(real_data)
 
@@ -357,7 +346,8 @@ class MEDGAN(Model):
                 avg_d_loss = d_loss_total / n_batches
                 avg_g_loss = g_loss_total / n_batches
                 logger.info(
-                    f"Epoch {epoch+1}/{self.gan_epochs}: D Loss = {avg_d_loss:.6f}, G Loss = {avg_g_loss:.6f}")
+                    f"Epoch {epoch + 1}/{self.gan_epochs}: D Loss = {avg_d_loss:.6f}, G Loss = {avg_g_loss:.6f}"
+                )
 
     def sample(self, n: int) -> np.ndarray:
         """
@@ -392,4 +382,3 @@ class MEDGAN(Model):
 
     def evaluate(self):
         """Evaluate is handled by the pipeline's TSTREvaluation."""
-        pass
