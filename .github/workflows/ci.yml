@@ -4,11 +4,11 @@ on:
   push:
     branches: [main, development]
     paths-ignore:
-      - 'frontend/**' #Note: To be removed once front-end moved to its own repo.
+      - 'frontend/**' #TODO: To be removed once front-end moved to its own repo.
   pull_request:
     branches: [main, development]
     paths-ignore:
-      - 'frontend/**' #Note: To be removed once front-end moved to its own repo.
+      - 'frontend/**' #TODO: To be removed once front-end moved to its own repo.
 
 permissions:
   contents: read
@@ -166,7 +166,7 @@ jobs:
 
       - name: Remove triton
         if: matrix.torch
-        # Triton segfaults on CPU version of torch. Remove if in pipeline.
+        # Triton segfaults on CPU version of torch. Removes if in pipeline.
         run: poetry run pip uninstall -y triton
 
       - name: Integration tests (${{ matrix.model }})
@@ -208,9 +208,6 @@ jobs:
         run: poetry install --with dev -E all
 
       - name: Remove triton
-        # The Linux torch wheel pulls in triton unconditionally, but it segfaults on
-        # import (native crash, not an ImportError) on GPU-driver-less runners like
-        # this one. Nothing in this repo calls torch.compile()/uses triton, so drop it.
         run: poetry run pip uninstall -y triton
 
       - name: Model promotion contract
