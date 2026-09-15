@@ -5,7 +5,6 @@ import sys
 import warnings
 from time import perf_counter
 
-import pandas as pd
 import psutil
 
 sys.path.insert(
@@ -102,13 +101,13 @@ def get_system_run_details() -> None:
     print("======================================================================")
 
 
-# Training hyperparameters — matched to paper (Borisov et al., 2022, Appendix C)
-LLM = "gpt2"  # full GReaT variant — 355M params
-EPOCHS = 310  # paper: 310 epochs for full GReaT on Adult
-BATCH_SIZE = 128
-EXPERIMENT_DIR = "trainer_great_adult"
-EFFICIENT_FINETUNING = ""
-FLOAT_PRECISION = None
+# Training hyperparameters
+LLM = "gpt2"  # HuggingFace model checkpoint
+EPOCHS = 2  # fine-tuning epochs (keep low for eval; raise for quality)
+BATCH_SIZE = 2  # per-device training batch size
+EXPERIMENT_DIR = "trainer_great_adult"  # output dir for HuggingFace Trainer checkpoints
+EFFICIENT_FINETUNING = ""  # "" = full fine-tune; "lora" = LoRA (requires peft)
+FLOAT_PRECISION = None  # decimal places for floats in text encoding; None = full
 
 # Sampling hyperparameters
 TEMPERATURE = 0.7  # generation temperature (lower = more conservative)
@@ -121,23 +120,12 @@ DROP_NAN = False  # drop rows with any NaN in the output
 # SEED = config.seed  # generation seed for reproducibility
 
 config = RunConfig(
-    dataset_name="magic",
+    dataset_name="car",
     model_name="great",
-    categorical_cols=[
-        "fLength",
-        "fWidth",
-        "fSize",
-        "fConc",
-        "fConc1",
-        "fAsym",
-        "fM3Long",
-        "fM3Trans",
-        "fAlpha",
-        "fDist",
-    ],
+    categorical_cols=["1", "2", "3", "4", "5"],
     continuous_cols=[],
-    target_col_raw="class",
-    constraints={},
+    target_col_raw="6",
+    constraints=None,
 )
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)
@@ -145,7 +133,6 @@ train_df, test_df, target_col, paths = preprocess_and_split(config)
 print("\n" + "=" * 60)
 print("STEP 3 — Train GReat")
 print("=" * 60)
-
 model = GReaT(
     llm=LLM,
     experiment_dir=EXPERIMENT_DIR,
@@ -153,7 +140,6 @@ model = GReaT(
     batch_size=BATCH_SIZE,
     efficient_finetuning=EFFICIENT_FINETUNING,
     float_precision=FLOAT_PRECISION,
-    save_steps=100000,  # to avoid disk space errors
 )
 
 model.train(
@@ -163,15 +149,10 @@ model.train(
 )
 print("\nGReat training complete.")
 
-# MUST use fit(), not train()
-# model.train() triggers pipeline mode which silently overrides epochs to 2
-model.fit(train_df)
-
-print("\nGReaT training complete.")
 print("\n" + "=" * 60)
 print("STEP 4 — Generate synthetic data")
 print("=" * 60)
-synthetic_df = pd.DataFrame(model.sample(len(train_df)), columns=train_df.columns)
+synthetic_df = model.sample(len(train_df))
 synthetic_df = save_synthetic(
     synthetic_df,
     train_df,
