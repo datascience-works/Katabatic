@@ -102,13 +102,13 @@ def get_system_run_details() -> None:
     print("======================================================================")
 
 
-# Training hyperparameters
-LLM = "gpt2"  # HuggingFace model checkpoint
-EPOCHS = 2  # fine-tuning epochs (keep low for eval; raise for quality)
-BATCH_SIZE = 2  # per-device training batch size
-EXPERIMENT_DIR = "trainer_great_adult"  # output dir for HuggingFace Trainer checkpoints
-EFFICIENT_FINETUNING = ""  # "" = full fine-tune; "lora" = LoRA (requires peft)
-FLOAT_PRECISION = None  # decimal places for floats in text encoding; None = full
+# Training hyperparameters — matched to paper (Borisov et al., 2022, Appendix C)
+LLM = "gpt2"  # full GReaT variant — 355M params
+EPOCHS = 310  # paper: 310 epochs for full GReaT on Adult
+BATCH_SIZE = 128
+EXPERIMENT_DIR = "trainer_great_adult"
+EFFICIENT_FINETUNING = ""
+FLOAT_PRECISION = None
 
 # Sampling hyperparameters
 TEMPERATURE = 0.7  # generation temperature (lower = more conservative)
@@ -145,6 +145,7 @@ train_df, test_df, target_col, paths = preprocess_and_split(config)
 print("\n" + "=" * 60)
 print("STEP 3 — Train GReat")
 print("=" * 60)
+
 model = GReaT(
     llm=LLM,
     experiment_dir=EXPERIMENT_DIR,
@@ -152,6 +153,7 @@ model = GReaT(
     batch_size=BATCH_SIZE,
     efficient_finetuning=EFFICIENT_FINETUNING,
     float_precision=FLOAT_PRECISION,
+    save_steps=100000,  # to avoid disk space errors
 )
 
 model.train(
@@ -161,6 +163,11 @@ model.train(
 )
 print("\nGReat training complete.")
 
+# MUST use fit(), not train()
+# model.train() triggers pipeline mode which silently overrides epochs to 2
+model.fit(train_df)
+
+print("\nGReaT training complete.")
 print("\n" + "=" * 60)
 print("STEP 4 — Generate synthetic data")
 print("=" * 60)
