@@ -107,6 +107,9 @@ jobs:
             tabsyn:
               - 'katabatic/models/tabsyn/**'
               - 'tests/test_integration_tabsyn.py'
+            great:
+              - 'katabatic/models/great/**'
+              - 'tests/test_integration_great.py'
       - name: Build Dynamic Matrix
         id: build-matrix
         run: |
@@ -114,7 +117,8 @@ jobs:
             {"model": "ganblr", "torch": false},
             {"model": "ctgan", "torch": true},
             {"model": "pategan", "torch": false},
-            {"model": "tabsyn", "torch": true}
+            {"model": "tabsyn", "torch": true},
+            {"model": "great", "torch": true}
           ]'
 
           # If a core file changed, run all models.
