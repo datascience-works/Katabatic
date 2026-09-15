@@ -1,7 +1,7 @@
 """Model registry for dynamic model loading.
 
 Officially supported models (smoke-tested, PyPI extras): ``ganblr``, ``ctgan``,
-``pategan``.
+``pategan``, ``tabsyn``, ``great``.
 Other registered models are experimental; see ``docs/EXPERIMENTAL_MODELS.md``.
 """
 
@@ -52,14 +52,14 @@ class ModelRegistry:
             "class": "GReaT",
             "dependencies": ["transformers", "torch"],
             "extra": "great",
-            "supported": False,
+            "supported": True,
         },
         "tabsyn": {
             "module": "katabatic.models.tabsyn.models",
             "class": "TabSyn",
-            "dependencies": [],
+            "dependencies": ["torch", "tqdm"],
             "extra": "tabsyn",
-            "supported": False,
+            "supported": True,
         },
         "tabddpm": {
             "module": "katabatic.models.tabddpm.models",
@@ -75,12 +75,26 @@ class ModelRegistry:
             "extra": "pategan",
             "supported": True,
         },
+        "mst": {
+            "module": "katabatic.models.mst.models",
+            "class": "MSTModel",
+            "dependencies": ["snsynth", "mbi", "opendp"],
+            "extra": "mst",
+            "supported": False,
+        },
         "ctgan": {
             "module": "katabatic.models.ctgan.models",
             "class": "CTGANModel",
             "dependencies": ["torch", "sklearn"],
             "extra": "ctgan",
             "supported": True,
+        },
+        "arf": {
+            "module": "katabatic.models.arf.models",
+            "class": "ARFModel",
+            "dependencies": ["sklearn", "numpy", "pandas"],
+            "extra": None,
+            "supported": False,
         },
     }
 
