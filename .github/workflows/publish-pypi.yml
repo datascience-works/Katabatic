@@ -10,12 +10,6 @@
 # Triggers:
 #   - GitHub Release published (recommended): create release from tag v1.2.3
 #   - Manual: Actions → Publish to PyPI → Run workflow
-#
-# Only "release: published" triggers a real publish. Do NOT also trigger on tag
-# push: creating a GitHub Release from a tag fires both events almost
-# simultaneously, so both would build and try to upload the same version -
-# only the first can succeed, since PyPI rejects re-uploading an existing
-# version/filename even from a legitimate rebuild.
 
 name: Publish to PyPI
 
