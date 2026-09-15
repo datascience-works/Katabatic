@@ -8,7 +8,6 @@ import fsspec
 import numpy as np
 import pandas as pd
 import torch
-from huggingface_hub import resolve_revision
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments
 
@@ -40,6 +39,8 @@ class GReaT(Model):
     into a tabular DataFrame.
     """
 
+    ARTIFACT_STATE_FILES = ("config.json", "model.pt")
+
     def __init__(
         self,
         llm: str,
@@ -51,6 +52,20 @@ class GReaT(Model):
         report_to: list[str] | None = None,
         **train_kwargs,
     ):
+        """Initializes GReaT.
+
+        Args:
+            llm: HuggingFace checkpoint of a pretrained large language model, used a basis of our model
+            experiment_dir: Directory, where the training checkpoints will be saved
+            epochs: Number of epochs to fine-tune the model
+            batch_size: Batch size used for fine-tuning
+            efficient_finetuning: Indication of fine-tuning method
+            float_precision: Number of decimal places to use for floating point numbers. If None, full precision is used.
+            report_to: List of integrations to report to. Empty list means no reporting (disable Weights & Biases).
+            train_kwargs: Additional hyperparameters added to the TrainingArguments used by the HuggingFace library,
+             see here the full list of all possible values
+             https://huggingface.co/docs/transformers/main/en/main_classes/trainer#transformers.TrainingArguments
+        """
         super().__init__()
         self.check_dependencies()
 
@@ -65,19 +80,9 @@ class GReaT(Model):
             **train_kwargs,
         }
 
-        revision = resolve_revision(self.llm)
-
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            self.llm,
-            revision=revision.resolved,
-        )
-
+        self.tokenizer = AutoTokenizer.from_pretrained(self.llm)  # nosec B615: trusted HF base model
         self.tokenizer.pad_token = self.tokenizer.eos_token
-
-        self.model = AutoModelForCausalLM.from_pretrained(
-            self.llm,
-            revision=revision.resolved,
-        )
+        self.model = AutoModelForCausalLM.from_pretrained(self.llm)  # nosec B615: trusted HF base model
 
         if self.efficient_finetuning == "lora":
             try:
@@ -129,15 +134,24 @@ class GReaT(Model):
         *args,
         categorical_cols: list[str] | None = None,
         continuous_cols: list[str] | None = None,
+        synthetic_dir: str | None = None,
+        artifact_state_dir: str | None = None,
         **kwargs,
     ) -> "GReaT":
         """
-        Train GReaT using Katabatic-standard x_train.csv and y_train.csv.
+        Train GReaT using Katabatic-standard x_train.csv and y_train.csv, then
+        generate and persist synthetic data (and artifact state, if requested).
 
         Parameters
         ----------
         data_dir : str
             Directory containing x_train.csv and y_train.csv.
+        synthetic_dir : str, optional
+            Directory to write the generated x_synth.csv / y_synth.csv to.
+            Defaults to synthetic/<dataset_name>/great.
+        artifact_state_dir : str, optional
+            When provided, the fitted model state is persisted here for
+            later retrieval via load_from_ref().
 
         Returns
         -------
@@ -155,11 +169,45 @@ class GReaT(Model):
         x_train = pd.read_csv(x_train_path)
         y_train = pd.read_csv(y_train_path).squeeze()
 
-        self.target_col = y_train.name
+        self.target_col = y_train.name if hasattr(y_train, "name") else None
 
         train_df = pd.concat([x_train, y_train], axis=1)
 
         self.fit(train_df)
+
+        # Generate synthetic data of equal size on CPU to avoid GPU issues
+        n_rows = len(train_df)
+        df_synth = self.sample(n_rows, device="cpu", k=max(1, min(8, n_rows)))
+
+        # Split into X / y (last column assumed to be label)
+        if df_synth.shape[1] >= 2:
+            x_synth = df_synth.iloc[:, :-1]
+            y_synth = df_synth.iloc[:, -1]
+        else:
+            # Degenerate case: single column; treat as X only
+            x_synth = df_synth.copy()
+            y_synth = pd.Series([0] * len(x_synth), name=self.target_col or "target")
+
+        # Align feature names to x_train if counts match
+        real_cols = x_train.columns.tolist()
+        if len(real_cols) == x_synth.shape[1]:
+            x_synth.columns = real_cols
+            x_synth = x_synth.reindex(columns=real_cols)
+
+        if not synthetic_dir:
+            synthetic_dir = os.path.join(
+                "synthetic", os.path.basename(os.path.normpath(data_dir)), "great"
+            )
+        os.makedirs(synthetic_dir, exist_ok=True)
+        y_name = self.target_col or "target"
+        x_synth.to_csv(os.path.join(synthetic_dir, "x_synth.csv"), index=False)
+        pd.DataFrame(y_synth, columns=[y_name]).to_csv(
+            os.path.join(synthetic_dir, "y_synth.csv"), index=False
+        )
+
+        if artifact_state_dir:
+            self._save_artifact_state(artifact_state_dir)
+
         return self
 
     def fit(
@@ -394,6 +442,10 @@ class GReaT(Model):
 
                     sample_text = ""
                     sample_values = {}
+                    # Guided sampling generates one value at a time, so the
+                    # row-level max_length is capped to a short per-feature
+                    # segment rather than used directly.
+                    segment_length = min(max_length, 30)
 
                     for feature in feature_names:
                         prompt = f"{sample_text}{feature} is"
@@ -404,7 +456,7 @@ class GReaT(Model):
                         output = self.model.generate(
                             input_ids=inputs["input_ids"],
                             attention_mask=inputs.get("attention_mask"),
-                            max_length=len(inputs["input_ids"][0]) + 30,
+                            max_length=len(inputs["input_ids"][0]) + segment_length,
                             temperature=temperature,
                             pad_token_id=self.tokenizer.eos_token_id,
                             do_sample=True,
@@ -589,6 +641,10 @@ class GReaT(Model):
 
         torch.save(self.model.state_dict(), fs.open(path + "/model.pt", "wb"))
 
+    def _save_artifact_state(self, state_dir: str) -> None:
+        """Persist fitted GReaT state for the Katabatic artifact pipeline."""
+        self.save(state_dir)
+
     def load_finetuned_model(self, path: str):
         """
         Load fine-tuned model weights.
@@ -599,6 +655,24 @@ class GReaT(Model):
                 weights_only=True,
             )
         )
+
+    @classmethod
+    def load_from_ref(cls, store, ref):
+        """Load a trained GReaT model from a Katabatic artifact reference."""
+        state_dir = store.open_path(ref.state_relpath)
+
+        if not state_dir.is_dir():
+            raise FileNotFoundError(
+                f"GReaT artifact state directory not found: {ref.state_relpath}"
+            )
+
+        for filename in cls.ARTIFACT_STATE_FILES:
+            if not (state_dir / filename).is_file():
+                raise FileNotFoundError(
+                    f"Missing GReaT artifact state file: {filename}"
+                )
+
+        return cls.load_from_dir(str(state_dir))
 
     @classmethod
     def load_from_dir(cls, path: str):

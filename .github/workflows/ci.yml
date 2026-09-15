@@ -4,11 +4,11 @@ on:
   push:
     branches: [main, development]
     paths-ignore:
-      - 'frontend/**' #Note: To be removed once front-end moved to its own repo.
+      - 'frontend/**' #TODO: To be removed once front-end moved to its own repo.
   pull_request:
     branches: [main, development]
     paths-ignore:
-      - 'frontend/**' #Note: To be removed once front-end moved to its own repo.
+      - 'frontend/**' #TODO: To be removed once front-end moved to its own repo.
 
 permissions:
   contents: read
@@ -107,6 +107,9 @@ jobs:
             tabsyn:
               - 'katabatic/models/tabsyn/**'
               - 'tests/test_integration_tabsyn.py'
+            great:
+              - 'katabatic/models/great/**'
+              - 'tests/test_integration_great.py'
       - name: Build Dynamic Matrix
         id: build-matrix
         run: |
@@ -114,7 +117,8 @@ jobs:
             {"model": "ganblr", "torch": false},
             {"model": "ctgan", "torch": true},
             {"model": "pategan", "torch": false},
-            {"model": "tabsyn", "torch": true}
+            {"model": "tabsyn", "torch": true},
+            {"model": "great", "torch": true}
           ]'
 
           # If a core file changed, run all models.
@@ -160,6 +164,11 @@ jobs:
       - name: Install with ${{ matrix.model }} extra
         run: poetry install --with dev -E ${{ matrix.model }}
 
+      - name: Remove triton
+        if: matrix.torch
+        # Triton segfaults on CPU version of torch. Removes if in pipeline.
+        run: poetry run pip uninstall -y triton
+
       - name: Integration tests (${{ matrix.model }})
         env:
           COVERAGE_FILE: .coverage.${{ matrix.model }}
@@ -198,7 +207,12 @@ jobs:
       - name: Install supported model extras
         run: poetry install --with dev -E all
 
+      - name: Remove triton
+        run: poetry run pip uninstall -y triton
+
       - name: Model promotion contract
+        env:
+          USE_TORCH: "1"
         run: poetry run pytest tests/test_model_registry.py -v
 
   setup-script:
