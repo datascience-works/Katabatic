@@ -214,6 +214,8 @@ jobs:
         run: poetry run pip uninstall -y triton
 
       - name: Model promotion contract
+        env:
+          USE_TORCH: "1"
         run: poetry run pytest tests/test_model_registry.py -v
 
   setup-script:
