@@ -102,13 +102,15 @@ Documentation = "https://github.com/datascience-works/Katabatic#readme"
 [tool.coverage.run]
 # Experimental models are excluded until they have integration tests.
 omit = [
+    "katabatic/models/arf/*",
     "katabatic/models/codi/*",
     "katabatic/models/gmm/*",
-    "katabatic/models/great/*",
     "katabatic/models/medgan/*",
     "katabatic/models/naivebayes/*",
     "katabatic/models/smote/*",
+    "katabatic/models/synthpop/*",
     "katabatic/models/tabddpm/*",
+    "katabatic/models/tabkde_updated/*",
     "katabatic/models/mst/*",
 ]
 
