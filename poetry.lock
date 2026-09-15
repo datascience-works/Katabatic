@@ -4973,6 +4973,21 @@ pytest = ">=7"
 testing = ["process-tests", "pytest-xdist", "virtualenv"]
 
 [[package]]
+name = "pytest-forked"
+version = "1.7.5"
+description = "run tests in isolated forked subprocesses"
+optional = false
+python-versions = ">=3.10"
+groups = ["dev"]
+files = [
+    {file = "pytest_forked-1.7.5-py3-none-any.whl", hash = "sha256:e9f3475fa0a42927f5e370d721de9c2d785616a06a4c506712d6cb8055e37c84"},
+    {file = "pytest_forked-1.7.5.tar.gz", hash = "sha256:00f2bee51612f29b8e6b81eed2c3b2975e824c2693394f5bdaf7a1369078ba5f"},
+]
+
+[package.dependencies]
+pytest = ">=7"
+
+[[package]]
 name = "pytest-mock"
 version = "3.15.1"
 description = "Thin-wrapper around the mock package for easier use with pytest"
@@ -6953,4 +6968,4 @@ tabsyn = ["category-encoders", "tomli", "tomli-w", "torch", "tqdm"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.12"
-content-hash = "93d53c9fc06a781007c7abd6dbd0232c249c20a0f03ae8d309664c6dd276c805"
+content-hash = "88f4e52ea3c4d892cfee5e5686553c2db61fb25fb9f41bda5a5e8745dfae0ea0"
