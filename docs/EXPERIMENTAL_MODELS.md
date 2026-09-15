@@ -9,6 +9,8 @@ Katabatic ships multiple generative model implementations. Only a subset is **of
 | GANBLR | `pip install katabatic[ganblr]` | Yes (artifact pipeline integration test) |
 | CTGAN | `pip install katabatic[ctgan]` | Yes (artifact pipeline integration test) |
 | PATE-GAN | `pip install katabatic[pategan]` | Yes (artifact pipeline integration test) |
+| TabSyn | `pip install katabatic[tabsyn]` | Yes (artifact pipeline integration test) |
+| GReaT | `pip install katabatic[great]` | Yes (artifact pipeline integration test) |
 
 These models are listed in `ModelRegistry` with `supported: True`, and `tests/test_model_registry.py::test_supported_models_list` pins this exact set. Use the artifact pipeline documented in [GANBLR_FLOW.md](../GANBLR_FLOW.md) and the README quick start.
 
@@ -19,8 +21,6 @@ and CI coverage are not guaranteed**:
 
 | Model | Extra | Notes |
 |-------|-------|-------|
-| GReaT | `great` | Has an integration test and CI job, but registered with `supported: False` — not yet promoted |
-| TabSyn | `tabsyn` | Heavy torch stack |
 | TabDDPM | `tabddpm` | Uses external `tabddpm` or local fallback |
 | CoDi | `codi` | Not in registry; see `examples/codi.ipynb` |
 | MedGAN | `medgan` | Not in registry; see `examples/medgan.ipynb` |
