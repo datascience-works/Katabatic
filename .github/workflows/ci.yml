@@ -4,14 +4,17 @@ on:
   push:
     branches: [main, development]
     paths-ignore:
-      - 'frontend/**' #Note: To be removed once front-end moved to its own repo.
+      - 'frontend/**' #TODO: To be removed once front-end moved to its own repo.
   pull_request:
     branches: [main, development]
     paths-ignore:
-      - 'frontend/**' #Note: To be removed once front-end moved to its own repo.
+      - 'frontend/**' #TODO: To be removed once front-end moved to its own repo.
 
 permissions:
   contents: read
+
+env:
+  POETRY_VERSION: "2.4.3"
 
 jobs:
   pre-commit:
@@ -21,7 +24,8 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
-      - run: pip install pre-commit
+      - run: pip install poetry==${{ env.POETRY_VERSION }} pre-commit
+      - run: poetry install --with dev
       - run: pre-commit run --all-files
 
   lint-and-test:
@@ -40,7 +44,7 @@ jobs:
           key: poetry-lint-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install Poetry
-        run: pip install poetry==2.4.2
+        run: pip install poetry==${{ env.POETRY_VERSION }}
 
       - name: Validate project + lock in sync
         run: poetry check --lock
@@ -98,22 +102,27 @@ jobs:
             ganblr:
               - 'katabatic/models/ganblr/**'
               - 'tests/test_integration_ganblr.py'
-            great:
-              - 'katabatic/models/great/**'
-              - 'tests/test_integration_great.py'
             ctgan:
               - 'katabatic/models/ctgan/**'
               - 'tests/test_integration_ctgan.py'
             pategan:
               - 'katabatic/models/pategan/**'
               - 'tests/test_integration_pategan.py'
+            tabsyn:
+              - 'katabatic/models/tabsyn/**'
+              - 'tests/test_integration_tabsyn.py'
+            great:
+              - 'katabatic/models/great/**'
+              - 'tests/test_integration_great.py'
       - name: Build Dynamic Matrix
         id: build-matrix
         run: |
           ALL_MODELS='[
             {"model": "ganblr", "torch": false},
             {"model": "ctgan", "torch": true},
-            {"model": "pategan", "torch": false}
+            {"model": "pategan", "torch": false},
+            {"model": "tabsyn", "torch": true},
+            {"model": "great", "torch": true}
           ]'
 
           # If a core file changed, run all models.
@@ -150,7 +159,7 @@ jobs:
           key: poetry-${{ matrix.model }}-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install Poetry
-        run: pip install poetry==2.4.2
+        run: pip install poetry==${{ env.POETRY_VERSION }}
 
       - name: Pre-install CPU torch
         if: matrix.torch
@@ -158,6 +167,11 @@ jobs:
 
       - name: Install with ${{ matrix.model }} extra
         run: poetry install --with dev -E ${{ matrix.model }}
+
+      - name: Remove triton
+        if: matrix.torch
+        # Triton segfaults on CPU version of torch. Removes if in pipeline.
+        run: poetry run pip uninstall -y triton
 
       - name: Integration tests (${{ matrix.model }})
         env:
@@ -173,6 +187,9 @@ jobs:
 
   model-contract:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.build-matrix.outputs.matrix }}
+      core: ${{ steps.filter.outputs.core }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -186,7 +203,7 @@ jobs:
           key: poetry-contract-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install Poetry
-        run: pip install poetry==2.4.2
+        run: pip install poetry==${{ env.POETRY_VERSION }}
 
       - name: Pre-install CPU torch
         run: poetry run pip install "torch>=2.13.0,<3.0.0" --index-url https://download.pytorch.org/whl/cpu
@@ -194,8 +211,44 @@ jobs:
       - name: Install supported model extras
         run: poetry install --with dev -E all
 
+      - name: Remove triton
+        run: poetry run pip uninstall -y triton
+
       - name: Model promotion contract
+        env:
+          USE_TORCH: "1"
         run: poetry run pytest tests/test_model_registry.py -v
+
+  setup-script:
+    # Verifies scripts/setup.py works on Linux, MacOS, and Windows.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/development'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    name: setup-script-${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Cache Poetry environment
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ matrix.model }}-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+
+      - name: Install Poetry
+        run: pip install poetry==${{ env.POETRY_VERSION }}
+
+      - name: Run setup script
+        run: python scripts/setup.py
+
+      - name: Verify the package imports
+        run: poetry run python -c "import katabatic; print(katabatic.__version__)"
 
   wheel-smoke:
     runs-on: ubuntu-latest
@@ -209,7 +262,7 @@ jobs:
 
       - name: Install Poetry and build
         run: |
-          pip install poetry==2.4.2
+          pip install poetry==${{ env.POETRY_VERSION }}
           poetry build
 
       - name: Install wheel in clean venv
