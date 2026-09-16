@@ -26,6 +26,9 @@ concurrency:
   group: publish-testpypi-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  POETRY_VERSION: "2.4.3"
+
 jobs:
   publish:
     name: Build and upload to TestPyPI
@@ -45,7 +48,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install Poetry
-        run: pip install poetry==2.4.2
+        run: pip install poetry==${{ env.POETRY_VERSION }}
 
       - name: Validate project metadata
         run: poetry check

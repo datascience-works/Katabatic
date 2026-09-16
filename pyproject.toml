@@ -61,10 +61,6 @@ tabddpm = [
     "rtdl_revisiting_models==0.0.2",
     "category-encoders>=2.8.1,<3.0.0",
 ]
-tabpfgen = [
-    "torch>=2.14.0,<3.0.0",
-    "tabpfn>=2.0",
-]
 tabsyn = [
     "torch>=2.14.0,<3.0.0",
     "tqdm>=4.66.0,<5.0.0",
@@ -106,11 +102,13 @@ omit = [
     "katabatic/models/codi/*",
     "katabatic/models/gmm/*",
     "katabatic/models/medgan/*",
+    "katabatic/models/mst/*",
     "katabatic/models/naivebayes/*",
     "katabatic/models/synthpop/*",
     "katabatic/models/tabddpm/*",
     "katabatic/models/tabkde_updated/*",
-    "katabatic/models/mst/*",
+    "katabatic/models/tvaegan/*",
+
 ]
 
 [tool.poetry]
@@ -126,6 +124,7 @@ ipykernel = "^7.3.0"
 pytest = "^9.1.1"
 pytest-cov = "^7.1.0"
 pytest-mock = "^3.15.1"
+pytest-forked = "^1.7.5"
 # Security tools
 bandit = "^1.9.4"
 pip-audit = "^2.10.1"
@@ -140,6 +139,7 @@ markers = [
     "pategan: requires pategan extra",
     "tabsyn: requires tabsyn extra",
     "smote: requires smote extra",
+    "forked: run test in an isolated forked process (pytest-forked)",
 ]
 
 [tool.ruff]

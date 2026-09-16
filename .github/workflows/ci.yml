@@ -13,6 +13,9 @@ on:
 permissions:
   contents: read
 
+env:
+  POETRY_VERSION: "2.4.3"
+
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
@@ -21,7 +24,8 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
-      - run: pip install pre-commit
+      - run: pip install poetry==${{ env.POETRY_VERSION }} pre-commit
+      - run: poetry install --with dev
       - run: pre-commit run --all-files
 
   lint-and-test:
@@ -40,7 +44,7 @@ jobs:
           key: poetry-lint-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install Poetry
-        run: pip install poetry==2.4.2
+        run: pip install poetry==${{ env.POETRY_VERSION }}
 
       - name: Validate project + lock in sync
         run: poetry check --lock
@@ -159,7 +163,7 @@ jobs:
           key: poetry-${{ matrix.model }}-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install Poetry
-        run: pip install poetry==2.4.2
+        run: pip install poetry==${{ env.POETRY_VERSION }}
 
       - name: Pre-install CPU torch
         if: matrix.torch
@@ -203,7 +207,7 @@ jobs:
           key: poetry-contract-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install Poetry
-        run: pip install poetry==2.4.2
+        run: pip install poetry==${{ env.POETRY_VERSION }}
 
       - name: Pre-install CPU torch
         run: poetry run pip install "torch>=2.13.0,<3.0.0" --index-url https://download.pytorch.org/whl/cpu
@@ -242,7 +246,7 @@ jobs:
           key: poetry-${{ matrix.model }}-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install Poetry
-        run: pip install poetry==2.4.2
+        run: pip install poetry==${{ env.POETRY_VERSION }}
 
       - name: Run setup script
         run: python scripts/setup.py
@@ -262,7 +266,7 @@ jobs:
 
       - name: Install Poetry and build
         run: |
-          pip install poetry==2.4.2
+          pip install poetry==${{ env.POETRY_VERSION }}
           poetry build
 
       - name: Install wheel in clean venv
