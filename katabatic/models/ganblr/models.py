@@ -30,7 +30,7 @@ class GANBLR(Model):
         self.__gen_weights = None
         self.batch_size = None
         self.epochs = 150
-        self.k = None
+        self.k = 2
         self.constraints = None
         self._ordinal_encoder = OrdinalEncoder(
             dtype=int, handle_unknown="use_encoded_value", unknown_value=-1

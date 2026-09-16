@@ -147,12 +147,15 @@ class ConsistencyEvaluation(Evaluation):
                 continue
 
             vals = self.synthetic_data[col]
+            vals_numeric = pd.to_numeric(vals, errors="coerce")
+
             violation_mask = np.zeros(n_synth, dtype=bool)
 
             if col_min is not None:
-                violation_mask |= (vals < col_min).values
+                violation_mask |= (vals_numeric < float(col_min)).fillna(False).values
+
             if col_max is not None:
-                violation_mask |= (vals > col_max).values
+                violation_mask |= (vals_numeric > float(col_max)).fillna(False).values
 
             rate = round(float(violation_mask.sum()) / n_synth, 4)
             results[f"{col} [{col_min}, {col_max}]"] = rate
