@@ -6,6 +6,7 @@ from katabatic.models.ganblr.utils import DMMDiscretizer
 
 class GANBLRPP:
     """GANBLR++ wrapper with support for numerical columns."""
+
     def __init__(self, numerical_columns, random_state=None):
         self.numerical_columns = list(numerical_columns)
         self.random_state = random_state

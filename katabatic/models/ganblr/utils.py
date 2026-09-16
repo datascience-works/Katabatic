@@ -1,8 +1,8 @@
 import numpy as np
-from sklearn.mixture import BayesianGaussianMixture
-from sklearn.preprocessing import LabelEncoder, StandardScaler
 import tensorflow as tf
 from pandas import read_csv
+from sklearn.mixture import BayesianGaussianMixture
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 
 class softmax_weight(tf.keras.constraints.Constraint):
@@ -225,5 +225,3 @@ class DMMDiscretizer:
             restored[:, column_index] = sampled
 
         return self.scaler.inverse_transform(restored)
-
-
