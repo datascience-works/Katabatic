@@ -1,14 +1,19 @@
+import numpy as np
+
 from katabatic.models.ganblr.models import GANBLR
 from katabatic.models.ganblr.utils import DMMDiscretizer
 
-class GANBLRPP:
-    """GANBLR++ wrapper with support for numerical columns."""
+
+class GANBLRPP(GANBLR):
+    """GANBLR++: GANBLR with support for numerical columns."""
+
+    ARTIFACT_STATE_FILES = ("ganblrpp_model.pkl",)
+
     def __init__(self, numerical_columns, random_state=None):
+        super().__init__()
         self.numerical_columns = list(numerical_columns)
         self.random_state = random_state
         self.discretizer = DMMDiscretizer(random_state=random_state)
-        self.ganblr = GANBLR()
-        self._is_fitted = False
 
     def fit(
         self,
@@ -37,7 +42,7 @@ class GANBLRPP:
 
             x_array[:, self.numerical_columns] = discrete_numerical
 
-        self.ganblr.fit(
+        return super().fit(
             x_array,
             y,
             k=k,
@@ -47,39 +52,18 @@ class GANBLRPP:
             verbose=verbose,
         )
 
-        self._is_fitted = True
-        return self
-
     def sample(self, size=None, verbose=1, seed=None):
         """Generate synthetic data and restore numerical columns."""
-        if not self._is_fitted:
+        if not self.is_fitted:
             raise RuntimeError("GANBLRPP must be fitted before sampling")
 
-        synthetic = self.ganblr.sample(
-            size=size,
-            verbose=verbose,
-            seed=seed,
-        )
+        synthetic = super().sample(size=size, verbose=verbose, seed=seed)
 
         if not self.numerical_columns:
             return synthetic
 
-        if hasattr(synthetic, "iloc"):
-            numerical_data = synthetic.iloc[:, self.numerical_columns].to_numpy(
-                dtype=float
-            )
-
-            restored = self.discretizer.inverse_transform(numerical_data)
-
-            synthetic.iloc[:, self.numerical_columns] = restored
-            return synthetic
-
-        synthetic_array = np.asarray(synthetic).copy()
-
-        numerical_data = synthetic_array[:, self.numerical_columns].astype(float)
-
+        numerical_data = synthetic.iloc[:, self.numerical_columns].to_numpy(dtype=float)
         restored = self.discretizer.inverse_transform(numerical_data)
+        synthetic.iloc[:, self.numerical_columns] = restored
 
-        synthetic_array[:, self.numerical_columns] = restored
-
-        return synthetic_array
+        return synthetic
