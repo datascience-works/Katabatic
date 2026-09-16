@@ -1,5 +1,8 @@
+import numpy as np
+
 from katabatic.models.ganblr.models import GANBLR
 from katabatic.models.ganblr.utils import DMMDiscretizer
+
 
 class GANBLRPP:
     """GANBLR++ wrapper with support for numerical columns."""
