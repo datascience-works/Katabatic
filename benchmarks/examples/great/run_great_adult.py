@@ -160,13 +160,8 @@ model.train(
     paths["split_dir"],
     categorical_cols=config.categorical_cols,
     continuous_cols=config.continuous_cols,
+    synthetic_dir=paths["synthetic_dir"],
 )
-print("\nGReat training complete.")
-
-# MUST use fit(), not train()
-# model.train() triggers pipeline mode which silently overrides epochs to 2
-model.fit(train_df)
-
 print("\nGReaT training complete.")
 print("\n" + "=" * 60)
 print("STEP 4 — Generate synthetic data")

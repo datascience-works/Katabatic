@@ -1,11 +1,11 @@
-# Experimental models
+# Experimental Models
 
-Katabatic ships multiple generative model implementations. Only a subset is **officially supported**; the rest are experimental. `ModelRegistry.get_supported_models()` in [katabatic/models/registry.py](../katabatic/models/registry.py) is the source of truth — the tables below reflect its current contents.
+Katabatic ships multiple generative model implementations. Only a subset is **officially supported**; the rest are experimental. `ModelRegistry.get_supported_models()` in [katabatic/models/registry.py](../katabatic/models/registry.py) is authoritative — the tables below mirror its current contents.
 
-## Supported models
+## Supported Models
 
 | Model | Extra | Smoke-tested |
-|-------|-------|--------------|
+| ------- | ------- | -------------- |
 | GANBLR | `pip install katabatic[ganblr]` | Yes (artifact pipeline integration test) |
 | CTGAN | `pip install katabatic[ctgan]` | Yes (artifact pipeline integration test) |
 | PATE-GAN | `pip install katabatic[pategan]` | Yes (artifact pipeline integration test) |
@@ -14,29 +14,40 @@ Katabatic ships multiple generative model implementations. Only a subset is **of
 
 These models are listed in `ModelRegistry` with `supported: True`, and `tests/test_model_registry.py::test_supported_models_list` pins this exact set. Use the artifact pipeline documented in [GANBLR_FLOW.md](../GANBLR_FLOW.md) and the README quick start.
 
-## Experimental models
+## Experimental Models
 
-Available in the codebase and installable via optional extras, but **API stability
-and CI coverage are not guaranteed**:
+Present in the codebase, but with no guarantee of **API stability or CI coverage**.
+`[tool.coverage.run].omit` in the root `pyproject.toml` is the closest available list of known-experimental models; every entry below except PrivTree appears there.
+
+### Registered (usable via `ModelRegistry.load_model()`)
 
 | Model | Extra | Notes |
-|-------|-------|-------|
-| TabDDPM | `tabddpm` | Uses external `tabddpm` or local fallback |
-| CoDi | `codi` | Not in registry; see `examples/codi.ipynb` |
-| MedGAN | `medgan` | Not in registry; see `examples/medgan.ipynb` |
+| ------- | ------- | ------- |
+| TabDDPM | `tabddpm` | Uses external `tabddpm` package, with a local fallback |
+| ARF | *(none — core dependencies only)* | |
+| MST | `mst` | |
 
-Models noted "Not in registry" ship as source but can't be loaded through
-`ModelRegistry.load_model()` — import them directly from their module instead.
+### Not registered (import directly from the module; `ModelRegistry.load_model()` will not find them)
 
-Examples under `examples/` are best-effort. New contributions start as experimental
-until a maintainer adds an extra, a registry entry, and integration smoke coverage.
+| Model | Extra | Notes |
+| ------- | ------- | ------- |
+| CoDi | `codi` | See `examples/codi.ipynb` |
+| MedGAN | `medgan` | See `examples/medgan.ipynb` |
+| SMOTE | `smote` | |
+| Naive Bayes | *(none)* | |
+| SynthPop | *(none)* | |
+| TVAE-GAN | *(none)* | |
+| GMM | *(none)* | Does not subclass `Model` — implements its own `fit`/`sample`, with no `train`/`evaluate` |
+| TabKDE (updated) | *(none)* | Does not subclass `Model` |
+| PrivTree | *(none)* | Does not subclass `Model`; also the only model absent from the coverage omit list above — merged in #143 but not yet integrated with the `Model` interface or `ModelRegistry` |
 
-## Promoting a model to supported
+Examples under `examples/` and `benchmarks/examples/` are provided for reference and
+are not covered by CI.
 
-1. Add or verify a PyPI extra for the model under `[project.optional-dependencies]` in the root `pyproject.toml` (no per-model `pyproject.toml`/`poetry.lock`), and run `poetry lock`.
-2. Add an integration smoke test at `tests/test_integration_<model_name>.py` that exercises the real artifact pipeline (train → sample → evaluate, state persisted via `ARTIFACT_STATE_FILES` and reloaded via `load_from_ref`).
-3. Add the model to the `ALL_MODELS` matrix and `paths-filter` block in [.github/workflows/ci.yml](../.github/workflows/ci.yml) so its integration job runs in CI.
-4. Register the model in `katabatic/models/registry.py` with `supported: True`, and confirm it passes the promotion contract in `tests/test_model_registry.py::test_model_promotion_contract` (also update `test_supported_models_list`'s expected set).
-5. Update the README install matrix and this file.
+## Promoting a Model to Supported
 
-See [MODEL_CONTRIBUTIONS.md](../MODEL_CONTRIBUTIONS.md#promoting-a-model-from-experimental-to-supported) for the full promotion checklist.
+See [MODEL_CONTRIBUTIONS.md](../MODEL_CONTRIBUTIONS.md#promoting-a-model-from-experimental-to-supported)
+for the full checklist (test harness, promotion contract, CI wiring, dependency extras). In
+short: add a PyPI extra and integration test, wire the model into the `changes` job in
+[.github/workflows/ci.yml](../.github/workflows/ci.yml), then flip `supported: True` in
+`katabatic/models/registry.py` and update this file and the README install matrix.
