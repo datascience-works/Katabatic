@@ -5,6 +5,8 @@ import json
 import pandas as pd
 import pytest
 
+pytest.importorskip("torch")
+
 from katabatic.models.tablegan.models import TableGANModel
 
 
