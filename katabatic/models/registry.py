@@ -89,6 +89,13 @@ class ModelRegistry:
             "extra": "ctgan",
             "supported": True,
         },
+        "tablegan": {
+            "module": "katabatic.models.tablegan.models",
+            "class": "TableGANModel",
+            "dependencies": ["torch"],
+            "extra": "tablegan",
+            "supported": False,
+        },
         "arf": {
             "module": "katabatic.models.arf.models",
             "class": "ARFModel",

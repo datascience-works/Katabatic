@@ -31,6 +31,7 @@ dependencies = [
 [project.optional-dependencies]
 codi = ["torch>=2.14.0,<3.0.0"]
 ctgan = ["torch>=2.14.0,<3.0.0"]
+tablegan = ["torch>=2.10.0,<3.0.0"]
 ganblr = [
     "tensorflow==2.21.*",
     "tensorflow-io==0.37.1",
@@ -137,6 +138,7 @@ markers = [
     "ganblr: requires ganblr extra",
     "great: requires great extra",
     "ctgan: requires ctgan extra",
+    "tablegan: requires tablegan extra",
     "pategan: requires pategan extra",
     "tabsyn: requires tabsyn extra",
     "forked: run test in an isolated forked process (pytest-forked)",
