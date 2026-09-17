@@ -102,13 +102,13 @@ def get_system_run_details() -> None:
     print("======================================================================")
 
 
-# Training hyperparameters — matched to paper (Borisov et al., 2022, Appendix C)
-LLM = "gpt2"  # full GReaT variant — 355M params
-EPOCHS = 310  # paper: 310 epochs for full GReaT on Adult
-BATCH_SIZE = 128
-EXPERIMENT_DIR = "trainer_great_adult"
-EFFICIENT_FINETUNING = ""
-FLOAT_PRECISION = None
+# Training hyperparameters
+LLM = "gpt2"  # HuggingFace model checkpoint
+EPOCHS = 2  # fine-tuning epochs (keep low for eval; raise for quality)
+BATCH_SIZE = 2  # per-device training batch size
+EXPERIMENT_DIR = "trainer_great_adult"  # output dir for HuggingFace Trainer checkpoints
+EFFICIENT_FINETUNING = ""  # "" = full fine-tune; "lora" = LoRA (requires peft)
+FLOAT_PRECISION = None  # decimal places for floats in text encoding; None = full
 
 # Sampling hyperparameters
 TEMPERATURE = 0.7  # generation temperature (lower = more conservative)
@@ -121,20 +121,9 @@ DROP_NAN = False  # drop rows with any NaN in the output
 # SEED = config.seed  # generation seed for reproducibility
 
 config = RunConfig(
-    dataset_name="magic",
+    dataset_name="shuttle",
     model_name="great",
-    categorical_cols=[
-        "fLength",
-        "fWidth",
-        "fSize",
-        "fConc",
-        "fConc1",
-        "fAsym",
-        "fM3Long",
-        "fM3Trans",
-        "fAlpha",
-        "fDist",
-    ],
+    categorical_cols=["time", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8"],
     continuous_cols=[],
     target_col_raw="class",
     constraints={},
@@ -145,7 +134,6 @@ train_df, test_df, target_col, paths = preprocess_and_split(config)
 print("\n" + "=" * 60)
 print("STEP 3 — Train GReat")
 print("=" * 60)
-
 model = GReaT(
     llm=LLM,
     experiment_dir=EXPERIMENT_DIR,
@@ -153,7 +141,6 @@ model = GReaT(
     batch_size=BATCH_SIZE,
     efficient_finetuning=EFFICIENT_FINETUNING,
     float_precision=FLOAT_PRECISION,
-    save_steps=100000,  # to avoid disk space errors
 )
 
 model.train(
@@ -163,11 +150,6 @@ model.train(
 )
 print("\nGReat training complete.")
 
-# MUST use fit(), not train()
-# model.train() triggers pipeline mode which silently overrides epochs to 2
-model.fit(train_df)
-
-print("\nGReaT training complete.")
 print("\n" + "=" * 60)
 print("STEP 4 — Generate synthetic data")
 print("=" * 60)

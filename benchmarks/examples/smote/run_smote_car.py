@@ -20,7 +20,7 @@ from runner import (
     save_synthetic,
 )
 
-from katabatic.models.great.models import GReaT  # noqa: E402
+from katabatic.models.smote.models import SMOTEModel  # noqa: E402
 
 # run in cpu mode(if GPU is limited)
 # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
@@ -60,7 +60,7 @@ def get_runtime_summary(
         model_name
         + " has taken "
         + str(time_diff)
-        + " seconds to run the adult "
+        + " seconds to run the "
         + dataset_name
         + " dataset."
     )
@@ -102,72 +102,33 @@ def get_system_run_details() -> None:
     print("======================================================================")
 
 
-# Training hyperparameters — matched to paper (Borisov et al., 2022, Appendix C)
-LLM = "gpt2"  # full GReaT variant — 355M params
-EPOCHS = 310  # paper: 310 epochs for full GReaT on Adult
-BATCH_SIZE = 128
-EXPERIMENT_DIR = "trainer_great_adult"
-EFFICIENT_FINETUNING = ""
-FLOAT_PRECISION = None
-
-# Sampling hyperparameters
-TEMPERATURE = 0.7  # generation temperature (lower = more conservative)
-MAX_LENGTH = 100  # max tokens per generated row
-K = 100  # rows attempted per generation batch
-DEVICE = "cuda"  # "cpu" or "cuda"
-GUIDED_SAMPLING = False  # True = feature-by-feature (slower, sometimes more reliable)
-RANDOM_FEATURE_ORDER = True  # shuffle column order in guided sampling prompts
-DROP_NAN = False  # drop rows with any NaN in the output
-# SEED = config.seed  # generation seed for reproducibility
-
 config = RunConfig(
-    dataset_name="magic",
-    model_name="great",
-    categorical_cols=[
-        "fLength",
-        "fWidth",
-        "fSize",
-        "fConc",
-        "fConc1",
-        "fAsym",
-        "fM3Long",
-        "fM3Trans",
-        "fAlpha",
-        "fDist",
-    ],
+    dataset_name="car",
+    model_name="smote",
+    categorical_cols=["0", "1", "2", "3", "4", "5"],
     continuous_cols=[],
-    target_col_raw="class",
+    target_col_raw="6",
     constraints={},
 )
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)
 
 print("\n" + "=" * 60)
-print("STEP 3 — Train GReat")
+print("STEP 3 — Train SMOTE")
 print("=" * 60)
-
-model = GReaT(
-    llm=LLM,
-    experiment_dir=EXPERIMENT_DIR,
-    epochs=EPOCHS,
-    batch_size=BATCH_SIZE,
-    efficient_finetuning=EFFICIENT_FINETUNING,
-    float_precision=FLOAT_PRECISION,
-    save_steps=100000,  # to avoid disk space errors
+model = SMOTEModel(
+    variant="smoten",
+    k_neighbors=5,
+    sampling_strategy="auto",
+    random_state=42,
 )
 
 model.train(
-    paths["split_dir"],
-    categorical_cols=config.categorical_cols,
-    continuous_cols=config.continuous_cols,
+    data_dir=paths["split_dir"],
+    synthetic_dir=paths.get("synthetic_dir"),
 )
-print("\nGReat training complete.")
+print("\nSMOTE training complete.")
 
-# MUST use fit(), not train()
-# model.train() triggers pipeline mode which silently overrides epochs to 2
-model.fit(train_df)
-
-print("\nGReaT training complete.")
 print("\n" + "=" * 60)
 print("STEP 4 — Generate synthetic data")
 print("=" * 60)

@@ -1,4 +1,5 @@
 import importlib
+import os
 import pathlib
 
 import pytest
@@ -19,10 +20,17 @@ def get_supported_models():
 
 MODELS_TO_TEST = get_supported_models()
 
+# Fall back to running in-process if os doesn't have "fork" method.
+_forked_or_noop = pytest.mark.forked if hasattr(os, "fork") else (lambda fn: fn)
 
+
+@_forked_or_noop
 @pytest.mark.parametrize("model_name, config", MODELS_TO_TEST)
 def test_model_promotion_contract(model_name, config):
-    """Contract test: every supported model must meet the promotion contract."""
+    """Contract test: every supported model must meet the promotion contract.
+
+    Runs each model in its own forked process, avoiding exceeded CI runner memory leading to SIGSEGV/SIGBUS.
+    """
 
     # 1. Registry entry has a non-null extra and matches the model name.
     assert config.get("extra"), f"'{model_name}' missing/empty 'extra' in registry."
@@ -88,4 +96,10 @@ def test_model_promotion_contract(model_name, config):
 
 
 def test_supported_models_list():
-    assert set(ModelRegistry.get_supported_models()) == {"ganblr", "ctgan", "pategan"}
+    assert set(ModelRegistry.get_supported_models()) == {
+        "ganblr",
+        "ctgan",
+        "pategan",
+        "tabsyn",
+        "great",
+    }

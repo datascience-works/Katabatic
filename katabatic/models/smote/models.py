@@ -54,13 +54,96 @@ def subsample_to_original_size(
     return X_resampled, y_resampled
 
 
+def _paper_aligned_anchor_rows(
+    n_anchors: int,
+    n_samples: int,
+    random_state,
+) -> np.ndarray:
+    """Select source rows following the SMOTE paper's sampling schedule."""
+    if n_anchors <= 0:
+        raise ValueError("n_anchors must be greater than zero")
+
+    complete_passes, remainder = divmod(n_samples, n_anchors)
+    parts = []
+
+    # Paper alignment:
+    # For each complete 100% oversampling pass, use every minority sample once.
+    if complete_passes:
+        parts.append(np.tile(np.arange(n_anchors), complete_passes))
+
+    # For a partial pass, use a random subset without replacement.
+    if remainder:
+        parts.append(random_state.permutation(n_anchors)[:remainder])
+
+    if not parts:
+        return np.empty(0, dtype=int)
+
+    return np.concatenate(parts).astype(int, copy=False)
+
+
+class _PaperAlignedSamplingMixin:
+    """Paper-aligned source-sample scheduling for imbalanced-learn SMOTE."""
+
+    def _make_samples(
+        self,
+        X,
+        y_dtype,
+        y_type,
+        nn_data,
+        nn_num,
+        n_samples,
+        step_size=1.0,
+        y=None,
+    ):
+        from sklearn.utils import check_random_state
+
+        random_state = check_random_state(self.random_state)
+
+        rows = _paper_aligned_anchor_rows(
+            nn_num.shape[0],
+            n_samples,
+            random_state,
+        )
+
+        # Randomly select one of the k minority-class neighbours.
+        cols = random_state.randint(
+            low=0,
+            high=nn_num.shape[1],
+            size=n_samples,
+        )
+
+        # Original SMOTE interpolation:
+        # synthetic = anchor + gap * (neighbour - anchor)
+        steps = step_size * random_state.uniform(size=n_samples)[:, np.newaxis]
+
+        X_new = self._generate_samples(
+            X,
+            nn_data,
+            nn_num,
+            rows,
+            cols,
+            steps,
+            y_type,
+            y,
+        )
+        y_new = np.full(n_samples, fill_value=y_type, dtype=y_dtype)
+
+        return X_new, y_new
+
+
 class SMOTEModel(BaseModel):
     """
-    SMOTE: Synthetic Minority Over-sampling Technique.
-    Simple k-nearest neighbors interpolation for data augmentation.
+    SMOTE-family synthetic oversampling model.
+
+    Variants:
+        - smote: numeric features
+        - smotenc: mixed numeric and categorical features
+        - smoten: categorical-only features
+
     Default parameters:
-        - k_neighbors: 5 (number of neighbors)
-        - sampling_strategy: 'auto' (balance classes)
+        - k_neighbors: 5
+        - sampling_strategy: "auto"
+        - random_state: 42
     """
 
     def __init__(
@@ -69,12 +152,21 @@ class SMOTEModel(BaseModel):
         k_neighbors: int = 5,
         sampling_strategy: str = "auto",
         random_state: int = 42,
+        variant: str = "smote",
+        categorical_features: list[str] | list[int] | None = None,
     ) -> None:
         super().__init__()
+
+        variant = variant.lower()
+
+        if variant not in {"smote", "smotenc", "smoten"}:
+            raise ValueError("variant must be one of: 'smote', 'smotenc', or 'smoten'")
 
         self.k_neighbors = k_neighbors
         self.sampling_strategy = sampling_strategy
         self.random_state = random_state
+        self.variant = variant
+        self.categorical_features = categorical_features
 
         self.smote = None
         self.column_names = None
@@ -88,60 +180,206 @@ class SMOTEModel(BaseModel):
         *args,
         **kwargs,
     ) -> SMOTEModel:
-        """Train (fit) the SMOTE model."""
+        """Train the selected SMOTE-family model."""
 
         try:
-            from imblearn.over_sampling import SMOTE
+            from imblearn.over_sampling import SMOTE, SMOTEN, SMOTENC
         except ImportError:
             raise ImportError(
                 "imbalanced-learn not found. Install with: pip install imbalanced-learn"
             )
 
-        # Load data
+        class PaperAlignedSMOTE(_PaperAlignedSamplingMixin, SMOTE):
+            """Numeric SMOTE with paper-aligned source scheduling."""
+
+        class PaperAlignedSMOTENC(_PaperAlignedSamplingMixin, SMOTENC):
+            """SMOTE-NC with paper-aligned source scheduling."""
+
+        class PaperAlignedSMOTEN(SMOTEN):
+            """
+            SMOTE-N with systematic source-sample scheduling.
+
+            The categorical sample-generation rule remains the SMOTEN
+            implementation from imbalanced-learn. Only source-sample
+            scheduling is changed to use complete passes followed by
+            a partial pass without replacement.
+            """
+
+            def _make_samples(
+                self,
+                X_class,
+                klass,
+                y_dtype,
+                nn_indices,
+                n_samples,
+            ):
+                from scipy.stats import mode
+                from sklearn.utils import check_random_state
+
+                random_state = check_random_state(self.random_state)
+
+                samples_indices = _paper_aligned_anchor_rows(
+                    X_class.shape[0],
+                    n_samples,
+                    random_state,
+                )
+
+                X_new = np.squeeze(
+                    mode(
+                        X_class[nn_indices[samples_indices]],
+                        axis=1,
+                        keepdims=True,
+                    ).mode,
+                    axis=1,
+                )
+
+                y_new = np.full(
+                    n_samples,
+                    fill_value=klass,
+                    dtype=y_dtype,
+                )
+
+                return X_new, y_new
+
+        # Load training data.
         df = load_training_data(data_dir)
         self.column_names = df.columns.tolist()
-        label = df.columns[-1]
 
-        X_train = df.iloc[:, :-1].values
-        y_train = df.iloc[:, -1].values
-        self.X_train = X_train
+        label = df.columns[-1]
+        X_df = df.iloc[:, :-1].copy()
+        y_train = df.iloc[:, -1].to_numpy()
+
         self.y_train = y_train
 
-        adjusted_k = adjust_k_neighbors(y_train, self.k_neighbors)
-
-        # Initialise and fit SMOTE
-        print(f"[SMOTE] Initializing with k_neighbors={adjusted_k}...")
-        self.smote = SMOTE(
-            k_neighbors=adjusted_k,
-            sampling_strategy=self.sampling_strategy,
-            random_state=self.random_state,
+        adjusted_k = adjust_k_neighbors(
+            y_train,
+            self.k_neighbors,
         )
+
+        variant_label = {
+            "smote": "SMOTE",
+            "smotenc": "SMOTE-NC",
+            "smoten": "SMOTE-N",
+        }[self.variant]
+
+        if self.variant == "smote":
+            non_numeric_cols = X_df.select_dtypes(exclude=[np.number]).columns.tolist()
+
+            if non_numeric_cols:
+                raise ValueError(
+                    "variant='smote' requires numeric features. "
+                    f"Non-numeric columns found: {non_numeric_cols}. "
+                    "Use 'smotenc' for mixed data or 'smoten' "
+                    "for categorical-only data."
+                )
+
+            X_train = X_df.to_numpy()
+
+            self.smote = PaperAlignedSMOTE(
+                k_neighbors=adjusted_k,
+                sampling_strategy=self.sampling_strategy,
+                random_state=self.random_state,
+            )
+
+        elif self.variant == "smotenc":
+            categorical_features = self.categorical_features
+
+            if categorical_features is None:
+                categorical_features = X_df.select_dtypes(
+                    exclude=[np.number]
+                ).columns.tolist()
+
+            if not categorical_features:
+                raise ValueError("SMOTE-NC requires at least one categorical feature.")
+
+            if len(categorical_features) == X_df.shape[1]:
+                raise ValueError(
+                    "All features are categorical. "
+                    "Use variant='smoten' instead of 'smotenc'."
+                )
+
+            # Keep the DataFrame so SMOTENC can use column names.
+            X_train = X_df
+
+            self.smote = PaperAlignedSMOTENC(
+                categorical_features=categorical_features,
+                k_neighbors=adjusted_k,
+                sampling_strategy=self.sampling_strategy,
+                random_state=self.random_state,
+            )
+
+        else:
+            # SMOTEN handles categorical data using its categorical
+            # encoder and Value Difference Metric.
+            X_train = X_df
+
+            self.smote = PaperAlignedSMOTEN(
+                k_neighbors=adjusted_k,
+                sampling_strategy=self.sampling_strategy,
+                random_state=self.random_state,
+            )
+
+        self.X_train = X_train
+
+        print(f"[{variant_label}] Initializing with k_neighbors={adjusted_k}...")
 
         print(
-            f"[SMOTE] Ready to generate samples from {len(X_train)} training samples..."
+            f"[{variant_label}] Ready to generate samples from "
+            f"{len(X_train)} training samples..."
         )
-        start_time = time.time()
-        X_resampled, y_resampled = self.smote.fit_resample(X_train, y_train)
-        print(f"[SMOTE] Generated samples in {time.time() - start_time:.2f} seconds.")
 
-        n_synthetic = len(X_resampled) - len(X_train)
+        start_time = time.time()
+
+        X_resampled, y_resampled = self.smote.fit_resample(
+            X_train,
+            y_train,
+        )
+
+        elapsed = time.time() - start_time
+
+        print(f"[{variant_label}] Generated samples in {elapsed:.2f} seconds.")
+
+        # Convert output to numpy so the existing Katabatic
+        # saving/subsampling helpers continue to work.
+        if isinstance(X_resampled, pd.DataFrame):
+            X_resampled_np = X_resampled.to_numpy()
+        else:
+            X_resampled_np = np.asarray(X_resampled)
+
+        if isinstance(y_resampled, pd.Series):
+            y_resampled_np = y_resampled.to_numpy()
+        else:
+            y_resampled_np = np.asarray(y_resampled)
+
+        n_synthetic = len(X_resampled_np) - len(X_train)
+
         self.is_fitted = True
 
-        # Subsample back to original size
         X_final, y_final = subsample_to_original_size(
-            X_resampled, y_resampled, len(X_train)
+            X_resampled_np,
+            y_resampled_np,
+            len(X_train),
         )
 
-        print(f"[SMOTE] Generated {n_synthetic} new synthetic samples...")
+        print(f"[{variant_label}] Generated {n_synthetic} new synthetic samples...")
+
         print(
-            f"[SMOTE] Returning {len(X_final)} total samples (original size with balanced classes)..."
+            f"[{variant_label}] Returning {len(X_final)} total samples "
+            "(original size after resampling)..."
         )
 
-        # Save outputs
-        synth_dir = resolve_synth_dir(synthetic_dir, data_dir, "smote")
+        synth_dir = resolve_synth_dir(
+            synthetic_dir,
+            data_dir,
+            "smote",
+        )
 
         x_path_out, y_path_out = save_synthetic_data(
-            X_final, y_final, self.column_names, label, synth_dir
+            X_final,
+            y_final,
+            self.column_names,
+            label,
+            synth_dir,
         )
 
         save_metadata(
@@ -156,13 +394,17 @@ class SMOTEModel(BaseModel):
         )
 
         print(
-            f"[SMOTE] Synthetic data saved:\n  X -> {x_path_out}\n  y -> {y_path_out}"
+            f"[{variant_label}] Synthetic data saved:\n"
+            f"  X -> {x_path_out}\n"
+            f"  y -> {y_path_out}"
         )
+
         return self
 
     def evaluate(self, *args, **kwargs) -> float:
         if not self.is_fitted:
             raise RuntimeError("Call train() before evaluate().")
+
         return 0.0
 
     def sample(
@@ -171,20 +413,36 @@ class SMOTEModel(BaseModel):
         *args,
         **kwargs,
     ) -> pd.DataFrame:
-        """Generate synthetic samples."""
+        """Generate samples using the fitted SMOTE-family model."""
+
         if not self.is_fitted or self.smote is None:
             raise RuntimeError("Call train() before sample().")
 
-        X_resampled, y_resampled = self.smote.fit_resample(self.X_train, self.y_train)
+        X_resampled, y_resampled = self.smote.fit_resample(
+            self.X_train,
+            self.y_train,
+        )
 
-        X_synth = X_resampled
-        y_synth = y_resampled
+        if isinstance(X_resampled, pd.DataFrame):
+            X_synth = X_resampled.to_numpy()
+        else:
+            X_synth = np.asarray(X_resampled)
+
+        if isinstance(y_resampled, pd.Series):
+            y_synth = y_resampled.to_numpy()
+        else:
+            y_synth = np.asarray(y_resampled)
 
         if n is not None and n < len(X_synth):
-            indices = np.random.choice(len(X_synth), n, replace=False)
+            indices = np.random.choice(
+                len(X_synth),
+                n,
+                replace=False,
+            )
             X_synth = X_synth[indices]
             y_synth = y_synth[indices]
 
         return pd.DataFrame(
-            np.column_stack([X_synth, y_synth]), columns=self.column_names
+            np.column_stack([X_synth, y_synth]),
+            columns=self.column_names,
         )

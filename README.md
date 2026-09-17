@@ -62,11 +62,12 @@ Or install directly with Poetry / pip — useful for installing several extras a
 | GANBLR (supported) | `pip install katabatic[ganblr]` or `poetry install -E ganblr` |
 | CTGAN (supported) | `pip install katabatic[ctgan]` or `poetry install -E ctgan` |
 | PATE-GAN (supported) | `pip install katabatic[pategan]` or `poetry install -E pategan` |
+| GReaT (supported) | `pip install katabatic[great]` or `poetry install -E great` |
 | TSTR + XGBoost | `pip install katabatic[eval]` or `poetry install -E eval` |
 | Development | `poetry install --with dev` |
 | All optional deps | `pip install katabatic[all]` |
 
-Experimental models (`great`, `tabsyn`, `tabddpm`, `codi`, `medgan`, etc.) are documented in [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md).
+Experimental models (`tabsyn`, `tabddpm`, `codi`, `medgan`, etc.) are documented in [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md).
 For contributor work: `poetry install --with dev -E ganblr -E ctgan -E pategan -E eval && poetry env activate`.
 
 For GPU-accelerated GReaT training: `poetry add torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118`.
