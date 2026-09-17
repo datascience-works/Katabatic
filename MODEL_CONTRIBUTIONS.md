@@ -46,7 +46,12 @@ Inside the `katabatic/models/` directory:
    from katabatic.models.base_model import Model
    ```
 
-   Implement the abstract interface (`train`, `evaluate`, `sample`). If the model should work with the artifact pipeline (`LocalArtifactStore` / `TrainTestSplitPipeline`), also implement `load_from_ref` and declare a non-empty `ARTIFACT_STATE_FILES` tuple so trained state can be persisted and reloaded. See `katabatic/models/ctgan/models.py` for a reference implementation.
+   Implement the abstract interface (`train`, `evaluate`, `sample`). If the model should work with the artifact pipeline (`LocalArtifactStore` / `TrainTestSplitPipeline`), also declare a non-empty `ARTIFACT_STATE_FILES` tuple and override the paired persistence hooks so the trained state can be saved and reloaded:
+
+   - `_save_artifact_state(self, artifact_state_dir)` — write your model's state under `artifact_state_dir`. Call `self._maybe_save_artifact_state(artifact_state_dir)` at the end of `train()`.
+   - `load_from_ref(cls, store, ref)` — rehydrate a fitted instance from that state. Resolve the path with the base class helpers `cls._require_state_file(store, ref)` (single-file state) or `cls._require_state_dir(store, ref)` (multi-file state).
+
+   See `katabatic/models/ctgan/models.py` for a reference implementation (single-file state) or `katabatic/models/great/models.py` for a multi-file, directory-based state.
 
 ### Step 3: Register the Model
 
@@ -96,7 +101,7 @@ pre-commit run --all-files
 Promotion is done by a maintainer once a model has proven stable. It requires all of the following:
 
 1. **Test harness**: an integration smoke test exists at `tests/test_integration_<model_name>.py` and runs the artifact pipeline (train -> sample -> evaluate, with state persisted via `ARTIFACT_STATE_FILES` and reloaded via `load_from_ref`).
-2. **Compliance with the model promotion contract (test registry)**: `tests/test_model_registry.py::test_model_promotion_contract` passes for the model. It checks that: the registry `extra` is non-empty and equals the model name; `module`/`class` are declared and import cleanly; the model class exposes `train`, `sample`, and `load_from_ref`; `ARTIFACT_STATE_FILES` is non-empty; and the integration test file from Step 4 exists.
+2. **Compliance with the model promotion contract (test registry)**: `tests/test_model_registry.py::test_model_promotion_contract` passes for the model. It checks that: the registry `extra` is non-empty and equals the model name; `module`/`class` are declared and import cleanly; the model class exposes `train`, `sample`, and `load_from_ref`; `ARTIFACT_STATE_FILES` is non-empty; and the integration test file from Step 4 exists. `load_from_ref` must override the base class's default; `_save_artifact_state` follows the same pattern but isn't separately checked by this test.
 3. **CI checks are green**: the model is added to the `ALL_MODELS` matrix and the `paths-filter` block in [.github/workflows/ci.yml](.github/workflows/ci.yml) so its `integration-<model_name>` job runs on relevant changes, and the `model-contract` job (`poetry install -E all` + `pytest tests/test_model_registry.py`) passes.
 4. **Poetry dependencies live in the model's own extra**: dependencies are declared under `[project.optional-dependencies].<model_name>` in the root `pyproject.toml` (not bundled into an unrelated extra), and `poetry.lock` is up to date.
 5. **Switch to supported status**: once 1–4 are satisfied, flip `"supported": False` to `"supported": True` for the model in `katabatic/models/registry.py`, update the expected set in `tests/test_model_registry.py::test_supported_models_list`, remove the model's directory from the coverage `omit` list in `pyproject.toml` if present, and update `docs/EXPERIMENTAL_MODELS.md` and the README install matrix to move it out of the experimental table.
