@@ -5,8 +5,6 @@ artifacts/
 benchmarks/processed/
 benchmarks/results/
 benchmarks/splits/
-katabatic/datasets/*
-!katabatic/datasets/README.md
 raw_data/
 preprocessed_data/
 sample_data/
