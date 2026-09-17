@@ -445,24 +445,25 @@ redis = ["redis (>=2.10.5)"]
 
 [[package]]
 name = "category-encoders"
-version = "2.10.0"
+version = "2.11.1"
 description = "A package for encoding categorical variables for machine learning"
 optional = true
 python-versions = ">=3.11"
 groups = ["main"]
 markers = "extra == \"all\" or extra == \"tabddpm\" or extra == \"tabsyn\""
 files = [
-    {file = "category_encoders-2.10.0-py3-none-any.whl", hash = "sha256:e1b9e4e489af72fb2da1bc07c92b9d8ff9bba330a9e8483d39346461decf0a8b"},
-    {file = "category_encoders-2.10.0.tar.gz", hash = "sha256:28e28a01813ac56d4ed068bb8561f523a527b04abf4261be890ab9adbc5fd143"},
+    {file = "category_encoders-2.11.1-py3-none-any.whl", hash = "sha256:bba59a25bcee5b11380ea1fda2690b427bdd06e2ed36a17cab55fdd3b70bda16"},
+    {file = "category_encoders-2.11.1.tar.gz", hash = "sha256:f21b99185800c19b562b2928a0fe67dbf5658d048cd70451bfe8811c4123fdb0"},
 ]
 
 [package.dependencies]
 numpy = ">=1.14.0"
 pandas = ">=1.0.5"
-patsy = ">=0.5.1"
 scikit-learn = ">=1.6.0"
 scipy = ">=1.0.0"
-statsmodels = ">=0.9.0"
+
+[package.extras]
+glmm = ["statsmodels (>=0.9.0)"]
 
 [[package]]
 name = "certifi"
@@ -4069,7 +4070,7 @@ files = [
     {file = "packaging-26.3-py3-none-any.whl", hash = "sha256:d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"},
     {file = "packaging-26.3.tar.gz", hash = "sha256:94edc256424af38762eb31306eed28beb9f0efc50a8837492c9d6fd6004aed79"},
 ]
-markers = {main = "extra == \"all\" or extra == \"ganblr\" or extra == \"pategan\" or extra == \"tabddpm\" or extra == \"tabsyn\" or extra == \"great\" or extra == \"mst\""}
+markers = {main = "extra == \"all\" or extra == \"ganblr\" or extra == \"pategan\" or extra == \"great\" or extra == \"mst\""}
 
 [[package]]
 name = "pandas"
@@ -4207,7 +4208,7 @@ description = "A Python package for describing statistical models and for buildi
 optional = true
 python-versions = ">=3.6"
 groups = ["main"]
-markers = "extra == \"all\" or extra == \"ganblr\" or extra == \"tabddpm\" or extra == \"tabsyn\""
+markers = "extra == \"all\" or extra == \"ganblr\""
 files = [
     {file = "patsy-1.0.2-py2.py3-none-any.whl", hash = "sha256:37bfddbc58fcf0362febb5f54f10743f8b21dd2aa73dec7e7ef59d1b02ae668a"},
     {file = "patsy-1.0.2.tar.gz", hash = "sha256:cdc995455f6233e90e22de72c37fcadb344e7586fb83f06696f54d92f8ce74c0"},
@@ -5821,7 +5822,7 @@ description = "Statistical computations and models for Python"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"all\" or extra == \"ganblr\" or extra == \"tabddpm\" or extra == \"tabsyn\""
+markers = "extra == \"all\" or extra == \"ganblr\""
 files = [
     {file = "statsmodels-0.14.6-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:f4ff0649a2df674c7ffb6fa1a06bffdb82a6adf09a48e90e000a15a6aaa734b0"},
     {file = "statsmodels-0.14.6-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:109012088b3e370080846ab053c76d125268631410142daad2f8c10770e8e8d9"},
@@ -6968,4 +6969,4 @@ tabsyn = ["category-encoders", "tomli", "tomli-w", "torch", "tqdm"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.12"
-content-hash = "1c10c98d4b44e96df83d6a92dbb13851d203af5ff879773c28ed24ae19527656"
+content-hash = "4e53fd2a49ba94e5b91b2ce97229a612a3d59ab573838b19af8fb8765241d0e8"
