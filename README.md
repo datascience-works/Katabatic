@@ -91,7 +91,7 @@ from katabatic.models.ganblr.models import GANBLR
 from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
 from katabatic.utils.preprocess import preprocess_tabular
 
-preprocess_tabular("raw_data/car.csv", "preprocessed_data/car.csv")
+preprocess_tabular("katabatic/datasets/car.csv", "preprocessed_data/car.csv")
 
 store = LocalArtifactStore("artifacts")
 pipeline = TrainTestSplitPipeline(model=GANBLR())
