@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import pickle
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -8,6 +9,8 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 
+from katabatic.artifacts.base import ArtifactStore
+from katabatic.artifacts.refs import ModelRef
 from katabatic.models.base_model import Model
 
 from .utils import ensure_dir, load_train_df, split_x_y, try_align_columns
@@ -334,6 +337,7 @@ class ARFModel(Model):
       - x_synth.csv, y_synth.csv into synthetic_dir
     """
 
+    ARTIFACT_STATE_FILES = ("arf_model.pkl",)
     num_trees: int = 30
     max_iters: int = 10
     delta: float = 0.0
@@ -470,7 +474,55 @@ class ARFModel(Model):
             except Exception:
                 pass
 
+        artifact_state_dir = kwargs.get("artifact_state_dir")
+        if artifact_state_dir:
+            self._save_artifact_state(artifact_state_dir)
         return self
+
+    def _save_artifact_state(self, artifact_state_dir: str) -> None:
+        """
+        Persist fitted state so the model can be rebuilt by load_from_ref().
+        """
+        os.makedirs(artifact_state_dir, exist_ok=True)
+
+        target = os.path.join(
+            artifact_state_dir,
+            self.ARTIFACT_STATE_FILES[0],
+        )
+
+        with open(target, "wb") as fh:
+            pickle.dump(self, fh)
+
+    @classmethod
+    def load_from_ref(
+        cls,
+        store: ArtifactStore,
+        ref: ModelRef,
+    ) -> ARFModel:
+        """
+        Rehydrate a fitted ARFModel from a versioned artifact.
+        """
+        state_file = cls.ARTIFACT_STATE_FILES[0]
+        state_path = store.open_path(
+            f"{ref.state_relpath}/{state_file}"
+        )
+
+        if not state_path.is_file():
+            raise FileNotFoundError(
+                f"No ARF state at {state_path}. The model must be trained "
+                f"through a pipeline that passes artifact_state_dir."
+            )
+
+        with open(state_path, "rb") as fh:
+            instance = pickle.load(fh)  # nosec B301
+
+        if not isinstance(instance, cls):
+            raise TypeError(
+                f"Artifact at {state_path} holds "
+                f"{type(instance).__name__}, not {cls.__name__}."
+            )
+
+        return instance
 
     def sample(
         self,
