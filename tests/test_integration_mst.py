@@ -94,6 +94,9 @@ def test_mst_resolve_explicit_delta():
 
 
 def test_mst_artifact_round_trip(tmp_path):
+    pytest.importorskip("snsynth")
+    pytest.importorskip("mbi")
+    pytest.importorskip("opendp")
     """
     Verify that MST can train, persist its fitted state,
     reload through ModelRef, and continue sampling.
