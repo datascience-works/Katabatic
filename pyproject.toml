@@ -59,12 +59,12 @@ mst = [
 tabddpm = [
     "torch>=2.14.0,<3.0.0",
     "rtdl_revisiting_models==0.0.2",
-    "category-encoders>=2.8.1,<3.0.0",
+    "category-encoders>=2.11.1,<3.0.0",
 ]
 tabsyn = [
     "torch>=2.14.0,<3.0.0",
     "tqdm>=4.66.0,<5.0.0",
-    "category-encoders>=2.8.1,<3.0.0",
+    "category-encoders>=2.11.1,<3.0.0",
     "tomli>=2.0.1,<3.0.0",
     "tomli-w>=1.0.0,<2.0.0",
 ]
@@ -83,7 +83,7 @@ all = [
     "tqdm>=4.66.0,<5.0.0",
     "tomli>=2.0.1,<3.0.0",
     "tomli-w>=1.0.0,<2.0.0",
-    "category-encoders>=2.8.1,<3.0.0",
+    "category-encoders>=2.11.1,<3.0.0",
     "rtdl_revisiting_models==0.0.2",
     "accelerate>=1.14.0",
     "fsspec>=2023.5.0,<=2026.2.0",
