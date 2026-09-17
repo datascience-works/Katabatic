@@ -68,7 +68,7 @@ jobs:
       - name: Pytest (fast)
         env:
           COVERAGE_FILE: .coverage.core
-        run: poetry run pytest -q --ignore=tests/test_model_registry.py --cov=katabatic --cov-report=term-missing
+        run: poetry run pytest -q --deselect tests/test_model_registry.py::test_model_promotion_contract --cov=katabatic --cov-report=term-missing
 
       - name: Upload Core Coverage
         uses: actions/upload-artifact@v7
@@ -209,10 +209,45 @@ jobs:
           path: .coverage.${{ matrix.model }}
           include-hidden-files: true
 
-  model-contract:
+  model-contract-matrix:
+    # Derives model-contract's matrix from ModelRegistry.
+    runs-on: ubuntu-latest
     needs: changes
     if: needs.changes.outputs.python == 'true' || needs.changes.outputs.ci == 'true'
+    outputs:
+      matrix: ${{ steps.build.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - name: Install Poetry
+        run: pip install poetry==${{ env.POETRY_VERSION }}
+      - name: Install core deps (no model extras needed to read the registry)
+        run: poetry install --with dev
+      - name: Derive supported-model matrix from ModelRegistry
+        id: build
+        run: |
+          poetry run python -c "
+          import json
+          from katabatic.models.registry import ModelRegistry
+          rows = [
+              {'model': name, 'torch': 'torch' in ModelRegistry.get_model_config(name).get('dependencies', [])}
+              for name in ModelRegistry.get_supported_models()
+          ]
+          print(json.dumps(rows))
+          " > matrix.json
+          echo "matrix=$(cat matrix.json)" >> "$GITHUB_OUTPUT"
+
+  model-contract:
+    needs: [changes, model-contract-matrix]
+    if: needs.changes.outputs.python == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.model-contract-matrix.outputs.matrix) }}
+    name: model-contract-${{ matrix.model }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -223,24 +258,24 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.cache/pypoetry
-          key: poetry-contract-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+          key: poetry-${{ matrix.model }}-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install Poetry
         run: pip install poetry==${{ env.POETRY_VERSION }}
 
       - name: Pre-install CPU torch
+        if: matrix.torch
         run: poetry run pip install "torch>=2.13.0,<3.0.0" --index-url https://download.pytorch.org/whl/cpu
 
-      - name: Install supported model extras
-        run: poetry install --with dev -E all
+      - name: Install with ${{ matrix.model }} extra
+        run: poetry install --with dev -E ${{ matrix.model }}
 
       - name: Remove triton
+        if: matrix.torch
         run: poetry run pip uninstall -y triton
 
-      - name: Model promotion contract
-        env:
-          USE_TORCH: "1"
-        run: poetry run pytest tests/test_model_registry.py -v
+      - name: Model promotion contract (${{ matrix.model }})
+        run: poetry run pytest tests/test_model_registry.py -k "${{ matrix.model }}" -v
 
   setup-script:
     # Verifies scripts/setup.py works on Linux, MacOS, and Windows.
