@@ -29,6 +29,8 @@ jobs:
       - run: pre-commit run --all-files
 
   lint-and-test:
+    needs: changes
+    if: needs.changes.outputs.python == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -83,12 +85,34 @@ jobs:
     outputs:
       matrix: ${{ steps.build-matrix.outputs.matrix }}
       core: ${{ steps.filter.outputs.core }}
+      python: ${{ steps.filter.outputs.python }}
+      docker: ${{ steps.filter.outputs.docker }}
+      scripts: ${{ steps.filter.outputs.scripts }}
+      ci: ${{ steps.filter.outputs.ci }}
     steps:
       - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
+            ci:
+              - '.github/workflows/**'
+            python:
+              - 'katabatic/**'
+              - 'tests/**'
+              - 'pyproject.toml'
+              - 'poetry.lock'
+              - '.pre-commit-config.yaml'
+            docker:
+              - 'Dockerfile'
+              - '.dockerignore'
+              - 'katabatic/**'
+              - 'pyproject.toml'
+              - 'poetry.lock'
+            scripts:
+              - 'scripts/**'
+              - 'pyproject.toml'
+              - 'poetry.lock'
             core:
               - 'pyproject.toml'
               - 'poetry.lock'
@@ -186,10 +210,9 @@ jobs:
           include-hidden-files: true
 
   model-contract:
+    needs: changes
+    if: needs.changes.outputs.python == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.build-matrix.outputs.matrix }}
-      core: ${{ steps.filter.outputs.core }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -221,7 +244,10 @@ jobs:
 
   setup-script:
     # Verifies scripts/setup.py works on Linux, MacOS, and Windows.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/development'
+    needs: changes
+    if: >
+      github.event_name == 'push' && github.ref == 'refs/heads/development' &&
+      (needs.changes.outputs.scripts == 'true' || needs.changes.outputs.ci == 'true')
     strategy:
       fail-fast: false
       matrix:
@@ -274,6 +300,8 @@ jobs:
             assert katabatic.__version__ == expected, f'{katabatic.__version__} != {expected}'"
 
   docker-build:
+    needs: changes
+    if: needs.changes.outputs.docker == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -302,8 +330,7 @@ jobs:
     if: >
       always() &&
       needs.lint-and-test.result == 'success' &&
-      (needs.changes.outputs.core == 'true' ||
-        (github.event_name == 'push' && github.ref == 'refs/heads/development'))
+      needs.changes.outputs.python == 'true'
 
     steps:
       - uses: actions/checkout@v7
