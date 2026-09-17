@@ -102,7 +102,6 @@ omit = [
     "katabatic/models/codi/*",
     "katabatic/models/gmm/*",
     "katabatic/models/medgan/*",
-    "katabatic/models/mst/*",
     "katabatic/models/naivebayes/*",
     "katabatic/models/smote/*",
     "katabatic/models/synthpop/*",

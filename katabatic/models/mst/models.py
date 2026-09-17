@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+import pickle
 from typing import Any
 
 import pandas as pd
@@ -23,6 +25,8 @@ class MSTModel(BaseModel):
     maximum spanning tree and generates synthetic records under
     differential privacy constraints.
     """
+
+    ARTIFACT_STATE_FILES = ("mst_state.pkl",)
 
     def __init__(
         self,
@@ -199,6 +203,7 @@ class MSTModel(BaseModel):
         self,
         data_dir: str,
         synthetic_dir: str | None = None,
+        artifact_state_dir: str | None = None,
         *args,
         **kwargs,
     ) -> MSTModel:
@@ -270,6 +275,7 @@ class MSTModel(BaseModel):
         self.is_fitted = True
 
         n_generated = len(df)
+
         synthetic_df = self.sample(
             n=n_generated,
         )
@@ -298,14 +304,140 @@ class MSTModel(BaseModel):
 
         print(f"[MST] Synthetic data saved:\n  X -> {x_path}\n  y -> {y_path}")
 
+        self._maybe_save_artifact_state(artifact_state_dir)
+
         return self
+
+    def _save_artifact_state(
+        self,
+        artifact_state_dir: str,
+    ) -> None:
+        """
+        Persist fitted MST state for later reload.
+
+        SmartNoise MST contains a locally created lambda used for
+        decompression, so the whole synthesizer cannot be pickled.
+        Instead, only the pickleable fitted components are stored.
+        """
+        if self.synthesizer is None or not self.is_fitted:
+            raise RuntimeError("MST model must be trained before saving state.")
+
+        os.makedirs(
+            artifact_state_dir,
+            exist_ok=True,
+        )
+
+        closure = self.synthesizer.undo_compress_fn.__closure__
+
+        if not closure:
+            raise RuntimeError("Unable to recover MST compression state.")
+
+        supports = None
+
+        for cell in closure:
+            if isinstance(cell.cell_contents, dict):
+                supports = cell.cell_contents
+                break
+
+        if supports is None:
+            raise RuntimeError("Unable to recover MST compression supports.")
+
+        state = {
+            "epsilon": self.epsilon,
+            "delta": self.delta,
+            "categorical_columns": self.categorical_columns,
+            "resolved_delta": self._resolved_delta,
+            "resolved_categorical_columns": (self._resolved_categorical_columns),
+            "column_names": self.column_names,
+            "label": self.label,
+            "num_rows": self.synthesizer.num_rows,
+            "pgm_synthesizer": self.synthesizer.synthesizer,
+            "transformer": self.synthesizer._transformer,
+            "supports": supports,
+        }
+
+        target = os.path.join(
+            artifact_state_dir,
+            self.ARTIFACT_STATE_FILES[0],
+        )
+
+        with open(
+            target,
+            "wb",
+        ) as file:
+            pickle.dump(
+                state,
+                file,
+            )
+
+    @classmethod
+    def load_from_ref(
+        cls,
+        store,
+        ref,
+    ) -> MSTModel:
+        """Reload a fitted MST model from artifact state."""
+        from snsynth.mst.mst import MSTSynthesizer
+
+        state_path = cls._require_state_file(
+            store,
+            ref,
+        )
+
+        with open(
+            state_path,
+            "rb",
+        ) as file:
+            state = pickle.load(file)  # nosec B301
+
+        model = cls(
+            epsilon=state["epsilon"],
+            delta=state["delta"],
+            categorical_columns=state["categorical_columns"],
+        )
+
+        wrapper = MSTSynthesizer(
+            epsilon=state["epsilon"],
+            delta=state["resolved_delta"],
+            verbose=False,
+        )
+
+        wrapper.synthesizer = state["pgm_synthesizer"]
+
+        wrapper._transformer = state["transformer"]
+
+        wrapper.num_rows = state["num_rows"]
+
+        supports = state["supports"]
+
+        def undo_compress_fn(data):
+            return wrapper.reverse_data(
+                data,
+                supports,
+            )
+
+        wrapper.undo_compress_fn = undo_compress_fn
+
+        model.synthesizer = wrapper
+        model.column_names = state["column_names"]
+        model.label = state["label"]
+
+        model._resolved_delta = state["resolved_delta"]
+
+        model._resolved_categorical_columns = state["resolved_categorical_columns"]
+
+        model.is_fitted = True
+
+        return model
 
     def evaluate(
         self,
         *args,
         **kwargs,
     ) -> float:
-        """Return a placeholder evaluation score for pipeline compatibility."""
+        """
+        Return a placeholder evaluation score for pipeline compatibility.
+        """
         if not self.is_fitted:
             raise RuntimeError("Call train() before evaluate().")
 
@@ -334,7 +466,10 @@ class MSTModel(BaseModel):
             int(n),
         )
 
-        if isinstance(synthetic, pd.DataFrame):
+        if isinstance(
+            synthetic,
+            pd.DataFrame,
+        ):
             return synthetic.reset_index(
                 drop=True,
             )

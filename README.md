@@ -63,6 +63,7 @@ Or install directly with Poetry / pip — useful for installing several extras a
 | CTGAN (supported) | `pip install katabatic[ctgan]` or `poetry install -E ctgan` |
 | PATE-GAN (supported) | `pip install katabatic[pategan]` or `poetry install -E pategan` |
 | GReaT (supported) | `pip install katabatic[great]` or `poetry install -E great` |
+| MST (supported) | `pip install katabatic[mst]` or `poetry install -E mst` |
 | TSTR + XGBoost | `pip install katabatic[eval]` or `poetry install -E eval` |
 | Development | `poetry install --with dev` |
 | All optional deps | `pip install katabatic[all]` |
