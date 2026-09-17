@@ -96,6 +96,13 @@ class ModelRegistry:
             "extra": None,
             "supported": False,
         },
+        "privtree": {
+            "module": "katabatic.models.privtree.models",
+            "class": "PrivTreeModel",
+            "dependencies": ["numpy", "pandas"],
+            "extra": "privtree",
+            "supported": True,
+        },
     }
 
     @classmethod

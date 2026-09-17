@@ -114,6 +114,9 @@ jobs:
             great:
               - 'katabatic/models/great/**'
               - 'tests/test_integration_great.py'
+            privtree:
+              - 'katabatic/models/privtree/**'
+              - 'tests/test_integration_privtree.py'
       - name: Build Dynamic Matrix
         id: build-matrix
         run: |
@@ -122,7 +125,8 @@ jobs:
             {"model": "ctgan", "torch": true},
             {"model": "pategan", "torch": false},
             {"model": "tabsyn", "torch": true},
-            {"model": "great", "torch": true}
+            {"model": "great", "torch": true},
+            {"model": "privtree", "torch": false}
           ]'
 
           # If a core file changed, run all models.

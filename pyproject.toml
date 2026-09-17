@@ -50,6 +50,7 @@ pategan = [
     "tensorflow==2.21.*",
     "tensorflow-io==0.37.1",
 ]
+privtree = []
 smote = ["imbalanced-learn==0.14.2"]
 mst = [
     "smartnoise-synth==1.0.5",
@@ -139,6 +140,7 @@ markers = [
     "ctgan: requires ctgan extra",
     "pategan: requires pategan extra",
     "tabsyn: requires tabsyn extra",
+    "privtree: requires privtree extra",
     "forked: run test in an isolated forked process (pytest-forked)",
 ]
 

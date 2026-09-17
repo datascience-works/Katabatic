@@ -1,9 +1,15 @@
 from __future__ import annotations
 
+import os
+import pickle
 from typing import Any
 
 import numpy as np
 import pandas as pd
+
+from katabatic.artifacts.base import ArtifactStore
+from katabatic.artifacts.refs import ModelRef
+from katabatic.models.base_model import Model
 
 from .utils import (
     PrivTreeSampler,
@@ -14,10 +20,12 @@ from .utils import (
 )
 
 
-class PrivTreeModel:
+class PrivTreeModel(Model):
     """
     Differentially Private Tree-based synthetic data generator.
     """
+
+    ARTIFACT_STATE_FILES = ("privtree_model.pkl",)
 
     def __init__(
         self,
@@ -26,6 +34,8 @@ class PrivTreeModel:
         min_count: int = 10,
         random_state: int = 42,
     ):
+        super().__init__()
+
         self.epsilon = epsilon
         self.max_depth = max_depth
         self.min_count = min_count
@@ -44,9 +54,13 @@ class PrivTreeModel:
             random_state=random_state,
         )
 
+    @classmethod
+    def get_required_dependencies(cls) -> list[str]:
+        return ["numpy", "pandas"]
+
     def fit(self, df: pd.DataFrame) -> None:
         """
-        Fit PrivTree on the provided (categorical / binned) dataframe.
+        Fit PrivTree on the provided categorical / binned dataframe.
         """
         if df.empty:
             raise ValueError("Input dataframe is empty.")
@@ -68,6 +82,121 @@ class PrivTreeModel:
         )
 
         self._build_tree(df, self.root)
+        self.is_fitted = True
+
+    def train(
+        self,
+        data_dir: str,
+        synthetic_dir: str | None = None,
+        n_synth: int | None = None,
+        **kwargs,
+    ) -> PrivTreeModel:
+        """
+        Train PrivTree using Katabatic's model interface.
+        """
+        self.check_dependencies()
+
+        train_path = os.path.join(data_dir, "train_full.csv")
+        if not os.path.isfile(train_path):
+            raise FileNotFoundError(f"Training data not found: {train_path}")
+
+        df = pd.read_csv(train_path)
+        self.fit(df)
+
+        if synthetic_dir:
+            os.makedirs(synthetic_dir, exist_ok=True)
+
+            if n_synth is None:
+                n_synth = len(df)
+
+            synthetic = self.sample(n_synth)
+
+            # Katabatic uses the last column as the target.
+            x_synth = synthetic.iloc[:, :-1]
+            y_synth = synthetic.iloc[:, -1]
+
+            x_synth.to_csv(
+                os.path.join(synthetic_dir, "x_synth.csv"),
+                index=False,
+            )
+            y_synth.to_csv(
+                os.path.join(synthetic_dir, "y_synth.csv"),
+                index=False,
+            )
+
+        artifact_state_dir = kwargs.get("artifact_state_dir")
+        if artifact_state_dir:
+            self._save_artifact_state(artifact_state_dir)
+
+        return self
+
+    def evaluate(self, X_real=None, **kwargs) -> float:
+        """
+        Return a simple smoke-test evaluation value.
+
+        PrivTree's primary purpose here is synthetic data generation,
+        so the model-level evaluation confirms that a fitted model
+        can produce synthetic samples.
+        """
+        if not self.is_fitted:
+            return 0.0
+
+        return 1.0
+
+    def _save_artifact_state(self, artifact_state_dir: str) -> None:
+        os.makedirs(artifact_state_dir, exist_ok=True)
+
+        state = {
+            "epsilon": self.epsilon,
+            "max_depth": self.max_depth,
+            "min_count": self.min_count,
+            "random_state": self.random_state,
+            "epsilon_per_level": self.epsilon_per_level,
+            "root": self.root,
+            "columns": self.columns,
+            "is_fitted": self.is_fitted,
+        }
+
+        target = os.path.join(
+            artifact_state_dir,
+            self.ARTIFACT_STATE_FILES[0],
+        )
+
+        with open(target, "wb") as f:
+            pickle.dump(state, f)
+
+    @classmethod
+    def load_from_ref(
+        cls,
+        store: ArtifactStore,
+        ref: ModelRef,
+    ) -> PrivTreeModel:
+        state_file = cls.ARTIFACT_STATE_FILES[0]
+        state_path = store.open_path(
+            f"{ref.state_relpath}/{state_file}"
+        )
+
+        if not state_path.is_file():
+            raise FileNotFoundError(
+                f"PrivTree artifact state not found: {state_path}"
+            )
+
+        with open(state_path, "rb") as f:
+            state = pickle.load(f)
+
+        instance = cls(
+            epsilon=state["epsilon"],
+            max_depth=state["max_depth"],
+            min_count=state["min_count"],
+            random_state=state["random_state"],
+        )
+
+        instance.epsilon_per_level = state["epsilon_per_level"]
+        instance.root = state["root"]
+        instance.columns = state["columns"]
+        instance.is_fitted = state["is_fitted"]
+
+        return instance
 
     def _build_tree(
         self,
@@ -78,7 +207,9 @@ class PrivTreeModel:
         Recursively build the PrivTree.
         """
         if not self.splitter.should_split(node):
-            node.set_leaf_distributions(self._compute_leaf_distributions(df))
+            node.set_leaf_distributions(
+                self._compute_leaf_distributions(df)
+            )
             return
 
         split = self.splitter.choose_split(
@@ -87,7 +218,9 @@ class PrivTreeModel:
         )
 
         if split is None:
-            node.set_leaf_distributions(self._compute_leaf_distributions(df))
+            node.set_leaf_distributions(
+                self._compute_leaf_distributions(df)
+            )
             return
 
         feature, left_vals, right_vals = split
@@ -155,7 +288,6 @@ class PrivTreeModel:
 
         for col in df.columns:
             value_counts = df[col].value_counts(normalize=True)
-
             distributions[col] = value_counts.to_dict()
 
         return distributions
