@@ -50,6 +50,13 @@ class ModelRegistry:
             "extra": "tabkde",
             "supported": False,
         },
+        "tvae": {
+            "module": "katabatic.models.tvae.models",
+            "class": "TVAEModel",
+            "dependencies": ["ctgan", "torch"],
+            "extra": "tvae",
+            "supported": False,
+        },
         "tabddpm": {
             "module": "katabatic.models.tabddpm.models",
             "class": "Tabddpm",
