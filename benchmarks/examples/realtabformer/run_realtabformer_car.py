@@ -10,7 +10,6 @@ from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
 from katabatic.models.realtabformer.models import REaLTabFormerModel
 
-
 config = RunConfig(
     dataset_name="car",
     model_name="realtabformer",
