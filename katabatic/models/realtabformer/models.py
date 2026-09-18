@@ -1,6 +1,8 @@
+import random
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from katabatic.models.base_model import Model as BaseModel
@@ -28,6 +30,7 @@ class REaLTabFormerModel(BaseModel):
         device: str = "cpu",
         gradient_accumulation_steps: int = 1,
         logging_steps: int = 100,
+        n_critic: int = 5,
         fit_kwargs: dict[str, Any] | None = None,
     ):
         super().__init__()
@@ -50,6 +53,7 @@ class REaLTabFormerModel(BaseModel):
         self.device = device
         self.gradient_accumulation_steps = gradient_accumulation_steps
         self.logging_steps = logging_steps
+        self.n_critic = n_critic
         self.fit_kwargs = fit_kwargs or {}
 
         self.model = None
@@ -75,6 +79,7 @@ class REaLTabFormerModel(BaseModel):
         is generated after training and written to Katabatic's standard
         synthetic output files.
         """
+
         self.check_dependencies()
 
         from realtabformer import REaLTabFormer
@@ -107,13 +112,20 @@ class REaLTabFormerModel(BaseModel):
             **kwargs,
         )
 
-        fit_kwargs = {"n_critic": 0, **self.fit_kwargs}
+        # REaLTabFormer 0.2.4 defaults gen_kwargs to None, but its
+        # sensitivity-training path expands it using **gen_kwargs.
+        # Supplying an empty dict avoids a NoneType failure while
+        # preserving the library's normal generation behaviour.
+        fit_kwargs = dict(self.fit_kwargs)
+        fit_kwargs.setdefault("gen_kwargs", {})
+        fit_kwargs["n_critic"] = self.n_critic
 
         self.model.fit(
             training_df,
             device=self.device,
             **fit_kwargs,
         )
+
         self.is_fitted = True
 
         generated_df = self.sample(self.training_rows)
@@ -141,6 +153,7 @@ class REaLTabFormerModel(BaseModel):
                 "device": self.device,
                 "gradient_accumulation_steps": (self.gradient_accumulation_steps),
                 "logging_steps": self.logging_steps,
+                "n_critic": self.n_critic,
             },
         )
 
@@ -155,6 +168,7 @@ class REaLTabFormerModel(BaseModel):
         """
         Generate synthetic rows from the trained REaLTabFormer model.
         """
+
         if not self.is_fitted or self.model is None:
             raise RuntimeError(
                 "The REaLTabFormer model must be trained before sampling."
@@ -163,10 +177,31 @@ class REaLTabFormerModel(BaseModel):
         if n is None:
             if self.training_rows is None:
                 raise RuntimeError("Training row count is unavailable.")
+
             n = self.training_rows
 
         if n <= 0:
             raise ValueError("n must be greater than 0.")
+
+        # Katabatic's stability evaluator passes seed=<value> to sample().
+        # REaLTabFormer does not accept seed as a generation argument, so
+        # consume it here and seed the underlying random generators instead.
+        seed = kwargs.pop("seed", None)
+
+        if seed is not None:
+            random.seed(seed)
+            np.random.seed(seed)
+
+            try:
+                import torch
+
+                torch.manual_seed(seed)
+
+                if torch.cuda.is_available():
+                    torch.cuda.manual_seed_all(seed)
+
+            except ImportError:
+                pass
 
         synthetic_df = self.model.sample(
             n_samples=n,
@@ -190,6 +225,7 @@ class REaLTabFormerModel(BaseModel):
         Evaluation metrics are handled by Katabatic's benchmarking and
         evaluation pipeline rather than inside this model wrapper.
         """
+
         if not self.is_fitted:
             raise RuntimeError(
                 "The REaLTabFormer model must be trained before evaluation."

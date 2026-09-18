@@ -19,6 +19,7 @@ def test_model_initialization():
     assert model.batch_size == 4
     assert model.device == "cpu"
     assert model.random_state == 1029
+    assert model.n_critic == 5
     assert model.is_fitted is False
 
 
@@ -85,7 +86,6 @@ def test_sample_before_training_raises():
 
 def test_sample_returns_dataframe():
     model = REaLTabFormerModel()
-
     model.model = MagicMock()
     model.model.sample.return_value = pd.DataFrame(
         {
@@ -99,6 +99,31 @@ def test_sample_returns_dataframe():
     model.column_names = ["age", "class"]
 
     result = model.sample(2)
+
+    assert isinstance(result, pd.DataFrame)
+    assert len(result) == 2
+
+    model.model.sample.assert_called_once_with(
+        n_samples=2,
+        device="cpu",
+    )
+
+
+def test_sample_accepts_seed_without_forwarding_it():
+    model = REaLTabFormerModel()
+    model.model = MagicMock()
+    model.model.sample.return_value = pd.DataFrame(
+        {
+            "age": [21, 31],
+            "class": ["A", "B"],
+        }
+    )
+
+    model.is_fitted = True
+    model.training_rows = 2
+    model.column_names = ["age", "class"]
+
+    result = model.sample(2, seed=42)
 
     assert isinstance(result, pd.DataFrame)
     assert len(result) == 2
@@ -227,7 +252,8 @@ def test_train_with_mock_model(tmp_path):
 
     fit_args, fit_kwargs = mock_instance.fit.call_args
     assert fit_kwargs["device"] == "cpu"
-    assert fit_kwargs["n_critic"] == 0
+    assert fit_kwargs["n_critic"] == 5
+    assert fit_kwargs["gen_kwargs"] == {}
 
     assert (output_dir / "x_synth.csv").exists()
     assert (output_dir / "y_synth.csv").exists()

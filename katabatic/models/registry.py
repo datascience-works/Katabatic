@@ -40,10 +40,7 @@ class ModelRegistry:
             "module": "katabatic.models.realtabformer.models",
             "class": "REaLTabFormerModel",
             "dependencies": ["realtabformer", "transformers", "torch"],
-            "extra": None,
-            "install_hint": (
-                "Install isolated dependencies from katabatic/models/realtabformer/"
-            ),
+            "extra": "realtabformer",
             "supported": False,
         },
         "tabsyn": {
