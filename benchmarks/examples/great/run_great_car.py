@@ -122,9 +122,9 @@ DROP_NAN = False  # drop rows with any NaN in the output
 config = RunConfig(
     dataset_name="car",
     model_name="great",
-    categorical_cols=["1", "2", "3", "4", "5"],
+    categorical_cols=["maint", "doors", "persons", "lug_boot", "safety"],
     continuous_cols=[],
-    target_col_raw="6",
+    target_col_raw="class",
     constraints=None,
 )
 

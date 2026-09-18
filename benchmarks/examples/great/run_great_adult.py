@@ -136,7 +136,7 @@ config = RunConfig(
         "fDist",
     ],
     continuous_cols=[],
-    target_col_raw="class",
+    target_col_raw="income",
     constraints={},
 )
 

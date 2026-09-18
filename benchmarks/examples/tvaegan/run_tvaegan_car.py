@@ -12,9 +12,9 @@ from katabatic.models.tvaegan.models import TVAEGANModel
 config = RunConfig(
     dataset_name="car",
     model_name="tvaegan",
-    categorical_cols=["0", "1", "2", "3", "4", "5"],
+    categorical_cols=["buying", "maint", "doors", "persons", "lug_boot", "safety"],
     continuous_cols=[],
-    target_col_raw="6",
+    target_col_raw="class",
     constraints=None,
 )
 

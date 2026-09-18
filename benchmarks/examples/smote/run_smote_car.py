@@ -105,9 +105,9 @@ def get_system_run_details() -> None:
 config = RunConfig(
     dataset_name="car",
     model_name="smote",
-    categorical_cols=["0", "1", "2", "3", "4", "5"],
+    categorical_cols=["buying", "maint", "doors", "persons", "lug_boot", "safety"],
     continuous_cols=[],
-    target_col_raw="6",
+    target_col_raw="class",
     constraints={},
 )
 

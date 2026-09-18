@@ -123,7 +123,7 @@ config = RunConfig(
         "capital-loss",
         "hours-per-week",
     ],
-    target_col_raw="class",
+    target_col_raw="income",
     constraints={},
 )
 
