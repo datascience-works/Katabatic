@@ -7003,4 +7003,4 @@ tabsyn = ["category-encoders", "tomli", "tomli-w", "torch", "tqdm"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.12"
-content-hash = "e0c28054cd637ec40bc68957c775fb213ed86b07276f34c657af83c559d907e8"
+content-hash = "5a3c2efbaa96972d4711b81b62d458bdda3613859218756e40714fac4cbccd8b"
