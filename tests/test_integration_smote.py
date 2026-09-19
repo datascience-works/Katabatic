@@ -168,7 +168,7 @@ def test_smotenc_handles_mixed_data_and_uses_aligned_schedule(
         random_state=42,
     )
 
-    model.train(data_dir, synth_dir)
+    model.train(data_dir, synthetic_dir=synth_dir)
 
     assert model.variant == "smotenc"
     assert model.smote.k_neighbors == 3
@@ -251,7 +251,7 @@ def test_smoten_handles_categorical_data_and_uses_aligned_schedule(
         random_state=42,
     )
 
-    model.train(data_dir, synth_dir)
+    model.train(data_dir, synthetic_dir=synth_dir)
 
     assert model.variant == "smoten"
     assert model.smote.k_neighbors == 3
@@ -311,7 +311,7 @@ def test_tiny_class_adjusts_k_neighbors(tmp_path):
         random_state=42,
     )
 
-    model.train(data_dir, synth_dir)
+    model.train(data_dir, synthetic_dir=synth_dir)
 
     # Only two minority samples are available, so k=5 cannot be used.
     assert model.smote.k_neighbors == 1
@@ -372,7 +372,7 @@ def test_smoten_same_seed_is_reproducible(tmp_path):
         random_state=42,
     )
 
-    model.train(data_dir, synth_dir)
+    model.train(data_dir, synthetic_dir=synth_dir)
 
     first = model.sample()
     second = model.sample()

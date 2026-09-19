@@ -276,8 +276,9 @@ class SMOTEModel(BaseModel):
     def train(
         self,
         data_dir: str,
-        synthetic_dir: str | None = None,
         *args,
+        synthetic_dir: str | None = None,
+        artifact_state_dir: str | None = None,
         **kwargs,
     ) -> SMOTEModel:
         """Train the selected SMOTE-family model."""
@@ -440,9 +441,7 @@ class SMOTEModel(BaseModel):
             f"  y -> {y_path_out}"
         )
 
-        artifact_state_dir = kwargs.get("artifact_state_dir")
-        if artifact_state_dir:
-            self._save_artifact_state(artifact_state_dir)
+        self._maybe_save_artifact_state(artifact_state_dir)
 
         return self
 
@@ -468,14 +467,7 @@ class SMOTEModel(BaseModel):
     @classmethod
     def load_from_ref(cls, store: ArtifactStore, ref: ModelRef) -> SMOTEModel:
         """Rehydrate a fitted SMOTEModel from a versioned artifact."""
-        state_file = cls.ARTIFACT_STATE_FILES[0]
-        state_path = store.open_path(f"{ref.state_relpath}/{state_file}")
-
-        if not state_path.is_file():
-            raise FileNotFoundError(
-                f"No SMOTE state at {state_path}. The model must be trained "
-                f"through a pipeline that passes artifact_state_dir."
-            )
+        state_path = cls._require_state_file(store, ref)
 
         with open(state_path, "rb") as fh:
             payload = pickle.load(fh)  # nosec B301: loading our own saved model artifact
@@ -496,11 +488,14 @@ class SMOTEModel(BaseModel):
         if not self.is_fitted:
             raise RuntimeError("Call train() before evaluate().")
 
-        return 0.0
+        raise NotImplementedError(
+            "SMOTEModel.evaluate() has no meaningful standalone metric to offer. "
+            "use TSTREvaluation for cross-model metrics instead."
+        )
 
     def sample(
         self,
-        n: int | None = None,
+        n_samples: int | None = None,
         *args,
         **kwargs,
     ) -> pd.DataFrame:
@@ -524,10 +519,10 @@ class SMOTEModel(BaseModel):
         else:
             y_synth = np.asarray(y_resampled)
 
-        if n is not None and n < len(X_synth):
+        if n_samples is not None and n_samples < len(X_synth):
             indices = np.random.choice(
                 len(X_synth),
-                n,
+                n_samples,
                 replace=False,
             )
             X_synth = X_synth[indices]
