@@ -13,13 +13,16 @@ Katabatic is a library of tabular data generative models sharing one abstract `M
   in-memory scorer across 6 dimensions (fidelity, utility, diversity, privacy, consistency,
   stability), producing one weighted composite score. Used by `benchmarks/runner.py`.
 
-**These two are not interchangeable.** `TrainTestSplitPipeline`'s evaluation slot expects a
-directory/artifact-store-based class with a `from_artifact()` classmethod (see `TSTREvaluation`);
-`SyntheticEvaluationPipeline`'s dimensions expect the `Evaluation` ABC's DataFrame-based
-`__init__(real_data, synthetic_data)`. There's a test
-(`tests/test_train_test_split_pipeline.py::test_artifact_fidelity_evaluation_smoke`, currently
-skipped) documenting exactly this incompatibility. See `CONTRIBUTING.md`'s "Adding New
-Evaluations" section before writing a new one.
+**These two are not interchangeable by default.** `TrainTestSplitPipeline`'s evaluation slot
+expects a directory/artifact-store-based class with a `from_artifact()` classmethod (see
+`TSTREvaluation`); `SyntheticEvaluationPipeline`'s dimensions expect the `Evaluation` ABC's
+DataFrame-based `__init__(real_data, synthetic_data)`. A class can support both by implementing
+`from_artifact()` as a thin adapter that reads the pipeline's CSVs into DataFrames and delegates
+to its own DataFrame-based logic — `FidelityEvaluation` does exactly this (see
+`katabatic/evaluate/fidelity/evaluation.py`), verified by
+`tests/test_train_test_split_pipeline.py::test_artifact_fidelity_evaluation_smoke`. `TSTREvaluation`
+itself takes the inverse approach (directory-based by default, no DataFrame mode). See
+`CONTRIBUTING.md`'s "Adding New Evaluations" section before writing a new one.
 
 ---
 
@@ -126,13 +129,13 @@ katabatic/
 ├── pipeline/
 │   ├── base_pipeline.py
 │   ├── train_test_split/    # TrainTestSplitPipeline (primary, tested path)
-│   ├── evaluation_pipeline.py  # SyntheticEvaluationPipeline
-│   └── cross_validation/    # CrossValidationPipeline — currently an empty, unused stub
+│   └── evaluation_pipeline.py  # SyntheticEvaluationPipeline
 │
 ├── artifacts/                # ArtifactStore: versioned datasets/models/evaluations on disk
 │   ├── base.py, local.py, refs.py, ids.py, dataset_split.py
 │
-├── datasets/                  # shipped example-dataset catalogue (adult/car/car1/magic/nursery/shuttle)
+├── datasets/                  # shipped example-dataset catalogue (adult/car/magic/nursery/shuttle
+│   │                           # — see datasets/README.md for the documented set)
 │   ├── README.md, registry.py, compatibility.py, profile.py, *.csv
 │
 └── utils/
