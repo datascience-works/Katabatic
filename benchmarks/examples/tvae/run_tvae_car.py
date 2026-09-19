@@ -1,12 +1,10 @@
-import os
+﻿import os
 import sys
-
 sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
-from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
-
 from katabatic.models.tvae.models import TVAEModel
+from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
 config = RunConfig(
     dataset_name="car",

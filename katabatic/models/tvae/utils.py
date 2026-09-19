@@ -1,4 +1,4 @@
-"""
+﻿"""
 TVAE utils — wraps the official, published TVAE implementation from the
 `ctgan` package (https://github.com/sdv-dev/CTGAN), maintained by the
 original authors of the CTGAN/TVAE paper:
@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from typing import List, Optional
 
 import numpy as np
 import pandas as pd
@@ -43,10 +44,10 @@ class TVAEConfig:
 
 @dataclass
 class TVAEState:
-    model: object
-    columns: list[str]
-    cat_columns: list[str]
-    num_columns: list[str]
+    model: "object"
+    columns: List[str]
+    cat_columns: List[str]
+    num_columns: List[str]
     n_train: int
     cfg: TVAEConfig
 
@@ -73,15 +74,14 @@ def _load_training_frame(data_dir: str) -> pd.DataFrame:
     label_col = y.columns[0]
     return pd.concat([X, y[label_col]], axis=1)
 
-
 def train_tvae(
     data_dir: str,
     cfg: TVAEConfig,
-    categorical_cols: list[str],
-    continuous_cols: list[str],
+    categorical_cols: List[str],
+    continuous_cols: List[str],
 ) -> TVAEState:
-    import torch
     from ctgan.synthesizers.tvae import TVAE as OfficialTVAE
+    import torch
 
     torch.manual_seed(cfg.seed)
     np.random.seed(cfg.seed)
@@ -116,8 +116,7 @@ def train_tvae(
         cfg=cfg,
     )
 
-
-def sample_tvae(state: TVAEState, n_samples: int | None = None) -> pd.DataFrame:
+def sample_tvae(state: TVAEState, n_samples: Optional[int] = None) -> pd.DataFrame:
     n = int(n_samples) if n_samples else state.n_train
     df_out = state.model.sample(n)
     return df_out[state.columns]

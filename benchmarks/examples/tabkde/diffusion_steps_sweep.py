@@ -1,13 +1,11 @@
 import os
 import sys
 import time
-
 sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
-from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
-
 from katabatic.models.tabkde.models import TabKDEModel
+from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
 config = RunConfig(
     dataset_name="car",
@@ -23,12 +21,10 @@ steps_values = [10, 25, 50, 100, 200]
 
 results = []
 for n_steps in steps_values:
-    print(f"\n{'=' * 60}\nTraining with diffusion_steps={n_steps}\n{'=' * 60}")
+    print(f"\n{'='*60}\nTraining with diffusion_steps={n_steps}\n{'='*60}")
 
     start = time.time()
-    model = TabKDEModel(
-        diffusion_epochs=300, hidden_dim=256, diffusion_steps=n_steps, lr=5e-4
-    )
+    model = TabKDEModel(diffusion_epochs=300, hidden_dim=256, diffusion_steps=n_steps, lr=5e-4)
     model.train(
         paths["split_dir"],
         categorical_cols=config.categorical_cols,
@@ -45,20 +41,14 @@ for n_steps in steps_values:
     )
     report = evaluate(model, config, train_df, synthetic_df, target_col, paths, test_df)
 
-    results.append(
-        {
-            "steps": n_steps,
-            "train_time_sec": round(train_time, 2),
-            "sample_time_sec": round(sample_time, 2),
-            "composite_score": getattr(report, "composite_score", None),
-        }
-    )
+    results.append({
+        "steps": n_steps,
+        "train_time_sec": round(train_time, 2),
+        "sample_time_sec": round(sample_time, 2),
+        "composite_score": getattr(report, "composite_score", None),
+    })
 
 print("\n\nDIFFUSION STEPS SWEEP COMPLETE")
-print(
-    f"{'Steps':<10}{'Train Time (s)':<18}{'Sample Time (s)':<18}{'Composite Score':<18}"
-)
+print(f"{'Steps':<10}{'Train Time (s)':<18}{'Sample Time (s)':<18}{'Composite Score':<18}")
 for r in results:
-    print(
-        f"{r['steps']:<10}{r['train_time_sec']:<18}{r['sample_time_sec']:<18}{r['composite_score']:<18}"
-    )
+    print(f"{r['steps']:<10}{r['train_time_sec']:<18}{r['sample_time_sec']:<18}{r['composite_score']:<18}")

@@ -1,12 +1,10 @@
 import os
 import sys
-
 sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
-from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
-
 from katabatic.models.tabkde.models import TabKDEModel
+from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
 config = RunConfig(
     dataset_name="car",
@@ -19,47 +17,17 @@ config = RunConfig(
 train_df, test_df, target_col, paths = preprocess_and_split(config)
 
 configs_to_try = [
-    {
-        "name": "baseline",
-        "diffusion_epochs": 1000,
-        "hidden_dim": 256,
-        "diffusion_steps": 50,
-        "lr": 1e-3,
-    },
-    {
-        "name": "fewer_epochs",
-        "diffusion_epochs": 300,
-        "hidden_dim": 256,
-        "diffusion_steps": 50,
-        "lr": 1e-3,
-    },
-    {
-        "name": "more_steps",
-        "diffusion_epochs": 1000,
-        "hidden_dim": 256,
-        "diffusion_steps": 200,
-        "lr": 1e-3,
-    },
-    {
-        "name": "smaller_hidden",
-        "diffusion_epochs": 1000,
-        "hidden_dim": 128,
-        "diffusion_steps": 50,
-        "lr": 1e-3,
-    },
-    {
-        "name": "lower_lr",
-        "diffusion_epochs": 1000,
-        "hidden_dim": 256,
-        "diffusion_steps": 50,
-        "lr": 5e-4,
-    },
+    {"name": "baseline",       "diffusion_epochs": 1000, "hidden_dim": 256, "diffusion_steps": 50,  "lr": 1e-3},
+    {"name": "fewer_epochs",   "diffusion_epochs": 300,  "hidden_dim": 256, "diffusion_steps": 50,  "lr": 1e-3},
+    {"name": "more_steps",     "diffusion_epochs": 1000, "hidden_dim": 256, "diffusion_steps": 200, "lr": 1e-3},
+    {"name": "smaller_hidden", "diffusion_epochs": 1000, "hidden_dim": 128, "diffusion_steps": 50,  "lr": 1e-3},
+    {"name": "lower_lr",       "diffusion_epochs": 1000, "hidden_dim": 256, "diffusion_steps": 50,  "lr": 5e-4},
 ]
 
 results = []
 for cfg in configs_to_try:
     name = cfg.pop("name")
-    print(f"\n{'=' * 60}\nRunning config: {name} -> {cfg}\n{'=' * 60}")
+    print(f"\n{'='*60}\nRunning config: {name} -> {cfg}\n{'='*60}")
 
     model = TabKDEModel(**cfg)
     model.train(

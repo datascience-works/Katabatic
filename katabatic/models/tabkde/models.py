@@ -13,7 +13,9 @@ original repo, and why).
 from __future__ import annotations
 
 import os
+from typing import Any, List, Optional
 
+import numpy as np
 import pandas as pd
 
 # NOTE: adjust this import if your base lives elsewhere (matches TabSyn's pattern)
@@ -51,7 +53,7 @@ class TabKDEModel(BaseModel):
         weight_decay: float = 0.0,
         patience: int = 50,
         seed: int = 42,
-        device: str | None = None,
+        device: Optional[str] = None,
     ) -> None:
         super().__init__()
         self.config = TabKDEConfig(
@@ -65,7 +67,7 @@ class TabKDEModel(BaseModel):
             seed=seed,
             device=device,
         )
-        self.state: TabKDEState | None = None
+        self.state: Optional[TabKDEState] = None
 
     # ---- Base hooks ---------------------------------------------------------
 
@@ -76,12 +78,12 @@ class TabKDEModel(BaseModel):
     def train(
         self,
         data_dir: str,
-        categorical_cols: list[str] | None = None,
-        continuous_cols: list[str] | None = None,
-        synthetic_dir: str | None = None,
+        categorical_cols: Optional[List[str]] = None,
+        continuous_cols: Optional[List[str]] = None,
+        synthetic_dir: Optional[str] = None,
         *args,
         **kwargs,
-    ) -> TabKDEModel:
+    ) -> "TabKDEModel":
         """Fit the copula encoding + diffusion model on data in `data_dir`,
         then materialize x_synth.csv / y_synth.csv for downstream evaluation
         (TSTR / SyntheticEvaluationPipeline), matching the convention used by
@@ -135,8 +137,8 @@ class TabKDEModel(BaseModel):
 
     def sample(
         self,
-        n_samples: int | None = None,
-        save_path: str | None = None,
+        n_samples: Optional[int] = None,
+        save_path: Optional[str] = None,
         *args,
         **kwargs,
     ) -> pd.DataFrame:
