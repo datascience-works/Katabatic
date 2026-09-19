@@ -1,11 +1,13 @@
-﻿import os
+import os
 import sys
 import time
+
 sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
-from katabatic.models.tabkde.models import TabKDEModel
 from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
+
+from katabatic.models.tabkde.models import TabKDEModel
 
 config = RunConfig(
     dataset_name="car",
@@ -21,10 +23,12 @@ epoch_values = [100, 300, 500, 1000, 2000]
 
 results = []
 for n_epochs in epoch_values:
-    print(f"\n{'='*60}\nTraining with diffusion_epochs={n_epochs}\n{'='*60}")
+    print(f"\n{'=' * 60}\nTraining with diffusion_epochs={n_epochs}\n{'=' * 60}")
 
     start = time.time()
-    model = TabKDEModel(diffusion_epochs=n_epochs, hidden_dim=256, diffusion_steps=50, lr=5e-4)
+    model = TabKDEModel(
+        diffusion_epochs=n_epochs, hidden_dim=256, diffusion_steps=50, lr=5e-4
+    )
     model.train(
         paths["split_dir"],
         categorical_cols=config.categorical_cols,
@@ -38,11 +42,13 @@ for n_epochs in epoch_values:
     )
     report = evaluate(model, config, train_df, synthetic_df, target_col, paths, test_df)
 
-    results.append({
-        "epochs": n_epochs,
-        "train_time_sec": round(train_time, 2),
-        "composite_score": getattr(report, "composite_score", None),
-    })
+    results.append(
+        {
+            "epochs": n_epochs,
+            "train_time_sec": round(train_time, 2),
+            "composite_score": getattr(report, "composite_score", None),
+        }
+    )
 
 print("\n\nEPOCH SWEEP COMPLETE")
 print(f"{'Epochs':<10}{'Train Time (s)':<18}{'Composite Score':<18}")

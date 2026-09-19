@@ -32,19 +32,18 @@ ADAPTATION NOTES (for documentation / honesty with markers):
 
 from __future__ import annotations
 
-import math
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
-
 # ---------------------------------------------------------------------------
 # Config / State
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class TabKDEConfig:
@@ -59,17 +58,17 @@ class TabKDEConfig:
     diffusion_steps: int = 50
     # misc
     seed: int = 42
-    device: Optional[str] = None
+    device: str | None = None
 
 
 @dataclass
 class TabKDEState:
-    data_processor: "DataProcessor"
-    empirical: "EmpiricalTransformer"
+    data_processor: DataProcessor
+    empirical: EmpiricalTransformer
     denoiser: Any  # torch.nn.Module, kept as Any so this file has no hard torch import at module load
-    columns: List[str]
-    cat_columns: List[str]
-    num_columns: List[str]
+    columns: list[str]
+    cat_columns: list[str]
+    num_columns: list[str]
     n_train: int
     device: str
     cfg: TabKDEConfig
@@ -79,13 +78,19 @@ class TabKDEState:
 # Ported (adapted): category -> rank encoding + empirical (copula) transform
 # ---------------------------------------------------------------------------
 
-def _compute_category_map(df: pd.DataFrame, column_name: str, v: np.ndarray) -> Dict[Any, int]:
+
+def _compute_category_map(
+    df: pd.DataFrame, column_name: str, v: np.ndarray
+) -> dict[Any, int]:
     """Rank categories by the mean of a reference numeric signal `v`.
     Ported from tabkde/copula_encoding/model.py `compute_category_map`.
     """
     unique_categories = df[column_name].unique()
     category_indices = {c: np.where(df[column_name] == c)[0] for c in unique_categories}
-    category_means = {c: float(np.mean(v[idx])) if len(idx) else 0.0 for c, idx in category_indices.items()}
+    category_means = {
+        c: float(np.mean(v[idx])) if len(idx) else 0.0
+        for c, idx in category_indices.items()
+    }
     sorted_categories = sorted(category_means.items(), key=lambda item: item[1])
     return {c: rank + 1 for rank, (c, _) in enumerate(sorted_categories)}
 
@@ -102,16 +107,18 @@ class DataProcessor:
     """
 
     def __init__(self) -> None:
-        self.scaler: Optional[StandardScaler] = None
-        self.encoding_map: Dict[str, Dict[Any, int]] = {}
-        self.cat_columns: List[str] = []
-        self.num_columns: List[str] = []
-        self.columns: List[str] = []
-        self.pca_1: Optional[PCA] = None
-        self.scaler_1: Optional[StandardScaler] = None
-        self.v: Optional[np.ndarray] = None
+        self.scaler: StandardScaler | None = None
+        self.encoding_map: dict[str, dict[Any, int]] = {}
+        self.cat_columns: list[str] = []
+        self.num_columns: list[str] = []
+        self.columns: list[str] = []
+        self.pca_1: PCA | None = None
+        self.scaler_1: StandardScaler | None = None
+        self.v: np.ndarray | None = None
 
-    def fit(self, df_train: pd.DataFrame, cat_columns: List[str], num_columns: List[str]) -> pd.DataFrame:
+    def fit(
+        self, df_train: pd.DataFrame, cat_columns: list[str], num_columns: list[str]
+    ) -> pd.DataFrame:
         self.columns = list(df_train.columns)
         self.cat_columns = list(cat_columns)
         self.num_columns = list(num_columns)
@@ -133,7 +140,9 @@ class DataProcessor:
                 self.encoding_map[col] = _compute_category_map(df_train, col, self.v)
             else:
                 cats = df_train[col].astype("category").cat.categories
-                self.encoding_map[col] = {cat: code for code, cat in enumerate(cats, start=1)}
+                self.encoding_map[col] = {
+                    cat: code for code, cat in enumerate(cats, start=1)
+                }
             df_encoded[col] = df_train[col].map(self.encoding_map[col])
 
         df_encoded = df_encoded.astype(float)
@@ -154,8 +163,15 @@ class DataProcessor:
             mapping = self.encoding_map[col]
             reverse = {code: cat for cat, code in mapping.items()}
             min_key, max_key = min(reverse.keys()), max(reverse.keys())
-            df_decoded[col] = df_decoded[col].round().astype(int).apply(
-                lambda x, rev=reverse, lo=min_key, hi=max_key: rev.get(min(max(x, lo), hi), rev[lo])
+            df_decoded[col] = (
+                df_decoded[col]
+                .round()
+                .astype(int)
+                .apply(
+                    lambda x, rev=reverse, lo=min_key, hi=max_key: rev.get(
+                        min(max(x, lo), hi), rev[lo]
+                    )
+                )
             )
 
         for col in self.num_columns:
@@ -178,8 +194,8 @@ class EmpiricalTransformer:
 
     def __init__(self, df: pd.DataFrame) -> None:
         self.df = df
-        self.df_sorted: Optional[pd.DataFrame] = None
-        self.df_ranks: Optional[pd.DataFrame] = None
+        self.df_sorted: pd.DataFrame | None = None
+        self.df_ranks: pd.DataFrame | None = None
         self.fit()
 
     def fit(self, method: str = "min") -> pd.DataFrame:
@@ -209,23 +225,27 @@ class EmpiricalTransformer:
 # Copula-space <-> Gaussian-space helpers
 # ---------------------------------------------------------------------------
 
+
 def _uniform_to_gaussian(u: np.ndarray, eps: float = 1e-6) -> np.ndarray:
     """Map (0,1) ranks to standard-normal latents via the inverse normal CDF,
     so the diffusion model can operate in a well-behaved continuous space.
     This is a standard copula trick (Gaussian copula)."""
     from scipy.stats import norm
+
     u_clipped = np.clip(u, eps, 1 - eps)
     return norm.ppf(u_clipped)
 
 
 def _gaussian_to_uniform(z: np.ndarray) -> np.ndarray:
     from scipy.stats import norm
+
     return norm.cdf(z)
 
 
 # ---------------------------------------------------------------------------
 # Diffusion model (simplified DDPM-style, trained in copula/Gaussian space)
 # ---------------------------------------------------------------------------
+
 
 def _build_denoiser(in_dim: int, hidden_dim: int):
     import torch.nn as nn
@@ -260,23 +280,29 @@ def _build_denoiser(in_dim: int, hidden_dim: int):
     return Denoiser(in_dim, hidden_dim)
 
 
-def _linear_beta_schedule(n_steps: int, beta_start: float = 1e-4, beta_end: float = 0.02):
+def _linear_beta_schedule(
+    n_steps: int, beta_start: float = 1e-4, beta_end: float = 0.02
+):
     import torch
+
     return torch.linspace(beta_start, beta_end, n_steps)
 
 
 def train_tabkde(
     data_dir: str,
     cfg: TabKDEConfig,
-    categorical_cols: List[str],
-    continuous_cols: List[str],
+    categorical_cols: list[str],
+    continuous_cols: list[str],
 ) -> TabKDEState:
     import os
+
     import torch
     from torch.utils.data import DataLoader, TensorDataset
 
     torch.manual_seed(cfg.seed)
-    device = torch.device(cfg.device or ("cuda" if torch.cuda.is_available() else "cpu"))
+    device = torch.device(
+        cfg.device or ("cuda" if torch.cuda.is_available() else "cpu")
+    )
 
     # ---- 1. Load data (matches the convention already used by TabSyn/TVAE
     #         ports in this codebase: train_full.csv, or x_train+y_train) ----
@@ -335,7 +361,9 @@ def train_tabkde(
         shuffle=True,
         drop_last=False,
     )
-    optimizer = torch.optim.Adam(denoiser.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
+    optimizer = torch.optim.Adam(
+        denoiser.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay
+    )
 
     best_loss = float("inf")
     patience = 0
@@ -371,7 +399,9 @@ def train_tabkde(
                 break
 
         if (epoch + 1) % max(1, cfg.diffusion_epochs // 10) == 0:
-            print(f"[TabKDE] epoch {epoch+1}/{cfg.diffusion_epochs} loss={avg_loss:.4f}")
+            print(
+                f"[TabKDE] epoch {epoch + 1}/{cfg.diffusion_epochs} loss={avg_loss:.4f}"
+            )
 
     denoiser.eval()
 
@@ -392,7 +422,7 @@ def train_tabkde(
     return state
 
 
-def sample_tabkde(state: TabKDEState, n_samples: Optional[int] = None) -> pd.DataFrame:
+def sample_tabkde(state: TabKDEState, n_samples: int | None = None) -> pd.DataFrame:
     """Reverse-diffuse Gaussian latents -> uniform (copula) space ->
     EmpiricalTransformer.convert() -> DataProcessor.decode() -> real rows."""
     import torch
@@ -459,6 +489,6 @@ def evaluate_tabkde(state: TabKDEState, data_dir: str, split: str = "test") -> f
     for col in state.num_columns:
         if col in real.columns and col in synth.columns:
             real_mean, real_std = real[col].mean(), real[col].std() + 1e-8
-            synth_mean, synth_std = synth[col].mean(), synth[col].std() + 1e-8
+            synth_mean, _ = synth[col].mean(), synth[col].std() + 1e-8
             diffs.append(abs(real_mean - synth_mean) / real_std)
     return float(np.mean(diffs)) if diffs else 0.0

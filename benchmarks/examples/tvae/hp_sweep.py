@@ -1,10 +1,12 @@
-﻿import os
+import os
 import sys
+
 sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
-from katabatic.models.tvae.models import TVAEModel
 from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
+
+from katabatic.models.tvae.models import TVAEModel
 
 config = RunConfig(
     dataset_name="car",
@@ -17,17 +19,17 @@ config = RunConfig(
 train_df, test_df, target_col, paths = preprocess_and_split(config)
 
 configs_to_try = [
-    {"name": "baseline",        "embedding_dim": 128, "epochs": 300, "batch_size": 500},
-    {"name": "smaller_embed",   "embedding_dim": 64,  "epochs": 300, "batch_size": 500},
-    {"name": "larger_embed",    "embedding_dim": 256, "epochs": 300, "batch_size": 500},
-    {"name": "fewer_epochs",    "embedding_dim": 128, "epochs": 100, "batch_size": 500},
-    {"name": "smaller_batch",   "embedding_dim": 128, "epochs": 300, "batch_size": 128},
+    {"name": "baseline", "embedding_dim": 128, "epochs": 300, "batch_size": 500},
+    {"name": "smaller_embed", "embedding_dim": 64, "epochs": 300, "batch_size": 500},
+    {"name": "larger_embed", "embedding_dim": 256, "epochs": 300, "batch_size": 500},
+    {"name": "fewer_epochs", "embedding_dim": 128, "epochs": 100, "batch_size": 500},
+    {"name": "smaller_batch", "embedding_dim": 128, "epochs": 300, "batch_size": 128},
 ]
 
 results = []
 for cfg in configs_to_try:
     name = cfg.pop("name")
-    print(f"\n{'='*60}\nRunning config: {name} -> {cfg}\n{'='*60}")
+    print(f"\n{'=' * 60}\nRunning config: {name} -> {cfg}\n{'=' * 60}")
 
     model = TVAEModel(**cfg)
     model.train(

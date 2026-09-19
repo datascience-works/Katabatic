@@ -1,10 +1,12 @@
-﻿import os
+import os
 import sys
+
 sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
-from katabatic.models.tvae.models import TVAEModel
 from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
+
+from katabatic.models.tvae.models import TVAEModel
 
 config = RunConfig(
     dataset_name="car",
@@ -17,17 +19,47 @@ config = RunConfig(
 train_df, test_df, target_col, paths = preprocess_and_split(config)
 
 configs_to_try = [
-    {"name": "baseline",         "epochs": 300, "l2scale": 1e-5, "compress_dims": (128, 128), "decompress_dims": (128, 128)},
-    {"name": "strong_l2",        "epochs": 300, "l2scale": 1e-3, "compress_dims": (128, 128), "decompress_dims": (128, 128)},
-    {"name": "smaller_network",  "epochs": 300, "l2scale": 1e-5, "compress_dims": (32, 32),   "decompress_dims": (32, 32)},
-    {"name": "fewer_epochs",     "epochs": 100, "l2scale": 1e-5, "compress_dims": (128, 128), "decompress_dims": (128, 128)},
-    {"name": "combined",         "epochs": 100, "l2scale": 1e-3, "compress_dims": (32, 32),   "decompress_dims": (32, 32)},
+    {
+        "name": "baseline",
+        "epochs": 300,
+        "l2scale": 1e-5,
+        "compress_dims": (128, 128),
+        "decompress_dims": (128, 128),
+    },
+    {
+        "name": "strong_l2",
+        "epochs": 300,
+        "l2scale": 1e-3,
+        "compress_dims": (128, 128),
+        "decompress_dims": (128, 128),
+    },
+    {
+        "name": "smaller_network",
+        "epochs": 300,
+        "l2scale": 1e-5,
+        "compress_dims": (32, 32),
+        "decompress_dims": (32, 32),
+    },
+    {
+        "name": "fewer_epochs",
+        "epochs": 100,
+        "l2scale": 1e-5,
+        "compress_dims": (128, 128),
+        "decompress_dims": (128, 128),
+    },
+    {
+        "name": "combined",
+        "epochs": 100,
+        "l2scale": 1e-3,
+        "compress_dims": (32, 32),
+        "decompress_dims": (32, 32),
+    },
 ]
 
 results = []
 for cfg in configs_to_try:
     name = cfg.pop("name")
-    print(f"\n{'='*60}\nRunning config: {name} -> {cfg}\n{'='*60}")
+    print(f"\n{'=' * 60}\nRunning config: {name} -> {cfg}\n{'=' * 60}")
 
     model = TVAEModel(**cfg)
     model.train(
@@ -45,5 +77,9 @@ for cfg in configs_to_try:
 print("\n\nPRIVACY OPTIMIZATION SWEEP COMPLETE")
 for r in results:
     score = getattr(r["report"], "composite_score", None)
-    privacy = getattr(r["report"], "dimension_scores", {}).get("privacy", None) if hasattr(r["report"], "dimension_scores") else None
+    privacy = (
+        getattr(r["report"], "dimension_scores", {}).get("privacy", None)
+        if hasattr(r["report"], "dimension_scores")
+        else None
+    )
     print(r["name"], "-> composite:", score, " privacy:", privacy)

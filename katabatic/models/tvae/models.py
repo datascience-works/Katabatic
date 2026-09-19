@@ -1,4 +1,4 @@
-﻿"""
+"""
 TVAEModel — Katabatic integration of TVAE.
 
 Wraps the official, published TVAE implementation from the `ctgan` package
@@ -10,7 +10,6 @@ Welling (2013). See utils.py for the full adaptation rationale.
 from __future__ import annotations
 
 import os
-from typing import List, Optional
 
 import pandas as pd
 
@@ -61,7 +60,7 @@ class TVAEModel(BaseModel):
             seed=seed,
             enable_gpu=enable_gpu,
         )
-        self.state: Optional[TVAEState] = None
+        self.state: TVAEState | None = None
 
     @classmethod
     def get_required_dependencies(cls) -> list[str]:
@@ -70,12 +69,12 @@ class TVAEModel(BaseModel):
     def train(
         self,
         data_dir: str,
-        categorical_cols: Optional[List[str]] = None,
-        continuous_cols: Optional[List[str]] = None,
-        synthetic_dir: Optional[str] = None,
+        categorical_cols: list[str] | None = None,
+        continuous_cols: list[str] | None = None,
+        synthetic_dir: str | None = None,
         *args,
         **kwargs,
-    ) -> "TVAEModel":
+    ) -> TVAEModel:
         """Fit TVAE on data in `data_dir`, then materialize x_synth.csv /
         y_synth.csv for downstream evaluation, matching the convention used
         by the other model ports in this codebase."""
@@ -126,8 +125,8 @@ class TVAEModel(BaseModel):
 
     def sample(
         self,
-        n_samples: Optional[int] = None,
-        save_path: Optional[str] = None,
+        n_samples: int | None = None,
+        save_path: str | None = None,
         *args,
         **kwargs,
     ) -> pd.DataFrame:
