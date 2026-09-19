@@ -68,8 +68,6 @@ synthetic_df = model.sample(
 )
 ```
 
-> **Note:** Use `model.fit()`, not `model.train()`. The `train()` method silently overrides epochs to 2.
-
 ---
 
 ## Model Evaluation Benchmark Results

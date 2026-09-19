@@ -28,6 +28,10 @@ jobs:
       - run: echo "Frontend change. Python checks skipped."
 
   model-contract:
+    strategy:
+      matrix:
+        model: [ganblr, ctgan, pategan, tabsyn, great]
+    name: model-contract-${{ matrix.model }}
     runs-on: ubuntu-latest
     steps:
       - run: echo "Frontend change. Python checks skipped."

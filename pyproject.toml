@@ -22,7 +22,7 @@ requires-python = ">=3.11,<3.12"
 # Core dependencies - always installed
 dependencies = [
     "pandas>=2.3.1,<3.0.0",
-    "scikit-learn>=1.3.0,<2.0.0",
+    "scikit-learn>=1.9.1,<2.0.0",
     "numpy>=1.24.0,<2.0.0",
     "scipy>=1.13.0,<1.15.0",
     "psutil>=5.9",
@@ -43,7 +43,7 @@ great = [
     "huggingface-hub>=0.34.0,<1.0",
     "torch>=2.14.0,<3.0.0",
     "datasets>=4.0.0,<5.0.0",
-    "accelerate>=0.26.0",
+    "accelerate>=1.15.0",
     "fsspec>=2023.5.0,<=2026.2.0",
 ]
 medgan = ["torch>=2.14.0,<3.0.0"]
@@ -60,16 +60,12 @@ mst = [
 tabddpm = [
     "torch>=2.14.0,<3.0.0",
     "rtdl_revisiting_models==0.0.2",
-    "category-encoders>=2.8.1,<3.0.0",
-]
-tabpfgen = [
-    "torch>=2.14.0,<3.0.0",
-    "tabpfn>=2.0",
+    "category-encoders>=2.11.1,<3.0.0",
 ]
 tabsyn = [
     "torch>=2.14.0,<3.0.0",
-    "tqdm>=4.66.0,<5.0.0",
-    "category-encoders>=2.8.1,<3.0.0",
+    "tqdm>=4.70.1,<5.0.0",
+    "category-encoders>=2.11.1,<3.0.0",
     "tomli>=2.0.1,<3.0.0",
     "tomli-w>=1.0.0,<2.0.0",
 ]
@@ -85,10 +81,10 @@ all = [
     "torch>=2.14.0,<3.0.0",
     "datasets>=4.0.0,<5.0.0",
     "xgboost>=3.2.0,<4.0.0",
-    "tqdm>=4.66.0,<5.0.0",
+    "tqdm>=4.70.1,<5.0.0",
     "tomli>=2.0.1,<3.0.0",
     "tomli-w>=1.0.0,<2.0.0",
-    "category-encoders>=2.8.1,<3.0.0",
+    "category-encoders>=2.11.1,<3.0.0",
     "rtdl_revisiting_models==0.0.2",
     "accelerate>=1.14.0",
     "fsspec>=2023.5.0,<=2026.2.0",
@@ -106,12 +102,14 @@ omit = [
     "katabatic/models/codi/*",
     "katabatic/models/gmm/*",
     "katabatic/models/medgan/*",
+    "katabatic/models/mst/*",
     "katabatic/models/naivebayes/*",
     "katabatic/models/smote/*",
     "katabatic/models/synthpop/*",
     "katabatic/models/tabddpm/*",
     "katabatic/models/tabkde_updated/*",
-    "katabatic/models/mst/*",
+    "katabatic/models/tvaegan/*",
+
 ]
 
 [tool.poetry]
@@ -121,12 +119,13 @@ include = ["CHANGELOG.md"]
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^2.3.1"
-ruff = "^0.16.6"
+ruff = "^0.16.7"
 # Development / test tooling
 ipykernel = "^7.3.0"
 pytest = "^9.1.1"
 pytest-cov = "^7.1.0"
 pytest-mock = "^3.15.1"
+pytest-forked = "^1.7.5"
 # Security tools
 bandit = "^1.9.4"
 pip-audit = "^2.10.1"
@@ -141,6 +140,7 @@ markers = [
     "pategan: requires pategan extra",
     "tabsyn: requires tabsyn extra",
     "arf: requires arf extra",
+    "forked: run test in an isolated forked process (pytest-forked)",
 ]
 
 [tool.ruff]

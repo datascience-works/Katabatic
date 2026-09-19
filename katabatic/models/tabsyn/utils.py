@@ -613,7 +613,6 @@ def train_tabsyn(
     *,
     data_dir: str,
     cfg: TabSynConfig,
-    save_dir: str | None = None,
     extra_info: dict[str, Any] = {},
 ) -> TabSynState:
     _seed_all(cfg.seed)
@@ -787,34 +786,6 @@ def train_tabsyn(
         device=device,
         train_rows=z_tr.shape[0],
     )
-
-    # Optional: save snapshots (single pickle-based bundle for artifact store)
-    # Save a single pickle-based bundle for the artifact store.
-    if save_dir is not None:
-        os.makedirs(save_dir, exist_ok=True)
-        bundle = {
-            "denoise_fn": state.denoise_fn.state_dict(),
-            "tokenizer": state.tokenizer_state,
-            "encoder": state.encoder_state,
-            "decoder": state.decoder_state,
-            # Metadata needed to rebuild TabSynState in TabSyn.load_from_ref().
-            "meta": {
-                "info": state.info,
-                "n_num": state.n_num,
-                "cat_sizes": state.cat_sizes,
-                "cat_encoders": state.cat_encoders,
-                "token_dim": state.token_dim,
-                "column_order": state.column_order,
-                "scaler_mean": state.scaler_mean,
-                "scaler_std": state.scaler_std,
-                "train_rows": state.train_rows,
-                "denoise_dim_t": denoise_backbone.dim_t,
-                "sigma_data": precond.sigma_data,
-                "num_steps": getattr(precond, "num_steps", 50),
-                "device": str(device),
-            },
-        }
-        torch.save(bundle, os.path.join(save_dir, "tabsyn_state.pkl"))
 
     return state
 
