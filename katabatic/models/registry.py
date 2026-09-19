@@ -1,7 +1,7 @@
 """Model registry for dynamic model loading.
 
 Officially supported models (smoke-tested, PyPI extras): ``ganblr``, ``ctgan``,
-``pategan``, ``tabsyn``, ``great``.
+``pategan``, ``tabsyn``, ``great``, ``smote``.
 Other registered models are experimental; see ``docs/EXPERIMENTAL_MODELS.md``.
 """
 
@@ -95,6 +95,13 @@ class ModelRegistry:
             "dependencies": ["sklearn", "numpy", "pandas"],
             "extra": None,
             "supported": False,
+        },
+        "smote": {
+            "module": "katabatic.models.smote.models",
+            "class": "SMOTEModel",
+            "dependencies": ["imblearn"],
+            "extra": "smote",
+            "supported": True,
         },
     }
 
