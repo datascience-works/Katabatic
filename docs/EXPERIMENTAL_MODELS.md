@@ -12,6 +12,7 @@ Katabatic ships multiple generative model implementations. Only a subset is **of
 | TabSyn | `pip install katabatic[tabsyn]` | Yes (artifact pipeline integration test) |
 | GReaT | `pip install katabatic[great]` | Yes (artifact pipeline integration test) |
 | PrivTree | `pip install katabatic[privtree]` | Yes (artifact pipeline integration test) |
+| ARF | `pip install katabatic[arf]` | Yes (artifact pipeline integration test) |
 
 These models are listed in `ModelRegistry` with `supported: True`, and `tests/test_model_registry.py::test_supported_models_list` pins this exact set. Use the artifact pipeline documented in [GANBLR_FLOW.md](../GANBLR_FLOW.md) and the README quick start.
 

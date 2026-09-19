@@ -141,6 +141,10 @@ jobs:
             privtree:
               - 'katabatic/models/privtree/**'
               - 'tests/test_integration_privtree.py'
+            arf:
+              - 'katabatic/models/arf/**'
+              - 'tests/test_integration_arf.py'
+
       - name: Build Dynamic Matrix
         id: build-matrix
         run: |
@@ -151,6 +155,7 @@ jobs:
             {"model": "tabsyn", "torch": true},
             {"model": "great", "torch": true},
             {"model": "privtree", "torch": false}
+            {"model": "arf", "torch": false}
           ]'
 
           # If a core file changed, run all models.
