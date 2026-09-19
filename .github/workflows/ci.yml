@@ -54,6 +54,12 @@ jobs:
       - name: Install dependencies
         run: poetry install --with dev
 
+      #DEBUG
+      - name: Debug ruff config
+        run: |
+          poetry run ruff --version
+          poetry run ruff check katabatic tests --show-settings | head -60
+
       - name: Ruff
         run: poetry run ruff check katabatic tests
 
