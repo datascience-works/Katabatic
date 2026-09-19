@@ -151,9 +151,7 @@ extend-exclude = ["**/*.md", "**/README.md"]
 select = ["E", "F", "I", "UP"] #E: pycodestyle error, F: flake8 error, I: isort imports, UP: Upgrade syntax
 ignore = ["E501"] #line-too-long. Currently prevents PRs. More effort required to fix across codebase.
 
-#DEBUG
-[tool.ruff.lint.isort]
-known-third-party = ["datasets"]
+
 
 [build-system]
 requires = ["poetry-core>=2.0"]
