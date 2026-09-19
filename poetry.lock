@@ -6966,6 +6966,7 @@ great = ["accelerate", "datasets", "fsspec", "huggingface-hub", "torch", "transf
 medgan = ["torch"]
 mst = ["opendp", "private-pgm", "smartnoise-synth"]
 pategan = ["tensorflow", "tensorflow-io"]
+privtree = []
 smote = ["imbalanced-learn"]
 tabddpm = ["category-encoders", "rtdl_revisiting_models", "torch"]
 tabsyn = ["category-encoders", "tomli", "tomli-w", "torch", "tqdm"]
@@ -6973,4 +6974,4 @@ tabsyn = ["category-encoders", "tomli", "tomli-w", "torch", "tqdm"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.12"
-content-hash = "14fcd8198a29f3ab716d6bb0b679629cce2c47ce429066f9b0ed6382d06ad48d"
+content-hash = "1736e1488df2c4ca398f62f3edd2dc9ceb25c98075cc1925285c5bd755b5c4bb"
