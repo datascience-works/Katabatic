@@ -40,19 +40,11 @@ def test_arf_artifact_pipeline_smoke(tmp_path, tiny_binary_csv):
     ), mr.root_relpath
 
     state_file = ARFModel.ARTIFACT_STATE_FILES[0]
-    state_path = store.open_path(
-        f"{mr.state_relpath}/{state_file}"
-    )
-    assert state_path.is_file(), (
-        f"state file was never written: {state_path}"
-    )
+    state_path = store.open_path(f"{mr.state_relpath}/{state_file}")
+    assert state_path.is_file(), f"state file was never written: {state_path}"
 
-    x_synth = store.open_path(
-        f"{mr.synthetic_relpath}/x_synth.csv"
-    )
-    y_synth = store.open_path(
-        f"{mr.synthetic_relpath}/y_synth.csv"
-    )
+    x_synth = store.open_path(f"{mr.synthetic_relpath}/x_synth.csv")
+    y_synth = store.open_path(f"{mr.synthetic_relpath}/y_synth.csv")
     assert x_synth.is_file()
     assert y_synth.is_file()
 
