@@ -30,6 +30,7 @@ dependencies = [
 
 [project.optional-dependencies]
 codi = ["torch>=2.14.0,<3.0.0"]
+arf = []
 ctgan = ["torch>=2.14.0,<3.0.0"]
 ganblr = [
     "tensorflow==2.21.*",
@@ -50,6 +51,7 @@ pategan = [
     "tensorflow==2.21.*",
     "tensorflow-io==0.37.1",
 ]
+privtree = []
 smote = ["imbalanced-learn==0.14.2"]
 mst = [
     "smartnoise-synth==1.0.5",
@@ -98,7 +100,6 @@ Documentation = "https://github.com/datascience-works/Katabatic#readme"
 [tool.coverage.run]
 # Experimental models are excluded until they have integration tests.
 omit = [
-    "katabatic/models/arf/*",
     "katabatic/models/codi/*",
     "katabatic/models/gmm/*",
     "katabatic/models/medgan/*",
@@ -139,6 +140,8 @@ markers = [
     "pategan: requires pategan extra",
     "tabsyn: requires tabsyn extra",
     "mst: requires mst extra",
+    "privtree: requires privtree extra",
+    "arf: requires arf extra",
     "forked: run test in an isolated forked process (pytest-forked)",
 ]
 
@@ -149,7 +152,10 @@ extend-exclude = ["**/*.md", "**/README.md"]
 select = ["E", "F", "I", "UP"] #E: pycodestyle error, F: flake8 error, I: isort imports, UP: Upgrade syntax
 ignore = ["E501"] #line-too-long. Currently prevents PRs. More effort required to fix across codebase.
 
-
+#separates directories like katabatic/datasets/ from HuggingFace datasets/ for isort.
+[tool.ruff.lint.isort]
+known-third-party = ["datasets"]
+known-first-party = ["katabatic"]
 
 [build-system]
 requires = ["poetry-core>=2.0"]

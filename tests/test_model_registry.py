@@ -103,4 +103,6 @@ def test_supported_models_list():
         "tabsyn",
         "great",
         "mst",
+        "privtree",
+        "arf",
     }

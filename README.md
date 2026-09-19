@@ -64,6 +64,8 @@ Or install directly with Poetry / pip — useful for installing several extras a
 | TabSyn (supported) | `pip install katabatic[tabsyn]` or `poetry install -E tabsyn` |
 | GReaT (supported) | `pip install katabatic[great]` or `poetry install -E great` |
 | MST (supported) | `pip install katabatic[mst]` or `poetry install -E mst` |
+| PrivTree (supported) | `pip install katabatic[privtree]` or `poetry install -E privtree` |
+| ARF (supported) | `pip install katabatic[arf]` or `poetry install -E arf` |
 | TSTR + XGBoost | `pip install katabatic[eval]` or `poetry install -E eval` |
 | Development | `poetry install --with dev` |
 | All optional deps | `pip install katabatic[all]` |
@@ -288,7 +290,7 @@ From the cloned repo root (see [Installation](#installation)):
 poetry install --with dev -E ganblr -E eval   # add -E {model} as needed
 
 poetry check
-poetry run ruff check katabatic tests
+poetry run ruff check --no-cache katabatic tests
 poetry run pytest                              # fast unit tests
 poetry run pytest -m integration               # after installing model extras
 poetry run mypy katabatic/                     # optional

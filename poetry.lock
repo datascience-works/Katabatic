@@ -6957,6 +6957,7 @@ propcache = ">=0.2.1"
 
 [extras]
 all = ["accelerate", "category-encoders", "datasets", "fsspec", "huggingface-hub", "imbalanced-learn", "pgmpy", "pyitlib", "rtdl_revisiting_models", "tensorflow", "tensorflow-io", "tomli", "tomli-w", "torch", "tqdm", "transformers", "xgboost"]
+arf = []
 codi = ["torch"]
 ctgan = ["torch"]
 eval = ["xgboost"]
@@ -6965,6 +6966,7 @@ great = ["accelerate", "datasets", "fsspec", "huggingface-hub", "torch", "transf
 medgan = ["torch"]
 mst = ["opendp", "private-pgm", "smartnoise-synth"]
 pategan = ["tensorflow", "tensorflow-io"]
+privtree = []
 smote = ["imbalanced-learn"]
 tabddpm = ["category-encoders", "rtdl_revisiting_models", "torch"]
 tabsyn = ["category-encoders", "tomli", "tomli-w", "torch", "tqdm"]
@@ -6972,4 +6974,4 @@ tabsyn = ["category-encoders", "tomli", "tomli-w", "torch", "tqdm"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.12"
-content-hash = "78ecee6e81504eb260f831574350a4f375bd26e525c4c90618981a9e4c59f30c"
+content-hash = "1736e1488df2c4ca398f62f3edd2dc9ceb25c98075cc1925285c5bd755b5c4bb"
