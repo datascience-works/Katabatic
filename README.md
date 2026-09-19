@@ -287,7 +287,7 @@ From the cloned repo root (see [Installation](#installation)):
 poetry install --with dev -E ganblr -E eval   # add -E {model} as needed
 
 poetry check
-poetry run ruff check katabatic tests
+poetry run ruff check --no-cache katabatic tests
 poetry run pytest                              # fast unit tests
 poetry run pytest -m integration               # after installing model extras
 poetry run mypy katabatic/                     # optional

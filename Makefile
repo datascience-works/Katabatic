@@ -34,14 +34,17 @@ clear-cache:
 
 # Quality checks (mirrors CI lint-and-test job)
 # Run the fast CI checks locally before pushing / opening a PR
-ci: format security test build
+ci: lint security test build
 	@echo "All local CI checks passed."
+
+lint:
+	@echo "Running pre-commit hooks (ruff check, format, etc.)..."
+	poetry run pre-commit run --all-files
 
 format:
 	@echo "Auto-formatting with ruff..."
 	poetry run ruff format katabatic tests
 	poetry run ruff check --fix katabatic tests
-	poetry run pre-commit run --all-files
 
 security:
 	@echo "Running bandit security scan..."
