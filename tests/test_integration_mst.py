@@ -93,14 +93,16 @@ def test_mst_resolve_explicit_delta():
     assert model._resolve_delta(100) == 0.0001
 
 
+@pytest.mark.integration
+@pytest.mark.mst
 def test_mst_artifact_round_trip(tmp_path):
-    pytest.importorskip("snsynth")
-    pytest.importorskip("mbi")
-    pytest.importorskip("opendp")
     """
     Verify that MST can train, persist its fitted state,
     reload through ModelRef, and continue sampling.
     """
+    pytest.importorskip("snsynth")
+    pytest.importorskip("mbi")
+    pytest.importorskip("opendp")
 
     data_dir = tmp_path / "data"
     synth_dir = tmp_path / "synthetic"
@@ -235,5 +237,5 @@ def test_mst_artifact_round_trip(tmp_path):
         "label",
     ]
 
-    # Verify evaluation compatibility.
-    assert restored.evaluate() == 0.0
+    with pytest.raises(NotImplementedError):
+        restored.evaluate()

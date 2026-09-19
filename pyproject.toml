@@ -138,6 +138,7 @@ markers = [
     "ctgan: requires ctgan extra",
     "pategan: requires pategan extra",
     "tabsyn: requires tabsyn extra",
+    "mst: requires mst extra",
     "forked: run test in an isolated forked process (pytest-forked)",
 ]
 

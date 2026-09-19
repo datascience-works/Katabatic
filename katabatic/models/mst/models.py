@@ -202,9 +202,9 @@ class MSTModel(BaseModel):
     def train(
         self,
         data_dir: str,
+        *args,
         synthetic_dir: str | None = None,
         artifact_state_dir: str | None = None,
-        *args,
         **kwargs,
     ) -> MSTModel:
         """Fit the SmartNoise MST synthesizer and save synthetic output."""
@@ -277,7 +277,7 @@ class MSTModel(BaseModel):
         n_generated = len(df)
 
         synthetic_df = self.sample(
-            n=n_generated,
+            n_samples=n_generated,
         )
 
         synth_dir = resolve_synth_dir(
@@ -435,17 +435,17 @@ class MSTModel(BaseModel):
         *args,
         **kwargs,
     ) -> float:
-        """
-        Return a placeholder evaluation score for pipeline compatibility.
-        """
         if not self.is_fitted:
             raise RuntimeError("Call train() before evaluate().")
 
-        return 0.0
+        raise NotImplementedError(
+            "MSTModel.evaluate() has no meaningful standalone metric to offer."
+            "Use TSTREvaluation for cross-model metrics instead."
+        )
 
     def sample(
         self,
-        n: int | None = None,
+        n_samples: int | None = None,
         *args,
         **kwargs,
     ) -> pd.DataFrame:
@@ -453,17 +453,17 @@ class MSTModel(BaseModel):
         if not self.is_fitted or self.synthesizer is None:
             raise RuntimeError("Call train() before sample().")
 
-        if n is None:
+        if n_samples is None:
             if self._train_df is None:
                 raise RuntimeError("Training data is unavailable.")
 
-            n = len(self._train_df)
+            n_samples = len(self._train_df)
 
-        if n <= 0:
-            raise ValueError("n must be greater than 0.")
+        if n_samples <= 0:
+            raise ValueError("n_samples must be greater than 0.")
 
         synthetic = self.synthesizer.sample(
-            int(n),
+            int(n_samples),
         )
 
         if isinstance(
