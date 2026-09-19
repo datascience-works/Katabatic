@@ -116,6 +116,8 @@ class GReaT(Model):
         self.conditional_col_dist = None
         self.target_col = None
         self.is_fitted = False
+        self._n_train_rows: int | None = None
+        self._trainer: GReaTTrainer | None = None
 
     @classmethod
     def get_required_dependencies(cls) -> list[str]:
@@ -205,25 +207,48 @@ class GReaT(Model):
             os.path.join(synthetic_dir, "y_synth.csv"), index=False
         )
 
-        if artifact_state_dir:
-            self._save_artifact_state(artifact_state_dir)
+        self._maybe_save_artifact_state(artifact_state_dir)
 
         return self
 
     def fit(
         self,
-        data: pd.DataFrame | np.ndarray,
+        X: pd.DataFrame | np.ndarray,
+        y: pd.Series | np.ndarray | None = None,
+        *,
         column_names: list[str] | None = None,
         conditional_col: str | None = None,
         resume_from_checkpoint: bool | str = False,
-    ) -> GReaTTrainer:
+    ) -> "GReaT":
         """
         Fine-tune GReaT on tabular data.
 
         Data is converted into text rows using:
         column_name is value, column_name is value, ...
+
+        Parameters
+        ----------
+        X : DataFrame or ndarray
+            Training data. If `y` is omitted, `X` is treated as the complete
+            frame (features and label already combined, as GReaT.train() does).
+        y : Series or ndarray, optional
+            Label column to concatenate onto `X` before fitting.
+
+        Returns
+        -------
+        GReaT
+            self, fitted. The underlying HuggingFace trainer is kept at
+            `self._trainer` for advanced use (e.g. inspecting `log_history`).
         """
-        df = _array_to_dataframe(data, columns=column_names)
+        if y is not None:
+            y_df = y if isinstance(y, pd.Series) else pd.Series(y, name="target")
+            X = pd.concat(
+                [pd.DataFrame(X).reset_index(drop=True), y_df.reset_index(drop=True)],
+                axis=1,
+            )
+
+        df = _array_to_dataframe(X, columns=column_names)
+        self._n_train_rows = len(df)
 
         self._update_column_information(df)
         self._update_conditional_information(df, conditional_col)
@@ -252,12 +277,13 @@ class GReaT(Model):
         logging.info("Starting GReaT training...")
         great_trainer.train(resume_from_checkpoint=resume_from_checkpoint)
 
+        self._trainer = great_trainer
         self.is_fitted = True
-        return great_trainer
+        return self
 
     def sample(
         self,
-        n_samples: int,
+        n_samples: int | None = None,
         start_col: str | None = "",
         start_col_dist: dict | list | None = None,
         temperature: float = 0.7,
@@ -274,8 +300,9 @@ class GReaT(Model):
 
         Parameters
         ----------
-        n_samples : int
-            Number of synthetic rows to generate.
+        n_samples : int, optional
+            Number of synthetic rows to generate. Defaults to the number of
+            rows the model was trained on.
         seed : int, optional
             Runtime seed for reproducibility.
 
@@ -286,6 +313,9 @@ class GReaT(Model):
         """
         if not self.is_fitted:
             raise RuntimeError("Model must be trained before sampling.")
+
+        if n_samples is None:
+            n_samples = self._n_train_rows
 
         seed = kwargs.pop("seed", None)
         if seed is not None:
@@ -631,6 +661,7 @@ class GReaT(Model):
             attributes = self.__dict__.copy()
             attributes.pop("tokenizer", None)
             attributes.pop("model", None)
+            attributes.pop("_trainer", None)
 
             if isinstance(attributes.get("conditional_col_dist"), np.ndarray):
                 attributes["conditional_col_dist"] = list(
@@ -659,19 +690,7 @@ class GReaT(Model):
     @classmethod
     def load_from_ref(cls, store, ref):
         """Load a trained GReaT model from a Katabatic artifact reference."""
-        state_dir = store.open_path(ref.state_relpath)
-
-        if not state_dir.is_dir():
-            raise FileNotFoundError(
-                f"GReaT artifact state directory not found: {ref.state_relpath}"
-            )
-
-        for filename in cls.ARTIFACT_STATE_FILES:
-            if not (state_dir / filename).is_file():
-                raise FileNotFoundError(
-                    f"Missing GReaT artifact state file: {filename}"
-                )
-
+        state_dir = cls._require_state_dir(store, ref)
         return cls.load_from_dir(str(state_dir))
 
     @classmethod
