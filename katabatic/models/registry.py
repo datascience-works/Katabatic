@@ -93,8 +93,8 @@ class ModelRegistry:
             "module": "katabatic.models.arf.models",
             "class": "ARFModel",
             "dependencies": ["sklearn", "numpy", "pandas"],
-            "extra": None,
-            "supported": False,
+            "extra": "arf",
+            "supported": True,
         },
     }
 

@@ -30,6 +30,7 @@ dependencies = [
 
 [project.optional-dependencies]
 codi = ["torch>=2.14.0,<3.0.0"]
+arf = []
 ctgan = ["torch>=2.14.0,<3.0.0"]
 ganblr = [
     "tensorflow==2.21.*",
@@ -98,7 +99,6 @@ Documentation = "https://github.com/datascience-works/Katabatic#readme"
 [tool.coverage.run]
 # Experimental models are excluded until they have integration tests.
 omit = [
-    "katabatic/models/arf/*",
     "katabatic/models/codi/*",
     "katabatic/models/gmm/*",
     "katabatic/models/medgan/*",
@@ -139,6 +139,7 @@ markers = [
     "ctgan: requires ctgan extra",
     "pategan: requires pategan extra",
     "tabsyn: requires tabsyn extra",
+    "arf: requires arf extra",
     "forked: run test in an isolated forked process (pytest-forked)",
 ]
 
