@@ -155,7 +155,7 @@ jobs:
             {"model": "tabsyn", "torch": true},
             {"model": "great", "torch": true},
             {"model": "privtree", "torch": false},
-            {"model": "arf", "torch": false},
+            {"model": "arf", "torch": false}
           ]'
 
           # If a core file changed, run all models.
