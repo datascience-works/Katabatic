@@ -253,7 +253,7 @@ make security  # bandit security scan
 
 # Or individually
 poetry run ruff format katabatic tests
-poetry run ruff check katabatic tests
+poetry run ruff check --no-cache katabatic tests
 poetry run bandit -r katabatic -ll
 poetry run mypy katabatic   # optional, not yet enforced in CI
 ```

@@ -150,7 +150,10 @@ extend-exclude = ["**/*.md", "**/README.md"]
 select = ["E", "F", "I", "UP"] #E: pycodestyle error, F: flake8 error, I: isort imports, UP: Upgrade syntax
 ignore = ["E501"] #line-too-long. Currently prevents PRs. More effort required to fix across codebase.
 
-
+#separates directories like katabatic/datasets/ from HuggingFace datasets/ for isort.
+[tool.ruff.lint.isort]
+known-third-party = ["datasets"]
+known-first-party = ["katabatic"]
 
 [build-system]
 requires = ["poetry-core>=2.0"]

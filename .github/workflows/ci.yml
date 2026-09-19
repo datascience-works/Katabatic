@@ -55,7 +55,7 @@ jobs:
         run: poetry install --with dev
 
       - name: Ruff
-        run: poetry run ruff check katabatic tests
+        run: poetry run ruff check --no-cache katabatic tests
 
       - name: Bandit (Security)
         run: poetry run bandit -r katabatic -ll
