@@ -4,14 +4,16 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Poetry](https://img.shields.io/badge/dependency-poetry-blue)](https://python-poetry.org/)
 
-This guide provides comprehensive documentation for internal development teams working on the Katabatic framework for synthetic tabular data generation.
+This guide documents the contribution workflow and internal architecture of Katabatic, a
+framework for tabular synthetic data generation research.
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Architecture Overview](#architecture-overview)
 - [Codebase Structure](#codebase-structure)
 - [Development Workflow](#development-workflow)
 - [Adding New Models](#adding-new-models)
+- [Adding New Datasets](#adding-new-datasets)
 - [Adding New Pipelines](#adding-new-pipelines)
 - [Adding New Evaluations](#adding-new-evaluations)
 - [Testing and Quality Assurance](#testing-and-quality-assurance)
@@ -19,51 +21,37 @@ This guide provides comprehensive documentation for internal development teams w
 - [Best Practices](#best-practices)
 - [Troubleshooting](#troubleshooting)
 
-## 🏗️ Architecture Overview
+## Architecture Overview
 
-Katabatic follows a modular architecture with three main components:
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│     Models      │    │    Pipelines    │    │   Evaluations   │
-│                 │    │                 │    │                 │
-│ • GANBLR        │    │ • TrainTestSplit│    │ • TSTR          │
-│ • GReaT         │ ───► • CrossValidation│ ───► • Custom Evals │
-│ • CustomModel   │    │ • CustomPipeline│    │ • Metrics       │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
+Katabatic follows a modular architecture with three loosely coupled components — models,
+pipelines, and evaluations — each defined by an abstract base class. See
+[ARCHITECTURE.md](ARCHITECTURE.md) for the component diagrams and data flow; this section
+covers the design principles relevant to contributors.
 
 ### Core Design Principles
 
-1. **Extensibility**: Each component inherits from a base class with defined interfaces
-2. **Modularity**: Models, pipelines, and evaluations are loosely coupled
-3. **Configurability**: Pipeline configurations support different model-evaluation combinations
-4. **Reproducibility**: Built-in support for seeds and experiment tracking
-
-## 📁 Codebase Structure
-
-See the [Project Structure](README.md#project-structure) section of the README for the current top-level layout — it's kept accurate there rather than duplicated here. In short: `katabatic/models/<model_name>/` holds one implementation per model (no per-model `pyproject.toml`/`poetry.lock` — dependencies live in the root `pyproject.toml` as extras, see [MODEL_CONTRIBUTIONS.md](MODEL_CONTRIBUTIONS.md)), `katabatic/pipeline/` and `katabatic/evaluate/` hold pipelines and evaluations, and `katabatic/artifacts/` holds the versioned run-output store.
+1. **Extensibility**: each component inherits from a base class with a defined interface.
+2. **Modularity**: models, pipelines, and evaluations are loosely coupled.
+3. **Configurability**: pipelines support different model/evaluation combinations.
+4. **Reproducibility**: seeded random state throughout training and evaluation.
 
 ### Key Design Patterns
 
-#### 1. Abstract Base Classes
+- **Abstract base classes**: models inherit from `katabatic.models.base_model.Model`, pipelines
+  from `katabatic.pipeline.base_pipeline.Pipeline`, and evaluations from
+  `katabatic.evaluate.base_evaluation.Evaluation` (`TSTREvaluation` is a documented exception —
+  see [ARCHITECTURE.md](ARCHITECTURE.md)).
+- **Registry-based instantiation**: `ModelRegistry.load_model()`
+  (`katabatic/models/registry.py`) looks up and constructs models by name, so pipelines depend
+  on the `Model` interface rather than a concrete class.
+- **Data flow**: raw data → preprocessing → train/test split → model training → synthetic
+  generation → evaluation.
 
-- **Models**: All models inherit from `katabatic.models.base_model.Model`
-- **Pipelines**: All pipelines inherit from `katabatic.pipeline.base_pipeline.Pipeline`
-- **Evaluations**: All evaluations inherit from `katabatic.evaluate.base_evaluation.Evaluation`
+## Codebase Structure
 
-#### 2. Factory Pattern
+See the [Project Structure](README.md#project-structure) section of the README for the current top-level layout — it's kept accurate there rather than duplicated here. In short: `katabatic/models/<model_name>/` holds one implementation per model (no per-model `pyproject.toml`/`poetry.lock` — dependencies live in the root `pyproject.toml` as extras, see [MODEL_CONTRIBUTIONS.md](MODEL_CONTRIBUTIONS.md)), `katabatic/pipeline/` and `katabatic/evaluate/` hold pipelines and evaluations, and `katabatic/artifacts/` holds the versioned run-output store.
 
-- Pipelines instantiate models dynamically
-- Evaluations are configurable and pluggable
-
-#### 3. Data Flow
-
-```
-Raw Data → Preprocessing → Train/Test Split → Model Training → Synthetic Generation → Evaluation → Results
-```
-
-## 🔄 Development Workflow
+## Development Workflow
 
 ### 1. Setting Up Development Environment
 
@@ -87,10 +75,11 @@ poetry env activate
 3. **Test Implementation**
 
    ```bash
-   # Run existing tests
-   pytest tests/
+   # Fast tests, no model extras (see "Testing and Quality Assurance" below
+   # for why the full suite must not be run in a single process)
+   make test
 
-   # Test with example notebook
+   # Exercise the change interactively
    jupyter lab example.ipynb
    ```
 
@@ -102,11 +91,29 @@ poetry env activate
 
 5. **Submit Pull Request**
 
-## 🤖 Adding New Models
+## Adding New Models
 
 Adding a model — directory layout, the `Model` base interface, registering it in `ModelRegistry`, declaring its dependency extra, and writing its integration test — is documented in full in [MODEL_CONTRIBUTIONS.md](MODEL_CONTRIBUTIONS.md). That's the canonical reference; follow it rather than duplicating the steps here.
 
-## 🔄 Adding New Pipelines
+## Adding New Datasets
+
+Any CSV works with the pipeline directly — `TrainTestSplitPipeline.run(input_csv=...)` needs
+no registration. To add one to the shipped example catalogue instead (so it ships with the
+package and is available to all users):
+
+1. Drop the CSV in `katabatic/datasets/` and add a section documenting it (task type,
+   fields, license, citation) to `katabatic/datasets/README.md`.
+2. If a model should only run on certain kinds of data (e.g. numeric-only, a specific task
+   type, a class-count range), declare that on the model instead of the dataset: add a
+   `dataset_requirements` dict (`allowed_tasks`, `min_classes`/`max_classes`,
+   `requires_numeric_only`) to that model's entry in `katabatic/models/registry.py`. See
+   `katabatic/datasets/compatibility.py::check_dataset_for_model` for how it's checked.
+
+`katabatic/datasets/registry.py`'s `DatasetRegistry` is a separate thing — it's runtime
+bookkeeping the artifact pipeline uses to profile and version datasets as they're run
+(`register_if_absent`), not something you edit by hand to add a catalogue entry.
+
+## Adding New Pipelines
 
 Create `katabatic/pipeline/your_pipeline_name/{__init__.py,pipeline.py}`. The base class is
 intentionally minimal — `Pipeline.__init__(self, model)` stores the model, and `run(*args,
@@ -135,10 +142,14 @@ __all__ = ["YourPipeline"]
 See `katabatic/pipeline/train_test_split/pipeline.py` for a real, fully worked implementation
 (artifact-store integration, TSTR evaluation, the legacy `output_dir=` mode) to model yours on.
 
-## 📊 Adding New Evaluations
+## Adding New Evaluations
 
-Create `katabatic/evaluate/your_evaluation_name/{__init__.py,evaluation.py}`. The base class
-takes real and synthetic data directly as DataFrames and `evaluate()` returns a result dict:
+Two incompatible conventions currently coexist here — pick the one matching where your
+evaluation needs to run, since they are not interchangeable (a known gap; see
+`tests/test_train_test_split_pipeline.py`'s skipped `test_artifact_fidelity_evaluation_smoke`).
+
+**In-memory (`SyntheticEvaluationPipeline`, `katabatic/pipeline/evaluation_pipeline.py`)** —
+the `Evaluation` base class takes real and synthetic data directly as DataFrames:
 
 ```python
 # katabatic/evaluate/your_evaluation_name/evaluation.py
@@ -161,10 +172,19 @@ from .evaluation import YourEvaluation
 __all__ = ["YourEvaluation"]
 ```
 
-See `katabatic/evaluate/tstr/evaluation.py` (TSTR: trains classifiers on synthetic data, scores
-them on real held-out data) for a real, fully worked implementation to model yours on.
+Model yours on `katabatic/evaluate/fidelity/evaluation.py`. To actually run it, also add
+the dimension name to `_AVAILABLE_DIMENSIONS` and to the dispatch in
+`SyntheticEvaluationPipeline._build_evaluator()` — dimensions aren't a registry, they're
+wired directly into that pipeline.
 
-## 🧪 Testing and Quality Assurance
+**Artifact-pipeline (`TrainTestSplitPipeline`)** — evaluations here read from directories
+(`synthetic_dir`, `real_test_dir`) rather than taking DataFrames, and don't subclass
+`Evaluation`. Model yours on `katabatic/evaluate/tstr/evaluation.py` (TSTR: trains
+classifiers on synthetic data, scores them on real held-out data), including its
+`from_artifact(store, model_ref, dataset_ref, **kwargs)` classmethod — that's what
+`TrainTestSplitPipeline` actually calls when your evaluation is in its `evaluations=[...]` list.
+
+## Testing and Quality Assurance
 
 ### Running the full suite locally
 
@@ -172,7 +192,7 @@ Do **not** run `pytest` over the whole `tests/` directory with more than one
 model backend installed. TensorFlow (`ganblr`, `pategan`) and PyTorch (`ctgan`)
 segfault when run on the same interpreter process:
 
-```
+```text
 tests/test_integration_ganblr.py + tests/test_integration_ctgan.py   -> Segmentation fault
 tests/test_integration_ganblr.py + tests/test_integration_pategan.py -> 4 passed
 ```
@@ -222,24 +242,8 @@ For a new model, follow the pattern in `tests/test_integration_ganblr.py` /
 `tests/test_integration_ctgan.py`: run it through `TrainTestSplitPipeline` with a
 `LocalArtifactStore` and assert the expected model/synthetic/evaluation artifacts are written.
 See [MODEL_CONTRIBUTIONS.md](MODEL_CONTRIBUTIONS.md) for the full checklist (test harness,
-promotion contract, CI wiring).
-
-### Test Requirements for New Components
-
-**For New Models:**
-
-1. Test inheritance from base `Model` class
-2. Test initialization and parameter handling
-3. Test `train`/`evaluate`/`sample` method interfaces
-4. Test integration with the artifact pipeline (train → sample → evaluate → reload)
-5. Test error handling and edge cases
-
-**For New Pipelines/Evaluations:**
-
-1. Test initialization with a model (pipelines) or with real/synthetic data (evaluations)
-2. Test the `run`/`evaluate` method with representative inputs
-3. Test integration with the rest of the pipeline
-4. Test error conditions and edge cases
+promotion contract, CI wiring). For a new pipeline or evaluation, test initialization, the
+`run`/`evaluate` method under representative inputs, and error handling for invalid inputs.
 
 ### Code Quality Checks
 
@@ -259,23 +263,22 @@ if combined coverage drops below 45% (see `[tool.coverage.run]` in `pyproject.to
 [.github/workflows/ci.yml](.github/workflows/ci.yml)) — there's no separate per-PR minimum for
 new code.
 
-## 📖 Usage Examples
+## Usage Examples
 
-See the README's [Quick Start](README.md#quick-start) for the current artifact-pipeline
-example, and [GANBLR_FLOW.md](GANBLR_FLOW.md) for a full walkthrough (preprocess → train →
-sample → evaluate, with everything versioned under `artifacts/` via `LocalArtifactStore`).
-Kept here once, in one accurate place, instead of duplicated across docs.
+See the README's [Quick Start](README.md#quick-start) for the artifact-pipeline example, and
+[GANBLR_FLOW.md](GANBLR_FLOW.md) for a full walkthrough (preprocess → train → sample → evaluate,
+versioned under `artifacts/` via `LocalArtifactStore`).
 
-## 🏆 Best Practices
+## Best Practices
 
 - **Type hints & docstrings**: add type hints to public methods; NumPy-style docstrings for classes/methods.
 - **Single responsibility**: keep models, pipelines, and evaluations loosely coupled — inject the model into the pipeline rather than hard-coding it.
 - **Reproducibility**: use fixed random seeds in tests and examples.
 - **Performance**: prefer vectorized NumPy/Pandas operations for large datasets; be mindful of memory with in-memory synthetic data generation.
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
-**Import errors** — models live one level deeper than you'd expect:
+**Import errors** — models are nested one level deeper than the package name suggests:
 
 ```python
 from katabatic.models.ganblr.models import GANBLR   # correct
