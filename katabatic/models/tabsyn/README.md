@@ -53,13 +53,13 @@ Both stages use early stopping via `patience`. Testing found that longer trainin
 
 | Parameter | Default | Notes |
 |---|---|---|
-| `d_token` | 4 | Matches paper (Appendix G.1) |
+| `d_token` | 16 | |
 | `decoder_epochs` | 50 | VAE training epochs, tokenizer, encoder, decoder trained jointly |
 | `decoder_batch_size` | 2048 | Not tuned |
 | `diffusion_epochs` | 500 | Ceiling only, testing showed 2000 significantly improves results over the default |
 | `diffusion_batch_size` | 4096 | Not tuned |
-| `diffusion_hidden_dim` | 1024 | Matches paper |
-| `diffusion_steps` | 15 | Matches paper's recommendation, under 20 for optimal results |
+| `diffusion_hidden_dim` | 512 | |
+| `diffusion_steps` | 50 | |
 | `lr` | 1e-3 | Not tuned |
 | `weight_decay` | 0.0 | Not tuned |
 | `patience` | 20 | Testing showed 500 significantly improves results when combined with more diffusion_epochs |

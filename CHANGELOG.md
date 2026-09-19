@@ -86,11 +86,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stale per-model `pyproject.toml` and `poetry.lock` files.
 - `dev_deps.py`, repo-root `main.py` and `utils.py`, and `katabatic/models/ganblr/kdb.py`.
 
-
-## [0.1.0a1] - 2026-05-22
-
-First public **alpha** release on TestPyPI / PyPI.
-
 ## [0.1.0] - 2026-05-22
 
 ### Added
@@ -119,5 +114,12 @@ First public **alpha** release on TestPyPI / PyPI.
 - Repo-root `utils` module (use `katabatic.utils.preprocess`).
 - `python main.py` entry point (use `katabatic` CLI).
 
-[0.1.0a1]: https://github.com/datascience-works/Katabatic/releases/tag/v0.1.0a1
+## [0.1.0a1] - 2026-05-22
+
+First public **alpha** release on TestPyPI / PyPI.
+
+[0.3.1]: https://github.com/datascience-works/Katabatic/releases/tag/v0.3.1
+[0.3.0]: https://github.com/datascience-works/Katabatic/releases/tag/v0.3.0
+[0.2.0]: https://github.com/datascience-works/Katabatic/releases/tag/v0.2.0
 [0.1.0]: https://github.com/datascience-works/Katabatic/releases/tag/v0.1.0
+[0.1.0a1]: https://github.com/datascience-works/Katabatic/releases/tag/v0.1.0a1
