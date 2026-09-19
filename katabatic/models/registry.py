@@ -80,7 +80,7 @@ class ModelRegistry:
             "class": "MSTModel",
             "dependencies": ["snsynth", "mbi", "opendp"],
             "extra": "mst",
-            "supported": False,
+            "supported": True,
         },
         "ctgan": {
             "module": "katabatic.models.ctgan.models",

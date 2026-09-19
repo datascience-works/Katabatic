@@ -138,6 +138,9 @@ jobs:
             great:
               - 'katabatic/models/great/**'
               - 'tests/test_integration_great.py'
+            mst:
+              - 'katabatic/models/mst/**'
+              - 'tests/test_integration_mst.py'
             privtree:
               - 'katabatic/models/privtree/**'
               - 'tests/test_integration_privtree.py'
@@ -154,6 +157,7 @@ jobs:
             {"model": "pategan", "torch": false},
             {"model": "tabsyn", "torch": true},
             {"model": "great", "torch": true},
+            {"model": "mst", "torch": false},
             {"model": "privtree", "torch": false},
             {"model": "arf", "torch": false}
           ]'
