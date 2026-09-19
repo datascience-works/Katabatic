@@ -39,8 +39,14 @@ data <- read.csv("{input_csv.as_posix()}")
 syn_data <- syn(
     data,
     method = "cart",
+    m = 1,
+    k = nrow(data),
+    cart.minbucket = 5,
     seed = {seed}
 )
+
+# R converts hyphens to dots in column names — restore original names
+colnames(syn_data$syn) <- gsub(".", "-", colnames(syn_data$syn), fixed = TRUE)
 
 write.csv(
     syn_data$syn,
