@@ -377,7 +377,9 @@ class ARFModel(Model):
     def train(
         self,
         data_dir: str,
+        *args,
         synthetic_dir: str | None = None,
+        artifact_state_dir: str | None = None,
         n_synth: int | None = None,
         **kwargs,
     ) -> ARFModel:
@@ -411,7 +413,7 @@ class ARFModel(Model):
         if n_synth is None:
             n_synth = len(X)
 
-        synthetic_df = self.sample(n=n_synth)
+        synthetic_df = self.sample(n_samples=n_synth)
 
         X_synth = synthetic_df.drop(columns=[label_col])
 
@@ -474,9 +476,7 @@ class ARFModel(Model):
             except Exception:
                 pass
 
-        artifact_state_dir = kwargs.get("artifact_state_dir")
-        if artifact_state_dir:
-            self._save_artifact_state(artifact_state_dir)
+        self._maybe_save_artifact_state(artifact_state_dir)
         return self
 
     def _save_artifact_state(self, artifact_state_dir: str) -> None:
@@ -502,16 +502,7 @@ class ARFModel(Model):
         """
         Rehydrate a fitted ARFModel from a versioned artifact.
         """
-        state_file = cls.ARTIFACT_STATE_FILES[0]
-        state_path = store.open_path(
-            f"{ref.state_relpath}/{state_file}"
-        )
-
-        if not state_path.is_file():
-            raise FileNotFoundError(
-                f"No ARF state at {state_path}. The model must be trained "
-                f"through a pipeline that passes artifact_state_dir."
-            )
+        state_path = cls._require_state_file(store, ref)
 
         with open(state_path, "rb") as fh:
             instance = pickle.load(fh)  # nosec B301
@@ -526,22 +517,26 @@ class ARFModel(Model):
 
     def sample(
         self,
-        n: int = 100,
+        n_samples: int | None = None,
         **kwargs,
     ) -> pd.DataFrame:
         """
         Generate synthetic data as a single DataFrame.
 
         The returned DataFrame contains all synthetic feature columns
-        followed by the original target column.
+        followed by the original target column. Defaults to the number of
+        rows the model was trained on when n_samples is omitted.
         """
         if not self.is_fitted:
             raise RuntimeError("Call train() before sample().")
 
-        X_synth = self._arf.forge(n=n)
+        if n_samples is None:
+            n_samples = len(self._y_train) if self._y_train is not None else 100
+
+        X_synth = self._arf.forge(n=n_samples)
 
         y_synth = self._y_train.sample(
-            n=n,
+            n=n_samples,
             replace=True,
             random_state=self.seed,
         ).reset_index(drop=True)
@@ -575,7 +570,7 @@ class ARFModel(Model):
             df = load_train_df(self._data_dir)
             X_real, _, _ = split_x_y(df)
 
-        synthetic_df = self.sample(n=len(X_real))
+        synthetic_df = self.sample(n_samples=len(X_real))
 
         label_col = self._label_col
 
