@@ -80,7 +80,7 @@ class ModelRegistry:
             "class": "MSTModel",
             "dependencies": ["snsynth", "mbi", "opendp"],
             "extra": "mst",
-            "supported": False,
+            "supported": True,
         },
         "ctgan": {
             "module": "katabatic.models.ctgan.models",
@@ -93,8 +93,15 @@ class ModelRegistry:
             "module": "katabatic.models.arf.models",
             "class": "ARFModel",
             "dependencies": ["sklearn", "numpy", "pandas"],
-            "extra": None,
-            "supported": False,
+            "extra": "arf",
+            "supported": True,
+        },
+        "privtree": {
+            "module": "katabatic.models.privtree.models",
+            "class": "PrivTreeModel",
+            "dependencies": ["numpy", "pandas"],
+            "extra": "privtree",
+            "supported": True,
         },
         "smote": {
             "module": "katabatic.models.smote.models",

@@ -1,4 +1,4 @@
-.PHONY: clear-cache install-core install-model install-all setup-dev help ci lint format security test test-all build integration hooks contract
+.PHONY: clear-cache install-core install-model install-all setup-dev help ci lint format security test build integration hooks contract
 
 # Core installation (minimal dependencies)
 install-core:
@@ -34,14 +34,17 @@ clear-cache:
 
 # Quality checks (mirrors CI lint-and-test job)
 # Run the fast CI checks locally before pushing / opening a PR
-ci: format security test build
+ci: lint security test build
 	@echo "All local CI checks passed."
+
+lint:
+	@echo "Running pre-commit hooks (ruff check, format, etc.)..."
+	poetry run pre-commit run --all-files
 
 format:
 	@echo "Auto-formatting with ruff..."
 	poetry run ruff format katabatic tests
 	poetry run ruff check --fix katabatic tests
-	poetry run pre-commit run --all-files
 
 security:
 	@echo "Running bandit security scan..."
@@ -49,7 +52,7 @@ security:
 
 test:
 	@echo "Running fast tests with coverage..."
-	poetry run pytest -q --ignore=tests/test_model_registry.py --cov=katabatic --cov-report=term-missing
+	poetry run pytest -q --deselect tests/test_model_registry.py::test_model_promotion_contract --cov=katabatic --cov-report=term-missing
 
 build:
 	@echo "Building wheel..."
@@ -67,17 +70,6 @@ integration:
 	@echo "Running integration tests for $(MODEL)..."
 	poetry install --with dev -E $(MODEL)
 	poetry run pytest -m "integration and $(MODEL)" -q
-
-test-all:
-	@echo "Running full tests..."
-	@for f in tests/test_*.py; do \
-		echo ""; \
-		echo "=== $$f ==="; \
-		poetry run pytest "$$f" -q; status=$$?; \
-		if [ $$status -ne 0 ] && [ $$status -ne 5 ]; then exit $$status; fi; \
-	done
-	@echo ""
-	@echo "Full suite passed."
 
 # Install and activate pre-commit hooks.
 hooks:
@@ -107,6 +99,6 @@ help:
 	@echo "  make ci                 Run all local CI checks (lint, security, test, build)"
 	@echo "  make format             Auto-fix formatting and lint issues"
 	@echo "  make test               Run fast tests with coverage"
-	@echo "  make test-all           Run pytest on all supported models"
 	@echo "  make integration MODEL=ctgan   Run integration tests for a model"
+	@echo "  make contract           Run the model promotion contract (all supported models)"
 	@echo "  make hooks              Install pre-commit hooks"

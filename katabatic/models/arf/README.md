@@ -123,14 +123,15 @@ Generated files:
 ## Usage
 
 ```python
-from models import ARFModel
+from katabatic.models.arf.models import ARFModel
 
 model = ARFModel(num_trees=30, max_iters=10)
 
 model.train(
     data_dir="path_to_data",
-    synthetic_dir="path_to_save"
+    synthetic_dir="path_to_save",
 )
 
-X_synth, y_synth = model.sample(1000)
+# Returns one DataFrame: synthetic feature columns followed by the label column.
+synthetic_df = model.sample(1000)
 ```

@@ -144,9 +144,11 @@ See `katabatic/pipeline/train_test_split/pipeline.py` for a real, fully worked i
 
 ## Adding New Evaluations
 
-Two incompatible conventions currently coexist here — pick the one matching where your
-evaluation needs to run, since they are not interchangeable (a known gap; see
-`tests/test_train_test_split_pipeline.py`'s skipped `test_artifact_fidelity_evaluation_smoke`).
+Two conventions coexist here — pick the one matching where your evaluation needs to run.
+They aren't automatically interchangeable, but a class can support both by adding a thin
+`from_artifact()` adapter; see `FidelityEvaluation` below for a worked example
+(`tests/test_train_test_split_pipeline.py::test_artifact_fidelity_evaluation_smoke` exercises it
+end to end).
 
 **In-memory (`SyntheticEvaluationPipeline`, `katabatic/pipeline/evaluation_pipeline.py`)** —
 the `Evaluation` base class takes real and synthetic data directly as DataFrames:
@@ -184,31 +186,37 @@ classifiers on synthetic data, scores them on real held-out data), including its
 `from_artifact(store, model_ref, dataset_ref, **kwargs)` classmethod — that's what
 `TrainTestSplitPipeline` actually calls when your evaluation is in its `evaluations=[...]` list.
 
+**Supporting both** — give your DataFrame-based `Evaluation` subclass a `from_artifact()`
+classmethod that reads the pipeline's `x_synth.csv`/`y_synth.csv`/`x_test.csv`/`y_test.csv`,
+recombines them into `real_data`/`synthetic_data` frames, and constructs your class with them
+plus `_artifact_store`/`_evaluation_ref`/`_artifact_report_relpath` kwargs so `evaluate()` can
+write a report when called through the artifact pipeline (and skip that write when called
+directly with DataFrames). `FidelityEvaluation.from_artifact()` is the reference implementation.
+
 ## Testing and Quality Assurance
 
-### Running the full suite locally
+### Running Tests Locally
 
-Do **not** run `pytest` over the whole `tests/` directory with more than one
-model backend installed. TensorFlow (`ganblr`, `pategan`) and PyTorch (`ctgan`)
-segfault when run on the same interpreter process:
+Test one model at a time. TensorFlow (`ganblr`, `pategan`) and PyTorch (`ctgan`,
+`tabsyn`, `great`) segfault if both end up loaded in the same interpreter process,
+so installing every model extra and running `pytest` over the whole `tests/`
+directory isn't a realistic local workflow:
 
 ```text
 tests/test_integration_ganblr.py + tests/test_integration_ctgan.py   -> Segmentation fault
 tests/test_integration_ganblr.py + tests/test_integration_pategan.py -> 4 passed
 ```
 
-Every file passes on its own. Use one of the `Makefile` targets, which run one pytest
-process per file/model, or install a single extra at a time:
-
 ```bash
 make test                     # fast tests, no model extras (matches CI's lint-and-test job)
-make test-all                 # every tests/test_*.py, one pytest process each
 make integration MODEL=ganblr # integration tests for a single model extra
-make contract                 # model promotion contract (tests/test_model_registry.py), installs -E all
+make contract                 # model promotion contract for every supported model — safe with
+                               # -E all installed, since each model's case runs pytest-forked
 ```
 
 Run `make help` for the full target list, and see [.github/workflows/ci.yml](.github/workflows/ci.yml)
-for how these map onto CI jobs (`lint-and-test`, `integration`, `model-contract`).
+for how these map onto CI jobs: `lint-and-test`, and `integration-<model>` (which also runs the
+model promotion contract as a second step, per model).
 
 ### Direct pytest usage
 
@@ -253,7 +261,7 @@ make security  # bandit security scan
 
 # Or individually
 poetry run ruff format katabatic tests
-poetry run ruff check katabatic tests
+poetry run ruff check --no-cache katabatic tests
 poetry run bandit -r katabatic -ll
 poetry run mypy katabatic   # optional, not yet enforced in CI
 ```
