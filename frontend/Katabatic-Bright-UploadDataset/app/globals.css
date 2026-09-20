@@ -36,87 +36,6 @@ button {
   cursor: pointer;
 }
 
-/* ---- App shell / sidebar (shared with the rest of Katabatic) ---- */
-
-.app-shell {
-  min-height: 100vh;
-  display: grid;
-  grid-template-columns: 250px minmax(0, 1fr);
-}
-
-.sidebar {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  padding: 28px 18px 20px;
-  background: #171626;
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 0 10px 32px;
-  font-size: 1.25rem;
-  font-weight: 750;
-  letter-spacing: -0.02em;
-}
-
-.brand-mark {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(145deg, #7669f5, #5143ca);
-  border-radius: 10px;
-  box-shadow: 0 8px 20px rgba(102, 86, 232, 0.3);
-}
-
-.nav-label {
-  margin: 0 12px 10px;
-  color: #868497;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.nav-item {
-  width: 100%;
-  min-height: 45px;
-  border: 0;
-  border-radius: 10px;
-  padding: 0 13px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: #aaa8b8;
-  background: transparent;
-  text-align: left;
-  font-size: 0.92rem;
-  font-weight: 600;
-  transition: background 0.18s ease, color 0.18s ease;
-  text-decoration: none;
-}
-
-.nav-item:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.07);
-}
-
-.nav-item.active {
-  color: #fff;
-  background: var(--purple);
-  box-shadow: 0 7px 18px rgba(38, 31, 104, 0.38);
-}
-
-main {
-  min-width: 0;
-}
-
 /* ---- Upload Dataset page ---- */
 
 .upload-page {
@@ -287,3 +206,11 @@ main {
   background: #d4d3e0;
   box-shadow: none;
 }
+/* Preserve the centered upload flow within the common workspace shell. */
+.upload-heading .eyebrow { margin: 0 0 8px; color: var(--purple); font-size: .72rem; font-weight: 800; letter-spacing: .13em; }
+.upload-heading h1 { font-size: clamp(1.85rem, 3vw, 2.4rem); line-height: 1.15; letter-spacing: -.04em; }
+.upload-page { padding-top: 38px; }
+.upload-file-name { max-width: 100%; overflow-wrap: anywhere; }
+@media (max-width: 760px) { .upload-page { padding: 26px 16px 22px; } }
+
+.upload-preview-note { margin: 18px 0 0; color: var(--muted); font-size: .78rem; line-height: 1.5; }

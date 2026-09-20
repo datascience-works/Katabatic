@@ -3,9 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node dev-workspace.mjs",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "dev:workspace": "node dev-workspace.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

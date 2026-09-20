@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Sidebar from "./components/Sidebar";
+import WorkspaceShell from "./WorkspaceShell";
+import "./workspace.css";
 
 export const metadata: Metadata = {
   title: "Katabatic",
@@ -15,10 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <div className="app-shell">
-          <Sidebar />
-          <main>{children}</main>
-        </div>
+        <WorkspaceShell active="Datasets" title="Upload dataset">{children}</WorkspaceShell>
       </body>
     </html>
   );

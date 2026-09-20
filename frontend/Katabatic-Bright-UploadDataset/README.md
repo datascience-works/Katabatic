@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Katabatic — Katabatic-Bright-UploadDataset
 
-## Getting Started
+## Run all four pages on one port
 
-First, run the development server:
+From the repository root:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# If npm is not found in your terminal:
+source ~/.nvm/nvm.sh
+
+npm --prefix frontend/results-dashboard run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open **http://localhost:5173**. Only one server and one terminal are required.
+`npm run dev` from any of the four frontend directories starts this same workspace.
+The earlier `npm --prefix frontend/Katabatic-Manya-Dashboard run dev:workspace`
+command also starts the single server.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Page | Route |
+| --- | --- |
+| Manya dashboard | `/` |
+| Upload dataset | `/datasets` |
+| Model configuration | `/models` |
+| Results dashboard | `/results` |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Sidebar links and workflow actions stay on port 5173. Direct links, refresh,
+and browser Back/Forward work on each route. Stop the server with Ctrl+C.
+If port 5173 is already occupied, stop the previous workspace server first.
 
-## Learn More
+## Setup and production build
 
-To learn more about Next.js, take a look at the following resources:
+Dependencies are already installed in this workspace. On a fresh checkout,
+run `npm install` inside each of the four frontend directories first.
+To build and preview the complete frontend:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm --prefix frontend/results-dashboard run build
+npm --prefix frontend/results-dashboard run preview
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The combined output is `frontend/results-dashboard/dist`. A static deployment
+must serve `index.html` for `/datasets`, `/models`, and `/results` as well as `/`.
 
-## Deploy on Vercel
+## Implementation
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+`results-dashboard/src/WorkspaceApp.jsx` selects the page by URL and imports
+its existing implementation from the original directory. Page CSS is applied
+only for the current route so styles do not leak between designs. Vite uses a
+single React instance across the four directories. No extra directory or
+proxy server is needed.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The overview panels and centered upload form retain their structure.
+Configuration keeps its workflow, form and summary; Results keeps its evaluation,
+comparison and download sections. Navigation is defined in each app's local
+`navigation` module using paths on the same origin.
+
+This is a frontend preview: selected files are not uploaded, training is not run,
+and Results shows sample data. The previous Next.js API handlers are not served
+by this Vite preview; the dashboard continues to use its existing sample data.

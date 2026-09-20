@@ -3,8 +3,8 @@
 import React, { useCallback, useRef, useState } from "react";
 
 interface UploadDatasetProps {
-  /** Called with the validated File once the user clicks Submit */
-  onSubmit: (file: File) => void;
+  /** Called with the validated File once the user continues to configuration */
+  onSubmit: (file: File) => void | Promise<void>;
 }
 
 const ACCEPTED_EXTENSION = ".csv";
@@ -90,7 +90,7 @@ export default function UploadDataset({ onSubmit }: UploadDatasetProps) {
     setIsSubmitting(true);
     setError(null);
     try {
-      onSubmit(selectedFile);
+      await onSubmit(selectedFile);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed. Please try again.");
     } finally {
@@ -109,6 +109,7 @@ export default function UploadDataset({ onSubmit }: UploadDatasetProps) {
   return (
     <div className="upload-page">
       <div className="upload-heading">
+        <p className="eyebrow">DATASET WORKSPACE</p>
         <h1>Upload Dataset</h1>
         <p>Upload a CSV dataset to begin evaluating synthetic data models.</p>
       </div>
@@ -178,6 +179,7 @@ export default function UploadDataset({ onSubmit }: UploadDatasetProps) {
         />
       </div>
 
+      <p className="upload-preview-note">Preview flow: your file stays in this browser. The next page uses a sample schema.</p>
       <div className="upload-actions">
         <button
           type="button"
@@ -185,7 +187,7 @@ export default function UploadDataset({ onSubmit }: UploadDatasetProps) {
           onClick={handleSubmit}
           className="upload-submit-button"
         >
-          {isSubmitting ? "Uploading..." : "Submit"}
+          {isSubmitting ? "Continuing..." : "Continue to configuration"}
         </button>
       </div>
     </div>
