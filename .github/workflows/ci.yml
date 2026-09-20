@@ -80,6 +80,12 @@ jobs:
           path: .coverage.core
           include-hidden-files: true
 
+      - name: Core coverage floor
+        env:
+          COVERAGE_FILE: .coverage.core
+        run: |
+          poetry run coverage report --include="katabatic/pipeline/*,katabatic/utils/*,katabatic/datasets/*,katabatic/artifacts/*,katabatic/evaluate/*,katabatic/models/registry.py,katabatic/models/base_model.py" --fail-under=70
+
       - name: Build wheel
         run: poetry build
 
@@ -228,6 +234,11 @@ jobs:
       - name: Model promotion contract (${{ matrix.model }})
         run: poetry run pytest tests/test_model_registry.py -k "${{ matrix.model }}" -v
 
+      - name: Model coverage report (${{ matrix.model }})
+        env:
+          COVERAGE_FILE: .coverage.${{ matrix.model }}
+        run: poetry run coverage report --include="katabatic/models/${{ matrix.model }}/*"
+
       - name: Upload Model Coverage
         uses: actions/upload-artifact@v7
         with:
@@ -345,6 +356,14 @@ jobs:
           merge-multiple: true
 
       - name: Combine and Report
+        env:
+          FULL_MATRIX: >-
+            ${{ needs.changes.outputs.core == 'true' ||
+                github.base_ref == 'main' || github.ref == 'refs/heads/main' }}
         run: |
           coverage combine
-          coverage report --show-missing --fail-under=45
+          if [ "$FULL_MATRIX" == "true" ]; then
+            coverage report --show-missing --fail-under=45
+          else
+            coverage report --show-missing
+          fi
