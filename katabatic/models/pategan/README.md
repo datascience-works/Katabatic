@@ -47,7 +47,7 @@ transformer's inverse transform splits it back into the original tabular represe
 ## Configuration
 
 | Parameter | Type | Default | Description |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `epsilon` | float | `1.0` | Privacy budget; scales the Gaussian noise added to teacher labels (lower = more noise = more private). |
 | `delta` | float | `1e-5` | Privacy parameter used alongside `epsilon` in the Gaussian mechanism. |
 | `num_teachers` | int | `10` | Number of noisy discriminator updates run per outer training iteration. |
@@ -111,3 +111,26 @@ Where this diverges from the ICLR 2019 paper and its released reference implemen
 
 Treat `epsilon`/`delta` here as noise-scale knobs consistent with the differential-privacy
 literature, not as a certified end-to-end privacy guarantee for this specific implementation.
+
+## Benchmark Results
+
+Evaluated against Katabatic's five standard benchmark datasets via the run scripts in
+`benchmarks/examples/pategan/` (Car, Adult, Magic, Nursery, Shuttle).
+
+| Dataset | Composite | Fidelity | Utility | Diversity | Privacy | Consistency | Stability |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Car | 0.5683 | 0.8083 | 0.3699 | 0.9333 | 0.3806 | 0.3781 | 0.9710 |
+| Adult | 0.5130 | 0.7781 | 0.0000 | 0.7539 | 0.9842 | 0.4630 | 0.9825 |
+| Magic | 0.7874 | 0.7879 | 0.8403 | 0.7695 | 0.9830 | 0.2273 | 0.9835 |
+| Nursery | 0.5224 | 0.7988 | 0.3182 | 0.8972 | 0.4793 | 0.0042 | 0.9850 |
+| Shuttle | 0.7484 | 0.8116 | 0.7051 | 0.8089 | 0.9891 | 0.2000 | 0.9885 |
+
+Runtime (CPU, no GPU): Car 85s, Adult 152s, Nursery 219s, Shuttle 345s, Magic 395s.
+
+### Notable Findings
+
+- **Car and Nursery show high exact-duplication rates** in synthetic output, 92.9% and 78.1%
+  of synthetic rows are exact duplicates of a real row respectively (privacy scores 0.38 and
+  0.48), a significant weakness for a model whose core purpose is differential privacy.
+- **Adult's Utility scored exactly 0.0** due to mode collapse in this run.
+- Magic and Shuttle show strong Utility (0.84, 0.71).
