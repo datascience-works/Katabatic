@@ -147,6 +147,9 @@ jobs:
             arf:
               - 'katabatic/models/arf/**'
               - 'tests/test_integration_arf.py'
+            synthpop:
+              - 'katabatic/models/synthpop/**'
+              - 'tests/test_integration_synthpop.py'
 
       - name: Build Dynamic Matrix
         id: build-matrix
@@ -159,7 +162,8 @@ jobs:
             {"model": "great", "torch": true},
             {"model": "mst", "torch": false},
             {"model": "privtree", "torch": false},
-            {"model": "arf", "torch": false}
+            {"model": "arf", "torch": false},
+            {"model": "synthpop", "torch": false, "r": true}
           ]'
 
           # If a core file changed, run all models.
@@ -197,6 +201,20 @@ jobs:
 
       - name: Install Poetry
         run: pip install poetry==${{ env.POETRY_VERSION }}
+
+      - name: Cache R library
+        if: matrix.r
+        uses: actions/cache@v6
+        with:
+          path: /usr/lib/R/site-library
+          key: r-synthpop-${{ runner.os }}
+
+      - name: Install R and the synthpop package
+        if: matrix.r
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y r-base
+          sudo Rscript -e "if (!requireNamespace('synthpop', quietly = TRUE)) install.packages('synthpop', repos='https://cloud.r-project.org/')"
 
       - name: Pre-install CPU torch
         if: matrix.torch

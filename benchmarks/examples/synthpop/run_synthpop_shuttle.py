@@ -3,8 +3,8 @@ from katabatic.models.synthpop import SynthPop
 model = SynthPop(seed=42)
 
 model.train(
-    dataset_path="benchmarks/splits/shuttle/train_full.csv",
-    synthetic_path="benchmarks/synthetic/shuttle/synthpop/synthetic.csv",
+    "benchmarks/splits/shuttle",
+    synthetic_dir="benchmarks/synthetic/shuttle/synthpop",
 )
 
 print("SynthPop Shuttle generation completed.")

@@ -3,8 +3,8 @@ from katabatic.models.synthpop import SynthPop
 model = SynthPop(seed=42)
 
 model.train(
-    dataset_path="benchmarks/splits/magic/train_full.csv",
-    synthetic_path="benchmarks/synthetic/magic/synthpop/synthetic.csv",
+    "benchmarks/splits/magic",
+    synthetic_dir="benchmarks/synthetic/magic/synthpop",
 )
 
 print("SynthPop Magic generation completed.")

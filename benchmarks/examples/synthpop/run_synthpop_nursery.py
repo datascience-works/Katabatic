@@ -3,8 +3,8 @@ from katabatic.models.synthpop import SynthPop
 model = SynthPop(seed=42)
 
 model.train(
-    dataset_path="benchmarks/splits/nursery/train_full.csv",
-    synthetic_path="benchmarks/synthetic/nursery/synthpop/synthetic.csv",
+    "benchmarks/splits/nursery",
+    synthetic_dir="benchmarks/synthetic/nursery/synthpop",
 )
 
 print("SynthPop Nursery generation completed.")

@@ -6968,10 +6968,11 @@ mst = ["opendp", "private-pgm", "smartnoise-synth"]
 pategan = ["tensorflow", "tensorflow-io"]
 privtree = []
 smote = ["imbalanced-learn"]
+synthpop = []
 tabddpm = ["category-encoders", "rtdl_revisiting_models", "torch"]
 tabsyn = ["category-encoders", "tomli", "tomli-w", "torch", "tqdm"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.12"
-content-hash = "1736e1488df2c4ca398f62f3edd2dc9ceb25c98075cc1925285c5bd755b5c4bb"
+content-hash = "4acf1c4661a050320f64eec068544f8247cec102059b8c31db099479edd675e8"
