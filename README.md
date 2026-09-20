@@ -63,6 +63,7 @@ Or install directly with Poetry / pip — useful for installing several extras a
 | PATE-GAN (supported) | `pip install katabatic[pategan]` or `poetry install -E pategan` |
 | TabSyn (supported) | `pip install katabatic[tabsyn]` or `poetry install -E tabsyn` |
 | GReaT (supported) | `pip install katabatic[great]` or `poetry install -E great` |
+| SMOTE (supported) | `pip install katabatic[smote]` or `poetry install -E smote` |
 | MST (supported) | `pip install katabatic[mst]` or `poetry install -E mst` |
 | PrivTree (supported) | `pip install katabatic[privtree]` or `poetry install -E privtree` |
 | ARF (supported) | `pip install katabatic[arf]` or `poetry install -E arf` |

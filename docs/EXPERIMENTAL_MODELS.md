@@ -11,6 +11,7 @@ Katabatic ships multiple generative model implementations. Only a subset is **of
 | PATE-GAN | `pip install katabatic[pategan]` | Yes (artifact pipeline integration test) |
 | TabSyn | `pip install katabatic[tabsyn]` | Yes (artifact pipeline integration test) |
 | GReaT | `pip install katabatic[great]` | Yes (artifact pipeline integration test) |
+| SMOTE | `pip install katabatic[smote]` | Yes (artifact pipeline integration test) |
 | MST | `pip install katabatic[mst]` | Yes (artifact pipeline integration test) |
 | PrivTree | `pip install katabatic[privtree]` | Yes (artifact pipeline integration test) |
 | ARF | `pip install katabatic[arf]` | Yes (artifact pipeline integration test) |
