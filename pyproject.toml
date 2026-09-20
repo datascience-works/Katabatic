@@ -22,7 +22,7 @@ requires-python = ">=3.11,<3.12"
 # Core dependencies - always installed
 dependencies = [
     "pandas>=2.3.1,<3.0.0",
-    "scikit-learn>=1.3.0,<2.0.0",
+    "scikit-learn>=1.9.1,<2.0.0",
     "numpy>=1.24.0,<2.0.0",
     "scipy>=1.13.0,<1.15.0",
     "psutil>=5.9",
@@ -30,6 +30,7 @@ dependencies = [
 
 [project.optional-dependencies]
 codi = ["torch>=2.14.0,<3.0.0"]
+arf = []
 ctgan = ["torch>=2.14.0,<3.0.0"]
 ganblr = [
     "tensorflow==2.21.*",
@@ -38,10 +39,10 @@ ganblr = [
     "pyitlib==0.3.1",
 ]
 great = [
-    "transformers>=4.57.0,<5.0.0",
-    "huggingface-hub>=0.34.0,<1.0",
+    "transformers>=5.0.0,<6.0.0",
+    "huggingface-hub>=1.3.0,<2.0",
     "torch>=2.14.0,<3.0.0",
-    "datasets>=4.0.0,<5.0.0",
+    "datasets>=5.0.1,<6.0.0",
     "accelerate>=1.15.0",
     "fsspec>=2023.5.0,<=2026.2.0",
 ]
@@ -50,6 +51,7 @@ pategan = [
     "tensorflow==2.21.*",
     "tensorflow-io==0.37.1",
 ]
+privtree = []
 smote = ["imbalanced-learn==0.14.2"]
 mst = [
     "smartnoise-synth==1.0.5",
@@ -63,7 +65,7 @@ tabddpm = [
 ]
 tabsyn = [
     "torch>=2.14.0,<3.0.0",
-    "tqdm>=4.66.0,<5.0.0",
+    "tqdm>=4.70.1,<5.0.0",
     "category-encoders>=2.11.1,<3.0.0",
     "tomli>=2.0.1,<3.0.0",
     "tomli-w>=1.0.0,<2.0.0",
@@ -75,17 +77,17 @@ all = [
     "pgmpy>=0.1.25",
     "pyitlib==0.3.1",
     "imbalanced-learn==0.14.2",
-    "transformers>=4.57.0,<5.0.0",
-    "huggingface-hub>=0.34.0,<1.0",
+    "transformers>=5.0.0,<6.0.0",
+    "huggingface-hub>=1.3.0,<2.0",
     "torch>=2.14.0,<3.0.0",
-    "datasets>=4.0.0,<5.0.0",
+    "datasets>=5.0.1,<6.0.0",
     "xgboost>=3.2.0,<4.0.0",
-    "tqdm>=4.66.0,<5.0.0",
+    "tqdm>=4.70.1,<5.0.0",
     "tomli>=2.0.1,<3.0.0",
     "tomli-w>=1.0.0,<2.0.0",
     "category-encoders>=2.11.1,<3.0.0",
     "rtdl_revisiting_models==0.0.2",
-    "accelerate>=1.14.0",
+    "accelerate>=1.15.0",
     "fsspec>=2023.5.0,<=2026.2.0",
 ]
 
@@ -98,13 +100,10 @@ Documentation = "https://github.com/datascience-works/Katabatic#readme"
 [tool.coverage.run]
 # Experimental models are excluded until they have integration tests.
 omit = [
-    "katabatic/models/arf/*",
     "katabatic/models/codi/*",
     "katabatic/models/gmm/*",
     "katabatic/models/medgan/*",
-    "katabatic/models/mst/*",
     "katabatic/models/naivebayes/*",
-    "katabatic/models/smote/*",
     "katabatic/models/synthpop/*",
     "katabatic/models/tabddpm/*",
     "katabatic/models/tabkde_updated/*",
@@ -139,6 +138,10 @@ markers = [
     "ctgan: requires ctgan extra",
     "pategan: requires pategan extra",
     "tabsyn: requires tabsyn extra",
+    "smote: requires smote extra",
+    "mst: requires mst extra",
+    "privtree: requires privtree extra",
+    "arf: requires arf extra",
     "forked: run test in an isolated forked process (pytest-forked)",
 ]
 
@@ -149,7 +152,10 @@ extend-exclude = ["**/*.md", "**/README.md"]
 select = ["E", "F", "I", "UP"] #E: pycodestyle error, F: flake8 error, I: isort imports, UP: Upgrade syntax
 ignore = ["E501"] #line-too-long. Currently prevents PRs. More effort required to fix across codebase.
 
-
+#separates directories like katabatic/datasets/ from HuggingFace datasets/ for isort.
+[tool.ruff.lint.isort]
+known-third-party = ["datasets"]
+known-first-party = ["katabatic"]
 
 [build-system]
 requires = ["poetry-core>=2.0"]
