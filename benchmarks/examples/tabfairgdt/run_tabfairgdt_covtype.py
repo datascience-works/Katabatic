@@ -5,8 +5,9 @@ sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 
-from katabatic.models.tabfairgdt.models import TabFairGDTModel
 from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
+
+from katabatic.models.tabfairgdt.models import TabFairGDTModel
 
 config = RunConfig(
     dataset_name="covtype",

@@ -1,5 +1,6 @@
 import importlib
 import os
+import pathlib
 
 import pytest
 
@@ -19,10 +20,17 @@ def get_supported_models():
 
 MODELS_TO_TEST = get_supported_models()
 
+# Fall back to running in-process if os doesn't have "fork" method.
+_forked_or_noop = pytest.mark.forked if hasattr(os, "fork") else (lambda fn: fn)
 
+
+@_forked_or_noop
 @pytest.mark.parametrize("model_name, config", MODELS_TO_TEST)
 def test_model_promotion_contract(model_name, config):
-    """Contract test: every supported model must meet the promotion contract."""
+    """Contract test: every supported model must meet the promotion contract.
+
+    Runs each model in its own forked process, avoiding exceeded CI runner memory leading to SIGSEGV/SIGBUS.
+    """
 
     # 1. Registry entry has a non-null extra and matches the model name.
     assert config.get("extra"), f"'{model_name}' missing/empty 'extra' in registry."
@@ -55,17 +63,46 @@ def test_model_promotion_contract(model_name, config):
             f"'{model_name}' ({class_name}) missing required method '{method}'."
         )
 
-    # 5. Declares ARTIFACT_STATE_FILES
-    assert getattr(model_class, "ARTIFACT_STATE_FILES", ()), (
+    # 5. Declares ARTIFACT_STATE_FILES as a non-empty sequence of filenames.
+    state_files = getattr(model_class, "ARTIFACT_STATE_FILES", ())
+    assert state_files, (
         f"'{model_name}' does not declare non-empty ARTIFACT_STATE_FILES. State will not persist."
     )
+    assert isinstance(state_files, (tuple, list)), (
+        f"'{model_name}' declares ARTIFACT_STATE_FILES as {type(state_files).__name__}, "
+        f"expected a tuple/list. A bare string iterates character-by-character."
+    )
+    assert all(isinstance(n, str) and n for n in state_files), (
+        f"'{model_name}' ARTIFACT_STATE_FILES must contain non-empty filenames: {state_files!r}"
+    )
 
-    # 6. Integration test exists for model
-    test_file = f"tests/test_integration_{model_name}.py"
-    assert os.path.isfile(test_file), (
+    # 6. Checks `load_from_ref` requirement.
+    from katabatic.models.base_model import Model as _BaseModel
+
+    assert "load_from_ref" in vars(model_class) or any(
+        "load_from_ref" in vars(base)
+        for base in model_class.__mro__
+        if base not in (_BaseModel, object)
+    ), (
+        f"'{model_name}' inherits load_from_ref from the base class, which raises "
+        f"NotImplementedError. Trained models cannot be reloaded from an artifact."
+    )
+
+    # 7. Integration test exists for model
+    test_file = pathlib.Path(__file__).parent / f"test_integration_{model_name}.py"
+    assert test_file.is_file(), (
         f"'{model_name}' marked supported but has no integration test at {test_file}."
     )
 
 
 def test_supported_models_list():
-    assert set(ModelRegistry.get_supported_models()) == {"ganblr", "ctgan", "pategan"}
+    assert set(ModelRegistry.get_supported_models()) == {
+        "ganblr",
+        "ctgan",
+        "pategan",
+        "tabsyn",
+        "great",
+        "mst",
+        "privtree",
+        "arf",
+    }
