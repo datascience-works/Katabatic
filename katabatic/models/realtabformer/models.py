@@ -1,6 +1,7 @@
+import json
 import random
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pandas as pd
@@ -13,14 +14,20 @@ from katabatic.models.realtabformer.utils import (
     save_synthetic_data,
 )
 
+if TYPE_CHECKING:
+    from katabatic.artifacts.base import ArtifactStore
+    from katabatic.artifacts.refs import ModelRef
+
 
 class REaLTabFormerModel(BaseModel):
     """
-    Experimental Katabatic wrapper for REaLTabFormer.
+    Katabatic wrapper for REaLTabFormer.
 
     This implementation supports regular, non-relational tabular
     datasets only.
     """
+
+    ARTIFACT_STATE_FILES = ("realtabformer_state.json",)
 
     def __init__(
         self,
@@ -68,8 +75,9 @@ class REaLTabFormerModel(BaseModel):
     def train(
         self,
         data_dir: str | Path,
-        synthetic_dir: str | Path | None = None,
         *args,
+        synthetic_dir: str | Path | None = None,
+        artifact_state_dir: str | Path | None = None,
         **kwargs,
     ) -> "REaLTabFormerModel":
         """
@@ -127,6 +135,7 @@ class REaLTabFormerModel(BaseModel):
         )
 
         self.is_fitted = True
+        self._maybe_save_artifact_state(artifact_state_dir)
 
         generated_df = self.sample(self.training_rows)
 
@@ -232,3 +241,59 @@ class REaLTabFormerModel(BaseModel):
             )
 
         return 0.0
+
+    def _save_artifact_state(self, artifact_state_dir: str) -> None:
+        """
+        Persist fitted REaLTabFormer state for the Katabatic artifact pipeline.
+        """
+        artifact_state_dir = Path(artifact_state_dir)
+        artifact_state_dir.mkdir(parents=True, exist_ok=True)
+
+        self.model.save(artifact_state_dir, allow_overwrite=True)
+
+        state = {
+            "experiment_id": self.model.experiment_id,
+            "target_column": self.target_column,
+            "column_names": self.column_names,
+            "training_rows": self.training_rows,
+            "epochs": self.epochs,
+            "batch_size": self.batch_size,
+            "random_state": self.random_state,
+            "device": self.device,
+            "gradient_accumulation_steps": self.gradient_accumulation_steps,
+            "logging_steps": self.logging_steps,
+            "n_critic": self.n_critic,
+            "fit_kwargs": self.fit_kwargs,
+        }
+        state_path = artifact_state_dir / self.ARTIFACT_STATE_FILES[0]
+        state_path.write_text(json.dumps(state))
+
+    @classmethod
+    def load_from_ref(
+        cls, store: "ArtifactStore", ref: "ModelRef"
+    ) -> "REaLTabFormerModel":
+        """Reload a fitted REaLTabFormer model from a Katabatic artifact reference."""
+        from realtabformer import REaLTabFormer
+
+        state_path = cls._require_state_file(store, ref)
+        state = json.loads(state_path.read_text())
+
+        instance = cls(
+            epochs=state["epochs"],
+            batch_size=state["batch_size"],
+            random_state=state["random_state"],
+            device=state["device"],
+            gradient_accumulation_steps=state["gradient_accumulation_steps"],
+            logging_steps=state["logging_steps"],
+            n_critic=state["n_critic"],
+            fit_kwargs=state["fit_kwargs"],
+        )
+        instance.target_column = state["target_column"]
+        instance.column_names = state["column_names"]
+        instance.training_rows = state["training_rows"]
+        instance.model = REaLTabFormer.load_from_dir(
+            state_path.parent / state["experiment_id"]
+        )
+        instance.is_fitted = True
+
+        return instance

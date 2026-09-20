@@ -107,4 +107,5 @@ def test_supported_models_list():
         "privtree",
         "arf",
         "naivebayes",
+        "realtabformer",
     }

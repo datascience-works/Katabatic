@@ -162,6 +162,9 @@ jobs:
             naivebayes:
               - 'katabatic/models/naivebayes/**'
               - 'tests/test_integration_naivebayes.py'
+            realtabformer:
+              - 'katabatic/models/realtabformer/**'
+              - 'tests/test_integration_realtabformer.py'
 
       - name: Build Dynamic Matrix
         id: build-matrix
@@ -176,7 +179,8 @@ jobs:
             {"model": "mst", "torch": false},
             {"model": "privtree", "torch": false},
             {"model": "arf", "torch": false},
-            {"model": "naivebayes", "torch": false}
+            {"model": "naivebayes", "torch": false},
+            {"model": "realtabformer", "torch": true}
           ]'
 
           # Always run the full matrix for main (release pushes/PRs) so
