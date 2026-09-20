@@ -1,4 +1,5 @@
 import os
+import warnings
 from typing import Any
 
 import numpy as np
@@ -77,6 +78,7 @@ class PATEGAN(Model):
         self._is_built = False
         self._X_dim = None
         self._h_dim = None
+        self._n_train_rows: int | None = None
 
     @classmethod
     def get_required_dependencies(cls) -> list[str]:
@@ -135,7 +137,7 @@ class PATEGAN(Model):
 
         from .utils import load_metadata, reconstruct_transformer
 
-        state_dir = str(store.open_path(ref.state_relpath))
+        state_dir = str(cls._require_state_dir(store, ref))
         metadata_path = os.path.join(state_dir, "metadata.json")
         checkpoint_path = os.path.join(state_dir, "pategan.ckpt")
 
@@ -164,9 +166,44 @@ class PATEGAN(Model):
         saver = tf.train.Saver()
         saver.restore(model._sess, checkpoint_path)
 
-        model._is_fitted = True
+        model.is_fitted = True
 
         return model
+
+    def _save_artifact_state(self, artifact_state_dir: str) -> None:
+        """
+        Persist fitted state so the model can be rebuilt by load_from_ref().
+
+        Called from train() when the pipeline injects artifact_state_dir, which
+        it does for any model class declaring ARTIFACT_STATE_FILES.
+        """
+        import tensorflow.compat.v1 as tf
+
+        os.makedirs(artifact_state_dir, exist_ok=True)
+
+        training_config = {
+            "niter": self.niter,
+            "batch_size": self.batch_size,
+            "learning_rate": self.learning_rate,
+            "lambda_gp": self.lambda_gp,
+            "z_dim": self.z_dim,
+        }
+        privacy_config = {
+            "epsilon": self.epsilon,
+            "delta": self.delta,
+            "num_teachers": self.num_teachers,
+            "lambda_noise": self.privacy_mechanism.lambda_noise,
+        }
+        save_metadata(
+            os.path.join(artifact_state_dir, "metadata.json"),
+            self.transformer,
+            training_config,
+            privacy_config,
+            self.random_state,
+        )
+
+        saver = tf.train.Saver()
+        saver.save(self._sess, os.path.join(artifact_state_dir, "pategan.ckpt"))
 
     def _build_model(self, X_dim: int):
         """
@@ -308,6 +345,7 @@ class PATEGAN(Model):
 
         # Training loop
         n_samples = len(X_encoded)
+        self._n_train_rows = n_samples
 
         if verbose:
             print(f"Training PATE-GAN with ε={self.epsilon}, δ={self.delta}")
@@ -354,8 +392,7 @@ class PATEGAN(Model):
                 M_entire = np.concatenate((M_real, M_fake), 0)
 
                 # Add Gaussian noise for privacy
-                noise = self.privacy_mechanism.add_gaussian_noise(M_entire)
-                M_entire = M_entire + noise
+                M_entire = self.privacy_mechanism.add_gaussian_noise(M_entire)
                 M_entire = (M_entire > 0.5).astype(float)
                 M_mb = np.reshape(M_entire, (2 * self.batch_size, 1))
 
@@ -386,12 +423,15 @@ class PATEGAN(Model):
         self.is_fitted = True
         return self
 
-    def sample(self, n: int, conditional: dict[str, Any] | None = None) -> pd.DataFrame:
+    def sample(
+        self, n_samples: int | None = None, conditional: dict[str, Any] | None = None
+    ) -> pd.DataFrame:
         """
         Generate synthetic samples.
 
         Args:
-            n: Number of samples to generate
+            n_samples: Number of rows to generate. Defaults to the number of
+                rows the model was trained on.
             conditional: Not implemented (for future use)
 
         Returns:
@@ -399,6 +439,8 @@ class PATEGAN(Model):
         """
         if not self.is_fitted:
             raise RuntimeError("Model must be fitted before sampling")
+
+        n = n_samples if n_samples is not None else self._n_train_rows
 
         if conditional is not None:
             print("Warning: Conditional sampling not yet implemented for PATE-GAN")
@@ -424,18 +466,25 @@ class PATEGAN(Model):
         return df_synth
 
     def train(
-        self, dataset_dir: str, synthetic_dir: str | None = None, **kwargs
+        self,
+        data_dir: str,
+        *args,
+        synthetic_dir: str | None = None,
+        artifact_state_dir: str | None = None,
+        **kwargs,
     ) -> "PATEGAN":
         """
         Train PATE-GAN following Katabatic pipeline contract.
 
-        Reads x_train.csv and y_train.csv from dataset_dir,
+        Reads x_train.csv and y_train.csv from data_dir,
         trains the model, generates synthetic data, and writes
         x_synth.csv, y_synth.csv, and metadata.json to synthetic_dir.
 
         Args:
-            dataset_dir: Directory containing x_train.csv and y_train.csv
+            data_dir: Directory containing x_train.csv and y_train.csv
             synthetic_dir: Directory to save synthetic data (optional)
+            artifact_state_dir: When provided, the fitted model state is
+                persisted here for later retrieval via load_from_ref().
             **kwargs: Additional training parameters (epsilon, delta, num_teachers, niter, batch_size, etc.)
 
         Returns:
@@ -463,11 +512,11 @@ class PATEGAN(Model):
             self.random_state = kwargs.pop("random_state")
 
         # Read training data
-        x_train_path = os.path.join(dataset_dir, "x_train.csv")
-        y_train_path = os.path.join(dataset_dir, "y_train.csv")
+        x_train_path = os.path.join(data_dir, "x_train.csv")
+        y_train_path = os.path.join(data_dir, "y_train.csv")
 
         if not os.path.exists(x_train_path):
-            raise FileNotFoundError(f"x_train.csv not found in {dataset_dir}")
+            raise FileNotFoundError(f"x_train.csv not found in {data_dir}")
 
         X_train = pd.read_csv(x_train_path)
 
@@ -539,16 +588,19 @@ class PATEGAN(Model):
             missing_classes = set(unique_train) - set(unique_synth)
 
             if missing_classes:
-                print(
-                    f"[PATEGAN] Adding {len(missing_classes)} dummy samples to cover classes: {sorted(missing_classes)}"
+                # Cover missing classes by relabelling generated rows.
+                warnings.warn(
+                    f"PATE-GAN produced no samples for classes {sorted(missing_classes)}; "
+                    f"relabelling generated rows to cover them. Treat utility metrics "
+                    f"for these classes with caution.",
+                    stacklevel=2,
                 )
-                for cls in missing_classes:
-                    idx = np.where(df_train[y_col].values == cls)[0]
-                    if idx.size == 0:
-                        continue
-                    row = df_train.iloc[idx[0] : idx[0] + 1]
-                    x_dummy = row.drop(columns=[y_col])
-                    y_dummy = row[[y_col]]
+                for offset, cls in enumerate(sorted(missing_classes)):
+                    if x_synth.empty:
+                        break
+                    pos = offset % len(x_synth)
+                    x_dummy = x_synth.iloc[pos : pos + 1].copy()
+                    y_dummy = pd.DataFrame({y_col: [cls]})
                     x_synth = pd.concat([x_synth, x_dummy], ignore_index=True)
                     y_synth = pd.concat([y_synth, y_dummy], ignore_index=True)
 
@@ -647,33 +699,9 @@ class PATEGAN(Model):
             )
             print(f"Saved metadata.json to {metadata_path}")
 
-            artifact_state_dir = kwargs.get("artifact_state_dir")
+        self._maybe_save_artifact_state(artifact_state_dir)
 
-            if artifact_state_dir:
-                os.makedirs(artifact_state_dir, exist_ok=True)
-
-                state_metadata_path = os.path.join(
-                    artifact_state_dir,
-                    "metadata.json",
-                )
-
-                save_metadata(
-                    state_metadata_path,
-                    self.transformer,
-                    training_config,
-                    privacy_config,
-                    self.random_state,
-                )
-
-                import tensorflow.compat.v1 as tf
-
-                saver = tf.train.Saver()
-                saver.save(
-                    self._sess,
-                    os.path.join(artifact_state_dir, "pategan.ckpt"),
-                )
-
-            return self
+        return self
 
     def evaluate(
         self,
