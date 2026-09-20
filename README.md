@@ -274,7 +274,11 @@ results = evaluator.evaluate()
 - F1 Score
 - AUC-ROC (for binary classification)
 
-**Statistical fidelity** (marginal JSD/KLD, DCR) is available via `katabatic.evaluate.fidelity.evaluation.StatisticalFidelityEvaluation` in artifact pipeline runs.
+**Statistical fidelity** (categorical JSD, continuous Wasserstein distance, correlation
+preservation, and DCR — distance to closest record) is available via
+`katabatic.evaluate.fidelity.evaluation.FidelityEvaluation` in both `SyntheticEvaluationPipeline`
+(DataFrame-based) and, via its `from_artifact()` adapter, `TrainTestSplitPipeline`
+(artifact-store-based) runs.
 
 ## Development
 
