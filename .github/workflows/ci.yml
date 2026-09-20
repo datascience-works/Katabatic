@@ -147,6 +147,9 @@ jobs:
             arf:
               - 'katabatic/models/arf/**'
               - 'tests/test_integration_arf.py'
+            naivebayes:
+              - 'katabatic/models/naivebayes/**'
+              - 'tests/test_integration_naivebayes.py'
 
       - name: Build Dynamic Matrix
         id: build-matrix
@@ -159,7 +162,8 @@ jobs:
             {"model": "great", "torch": true},
             {"model": "mst", "torch": false},
             {"model": "privtree", "torch": false},
-            {"model": "arf", "torch": false}
+            {"model": "arf", "torch": false},
+            {"model": "naivebayes", "torch": false}
           ]'
 
           # If a core file changed, run all models.

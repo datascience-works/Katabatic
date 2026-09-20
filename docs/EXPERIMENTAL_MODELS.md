@@ -14,20 +14,20 @@ Katabatic ships multiple generative model implementations. Only a subset is **of
 | MST | `pip install katabatic[mst]` | Yes (artifact pipeline integration test) |
 | PrivTree | `pip install katabatic[privtree]` | Yes (artifact pipeline integration test) |
 | ARF | `pip install katabatic[arf]` | Yes (artifact pipeline integration test) |
+| Naive Bayes | `pip install katabatic[naivebayes]` | Yes (artifact pipeline integration test) |
 
 These models are listed in `ModelRegistry` with `supported: True`, and `tests/test_model_registry.py::test_supported_models_list` pins this exact set. Use the artifact pipeline documented in [GANBLR_FLOW.md](../GANBLR_FLOW.md) and the README quick start.
 
 ## Experimental Models
 
 Present in the codebase, but with no guarantee of **API stability or CI coverage**.
-`[tool.coverage.run].omit` in the root `pyproject.toml` is the closest available list of known-experimental models; every entry below except PrivTree appears there.
+`[tool.coverage.run].omit` in the root `pyproject.toml` is the closest available list of known-experimental models.
 
 ### Registered (usable via `ModelRegistry.load_model()`)
 
 | Model | Extra | Notes |
 | ------- | ------- | ------- |
 | TabDDPM | `tabddpm` | Uses external `tabddpm` package, with a local fallback |
-| ARF | *(none — core dependencies only)* | |
 
 ### Not registered (import directly from the module; `ModelRegistry.load_model()` will not find them)
 
@@ -36,12 +36,10 @@ Present in the codebase, but with no guarantee of **API stability or CI coverage
 | CoDi | `codi` | See `examples/codi.ipynb` |
 | MedGAN | `medgan` | See `examples/medgan.ipynb` |
 | SMOTE | `smote` | |
-| Naive Bayes | *(none)* | |
 | SynthPop | *(none)* | |
 | TVAE-GAN | *(none)* | |
 | GMM | *(none)* | Does not subclass `Model` — implements its own `fit`/`sample`, with no `train`/`evaluate` |
 | TabKDE (updated) | *(none)* | Does not subclass `Model` |
-| PrivTree | *(none)* | Does not subclass `Model`; also the only model absent from the coverage omit list above — merged in #143 but not yet integrated with the `Model` interface or `ModelRegistry` |
 
 Examples under `examples/` and `benchmarks/examples/` are provided for reference and
 are not covered by CI.
