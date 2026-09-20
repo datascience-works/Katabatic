@@ -11,10 +11,12 @@ Katabatic ships multiple generative model implementations. Only a subset is **of
 | PATE-GAN | `pip install katabatic[pategan]` | Yes (artifact pipeline integration test) |
 | TabSyn | `pip install katabatic[tabsyn]` | Yes (artifact pipeline integration test) |
 | GReaT | `pip install katabatic[great]` | Yes (artifact pipeline integration test) |
+| SMOTE | `pip install katabatic[smote]` | Yes (artifact pipeline integration test) |
 | MST | `pip install katabatic[mst]` | Yes (artifact pipeline integration test) |
 | PrivTree | `pip install katabatic[privtree]` | Yes (artifact pipeline integration test) |
 | ARF | `pip install katabatic[arf]` | Yes (artifact pipeline integration test) |
 | SynthPop | `pip install katabatic[synthpop]` | Yes (artifact pipeline integration test; also requires R + CRAN `synthpop` packages) |
+| Naive Bayes | `pip install katabatic[naivebayes]` | Yes (artifact pipeline integration test) |
 
 These models are listed in `ModelRegistry` with `supported: True`, and `tests/test_model_registry.py::test_supported_models_list` pins this exact set. Use the artifact pipeline documented in [GANBLR_FLOW.md](../GANBLR_FLOW.md) and the README quick start.
 
@@ -37,6 +39,7 @@ Present in the codebase, but with no guarantee of **API stability or CI coverage
 | MedGAN | `medgan` | See `examples/medgan.ipynb` |
 | SMOTE | `smote` | |
 | Naive Bayes | *(none)* | |
+| SynthPop | *(none)* | |
 | TVAE-GAN | *(none)* | |
 | GMM | *(none)* | Does not subclass `Model` — implements its own `fit`/`sample`, with no `train`/`evaluate` |
 | TabKDE (updated) | *(none)* | Does not subclass `Model` |

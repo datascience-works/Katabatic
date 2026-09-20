@@ -1,4 +1,3 @@
-import logging
 import os
 import platform
 import sys
@@ -19,12 +18,11 @@ from runner import (
     save_synthetic,
 )
 
-from katabatic.models.ganblr.models import GANBLR  # noqa: E402
+from katabatic.models.pategan.models import PATEGAN  # noqa: E402
 
 # run in cpu mode(if GPU is limited)
 # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-logging.getLogger("pgmpy").setLevel(logging.ERROR)
 warnings.filterwarnings("ignore")
 start_time = perf_counter()
 
@@ -59,7 +57,7 @@ def get_runtime_summary(
         model_name
         + " has taken "
         + str(time_diff)
-        + " seconds to run the adult "
+        + " seconds to run the "
         + dataset_name
         + " dataset."
     )
@@ -102,30 +100,33 @@ def get_system_run_details() -> None:
 
 
 config = RunConfig(
-    dataset_name="car",
-    model_name="ganblr",
-    categorical_cols=["0", "1", "2", "3", "4", "5"],
-    continuous_cols=[],
-    target_col_raw="6",
-    constraints=None,
+    dataset_name="shuttle",
+    model_name="pategan",
+    categorical_cols=[],
+    continuous_cols=["time", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8"],
+    target_col_raw="class",
+    constraints={},
 )
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)
 
 print("\n" + "=" * 60)
-print("STEP 3 — Train GANBLR")
+print("STEP 3 — Train PATEGAN")
 print("=" * 60)
-model = GANBLR()
+model = PATEGAN(
+    epsilon=1.0,
+    delta=1e-5,
+    num_teachers=10,
+    niter=10000,
+    batch_size=128,
+    random_state=42,
+)
 model.train(
     paths["split_dir"],
     categorical_cols=config.categorical_cols,
     continuous_cols=config.continuous_cols,
-    epochs=300,
-    batch_size=32,
-    k=0,
-    warmup_epochs=1,
 )
-print("\nGANBLR training complete.")
+print("\nPATEGAN training complete.")
 
 print("\n" + "=" * 60)
 print("STEP 4 — Generate synthetic data")

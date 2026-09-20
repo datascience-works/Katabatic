@@ -22,6 +22,12 @@ This implementation integrates three core ideas from the original GANBLR paper, 
 
 **Repository**: Wraps the official Tulip Lab implementation https://github.com/tulip-lab/ganblr
 
+**References**:
+- Zhang, Y., Zaidi, N. A., Zhou, J., & Li, G. (2021). *GANBLR: A Tabular Data Generation Model*. ICDM 2021. doi:10.1109/ICDM51629.2021.00103
+- Zhang, Y., Zaidi, N. A., Zhou, J., & Li, G. (2022). *GANBLR++: Incorporating Capacity to Generate Numeric Attributes and Leveraging Unrestricted Bayesian Networks*. SDM 2022. doi:10.1137/1.9781611977172.34
+- Reference repository: https://github.com/tulip-lab/ganblr
+- Documentation: https://ganblr-docs.readthedocs.io/en/latest/
+
 ### Paper / Library Training Recipe
 
 ```
@@ -70,15 +76,65 @@ in the left column, since `fit()` itself hasn't changed — only `train()`'s cal
 
 ***
 
-## References
+---
 
-- Zhang, Y., Zaidi, N. A., Zhou, J., & Li, G. (2021). *GANBLR: A Tabular Data Generation Model*. ICDM 2021. doi:10.1109/ICDM51629.2021.00103
-- Zhang, Y., Zaidi, N. A., Zhou, J., & Li, G. (2022). *GANBLR++: Incorporating Capacity to Generate Numeric Attributes and Leveraging Unrestricted Bayesian Networks*. SDM 2022. doi:10.1137/1.9781611977172.34
-- Reference repository: https://github.com/tulip-lab/ganblr
-- Documentation: https://ganblr-docs.readthedocs.io/en/latest/
+## Installation
+poetry install --extras ganblr
 
-## Generative AI Acknowledgement
+---
 
-AI was used to assist with interpreting and structuring the GANBLR algorithm based on the **original research paper and official repository**.
+## Usage
+Evaluation pipeline Benchmark Scripts for each dataset:
+- Adult [benchmarks/examples/ganblr/run_ganblr_adult](benchmarks/examples/ganblr)
+- Shuttle [benchmarks/examples/ganblr/run_ganblr_shuttle](benchmarks/examples/ganblr)
+- Car [benchmarks/examples/ganblr/run_ganblr_car](benchmarks/examples/ganblr)
+- Magic [benchmarks/examples/ganblr/run_ganblr_magic](benchmarks/examples/ganblr)
+- Nursery [benchmarks/examples/ganblr/run_ganblr_nursery](benchmarks/examples/ganblr)
 
-All generated content was **manually verified, modified, and extended**, including debugging, Katabatic pipeline integration, and full experimental validation. The final implementation reflects the author's independent work.
+```python
+from katabatic.models.ganblr.models import GANBLR
+
+model = GANBLR()
+
+model.train(
+    data_dir="path_to_data",
+    synthetic_dir="path_to_save"
+)
+
+```
+
+---
+
+## Model Evaluation Benchmarks Results
+
+#### FINAL RESULTS - Cars Dataset
+Composite score : 0.7823
+Dimension scores:
+  fidelity       0.9817
+  utility        0.7978
+  diversity      0.9994
+  privacy        0.4669
+  consistency    0.3839
+  stability      0.9865
+
+---
+
+## Model Performance Benchmarks Results
+
+#### ⏰ Evaluation Runtime Report 🧾
+Start time: 113843.179172351
+End time: 114021.534994777
+GANBLR has taken 178.35582242600503 seconds to run the car dataset.
+
+#### 💻 Computation Hardware Summary 🧾
+  🖥️  System:     Linux
+  🏠  Node:       GPU
+  📦  Release:    6.6.87.2-microsoft-standard-WSL2
+  🔢  Version:    #1 SMP PREEMPT_DYNAMIC Thu Jun  5 18:30:46 UTC 2025
+  🔧  Processor:  x86_64
+  🎮  GPU:        NVIDIA GeForce RTX 3060
+  📟  Total RAM:  50.5164 GB
+  💾  Free RAM:   47.0361 GB
+  ⚡  Used RAM:   2.9319 GB
+
+---
