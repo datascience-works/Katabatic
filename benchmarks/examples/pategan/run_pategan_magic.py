@@ -102,7 +102,8 @@ def get_system_run_details() -> None:
 config = RunConfig(
     dataset_name="magic",
     model_name="pategan",
-    categorical_cols=[
+    categorical_cols=[],
+    continuous_cols=[
         "fLength",
         "fWidth",
         "fSize",
@@ -114,7 +115,6 @@ config = RunConfig(
         "fAlpha",
         "fDist",
     ],
-    continuous_cols=[],
     target_col_raw="class",
     constraints={},
 )

@@ -118,13 +118,23 @@ literature, not as a certified end-to-end privacy guarantee for this specific im
 Evaluated against Katabatic's five standard benchmark datasets via the run scripts in
 `benchmarks/examples/pategan/` (Car, Adult, Magic, Nursery, Shuttle).
 
+> **Stale — pending re-run.** `run_pategan_magic.py` and `run_pategan_shuttle.py` misclassified
+> their continuous feature columns as `categorical_cols` (with `continuous_cols=[]`) at the time
+> the Magic and Shuttle rows below were generated. This has since been fixed to list them under
+> `continuous_cols`, matching ARF/PrivTree/NaiveBayes/GReaT's treatment of the same datasets. The
+> Fidelity dimension picks JSD vs. Wasserstein per column from these lists, so the Magic/Shuttle
+> Fidelity (and any score derived from it) below is unreliable until these two rows are
+> regenerated with the corrected config. Car/Adult/Nursery are unaffected.
+
 | Dataset | Composite | Fidelity | Utility | Diversity | Privacy | Consistency | Stability |
 |---|---|---|---|---|---|---|---|
 | Car     | 0.2313 | 0.4086 | 0.0000 | 0.2911 | 0.3333 | 0.0003 | 1.0000 |
 | Adult   | 0.5971 | 0.7325 | 0.2854 | 0.6029 | 0.9830 | 0.5685 | 0.9900 |
-| Magic   | 0.3287 | 0.3367 | 0.0000 | 0.4617 | 0.9943 | 0.0000 | 0.9850 |
+| Magic\* | 0.3287 | 0.3367 | 0.0000 | 0.4617 | 0.9943 | 0.0000 | 0.9850 |
 | Nursery | 0.2377 | 0.4243 | 0.0000 | 0.3166 | 0.3333 | 0.0001 | 1.0000 |
-| Shuttle | 0.5423 | 0.3695 | 0.5111 | 0.5738 | 0.9874 | 0.1583 | 0.9935 |
+| Shuttle\* | 0.5423 | 0.3695 | 0.5111 | 0.5738 | 0.9874 | 0.1583 | 0.9935 |
+
+\* Stale — see note above; needs re-running with the corrected `continuous_cols` config.
 
 Runtime (CPU, no GPU detected, ~17GB RAM): Car ~20s, Nursery ~29s, Magic ~33s,
 Shuttle ~108s, Adult ~119s.
@@ -135,7 +145,9 @@ Shuttle ~108s, Adult ~119s.
   a significant weakness for a model whose core purpose is differential privacy.
 - **Utility scores of 0.0 on Car, Magic, and Nursery** trace to class-imbalanced
   synthetic output, all cross-validation folds contained only one class during
-  evaluation.
-- Performance is consistently weaker on small, low-cardinality categorical datasets
-  (Car, Magic, Nursery) than on Adult and Shuttle, suggesting a structural limitation
-  with constrained categorical state spaces rather than an isolated issue.
+  evaluation. (This is independent of the `categorical_cols`/`continuous_cols` bug above —
+  `UtilityEvaluation` doesn't consume those lists.)
+- Performance looks weaker on small, low-cardinality categorical datasets (Car, Nursery)
+  than on Adult, suggesting a structural limitation with constrained categorical state
+  spaces rather than an isolated issue — Shuttle's own comparison point is stale (see
+  above) and needs re-checking once it's regenerated.

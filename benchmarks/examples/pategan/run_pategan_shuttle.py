@@ -102,8 +102,8 @@ def get_system_run_details() -> None:
 config = RunConfig(
     dataset_name="shuttle",
     model_name="pategan",
-    categorical_cols=["time", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8"],
-    continuous_cols=[],
+    categorical_cols=[],
+    continuous_cols=["time", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8"],
     target_col_raw="class",
     constraints={},
 )
