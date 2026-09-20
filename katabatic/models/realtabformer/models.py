@@ -119,6 +119,7 @@ class REaLTabFormerModel(BaseModel):
             logging_steps=self.logging_steps,
             **kwargs,
         )
+        self.model.training_args_kwargs.pop("overwrite_output_dir", None)
 
         # REaLTabFormer 0.2.4 defaults gen_kwargs to None, but its
         # sensitivity-training path expands it using **gen_kwargs.
@@ -248,7 +249,7 @@ class REaLTabFormerModel(BaseModel):
         """
         artifact_state_dir = Path(artifact_state_dir)
         artifact_state_dir.mkdir(parents=True, exist_ok=True)
-
+        self.model.full_save_dir = str(self.model.full_save_dir)
         self.model.save(artifact_state_dir, allow_overwrite=True)
 
         state = {
