@@ -12,9 +12,9 @@ from katabatic.models.pategan.models import PATEGAN
 config = RunConfig(
     dataset_name="car",
     model_name="pategan",
-    categorical_cols=["buying", "maint", "doors", "persons", "lug_boot", "safety"],
+    categorical_cols=["0", "1", "2", "3", "4", "5"],
     continuous_cols=[],
-    target_col_raw="class",
+    target_col_raw="6",
     constraints=None,
 )
 
@@ -28,7 +28,7 @@ model = PATEGAN(
     delta=1e-5,
     num_teachers=10,
     niter=10000,
-    batch_size=128,
+    batch_size=64,
     random_state=42,
 )
 model.train(

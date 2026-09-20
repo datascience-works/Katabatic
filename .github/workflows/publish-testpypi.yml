@@ -9,7 +9,7 @@
 #
 # Triggers:
 #   - Manual: Actions → Publish to TestPyPI → Run workflow
-#   - Tags: v1.2.3-rc1, v1.2.3-test.1 (pre-release / test uploads)
+#   #   - Tags: v1.2.3rc1, v1.2.3a1, v1.2.3b1, v1.2.3.dev1 (pre-release / test uploads)
 
 name: Publish to TestPyPI
 
@@ -17,14 +17,17 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - "v*-rc*"
-      - "v*-test*"
-      - "v*.*.*a*"
-      - "v*.*.*b*"
+      - "v*rc*"
+      - "v*a*"
+      - "v*b*"
+      - "v*.dev*"
 
 concurrency:
   group: publish-testpypi-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  POETRY_VERSION: "2.4.3"
 
 jobs:
   publish:
@@ -37,15 +40,15 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
       - name: Install Poetry
-        run: pip install poetry==2.4.1
+        run: pip install poetry==${{ env.POETRY_VERSION }}
 
       - name: Validate project metadata
         run: poetry check
@@ -58,4 +61,4 @@ jobs:
         with:
           repository-url: https://test.pypi.org/legacy/
           packages-dir: dist/
-          # password: ${{ secrets.TEST_PYPI_API_TOKEN }}  # if not using trusted publishing
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}  # if not using trusted publishing
