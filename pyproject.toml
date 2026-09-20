@@ -114,7 +114,6 @@ omit = [
     "katabatic/models/medgan/*",
     "katabatic/models/synthpop/*",
     "katabatic/models/tabddpm/*",
-    "katabatic/models/realtabformer/*",
     "katabatic/models/tabkde_updated/*",
     "katabatic/models/tvaegan/*",
 
