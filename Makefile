@@ -1,4 +1,4 @@
-.PHONY: clear-cache install-core install-model install-all setup-dev help ci lint format security test build integration hooks contract
+.PHONY: clear-cache install-core install-model install-all setup-dev help ci lint format security test test-all build integration hooks contract
 
 # Core installation (minimal dependencies)
 install-core:
@@ -19,17 +19,6 @@ install-all:
 	@echo "Installing all model dependencies..."
 	poetry install -E all
 
-# Setup development environment for specific model
-setup-ganblr-dev:
-	@echo "Setting up GANBLR development environment..."
-	@chmod +x scripts/setup_ganblr.sh
-	@./scripts/setup_ganblr.sh
-
-setup-great-dev:
-	@echo "Setting up GReaT development environment..."
-	@chmod +x scripts/setup_great.sh
-	@./scripts/setup_great.sh
-
 # Setup full development environment
 setup-dev:
 	@echo "Setting up full development environment..."
@@ -49,8 +38,8 @@ ci: lint security test build
 	@echo "All local CI checks passed."
 
 lint:
-	@echo "Running ruff..."
-	poetry run ruff check katabatic tests
+	@echo "Running pre-commit hooks (ruff check, format, etc.)..."
+	poetry run pre-commit run --all-files
 
 format:
 	@echo "Auto-formatting with ruff..."
@@ -63,7 +52,7 @@ security:
 
 test:
 	@echo "Running fast tests with coverage..."
-	poetry run pytest -q --cov=katabatic --cov-report=term-missing
+	poetry run pytest -q --ignore=tests/test_model_registry.py --cov=katabatic --cov-report=term-missing
 
 build:
 	@echo "Building wheel..."
@@ -72,7 +61,8 @@ build:
 # Run a model promotion contract test
 contract:
 	@echo "Running model promotion contract test..."
-	poetry install --with dev -E ganblr
+	poetry run pip install "torch>=2.13.0,<3.0.0" --index-url https://download.pytorch.org/whl/cpu
+	poetry install --with dev -E all
 	poetry run pytest tests/test_model_registry.py -v
 
 # Run an integration test for a specific model.
@@ -81,10 +71,22 @@ integration:
 	poetry install --with dev -E $(MODEL)
 	poetry run pytest -m "integration and $(MODEL)" -q
 
+test-all:
+	@echo "Running full tests..."
+	@for f in tests/test_*.py; do \
+		echo ""; \
+		echo "=== $$f ==="; \
+		poetry run pytest "$$f" -q; status=$$?; \
+		if [ $$status -ne 0 ] && [ $$status -ne 5 ]; then exit $$status; fi; \
+	done
+	@echo ""
+	@echo "Full suite passed."
+
 # Install and activate pre-commit hooks.
 hooks:
 	@echo "Installing pre-commit hooks..."
 	poetry run pre-commit install
+	poetry run pre-commit install --hook-type commit-msg
 	poetry run pre-commit run --all-files
 
 # Show help
@@ -97,9 +99,8 @@ help:
 	@echo "  make install-all             Install all model dependencies"
 	@echo ""
 	@echo "Development Setup:"
-	@echo "  make setup-ganblr-dev   Setup isolated GANBLR dev environment"
-	@echo "  make setup-great-dev    Setup isolated GReaT dev environment"
-	@echo "  make setup-dev          Setup full development environment"
+	@echo "  make setup-dev          Setup full development environment (all extras + hooks)"
+	@echo "  make hooks              Install and run pre-commit hooks"
 	@echo ""
 	@echo "Maintenance:"
 	@echo "  make clear-cache        Clear Python cache files"
@@ -107,8 +108,8 @@ help:
 	@echo ""
 	@echo "Quality / CI:"
 	@echo "  make ci                 Run all local CI checks (lint, security, test, build)"
-	@echo "  make lint               Run ruff lint + format check"
 	@echo "  make format             Auto-fix formatting and lint issues"
 	@echo "  make test               Run fast tests with coverage"
+	@echo "  make test-all           Run pytest on all supported models"
 	@echo "  make integration MODEL=ctgan   Run integration tests for a model"
 	@echo "  make hooks              Install pre-commit hooks"

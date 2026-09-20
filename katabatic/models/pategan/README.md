@@ -1,327 +1,141 @@
 # PATE-GAN
 
-**PATE-GAN** (Private Aggregation of Teacher Ensembles - Generative Adversarial Network) is a differentially private synthetic data generation model for tabular data.
+**PATE-GAN (Private Aggregation of Teacher Ensembles - Generative Adversarial Network)** is a
+differentially private synthetic data generation approach introduced by Jordon, Yoon, and van der
+Schaar at ICLR 2019.
+
+Katabatic's implementation takes inspiration from the paper's core idea — inject differential
+privacy noise into the discriminator's training signal, then train a generator against it via a
+WGAN-style adversarial loss — but is a from-scratch, simplified adaptation rather than a literal
+reproduction of the paper's teacher-ensemble architecture. See [Implementation Notes](#implementation-notes)
+for exactly how it differs.
+
+## Reference
+
+Jordon, J., Yoon, J., & van der Schaar, M. (2019).
+*PATE-GAN: Generating Synthetic Data with Differential Privacy Guarantees.*
+International Conference on Learning Representations (ICLR 2019).
 
 ## Overview
 
-PATE-GAN achieves (ε, δ)-differential privacy by combining:
+1. The training data (features + target, concatenated into one frame) is encoded into a
+   numeric representation by a `DataTransformer`.
+2. A generator and discriminator are built as small feedforward networks (see
+   [Architecture](#architecture)) and trained adversarially with a WGAN-GP loss
+   (`katabatic/models/pategan/models.py::_build_model`).
+3. Each outer iteration, the discriminator is updated `num_teachers` times on independently
+   sampled batches; each update's real/fake labels have differential-privacy noise mixed in via
+   `PrivacyMechanism.add_gaussian_noise` (a Gaussian mechanism, not the paper's Laplace
+   aggregation) before being thresholded back to binary labels. The generator is then updated
+   once against the current discriminator.
+4. Training runs for a fixed `niter` iterations (there is no moments-accountant stopping
+   condition or `epsilon_hat` tracking in this implementation — `epsilon`/`delta` configure the
+   noise scale via `PrivacyMechanism`, not a runtime privacy budget check).
 
-- **PATE Framework**: Multiple teacher discriminators trained on disjoint data partitions
-- **Noisy Aggregation**: Gaussian noise injection into teacher voting for privacy
-- **WGAN-GP**: Wasserstein GAN with gradient penalty for stable training
-- **Mixed Data Support**: Handles both categorical and continuous features
+The generator produces the complete synthetic row (features and target together); the
+transformer's inverse transform splits it back into the original tabular representation.
 
-### Key Features
+## Architecture
 
-- ✅ Differential privacy guarantees
-- ✅ Handles categorical and continuous features
-- ✅ Stable training with WGAN-GP
-- ✅ Configurable privacy-utility trade-off
-- ✅ Compatible with Katabatic pipeline framework
-
-## Installation
-
-Install PATE-GAN dependencies:
-
-```bash
-poetry install -E pategan
-```
-
-Or with pip:
-
-```bash
-pip install katabatic[pategan]
-```
-
-## Quick Start
-
-### Standalone Usage
-
-```python
-from katabatic.models.pategan import PATEGAN
-import pandas as pd
-
-# Load your data
-X_train = pd.read_csv("x_train.csv")
-y_train = pd.read_csv("y_train.csv")
-
-# Initialize model with privacy parameters
-model = PATEGAN(
-    epsilon=1.0,          # Privacy budget (lower = more private)
-    delta=1e-5,          # Privacy parameter
-    num_teachers=10,     # Number of teacher discriminators
-    niter=10000,         # Training iterations
-    batch_size=128,      # Batch size
-    random_state=42      # For reproducibility
-)
-
-# Train the model
-model.fit(X_train, y_train, verbose=1)
-
-# Generate synthetic data
-synthetic_data = model.sample(n=1000)
-```
-
-### Pipeline Usage (Recommended)
-
-```python
-from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
-from katabatic.models.pategan import PATEGAN
-
-# Create pipeline with PATEGAN
-pipeline = TrainTestSplitPipeline(
-    model=PATEGAN,
-    evaluations=None  # Uses default TSTR evaluation
-)
-
-# Run complete workflow: split -> train -> evaluate
-results = pipeline.run(
-    input_csv='data/car.csv',
-    output_dir='sample_data/car',
-    synthetic_dir='synthetic/car/pategan'
-)
-```
+- **Generator**: 2 hidden layers, width `h_dim = input_dim`, `tanh` activations, `sigmoid`
+  output. Latent samples drawn from `Uniform(-1, 1)` with `z_dim` defaulting to
+  `max(input_dim // 4, 2)` when not set explicitly.
+- **Discriminator**: 2 hidden layers, width `h_dim = input_dim`, ReLU activations, linear output.
+- Both networks use the Adam optimizer (`beta1=0.5`); the discriminator loss includes a WGAN-GP
+  gradient penalty term (coefficient `lambda_gp`), not weight clipping.
 
 ## Configuration
 
-### Privacy Parameters
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `epsilon` | float | `1.0` | Privacy budget; scales the Gaussian noise added to teacher labels (lower = more noise = more private). |
+| `delta` | float | `1e-5` | Privacy parameter used alongside `epsilon` in the Gaussian mechanism. |
+| `num_teachers` | int | `10` | Number of noisy discriminator updates run per outer training iteration. |
+| `niter` | int | `10000` | Total number of outer training iterations. |
+| `batch_size` | int | `128` | Batch size for both discriminator and generator updates. |
+| `z_dim` | int, optional | `None` | Latent dimension; defaults to `max(input_dim // 4, 2)` when omitted. |
+| `learning_rate` | float | `1e-4` | Adam learning rate for both networks. |
+| `lambda_gp` | float | `10.0` | WGAN-GP gradient penalty coefficient. |
+| `random_state` | int | `42` | Random seed for reproducibility. |
 
-- **epsilon** (float, default: 1.0): Privacy budget
-
-  - Lower values = stronger privacy but potentially lower utility
-  - Typical range: 0.1 - 10.0
-  - Common values: 0.1 (strong), 1.0 (moderate), 10.0 (weak)
-
-- **delta** (float, default: 1e-5): Privacy parameter
-
-  - Should be << 1/n where n is dataset size
-  - Typical values: 1e-5 or 1e-6
-
-- **num_teachers** (int, default: 10): Number of teacher discriminators
-  - More teachers = better privacy but slower training
-  - Range: 5-20
-  - For small datasets (<1000 rows): use 5-10
-  - For large datasets (>10000 rows): use 10-20
-
-### Training Parameters
-
-- **niter** (int, default: 10000): Number of training iterations
-
-  - More iterations = better quality but longer training
-  - Small datasets: 5000-10000
-  - Large datasets: 10000-20000
-
-- **batch_size** (int, default: 128): Training batch size
-
-  - Larger batches = faster but more memory
-  - Typical values: 64, 128, 256
-
-- **learning_rate** (float, default: 1e-4): Adam optimizer learning rate
-- **lambda_gp** (float, default: 10.0): Gradient penalty coefficient for WGAN-GP
-- **z_dim** (int, optional): Latent noise dimension (default: n_features // 4)
-
-## Examples
-
-### Example 1: High Privacy
+## Quick Start
 
 ```python
-model = PATEGAN(
-    epsilon=0.1,      # Strong privacy
-    delta=1e-6,
-    num_teachers=15,
-    niter=15000
-)
-```
+import pandas as pd
 
-### Example 2: Balanced Privacy-Utility
+from katabatic.models.pategan import PATEGAN
 
-```python
-model = PATEGAN(
-    epsilon=1.0,      # Moderate privacy
-    delta=1e-5,
-    num_teachers=10,
-    niter=10000
-)
-```
+X_train = pd.read_csv("x_train.csv")
+y_train = pd.read_csv("y_train.csv")
 
-### Example 3: Fast Training for Large Datasets
-
-```python
 model = PATEGAN(
     epsilon=1.0,
     delta=1e-5,
     num_teachers=10,
-    niter=5000,
-    batch_size=256
+    niter=10000,
+    batch_size=128,
+    learning_rate=1e-4,
+    random_state=42,
 )
-```
 
-### Example 4: Custom Training
-
-```python
-# Initialize model
-model = PATEGAN(epsilon=1.0, delta=1e-5, random_state=42)
-
-# Train on combined X and y
 model.fit(X_train, y_train, verbose=1)
 
-# Generate conditional samples (future feature)
-synthetic_samples = model.sample(n=500)
-
-# Quick evaluation
-results = model.evaluate(X_test, y_test, model='lr')
-print(f"Accuracy: {results['accuracy']:.4f}")
+synthetic_data = model.sample(n_samples=1000)
 ```
 
-## Model Contract (Katabatic Framework)
+## Katabatic Integration
 
-### Inputs
+Like the other models, `train(data_dir, *, synthetic_dir=None, artifact_state_dir=None, **kwargs)`
+reads `x_train.csv`/`y_train.csv` from `data_dir`, calls `fit()`, and writes
+`x_synth.csv`/`y_synth.csv`/`metadata.json` to `synthetic_dir`. It's registered in
+`ModelRegistry` (`supported: True`) and reachable via `ModelRegistry.load_model("pategan")` or
+`pip install katabatic[pategan]`.
 
-- `dataset_dir/x_train.csv`: Training features
-- `dataset_dir/y_train.csv`: Training labels (optional)
+## Implementation Notes
 
-### Outputs
+Where this diverges from the ICLR 2019 paper and its released reference implementation:
 
-- `synthetic_dir/x_synth.csv`: Synthetic features
-- `synthetic_dir/y_synth.csv`: Synthetic labels
-- `synthetic_dir/metadata.json`: Model metadata, schema, and config
+- **No literal teacher ensemble.** The paper trains `num_teachers` independent classifiers, each
+  on a disjoint data partition. This implementation instead reuses a single shared discriminator,
+  updated `num_teachers` times per iteration on independently-sampled (not partitioned) batches —
+  the privacy noise is injected into the training labels each update rather than aggregated across
+  separate teacher models.
+- **Gaussian mechanism, not Laplace.** Privacy noise is added via a Gaussian mechanism
+  (`PrivacyMechanism.add_gaussian_noise`, `katabatic/models/pategan/utils.py`), not the paper's
+  Laplace-noised vote aggregation.
+- **WGAN-GP, not weight clipping.** The discriminator loss uses a gradient penalty term
+  (`lambda_gp`), not the released source's RMSProp + weight-clipping setup.
+- **No moments accountant / runtime privacy-budget stopping condition.** `epsilon`/`delta`
+  configure the noise scale up front; training always runs for `niter` iterations rather than
+  stopping early once a tracked `epsilon_hat` exceeds `epsilon`.
 
-### Schema Fidelity
+Treat `epsilon`/`delta` here as noise-scale knobs consistent with the differential-privacy
+literature, not as a certified end-to-end privacy guarantee for this specific implementation.
 
-- Preserves original column order
-- Maintains categorical labels (not encoded integers)
-- Respects original dtypes (int, float, object)
 
-## Privacy Considerations
+## Benchmark Results
 
-### Understanding Differential Privacy
+Evaluated against Katabatic's five standard benchmark datasets via the run scripts in
+`benchmarks/examples/pategan/` (Car, Adult, Magic, Nursery, Shuttle).
 
-PATE-GAN provides (ε, δ)-differential privacy:
+| Dataset | Composite | Fidelity | Utility | Diversity | Privacy | Consistency | Stability |
+|---|---|---|---|---|---|---|---|
+| Car     | 0.2313 | 0.4086 | 0.0000 | 0.2911 | 0.3333 | 0.0003 | 1.0000 |
+| Adult   | 0.5971 | 0.7325 | 0.2854 | 0.6029 | 0.9830 | 0.5685 | 0.9900 |
+| Magic   | 0.3287 | 0.3367 | 0.0000 | 0.4617 | 0.9943 | 0.0000 | 0.9850 |
+| Nursery | 0.2377 | 0.4243 | 0.0000 | 0.3166 | 0.3333 | 0.0001 | 1.0000 |
+| Shuttle | 0.5423 | 0.3695 | 0.5111 | 0.5738 | 0.9874 | 0.1583 | 0.9935 |
 
-- **ε (epsilon)**: Privacy budget - measures worst-case privacy loss
-  - ε ≤ 0.1: Strong privacy
-  - ε ≈ 1.0: Moderate privacy
-  - ε ≥ 10: Weak privacy
-- **δ (delta)**: Probability of privacy breach
-  - Should be << 1/n (dataset size)
-  - Typical: 1e-5 or 1e-6
+Runtime (CPU, no GPU detected, ~17GB RAM): Car ~20s, Nursery ~29s, Magic ~33s,
+Shuttle ~108s, Adult ~119s.
 
-### Privacy-Utility Trade-off
+### Notable Findings
 
-- **Stronger Privacy** (low ε):
-
-  - ✅ Better privacy protection
-  - ❌ Lower synthetic data utility
-  - ❌ More noise in teacher votes
-
-- **Weaker Privacy** (high ε):
-  - ✅ Higher synthetic data utility
-  - ✅ Less noise in training
-  - ❌ Reduced privacy protection
-
-### Recommendations
-
-1. **Start with ε=1.0, δ=1e-5** as baseline
-2. **Increase num_teachers** for better privacy (at cost of speed)
-3. **More iterations** generally improve quality
-4. **Validate** synthetic data utility with TSTR evaluation
-
-## Performance Tips
-
-- **CPU Training**: Model runs on CPU by default (TensorFlow 1.x compatibility mode)
-- **Memory**: Reduce `batch_size` if OOM errors occur
-- **Speed**: Increase `batch_size` if you have sufficient memory
-- **GPU**: Not currently optimized for GPU (uses TF 1.x compatibility)
-
-## Limitations
-
-- Conditional sampling not yet implemented
-- Requires TensorFlow 1.x compatibility mode (TF 2.x with v1 behavior)
-- Training can be slow for large datasets (10K+ rows)
-- Limited to tabular data (no images, text, etc.)
-
-## Evaluation
-
-PATE-GAN includes a built-in `evaluate()` method for quick TSTR testing:
-
-```python
-# Train model
-model.fit(X_train, y_train)
-
-# Quick evaluation
-results = model.evaluate(X_test, y_test, model='lr', task='classification')
-print(results)
-# Output: {'accuracy': 0.85, 'f1_macro': 0.83}
-```
-
-For comprehensive evaluation, use the pipeline with `TSTREvaluation`:
-
-```python
-from katabatic.evaluate.tstr.evaluation import TSTREvaluation
-
-evaluator = TSTREvaluation(
-    synthetic_dir="synthetic/car/pategan",
-    real_test_dir="sample_data/car"
-)
-
-results = evaluator.evaluate()
-# Tests with LR, MLP, RF, and XGBoost
-```
-
-## Troubleshooting
-
-### Import Errors
-
-```
-ImportError: Missing required dependencies for PATEGAN: ['tensorflow']
-```
-
-**Solution**: Install pategan extras
-
-```bash
-poetry install -E pategan
-```
-
-### Training Issues
-
-**Slow Training**: Reduce `niter` or increase `batch_size`
-
-**Poor Quality**: Increase `niter`, reduce `epsilon` noise, or tune `num_teachers`
-
-**Memory Issues**: Reduce `batch_size` or sample fewer synthetic records
-
-### TensorFlow Warnings
-
-PATE-GAN uses TensorFlow 1.x compatibility mode. You may see warnings like:
-
-```
-WARNING:tensorflow:From ...
-```
-
-These are expected and can be safely ignored.
-
-## Reference
-
-**Paper**: "PATE-GAN: Generating Synthetic Data with Differential Privacy Guarantees"
-**Authors**: Jinsung Yoon, James Jordon, Mihaela van der Schaar
-**Year**: 2018
-**Venue**: ICLR 2019
-
-**Original Implementation**: https://bitbucket.org/mvdschaar/mlforhealthlabpub/
-
-## Citation
-
-If you use PATE-GAN in your research, please cite:
-
-```bibtex
-@inproceedings{yoon2018pategan,
-  title={PATE-GAN: Generating Synthetic Data with Differential Privacy Guarantees},
-  author={Yoon, Jinsung and Jordon, James and van der Schaar, Mihaela},
-  booktitle={International Conference on Learning Representations},
-  year={2019}
-}
-```
-
-## License
-
-PATE-GAN implementation is part of the Katabatic framework and follows the project's MIT license.
+- **Car** shows a 100% exact-duplication rate in synthetic output (privacy score 0.33),
+  a significant weakness for a model whose core purpose is differential privacy.
+- **Utility scores of 0.0 on Car, Magic, and Nursery** trace to class-imbalanced
+  synthetic output, all cross-validation folds contained only one class during
+  evaluation.
+- Performance is consistently weaker on small, low-cardinality categorical datasets
+  (Car, Magic, Nursery) than on Adult and Shuttle, suggesting a structural limitation
+  with constrained categorical state spaces rather than an isolated issue.
