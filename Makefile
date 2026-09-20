@@ -53,6 +53,8 @@ security:
 test:
 	@echo "Running fast tests with coverage..."
 	poetry run pytest -q --deselect tests/test_model_registry.py::test_model_promotion_contract --cov=katabatic --cov-report=term-missing
+	@echo "Checking core coverage floor (mirrors CI's lint-and-test 'Core coverage floor' step)..."
+	poetry run coverage report --include="katabatic/pipeline/*,katabatic/utils/*,katabatic/datasets/*,katabatic/artifacts/*,katabatic/evaluate/*,katabatic/models/registry.py,katabatic/models/base_model.py" --fail-under=70
 
 build:
 	@echo "Building wheel..."

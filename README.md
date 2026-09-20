@@ -67,6 +67,7 @@ Or install directly with Poetry / pip — useful for installing several extras a
 | MST (supported) | `pip install katabatic[mst]` or `poetry install -E mst` |
 | PrivTree (supported) | `pip install katabatic[privtree]` or `poetry install -E privtree` |
 | ARF (supported) | `pip install katabatic[arf]` or `poetry install -E arf` |
+| NaiveBayes (supported) | `pip install katabatic[naivebayes]` or `poetry install -E naivebayes` |
 | TSTR + XGBoost | `pip install katabatic[eval]` or `poetry install -E eval` |
 | Development | `poetry install --with dev` |
 | All optional deps | `pip install katabatic[all]` |
