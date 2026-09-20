@@ -47,7 +47,7 @@ transformer's inverse transform splits it back into the original tabular represe
 ## Configuration
 
 | Parameter | Type | Default | Description |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `epsilon` | float | `1.0` | Privacy budget; scales the Gaussian noise added to teacher labels (lower = more noise = more private). |
 | `delta` | float | `1e-5` | Privacy parameter used alongside `epsilon` in the Gaussian mechanism. |
 | `num_teachers` | int | `10` | Number of noisy discriminator updates run per outer training iteration. |
@@ -112,42 +112,25 @@ Where this diverges from the ICLR 2019 paper and its released reference implemen
 Treat `epsilon`/`delta` here as noise-scale knobs consistent with the differential-privacy
 literature, not as a certified end-to-end privacy guarantee for this specific implementation.
 
-
 ## Benchmark Results
 
 Evaluated against Katabatic's five standard benchmark datasets via the run scripts in
 `benchmarks/examples/pategan/` (Car, Adult, Magic, Nursery, Shuttle).
 
-> **Stale — pending re-run.** `run_pategan_magic.py` and `run_pategan_shuttle.py` misclassified
-> their continuous feature columns as `categorical_cols` (with `continuous_cols=[]`) at the time
-> the Magic and Shuttle rows below were generated. This has since been fixed to list them under
-> `continuous_cols`, matching ARF/PrivTree/NaiveBayes/GReaT's treatment of the same datasets. The
-> Fidelity dimension picks JSD vs. Wasserstein per column from these lists, so the Magic/Shuttle
-> Fidelity (and any score derived from it) below is unreliable until these two rows are
-> regenerated with the corrected config. Car/Adult/Nursery are unaffected.
-
 | Dataset | Composite | Fidelity | Utility | Diversity | Privacy | Consistency | Stability |
-|---|---|---|---|---|---|---|---|
-| Car     | 0.2313 | 0.4086 | 0.0000 | 0.2911 | 0.3333 | 0.0003 | 1.0000 |
-| Adult   | 0.5971 | 0.7325 | 0.2854 | 0.6029 | 0.9830 | 0.5685 | 0.9900 |
-| Magic\* | 0.3287 | 0.3367 | 0.0000 | 0.4617 | 0.9943 | 0.0000 | 0.9850 |
-| Nursery | 0.2377 | 0.4243 | 0.0000 | 0.3166 | 0.3333 | 0.0001 | 1.0000 |
-| Shuttle\* | 0.5423 | 0.3695 | 0.5111 | 0.5738 | 0.9874 | 0.1583 | 0.9935 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Car | 0.5683 | 0.8083 | 0.3699 | 0.9333 | 0.3806 | 0.3781 | 0.9710 |
+| Adult | 0.5130 | 0.7781 | 0.0000 | 0.7539 | 0.9842 | 0.4630 | 0.9825 |
+| Magic | 0.7874 | 0.7879 | 0.8403 | 0.7695 | 0.9830 | 0.2273 | 0.9835 |
+| Nursery | 0.5224 | 0.7988 | 0.3182 | 0.8972 | 0.4793 | 0.0042 | 0.9850 |
+| Shuttle | 0.7484 | 0.8116 | 0.7051 | 0.8089 | 0.9891 | 0.2000 | 0.9885 |
 
-\* Stale — see note above; needs re-running with the corrected `continuous_cols` config.
-
-Runtime (CPU, no GPU detected, ~17GB RAM): Car ~20s, Nursery ~29s, Magic ~33s,
-Shuttle ~108s, Adult ~119s.
+Runtime (CPU, no GPU): Car 85s, Adult 152s, Nursery 219s, Shuttle 345s, Magic 395s.
 
 ### Notable Findings
 
-- **Car** shows a 100% exact-duplication rate in synthetic output (privacy score 0.33),
-  a significant weakness for a model whose core purpose is differential privacy.
-- **Utility scores of 0.0 on Car, Magic, and Nursery** trace to class-imbalanced
-  synthetic output, all cross-validation folds contained only one class during
-  evaluation. (This is independent of the `categorical_cols`/`continuous_cols` bug above —
-  `UtilityEvaluation` doesn't consume those lists.)
-- Performance looks weaker on small, low-cardinality categorical datasets (Car, Nursery)
-  than on Adult, suggesting a structural limitation with constrained categorical state
-  spaces rather than an isolated issue — Shuttle's own comparison point is stale (see
-  above) and needs re-checking once it's regenerated.
+- **Car and Nursery show high exact-duplication rates** in synthetic output, 92.9% and 78.1%
+  of synthetic rows are exact duplicates of a real row respectively (privacy scores 0.38 and
+  0.48), a significant weakness for a model whose core purpose is differential privacy.
+- **Adult's Utility scored exactly 0.0** due to mode collapse in this run.
+- Magic and Shuttle show strong Utility (0.84, 0.71).
