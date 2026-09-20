@@ -106,4 +106,5 @@ def test_supported_models_list():
         "mst",
         "privtree",
         "arf",
+        "naivebayes",
     }

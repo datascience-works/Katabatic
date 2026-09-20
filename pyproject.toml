@@ -47,6 +47,7 @@ great = [
     "fsspec>=2023.5.0,<=2026.2.0",
 ]
 medgan = ["torch>=2.14.0,<3.0.0"]
+naivebayes = []
 pategan = [
     "tensorflow==2.21.*",
     "tensorflow-io==0.37.1",
@@ -103,7 +104,6 @@ omit = [
     "katabatic/models/codi/*",
     "katabatic/models/gmm/*",
     "katabatic/models/medgan/*",
-    "katabatic/models/naivebayes/*",
     "katabatic/models/synthpop/*",
     "katabatic/models/tabddpm/*",
     "katabatic/models/tabkde_updated/*",
@@ -142,6 +142,7 @@ markers = [
     "mst: requires mst extra",
     "privtree: requires privtree extra",
     "arf: requires arf extra",
+    "naivebayes: requires naivebayes extra",
     "forked: run test in an isolated forked process (pytest-forked)",
 ]
 

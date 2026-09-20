@@ -6994,6 +6994,7 @@ ganblr = ["pgmpy", "pyitlib", "tensorflow", "tensorflow-io"]
 great = ["accelerate", "datasets", "fsspec", "huggingface-hub", "torch", "transformers"]
 medgan = ["torch"]
 mst = ["opendp", "private-pgm", "smartnoise-synth"]
+naivebayes = []
 pategan = ["tensorflow", "tensorflow-io"]
 privtree = []
 smote = ["imbalanced-learn"]
@@ -7003,4 +7004,4 @@ tabsyn = ["category-encoders", "tomli", "tomli-w", "torch", "tqdm"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.12"
-content-hash = "5a3c2efbaa96972d4711b81b62d458bdda3613859218756e40714fac4cbccd8b"
+content-hash = "0701a50066d1bbde4976f53822a35272a65f6c84a149077ffacbf17343747e58"

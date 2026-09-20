@@ -103,6 +103,13 @@ class ModelRegistry:
             "extra": "privtree",
             "supported": True,
         },
+        "naivebayes": {
+            "module": "katabatic.models.naivebayes.models",
+            "class": "NaiveBayesModel",
+            "dependencies": ["numpy", "pandas", "sklearn"],
+            "extra": "naivebayes",
+            "supported": True,
+        },
         "smote": {
             "module": "katabatic.models.smote.models",
             "class": "SMOTEModel",

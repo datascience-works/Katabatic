@@ -159,6 +159,9 @@ jobs:
             arf:
               - 'katabatic/models/arf/**'
               - 'tests/test_integration_arf.py'
+            naivebayes:
+              - 'katabatic/models/naivebayes/**'
+              - 'tests/test_integration_naivebayes.py'
 
       - name: Build Dynamic Matrix
         id: build-matrix
@@ -172,7 +175,8 @@ jobs:
             {"model": "smote", "torch": false},
             {"model": "mst", "torch": false},
             {"model": "privtree", "torch": false},
-            {"model": "arf", "torch": false}
+            {"model": "arf", "torch": false},
+            {"model": "naivebayes", "torch": false}
           ]'
 
           # Always run the full matrix for main (release pushes/PRs) so
