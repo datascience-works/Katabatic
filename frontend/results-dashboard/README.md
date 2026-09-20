@@ -1,16 +1,59 @@
-# React + Vite
+# Katabatic — results-dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Run all four pages on one port
 
-Currently, two official plugins are available:
+From the repository root:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+# If npm is not found in your terminal:
+source ~/.nvm/nvm.sh
 
-## React Compiler
+npm --prefix frontend/results-dashboard run dev
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Open **http://localhost:5173**. Only one server and one terminal are required.
+`npm run dev` from any of the four frontend directories starts this same workspace.
+The earlier `npm --prefix frontend/Katabatic-Manya-Dashboard run dev:workspace`
+command also starts the single server.
 
-## Expanding the ESLint configuration
+| Page | Route |
+| --- | --- |
+| Manya dashboard | `/` |
+| Upload dataset | `/datasets` |
+| Model configuration | `/models` |
+| Results dashboard | `/results` |
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Sidebar links and workflow actions stay on port 5173. Direct links, refresh,
+and browser Back/Forward work on each route. Stop the server with Ctrl+C.
+If port 5173 is already occupied, stop the previous workspace server first.
+
+## Setup and production build
+
+Dependencies are already installed in this workspace. On a fresh checkout,
+run `npm install` inside each of the four frontend directories first.
+To build and preview the complete frontend:
+
+```bash
+npm --prefix frontend/results-dashboard run build
+npm --prefix frontend/results-dashboard run preview
+```
+
+The combined output is `frontend/results-dashboard/dist`. A static deployment
+must serve `index.html` for `/datasets`, `/models`, and `/results` as well as `/`.
+
+## Implementation
+
+`results-dashboard/src/WorkspaceApp.jsx` selects the page by URL and imports
+its existing implementation from the original directory. Page CSS is applied
+only for the current route so styles do not leak between designs. Vite uses a
+single React instance across the four directories. No extra directory or
+proxy server is needed.
+
+The overview panels and centered upload form retain their structure.
+Configuration keeps its workflow, form and summary; Results keeps its evaluation,
+comparison and download sections. Navigation is defined in each app's local
+`navigation` module using paths on the same origin.
+
+This is a frontend preview: selected files are not uploaded, training is not run,
+and Results shows sample data. The previous Next.js API handlers are not served
+by this Vite preview; the dashboard continues to use its existing sample data.

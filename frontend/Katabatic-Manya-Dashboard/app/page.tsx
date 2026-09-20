@@ -10,6 +10,7 @@ import {
   FlaskConical,
   Gauge,
   Menu,
+  ChartNoAxesColumn,
   Plus,
   Search,
   Settings,
@@ -17,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { workspaceUrls } from "./navigation";
 import {
   activity,
   datasets,
@@ -24,13 +26,13 @@ import {
   models,
   weeklyRuns,
   type Experiment,
-} from "@/lib/dashboard-data";
+} from "../lib/dashboard-data";
 
 const navigation = [
-  { label: "Overview", icon: Gauge },
-  { label: "Datasets", icon: Database },
-  { label: "Experiments", icon: FlaskConical },
-  { label: "Models", icon: Boxes },
+  { label: "Overview", icon: Gauge, href: "#workspace-content" },
+  { label: "Datasets", icon: Database, href: workspaceUrls.datasets },
+  { label: "Models", icon: Boxes, href: workspaceUrls.models },
+  { label: "Results", icon: ChartNoAxesColumn, href: workspaceUrls.results },
 ];
 
 function formatNumber(value: number) {
@@ -80,7 +82,6 @@ function StatusBadge({ status }: { status: Experiment["status"] }) {
 export default function DashboardPage() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [activeNav, setActiveNav] = useState("Overview");
   const [notice, setNotice] = useState("");
 
   const filteredExperiments = useMemo(() => {
@@ -107,15 +108,17 @@ export default function DashboardPage() {
 
         <nav aria-label="Main navigation">
           <p className="nav-label">Workspace</p>
-          {navigation.map(({ label, icon: Icon }) => (
-            <button
-              className={`nav-item ${activeNav === label ? "active" : ""}`}
+          {navigation.map(({ label, icon: Icon, href }) => (
+            <a
+              href={href}
+              aria-current={label === "Overview" ? "page" : undefined}
+              className={`nav-item ${label === "Overview" ? "active" : ""}`}
               key={label}
-              onClick={() => { setActiveNav(label); setMobileNavOpen(false); announce(`${label} selected`); }}
+              onClick={() => setMobileNavOpen(false)}
             >
               <Icon size={19} />
               <span>{label}</span>
-            </button>
+            </a>
           ))}
         </nav>
 
@@ -131,7 +134,7 @@ export default function DashboardPage() {
 
       {mobileNavOpen && <button className="backdrop" aria-label="Close navigation" onClick={() => setMobileNavOpen(false)} />}
 
-      <main>
+      <main id="workspace-content" tabIndex={-1}>
         <header className="topbar">
           <button className="icon-button mobile-menu" aria-label="Open navigation" onClick={() => setMobileNavOpen(true)}><Menu size={21} /></button>
           <label className="search-box">
@@ -149,7 +152,7 @@ export default function DashboardPage() {
         <div className="page-content">
           <section className="page-heading">
             <div><p className="eyebrow">SYNTHETIC DATA WORKSPACE</p><h1>Good afternoon, Manya</h1><p>Here’s what’s happening across your Katabatic experiments.</p></div>
-            <button className="primary-button" onClick={() => announce("New experiment flow ready to connect")}><Plus size={18} />New experiment</button>
+            <a className="primary-button" href={workspaceUrls.datasets}><Plus size={18} />New experiment</a>
           </section>
 
           <section className="metrics-grid" aria-label="Workspace summary">
@@ -172,8 +175,8 @@ export default function DashboardPage() {
             </article>
           </section>
 
-          <section className="panel experiments-panel">
-            <div className="panel-heading"><div><h2>Recent experiments</h2><p>{query ? `${filteredExperiments.length} matching results` : "Monitor your latest synthetic data runs"}</p></div><button className="text-button" onClick={() => announce("All experiments selected")}>View all</button></div>
+          <section id="recent-experiments" className="panel experiments-panel">
+            <div className="panel-heading"><div><h2>Recent experiments</h2><p>{query ? `${filteredExperiments.length} matching results` : "Monitor your latest synthetic data runs"}</p></div><a className="text-button" href={workspaceUrls.results}>View results</a></div>
             <div className="table-wrap">
               <table>
                 <thead><tr><th>Experiment</th><th>Dataset</th><th>Model</th><th>Quality score</th><th>Status</th><th>Updated</th></tr></thead>

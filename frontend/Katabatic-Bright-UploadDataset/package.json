@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "node ../Katabatic-Manya-Dashboard/dev-workspace.mjs",
     "build": "next build --turbopack",
-    "start": "next start"
+    "start": "next start -p 3002"
   },
   "dependencies": {
     "react": "19.1.0",

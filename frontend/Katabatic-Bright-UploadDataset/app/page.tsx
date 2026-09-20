@@ -1,11 +1,12 @@
 "use client";
 
 import UploadDataset from "./components/UploadDataset";
+import { workspaceUrls } from "./navigation";
 
 export default function Home() {
-  const handleSubmit = async (file: File) => {
-    // Wired up to the real API in the next step.
-    console.log("Selected file ready to upload:", file.name);
+  const handleSubmit = () => {
+    // Frontend preview only: validation happens in UploadDataset; no file is transmitted.
+    window.location.assign(workspaceUrls.models);
   };
 
   return <UploadDataset onSubmit={handleSubmit} />;

@@ -1,12 +1,14 @@
-import './App.css'
+import WorkspaceShell from './WorkspaceShell'
+import { workspaceUrls } from './navigation'
 
 function App() {
   return (
-    <div className="results-dashboard">
+    <WorkspaceShell active="Results" title="Results dashboard">
+    <div className="results-dashboard workspace-content">
 
       <div className="dashboard-header">
         <div>
-          <p className="eyebrow">EVALUATION RESULTS</p>
+          <p className="eyebrow">EVALUATION RESULTS · SAMPLE PREVIEW</p>
           <h1>Results Dashboard</h1>
 
           <p className="subtitle">
@@ -289,9 +291,9 @@ function App() {
             Gaussian Copula
           </button>
 
-          <button className="model-tab add-run">
-            + Add completed run
-          </button>
+          <a className="model-tab add-run" href={workspaceUrls.models}>
+            + Configure another run
+          </a>
         </div>
 
         <div className="comparison-table">
@@ -412,7 +414,7 @@ function App() {
 
       <div className="run-actions">
         <button disabled>Download CSV</button>
-        <button>Retry with batch size 512</button>
+        <a href={workspaceUrls.models}>Adjust configuration</a>
       </div>
     </div>
 
@@ -429,9 +431,9 @@ function App() {
   </div>
 
   <div className="final-actions">
-    <button className="secondary-action">
+    <a className="secondary-action" href={`${workspaceUrls.dashboard.replace(/#.*$/, "")}#recent-experiments`}>
       Back to experiments
-    </button>
+    </a>
 
     <button className="primary-action">
       Download dataset
@@ -439,6 +441,7 @@ function App() {
   </div>
 </div>
     </div>
+    </WorkspaceShell>
   )
 }
 

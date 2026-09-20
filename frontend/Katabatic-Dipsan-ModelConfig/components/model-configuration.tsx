@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import WorkspaceShell from "../app/WorkspaceShell";
+import { workspaceUrls } from "../app/navigation";
 
 type FieldProps = {
   label: string;
@@ -161,10 +163,9 @@ export function ModelConfiguration() {
   const [saved, setSaved] = useState(false);
   const status = useMemo(() => saved ? "Saved just now" : "Last saved just now", [saved]);
   return (
-    <div className="app-shell">
-      <header className="topbar"><a className="brand">Katabatic</a><nav>{["Overview", "Datasets", "Models", "Experiments", "Training", "Results"].map((item) => <a className={item === "Experiments" ? "active" : ""} key={item}>{item}</a>)}</nav><div className="top-actions"><span className="saved">● All changes saved</span><button>? Docs</button><button className="notification">•</button></div></header>
-      <main>
-        <div className="page-heading"><div><span className="eyebrow">● &nbsp; EXPERIMENT SETUP</span><h1>Model Configuration</h1><p>Prepare your schema, training parameters, and safeguards before the run starts.</p></div><span className="draft">● Draft configuration</span></div>
+    <WorkspaceShell active="Models" title="Model configuration">
+      <div className="workspace-content">
+        <div className="page-heading"><div><span className="eyebrow">EXPERIMENT SETUP</span><h1>Model Configuration</h1><p>Prepare your schema, training parameters, and safeguards before the run starts.</p></div><span className="draft">● Draft configuration</span></div>
         <Workflow />
         <div className="content-grid">
           <div className="form-stack">
@@ -178,8 +179,8 @@ export function ModelConfiguration() {
           </div>
           <SideRail />
         </div>
-        <footer className="card action-bar"><button className="back">← &nbsp; Back</button><div className="action-spacer" /><span><b>{status}</b><small>Draft can be resumed later</small></span><button onClick={() => setSaved(true)} className="secondary">Save Configuration</button><button className="primary">Start Training &nbsp; →</button></footer>
-      </main>
-    </div>
+        <footer className="card action-bar"><a className="back" href={workspaceUrls.datasets}>← &nbsp; Back to dataset</a><div className="action-spacer" /><span><b>{status}</b><small>Draft can be resumed later</small></span><button onClick={() => setSaved(true)} className="secondary">Save Configuration</button><a className="primary" href={workspaceUrls.results}>Preview results &nbsp; →</a></footer>
+      </div>
+    </WorkspaceShell>
   );
 }

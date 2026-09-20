@@ -133,3 +133,15 @@ footer { padding: 21px 2px 0; display: flex; justify-content: space-between; gap
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
+
+/* Shared workspace navigation and keyboard treatment. */
+.nav-item { text-decoration: none; }
+:where(button, a, input):focus-visible { outline: 3px solid #9287ec; outline-offset: 3px; }
+@media (max-width: 760px) {
+  .sidebar { visibility: hidden; height: 100dvh; overflow-y: auto; }
+  .sidebar-open { visibility: visible; }
+}
+
+.primary-button, .panel-heading a { text-decoration: none; }
+.panel-heading a { display: inline-flex; padding: 8px 10px; font-size: .72rem; font-weight: 650; }
+#recent-experiments { scroll-margin-top: 92px; }
