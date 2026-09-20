@@ -42,13 +42,14 @@ fit(x, y, k=0, batch_size=32, epochs=10, warmup_epochs=1)
 
 ### Katabatic Implementation
 
-**Training Loop**:
+**Training Loop** (via `train()`, the pipeline-facing entry point — see
+[Model Contributions](../../../MODEL_CONTRIBUTIONS.md) for the shared `data_dir`/
+`synthetic_dir`/`artifact_state_dir` convention every model follows):
 
 ```
-10 epochs (library default):
-  Warmup ×1 epoch:   pre-train discriminator on real data
-  Adversarial ×9:    alternating generator / discriminator updates
-batch_size=32, k=0 (auto-select)
+Warmup ×1 epoch:   pre-train discriminator on real data
+Adversarial ×N-1:  alternating generator / discriminator updates
+epochs=100 (or 150 if train(..., size_category="large")), batch_size=512, k=2
 ```
 
 **Data Processing (tabular-specific)**:
@@ -60,13 +61,17 @@ batch_size=32, k=0 (auto-select)
 
 ## Hyperparameter Comparison
 
-| Parameter | Paper / Library Default | **Katabatic** |
+| Parameter | Paper / Library Default | **Katabatic `train()`** |
 |---------|---------------|---------------|
-| k | 0 (auto) | **0** |
-| epochs | 10 | **10** |
-| batch_size | 32 | **32** |
-| warmup_epochs | 1 | **1** |
-| verbose | 1 | **0** |
+| k | 0 (auto) | **2** |
+| epochs | 10 | **100** (150 for `size_category="large"`); override via `train(..., epochs=...)` or `train(..., train_epochs=...)` |
+| batch_size | 32 | **512** |
+| warmup_epochs | 1 | **1** (unchanged) |
+| verbose | 1 | **1** (unchanged) |
+
+Calling `fit()` directly (rather than through `train()`) uses the paper/library defaults shown
+in the left column, since `fit()` itself hasn't changed — only `train()`'s call to it overrides
+`k`, `epochs`, and `batch_size`.
 
 
 ***

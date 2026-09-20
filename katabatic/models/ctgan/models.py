@@ -198,14 +198,7 @@ class CTGANModel(BaseModel):
         Restores the fitted attributes, then rebuilds the torch networks and
         loads their weights separately, since LocalMLP cannot be unpickled.
         """
-        state_file = cls.ARTIFACT_STATE_FILES[0]
-        state_path = store.open_path(f"{ref.state_relpath}/{state_file}")
-
-        if not state_path.is_file():
-            raise FileNotFoundError(
-                f"No CTGAN state at {state_path}. The model must be trained "
-                f"through a pipeline that passes artifact_state_dir."
-            )
+        state_path = cls._require_state_file(store, ref)
 
         torch = _try_import("torch")
         if torch is not None:
@@ -232,32 +225,32 @@ class CTGANModel(BaseModel):
 
         return instance
 
-    def train(
+    def fit(
         self,
-        data_dir: str,
-        synthetic_dir: str | None = None,
-        *args,
-        **kwargs,
+        X: pd.DataFrame,
+        y: pd.Series | None = None,
     ) -> CTGANModel:
-        # Load data
-        train_full = os.path.join(data_dir, "train_full.csv")
-        x_path = os.path.join(data_dir, "x_train.csv")
-        y_path = os.path.join(data_dir, "y_train.csv")
-        if os.path.exists(train_full):
-            df = pd.read_csv(train_full)
-        else:
-            if not (os.path.exists(x_path) and os.path.exists(y_path)):
-                raise FileNotFoundError(
-                    f"Could not find training data in {data_dir}. Expected train_full.csv or x_train.csv/y_train.csv."
-                )
-            X = pd.read_csv(x_path)
-            y = pd.read_csv(y_path)
-            if y.shape[1] != 1:
-                raise ValueError(
-                    "y_train.csv must have exactly one column (the target)."
-                )
-            y_col = y.columns[0]
-            df = pd.concat([X, y[y_col]], axis=1)
+        """
+        Fit CTGAN on in-memory data.
+
+        Parameters
+        ----------
+        X : DataFrame
+            Training data. If `y` is omitted, `X` is treated as the complete
+            frame with the label as its last column (as CTGAN.train() builds it).
+        y : Series, optional
+            Label column to concatenate onto `X` before fitting.
+
+        Returns
+        -------
+        CTGANModel
+            self, fitted.
+        """
+        df = (
+            pd.concat([X.reset_index(drop=True), y.reset_index(drop=True)], axis=1)
+            if y is not None
+            else X
+        )
 
         # Save for fallback sampling
         self._train_df = df.copy()
@@ -426,6 +419,59 @@ class CTGANModel(BaseModel):
             # NumPy backend: skip NN training
             self.is_fitted = True
 
+        return self
+
+    def train(
+        self,
+        data_dir: str,
+        *args,
+        synthetic_dir: str | None = None,
+        artifact_state_dir: str | None = None,
+        **kwargs,
+    ) -> CTGANModel:
+        """
+        Train CTGAN using Katabatic-standard x_train.csv/y_train.csv (or a
+        train_full.csv), then generate and persist synthetic data (and
+        artifact state, if requested).
+
+        Parameters
+        ----------
+        data_dir : str
+            Directory containing train_full.csv, or x_train.csv/y_train.csv.
+        synthetic_dir : str, optional
+            Directory to write the generated x_synth.csv / y_synth.csv to.
+            Defaults to synthetic/<dataset_name>/ctgan.
+        artifact_state_dir : str, optional
+            When provided, the fitted model state is persisted here for
+            later retrieval via load_from_ref().
+
+        Returns
+        -------
+        CTGANModel
+            Trained model instance.
+        """
+        # Load data
+        train_full = os.path.join(data_dir, "train_full.csv")
+        x_path = os.path.join(data_dir, "x_train.csv")
+        y_path = os.path.join(data_dir, "y_train.csv")
+        if os.path.exists(train_full):
+            df = pd.read_csv(train_full)
+        else:
+            if not (os.path.exists(x_path) and os.path.exists(y_path)):
+                raise FileNotFoundError(
+                    f"Could not find training data in {data_dir}. Expected train_full.csv or x_train.csv/y_train.csv."
+                )
+            X = pd.read_csv(x_path)
+            y = pd.read_csv(y_path)
+            if y.shape[1] != 1:
+                raise ValueError(
+                    "y_train.csv must have exactly one column (the target)."
+                )
+            y_col = y.columns[0]
+            df = pd.concat([X, y[y_col]], axis=1)
+
+        self.fit(df)
+
         # Save outputs
         synth_dir = synthetic_dir
         if not synth_dir:
@@ -433,7 +479,7 @@ class CTGANModel(BaseModel):
             synth_dir = os.path.join("synthetic", dataset_name, "ctgan")
         os.makedirs(synth_dir, exist_ok=True)
 
-        df_s = self.sample(n=len(df))
+        df_s = self.sample(n_samples=len(df))
         label = df.columns[-1]
         x_synth = df_s[df.columns[:-1]].copy()
         y_synth = df_s[[label]].copy()
@@ -471,20 +517,27 @@ class CTGANModel(BaseModel):
             f"[CTGAN] Synthetic data saved:\n  X -> {x_path_out}\n  y -> {y_path_out}"
         )
 
-        artifact_state_dir = kwargs.get("artifact_state_dir")
-        if artifact_state_dir:
-            self._save_artifact_state(artifact_state_dir)
+        self._maybe_save_artifact_state(artifact_state_dir)
 
         return self
 
     def evaluate(self, *args, **kwargs) -> float:
+        """
+        Not implemented for CTGAN.
+
+        Use katabatic.evaluate.tstr.evaluation.TSTREvaluation (typically via
+        TrainTestSplitPipeline) for comparable, artifact-logged metrics.
+        """
         if not self.is_fitted:
             raise RuntimeError("Call train() before evaluate().")
-        return 0.0
+        raise NotImplementedError(
+            "CTGANModel.evaluate() is not implemented; use TSTREvaluation "
+            "(typically via TrainTestSplitPipeline) instead."
+        )
 
     def sample(
         self,
-        n: int | None = None,
+        n_samples: int | None = None,
         conditional: dict[str, Any] | None = None,
         *args,
         **kwargs,
@@ -498,7 +551,7 @@ class CTGANModel(BaseModel):
             if torch is None:
                 backend = "numpy"
             else:
-                batch = int(n) if n is not None else 1000
+                batch = int(n_samples) if n_samples is not None else 1000
                 self.generator.eval()
                 all_rows: list[pd.DataFrame] = []
                 with torch.no_grad():
@@ -551,8 +604,8 @@ class CTGANModel(BaseModel):
 
         # NumPy fallback
         n_rows = (
-            int(n)
-            if n is not None
+            int(n_samples)
+            if n_samples is not None
             else (len(self._train_df) if self._train_df is not None else 1000)
         )
         rows: dict[str, list] = {c.name: [] for c in self.schema}
