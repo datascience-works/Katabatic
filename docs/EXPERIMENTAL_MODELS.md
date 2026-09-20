@@ -37,9 +37,6 @@ Present in the codebase, but with no guarantee of **API stability or CI coverage
 | ------- | ------- | ------- |
 | CoDi | `codi` | See `examples/codi.ipynb` |
 | MedGAN | `medgan` | See `examples/medgan.ipynb` |
-| SMOTE | `smote` | |
-| Naive Bayes | *(none)* | |
-| SynthPop | *(none)* | |
 | TVAE-GAN | *(none)* | |
 | GMM | *(none)* | Does not subclass `Model` — implements its own `fit`/`sample`, with no `train`/`evaluate` |
 | TabKDE (updated) | *(none)* | Does not subclass `Model` |
