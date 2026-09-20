@@ -266,10 +266,17 @@ poetry run bandit -r katabatic -ll
 poetry run mypy katabatic   # optional, not yet enforced in CI
 ```
 
-CI's `lint-and-test` job runs the fast suite with coverage, and `merge-coverage` fails the build
-if combined coverage drops below 45% (see `[tool.coverage.run]` in `pyproject.toml` and
-[.github/workflows/ci.yml](.github/workflows/ci.yml)) — there's no separate per-PR minimum for
-new code.
+CI enforces coverage in three layers (see [.github/workflows/ci.yml](.github/workflows/ci.yml)):
+
+- **`lint-and-test`** enforces a 70% floor scoped to (`pipeline/`, `utils/`, `datasets/`,
+`artifacts/`, `evaluate/`, `registry.py`, `base_model.py`).
+- **`integration`** reports each model's own coverage (`katabatic/models/<model>/*`) without
+gating it. This is to avoid breaking builds as they come in.
+- **`merge-coverage`** enforces a 45% floor across the *whole* codebase, but only when the full
+  model matrix has run. A PR that only touches one model's files gets a combined coverage report,
+  just without a gate.
+
+There's no separate per-PR minimum for new code beyond the above.
 
 ## Usage Examples
 
