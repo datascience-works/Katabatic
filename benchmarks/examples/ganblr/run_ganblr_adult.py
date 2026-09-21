@@ -22,8 +22,6 @@ from runner import (
 
 from katabatic.models.ganblr.models import GANBLR  # noqa: E402
 
-# run in cpu mode(if GPU is limited)
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 logging.getLogger("pgmpy").setLevel(logging.ERROR)
 warnings.filterwarnings("ignore")
