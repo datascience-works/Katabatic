@@ -118,6 +118,13 @@ class ModelRegistry:
             "extra": "privtree",
             "supported": True,
         },
+        "synthpop": {
+            "module": "katabatic.models.synthpop.models",
+            "class": "SynthPop",
+            "dependencies": ["pandas"],
+            "extra": "synthpop",
+            "supported": True,
+        },
         "naivebayes": {
             "module": "katabatic.models.naivebayes.models",
             "class": "NaiveBayesModel",

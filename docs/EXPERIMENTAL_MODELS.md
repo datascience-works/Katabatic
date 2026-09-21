@@ -15,6 +15,7 @@ Katabatic ships multiple generative model implementations. Only a subset is **of
 | MST | `pip install katabatic[mst]` | Yes (artifact pipeline integration test) |
 | PrivTree | `pip install katabatic[privtree]` | Yes (artifact pipeline integration test) |
 | ARF | `pip install katabatic[arf]` | Yes (artifact pipeline integration test) |
+| SynthPop | `pip install katabatic[synthpop]` | Yes (artifact pipeline integration test; also requires R + CRAN `synthpop` packages) |
 | Naive Bayes | `pip install katabatic[naivebayes]` | Yes (artifact pipeline integration test) |
 | REaLTabFormer | `pip install katabatic[realtabformer]` | Yes (artifact pipeline integration test) |
 
@@ -37,7 +38,6 @@ Present in the codebase, but with no guarantee of **API stability or CI coverage
 | ------- | ------- | ------- |
 | CoDi | `codi` | See `examples/codi.ipynb` |
 | MedGAN | `medgan` | See `examples/medgan.ipynb` |
-| SynthPop | *(none)* | |
 | TVAE-GAN | *(none)* | |
 | GMM | *(none)* | Does not subclass `Model` — implements its own `fit`/`sample`, with no `train`/`evaluate` |
 | TabKDE (updated) | *(none)* | Does not subclass `Model` |

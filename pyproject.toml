@@ -59,6 +59,7 @@ pategan = [
 ]
 privtree = []
 smote = ["imbalanced-learn==0.14.2"]
+synthpop = []
 mst = [
     "smartnoise-synth==1.0.5",
     "opendp>=0.14.1,<0.15",
@@ -112,7 +113,6 @@ omit = [
     "katabatic/models/codi/*",
     "katabatic/models/gmm/*",
     "katabatic/models/medgan/*",
-    "katabatic/models/synthpop/*",
     "katabatic/models/tabddpm/*",
     "katabatic/models/tabkde_updated/*",
     "katabatic/models/tvaegan/*",
@@ -151,6 +151,7 @@ markers = [
     "mst: requires mst extra",
     "privtree: requires privtree extra",
     "arf: requires arf extra",
+    "synthpop: requires synthpop extra (and R + CRAN synthpop packages)",
     "naivebayes: requires naivebayes extra",
     "realtabformer: requires realtabformer extra",
     "forked: run test in an isolated forked process (pytest-forked)",

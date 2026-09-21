@@ -159,6 +159,9 @@ jobs:
             arf:
               - 'katabatic/models/arf/**'
               - 'tests/test_integration_arf.py'
+            synthpop:
+              - 'katabatic/models/synthpop/**'
+              - 'tests/test_integration_synthpop.py'
             naivebayes:
               - 'katabatic/models/naivebayes/**'
               - 'tests/test_integration_naivebayes.py'
@@ -179,6 +182,7 @@ jobs:
             {"model": "mst", "torch": false},
             {"model": "privtree", "torch": false},
             {"model": "arf", "torch": false},
+            {"model": "synthpop", "torch": false, "r": true},
             {"model": "naivebayes", "torch": false},
             {"model": "realtabformer", "torch": true}
           ]'
@@ -221,6 +225,20 @@ jobs:
 
       - name: Install Poetry
         run: pip install poetry==${{ env.POETRY_VERSION }}
+
+      - name: Cache R library
+        if: matrix.r
+        uses: actions/cache@v6
+        with:
+          path: /usr/lib/R/site-library
+          key: r-synthpop-${{ runner.os }}
+
+      - name: Install R and the synthpop package
+        if: matrix.r
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y r-base
+          sudo Rscript -e "if (!requireNamespace('synthpop', quietly = TRUE)) install.packages('synthpop', repos='https://cloud.r-project.org/')"
 
       - name: Pre-install CPU torch
         if: matrix.torch
