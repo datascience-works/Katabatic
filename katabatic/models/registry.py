@@ -59,7 +59,7 @@ class ModelRegistry:
             "class": "REaLTabFormerModel",
             "dependencies": ["realtabformer", "transformers", "torch"],
             "extra": "realtabformer",
-            "supported": False,
+            "supported": True,
         },
         "tabsyn": {
             "module": "katabatic.models.tabsyn.models",
@@ -95,6 +95,14 @@ class ModelRegistry:
             "dependencies": ["torch", "sklearn"],
             "extra": "ctgan",
             "supported": True,
+        },
+        "kde": {
+            "module": "katabatic.models.kde.models",
+            "class": "KDESynthesizer",
+            # scikit-learn is already a core dependency; no extra needed.
+            "dependencies": ["sklearn"],
+            "extra": "kde",
+            "supported": False,
         },
         "arf": {
             "module": "katabatic.models.arf.models",

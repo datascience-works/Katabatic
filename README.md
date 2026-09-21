@@ -69,6 +69,7 @@ Or install directly with Poetry / pip — useful for installing several extras a
 | ARF (supported) | `pip install katabatic[arf]` or `poetry install -E arf` |
 | SynthPop (supported, requires R) | `pip install katabatic[synthpop]` or `poetry install -E synthpop` — also needs R + CRAN `synthpop` packages, see [katabatic/models/synthpop/README.md](katabatic/models/synthpop/README.md) |
 | NaiveBayes (supported) | `pip install katabatic[naivebayes]` or `poetry install -E naivebayes` |
+| REaLTabFormer (supported) | `pip install katabatic[realtabformer]` or `poetry install -E realtabformer` |
 | TSTR + XGBoost | `pip install katabatic[eval]` or `poetry install -E eval` |
 | Development | `poetry install --with dev` |
 | All optional deps | `pip install katabatic[all]` |

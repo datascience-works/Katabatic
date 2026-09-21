@@ -17,6 +17,7 @@ Katabatic ships multiple generative model implementations. Only a subset is **of
 | ARF | `pip install katabatic[arf]` | Yes (artifact pipeline integration test) |
 | SynthPop | `pip install katabatic[synthpop]` | Yes (artifact pipeline integration test; also requires R + CRAN `synthpop` packages) |
 | Naive Bayes | `pip install katabatic[naivebayes]` | Yes (artifact pipeline integration test) |
+| REaLTabFormer | `pip install katabatic[realtabformer]` | Yes (artifact pipeline integration test) |
 
 These models are listed in `ModelRegistry` with `supported: True`, and `tests/test_model_registry.py::test_supported_models_list` pins this exact set. Use the artifact pipeline documented in [GANBLR_FLOW.md](../GANBLR_FLOW.md) and the README quick start.
 

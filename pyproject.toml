@@ -49,6 +49,7 @@ great = [
 realtabformer = [
     "realtabformer==0.2.4",
     "transformers>=5.0.0,<6.0.0",
+    "torch>=2.14.0,<3.0.0",
 ]
 medgan = ["torch>=2.14.0,<3.0.0"]
 naivebayes = []
@@ -113,7 +114,6 @@ omit = [
     "katabatic/models/gmm/*",
     "katabatic/models/medgan/*",
     "katabatic/models/tabddpm/*",
-    "katabatic/models/realtabformer/*",
     "katabatic/models/tabkde_updated/*",
     "katabatic/models/tvaegan/*",
 
@@ -145,6 +145,7 @@ markers = [
     "great: requires great extra",
     "ctgan: requires ctgan extra",
     "pategan: requires pategan extra",
+    "kde: core deps only, no extra required",
     "tabsyn: requires tabsyn extra",
     "smote: requires smote extra",
     "mst: requires mst extra",
@@ -152,6 +153,7 @@ markers = [
     "arf: requires arf extra",
     "synthpop: requires synthpop extra (and R + CRAN synthpop packages)",
     "naivebayes: requires naivebayes extra",
+    "realtabformer: requires realtabformer extra",
     "forked: run test in an isolated forked process (pytest-forked)",
 ]
 
