@@ -124,23 +124,28 @@ DROP_NAN = False  # drop rows with any NaN in the output
 # SEED = config.seed  # generation seed for reproducibility
 
 config = RunConfig(
-    dataset_name="magic",
+    dataset_name="adult",
     model_name="great",
     categorical_cols=[
-        "fLength",
-        "fWidth",
-        "fSize",
-        "fConc",
-        "fConc1",
-        "fAsym",
-        "fM3Long",
-        "fM3Trans",
-        "fAlpha",
-        "fDist",
+        "workclass",
+        "education",
+        "education-num",
+        "marital-status",
+        "occupation",
+        "relationship",
+        "race",
+        "sex",
+        "native-country",
     ],
-    continuous_cols=[],
+    continuous_cols=["age", "fnlwgt", "capital-gain", "capital-loss", "hours-per-week"],
     target_col_raw="class",
-    constraints={},
+    constraints={
+        "age": (17, 90),
+        "fnlwgt": (12285, 1490400),
+        "capital-gain": (0, 99999),
+        "capital-loss": (0, 4356),
+        "hours-per-week": (1, 99),
+    },
 )
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)
