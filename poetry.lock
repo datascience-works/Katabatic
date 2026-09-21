@@ -7173,10 +7173,11 @@ pategan = ["tensorflow", "tensorflow-io"]
 privtree = []
 realtabformer = ["realtabformer", "torch", "transformers"]
 smote = ["imbalanced-learn"]
+synthpop = []
 tabddpm = ["category-encoders", "rtdl_revisiting_models", "torch"]
 tabsyn = ["category-encoders", "tomli", "tomli-w", "torch", "tqdm"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.12"
-content-hash = "033bb7559faa9582b8e2b8d1b41bdeb16c3f53b14209283fdeac6c0f0c4cd85d"
+content-hash = "2bf398e1d04764d2f97f7ecf848a5d28008603f71e895ce42804d5d719d9df11"
