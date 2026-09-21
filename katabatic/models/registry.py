@@ -59,7 +59,7 @@ class ModelRegistry:
             "class": "REaLTabFormerModel",
             "dependencies": ["realtabformer", "transformers", "torch"],
             "extra": "realtabformer",
-            "supported": False,
+            "supported": True,
         },
         "tabsyn": {
             "module": "katabatic.models.tabsyn.models",
