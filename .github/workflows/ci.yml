@@ -230,7 +230,7 @@ jobs:
         if: matrix.r
         uses: actions/cache@v6
         with:
-          path: /usr/lib/R/site-library
+          path: /usr/local/lib/R/site-library
           key: r-synthpop-${{ runner.os }}
 
       - name: Install R and the synthpop package
