@@ -2,6 +2,8 @@ import os
 import sys
 import time
 
+import torch
+
 sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
@@ -37,7 +39,7 @@ train_df, test_df, target_col, paths = preprocess_and_split(config)
 EPOCHS = 5
 BATCH_SIZE = 8
 RANDOM_STATE = 1029
-DEVICE = "cpu"
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"  # auto-detect GPU
 N_CRITIC = 5
 
 print("\n" + "=" * 60)
