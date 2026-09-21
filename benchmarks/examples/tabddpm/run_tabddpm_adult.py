@@ -3,17 +3,12 @@ import sys
 
 sys.path.insert(
     0,
-    os.path.dirname(
-        os.path.dirname(
-            os.path.dirname(os.path.abspath(__file__))
-        )
-    ),
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
 )
 
 from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
 from katabatic.models.tabddpm.models import Tabddpm
-
 
 # Adult dataset configuration
 config = RunConfig(
@@ -93,15 +88,10 @@ if "label" in synthetic_df.columns and target_col not in synthetic_df.columns:
     synthetic_df = synthetic_df.rename(columns={"label": target_col})
 
 # Do not silently drop columns when saving synthetic data.
-missing_cols = [
-    col for col in train_df.columns
-    if col not in synthetic_df.columns
-]
+missing_cols = [col for col in train_df.columns if col not in synthetic_df.columns]
 
 if missing_cols:
-    raise ValueError(
-        f"TabDDPM output is missing columns: {missing_cols}"
-    )
+    raise ValueError(f"TabDDPM output is missing columns: {missing_cols}")
 
 # Match the training dataset's column order.
 synthetic_df = synthetic_df[train_df.columns]
