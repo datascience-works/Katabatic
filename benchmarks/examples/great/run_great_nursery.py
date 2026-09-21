@@ -59,7 +59,7 @@ def get_runtime_summary(
         model_name
         + " has taken "
         + str(time_diff)
-        + " seconds to run the adult "
+        + " seconds to run the "
         + dataset_name
         + " dataset."
     )
