@@ -145,6 +145,7 @@ markers = [
     "great: requires great extra",
     "ctgan: requires ctgan extra",
     "pategan: requires pategan extra",
+    "kde: core deps only, no extra required",
     "tabsyn: requires tabsyn extra",
     "smote: requires smote extra",
     "mst: requires mst extra",
