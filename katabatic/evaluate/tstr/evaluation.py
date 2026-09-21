@@ -5,11 +5,12 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 from sklearn.neural_network import MLPClassifier
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 try:
     from xgboost import XGBClassifier
@@ -89,17 +90,45 @@ class TSTREvaluation(Evaluation):
         )
         return inst, eval_ref
 
+    @staticmethod
+    def _encode_features(
+        x_train: pd.DataFrame, x_test: pd.DataFrame
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """
+        One-hot encode categorical columns, passing numeric columns through unchanged, fitting only on x_train.
+        """
+        categorical_cols = x_train.select_dtypes(
+            include=["object", "category", "string"]
+        ).columns.tolist()
+        if not categorical_cols:
+            return (
+                np.asarray(x_train, dtype=float),
+                np.asarray(x_test, dtype=float),
+            )
+
+        encoder = ColumnTransformer(
+            transformers=[
+                ("cat", OneHotEncoder(handle_unknown="ignore"), categorical_cols),
+            ],
+            remainder="passthrough",
+        )
+        x_train_enc = encoder.fit_transform(x_train)
+        x_test_enc = encoder.transform(x_test)
+        if hasattr(x_train_enc, "toarray"):
+            x_train_enc = x_train_enc.toarray()
+        if hasattr(x_test_enc, "toarray"):
+            x_test_enc = x_test_enc.toarray()
+        return np.asarray(x_train_enc, dtype=float), np.asarray(x_test_enc, dtype=float)
+
     def evaluate(self):
         results = {}
 
-        # Convert to numpy array to prevent feature name conflict
-        x_train = np.asarray(self.x_train)
-        x_test = np.asarray(self.x_test)
-
-        if x_train.shape[1] != x_test.shape[1]:
+        if self.x_train.shape[1] != self.x_test.shape[1]:
             raise ValueError(
-                f"TSTR feature-count mismatch. Synthetic has {x_train.shape[1]} columns while real test has {x_test.shape[1]}."
+                f"TSTR feature-count mismatch. Synthetic has {self.x_train.shape[1]} columns while real test has {self.x_test.shape[1]}."
             )
+
+        x_train, x_test = self._encode_features(self.x_train, self.x_test)
 
         # Calculate class imbalance ratio for XGBoost
         num_neg = np.sum(self.y_train == 0)

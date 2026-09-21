@@ -5,8 +5,6 @@ artifacts/
 benchmarks/processed/
 benchmarks/results/
 benchmarks/splits/
-katabatic/datasets/
-datasets/
 raw_data/
 preprocessed_data/
 sample_data/
