@@ -105,17 +105,17 @@ def get_system_run_details() -> None:
 config = RunConfig(
     dataset_name="adult",
     model_name="codi",
-    # educational-num is ordinal but treated as categorical for codi
+    # education-num is ordinal but treated as categorical for codi
     # (discrete)
     categorical_cols=[
         "workclass",
         "education",
-        "educational-num",
+        "education-num",
         "marital-status",
         "occupation",
         "relationship",
         "race",
-        "gender",
+        "sex",
         "native-country",
     ],
     continuous_cols=[
