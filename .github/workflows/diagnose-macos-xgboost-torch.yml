@@ -1,0 +1,98 @@
+name: "Diagnostic: macOS xgboost+torch segfault"
+
+# One-off diagnostic for a reported macOS (Apple Silicon) segfault: pytest
+# collecting tests/test_integration_arf.py before tests/test_integration_ctgan.py
+# loads xgboost before torch, which is a documented cause of a native crash on
+# macOS from conflicting OpenMP (libomp) runtimes -- see
+# https://github.com/dmlc/xgboost/issues/11500. tests/conftest.py now
+# force-imports torch first to guard against this regardless of collection
+# order; this workflow A/B tests that fix on real Apple Silicon hardware
+# (macos-latest), which this repo's other CI never runs on.
+#
+# Scoped to exactly the two test files that reproduce the bad import order --
+# not the full suite -- so this stays fast and doesn't drag in unrelated
+# platform-specific issues (e.g. tensorflow/transformers) that would muddy
+# the result. Manual-trigger only; not part of regular CI. Delete this
+# workflow once the issue is resolved/confirmed.
+#
+# Run from the Actions tab ("Run workflow"), or: gh workflow run diagnose-macos-xgboost-torch.yml
+
+on:
+  workflow_dispatch:
+
+env:
+  POETRY_VERSION: "2.4.3"
+
+jobs:
+  with-fix:
+    name: "With fix (conftest.py torch-first import, as committed)"
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - run: pip install poetry==${{ env.POETRY_VERSION }}
+
+      - run: poetry install --with dev -E ctgan -E eval
+
+      - name: Show installed versions
+        run: |
+          poetry run python -c "
+          import torch, xgboost
+          print('torch:', torch.__version__)
+          print('xgboost:', xgboost.__version__)
+          "
+
+      - name: Confirm conftest.py's fix is in place
+        run: grep -q "import torch" tests/conftest.py
+
+      - name: Run the exact combo that reproduced the issue (order matters)
+        run: poetry run pytest -v tests/test_integration_arf.py tests/test_integration_ctgan.py
+
+  without-fix:
+    name: "Without fix (torch-first import stripped out)"
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - run: pip install poetry==${{ env.POETRY_VERSION }}
+
+      - run: poetry install --with dev -E ctgan -E eval
+
+      - name: Revert conftest.py to the pre-fix state
+        run: |
+          python3 - <<'EOF'
+          import re
+
+          path = "tests/conftest.py"
+          with open(path) as f:
+              src = f.read()
+
+          pattern = (
+              "\ntry:\n"
+              "    import torch  # noqa: F401\n"
+              "except ImportError:\n"
+              "    pass\n"
+          )
+          if pattern not in src:
+              raise SystemExit(
+                  "Expected fix block not found in tests/conftest.py -- "
+                  "it may have been edited since this workflow was written; "
+                  "update the pattern above to match."
+              )
+          src = src.replace(pattern, "\n", 1)
+
+          with open(path, "w") as f:
+              f.write(src)
+          EOF
+          git diff tests/conftest.py
+
+      - name: Run the exact combo that reproduced the issue (order matters)
+        run: poetry run pytest -v tests/test_integration_arf.py tests/test_integration_ctgan.py
