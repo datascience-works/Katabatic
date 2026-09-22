@@ -1,6 +1,16 @@
+import os
+
 import pandas as pd
 
 from katabatic.utils.column_types import is_numerical
+
+__all__ = [
+    "fill_categorical_nulls",
+    "load_and_clean_data",
+    "preprocess_dataset",
+    "preprocess_tabular",
+    "process_numerical_columns",
+]
 
 
 def load_and_clean_data(file_path: str) -> pd.DataFrame:
@@ -90,5 +100,11 @@ def preprocess_dataset(
     y = y.fillna("Missing").astype(str).str.strip()
 
     df_processed = pd.concat([X, y], axis=1)
+    parent_dir = os.path.dirname(output_path)
+    if parent_dir:
+        os.makedirs(parent_dir, exist_ok=True)
     df_processed.to_csv(output_path, index=False)
     print(f"Saved preprocessed dataset to: {output_path}")
+
+
+preprocess_tabular = preprocess_dataset

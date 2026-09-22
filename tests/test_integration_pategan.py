@@ -5,14 +5,19 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from katabatic.artifacts import LocalArtifactStore
-from katabatic.artifacts.refs import ModelRef
-from katabatic.models.pategan.models import PATEGAN
-from katabatic.models.pategan.utils import DataTransformer, save_metadata
-from katabatic.models.registry import ModelRegistry
+from tests.conftest import require_backend
 
-tensorflow = pytest.importorskip("tensorflow")
+tensorflow = require_backend("tensorflow", "compat")
 tf = tensorflow.compat.v1
+
+from katabatic.artifacts import LocalArtifactStore  # noqa: E402
+from katabatic.artifacts.refs import ModelRef  # noqa: E402
+from katabatic.models.pategan.models import PATEGAN  # noqa: E402
+from katabatic.models.pategan.utils import (  # noqa: E402
+    DataTransformer,
+    save_metadata,
+)
+from katabatic.models.registry import ModelRegistry  # noqa: E402
 
 
 @pytest.mark.integration
@@ -97,5 +102,9 @@ def test_pategan_load_from_ref(tmp_path):
     loaded = PATEGAN.load_from_ref(store, ref)
 
     assert isinstance(loaded, PATEGAN)
-    assert loaded._is_fitted is True
+    assert loaded.is_fitted is True
     assert loaded.transformer.column_order == transformer.column_order
+
+    out = loaded.sample(5)
+    assert len(out) == 5
+    assert list(out.columns) == list(transformer.column_order)

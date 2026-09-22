@@ -1,4 +1,5 @@
 import os
+import warnings
 from typing import Any
 
 import numpy as np
@@ -77,6 +78,9 @@ class PATEGAN(Model):
         self._is_built = False
         self._X_dim = None
         self._h_dim = None
+        self._n_train_rows: int | None = None
+        self._y_label_encoder = None
+        self._target_col_name: str | None = None
 
     @classmethod
     def get_required_dependencies(cls) -> list[str]:
@@ -135,7 +139,7 @@ class PATEGAN(Model):
 
         from .utils import load_metadata, reconstruct_transformer
 
-        state_dir = str(store.open_path(ref.state_relpath))
+        state_dir = str(cls._require_state_dir(store, ref))
         metadata_path = os.path.join(state_dir, "metadata.json")
         checkpoint_path = os.path.join(state_dir, "pategan.ckpt")
 
@@ -158,15 +162,61 @@ class PATEGAN(Model):
 
         model.transformer = reconstruct_transformer(metadata)
 
+        model._target_col_name = metadata.get("target_col_name")
+        target_le_info = metadata.get("target_label_encoder")
+        if target_le_info is not None:
+            from sklearn.preprocessing import LabelEncoder
+
+            target_le = LabelEncoder()
+            target_le.classes_ = np.array(target_le_info["classes"])
+            model._y_label_encoder = target_le
+
         x_dim = len(model.transformer.column_order)
         model._build_model(x_dim)
 
         saver = tf.train.Saver()
         saver.restore(model._sess, checkpoint_path)
 
-        model._is_fitted = True
+        model.is_fitted = True
 
         return model
+
+    def _save_artifact_state(self, artifact_state_dir: str) -> None:
+        """
+        Persist fitted state so the model can be rebuilt by load_from_ref().
+
+        Called from train() when the pipeline injects artifact_state_dir, which
+        it does for any model class declaring ARTIFACT_STATE_FILES.
+        """
+        import tensorflow.compat.v1 as tf
+
+        os.makedirs(artifact_state_dir, exist_ok=True)
+
+        training_config = {
+            "niter": self.niter,
+            "batch_size": self.batch_size,
+            "learning_rate": self.learning_rate,
+            "lambda_gp": self.lambda_gp,
+            "z_dim": self.z_dim,
+        }
+        privacy_config = {
+            "epsilon": self.epsilon,
+            "delta": self.delta,
+            "num_teachers": self.num_teachers,
+            "lambda_noise": self.privacy_mechanism.lambda_noise,
+        }
+        save_metadata(
+            os.path.join(artifact_state_dir, "metadata.json"),
+            self.transformer,
+            training_config,
+            privacy_config,
+            self.random_state,
+            target_col_name=self._target_col_name,
+            target_label_encoder=self._y_label_encoder,
+        )
+
+        saver = tf.train.Saver()
+        saver.save(self._sess, os.path.join(artifact_state_dir, "pategan.ckpt"))
 
     def _build_model(self, X_dim: int):
         """
@@ -308,6 +358,7 @@ class PATEGAN(Model):
 
         # Training loop
         n_samples = len(X_encoded)
+        self._n_train_rows = n_samples
 
         if verbose:
             print(f"Training PATE-GAN with ε={self.epsilon}, δ={self.delta}")
@@ -354,8 +405,7 @@ class PATEGAN(Model):
                 M_entire = np.concatenate((M_real, M_fake), 0)
 
                 # Add Gaussian noise for privacy
-                noise = self.privacy_mechanism.add_gaussian_noise(M_entire)
-                M_entire = M_entire + noise
+                M_entire = self.privacy_mechanism.add_gaussian_noise(M_entire)
                 M_entire = (M_entire > 0.5).astype(float)
                 M_mb = np.reshape(M_entire, (2 * self.batch_size, 1))
 
@@ -386,12 +436,15 @@ class PATEGAN(Model):
         self.is_fitted = True
         return self
 
-    def sample(self, n: int, conditional: dict[str, Any] | None = None) -> pd.DataFrame:
+    def sample(
+        self, n_samples: int | None = None, conditional: dict[str, Any] | None = None
+    ) -> pd.DataFrame:
         """
         Generate synthetic samples.
 
         Args:
-            n: Number of samples to generate
+            n_samples: Number of rows to generate. Defaults to the number of
+                rows the model was trained on.
             conditional: Not implemented (for future use)
 
         Returns:
@@ -399,6 +452,8 @@ class PATEGAN(Model):
         """
         if not self.is_fitted:
             raise RuntimeError("Model must be fitted before sampling")
+
+        n = n_samples if n_samples is not None else self._n_train_rows
 
         if conditional is not None:
             print("Warning: Conditional sampling not yet implemented for PATE-GAN")
@@ -421,21 +476,39 @@ class PATEGAN(Model):
         # Decode back to original feature space
         df_synth = self.transformer.inverse_transform(X_synth_all)
 
+        if (
+            self._y_label_encoder is not None
+            and self._target_col_name in df_synth.columns
+        ):
+            n_classes = len(self._y_label_encoder.classes_)
+            int_vals = np.round(df_synth[self._target_col_name]).astype(int)
+            int_vals = np.clip(int_vals, 0, n_classes - 1)
+            df_synth[self._target_col_name] = self._y_label_encoder.inverse_transform(
+                int_vals
+            )
+
         return df_synth
 
     def train(
-        self, dataset_dir: str, synthetic_dir: str | None = None, **kwargs
+        self,
+        data_dir: str,
+        *args,
+        synthetic_dir: str | None = None,
+        artifact_state_dir: str | None = None,
+        **kwargs,
     ) -> "PATEGAN":
         """
         Train PATE-GAN following Katabatic pipeline contract.
 
-        Reads x_train.csv and y_train.csv from dataset_dir,
+        Reads x_train.csv and y_train.csv from data_dir,
         trains the model, generates synthetic data, and writes
         x_synth.csv, y_synth.csv, and metadata.json to synthetic_dir.
 
         Args:
-            dataset_dir: Directory containing x_train.csv and y_train.csv
+            data_dir: Directory containing x_train.csv and y_train.csv
             synthetic_dir: Directory to save synthetic data (optional)
+            artifact_state_dir: When provided, the fitted model state is
+                persisted here for later retrieval via load_from_ref().
             **kwargs: Additional training parameters (epsilon, delta, num_teachers, niter, batch_size, etc.)
 
         Returns:
@@ -463,35 +536,36 @@ class PATEGAN(Model):
             self.random_state = kwargs.pop("random_state")
 
         # Read training data
-        x_train_path = os.path.join(dataset_dir, "x_train.csv")
-        y_train_path = os.path.join(dataset_dir, "y_train.csv")
+        x_train_path = os.path.join(data_dir, "x_train.csv")
+        y_train_path = os.path.join(data_dir, "y_train.csv")
 
         if not os.path.exists(x_train_path):
-            raise FileNotFoundError(f"x_train.csv not found in {dataset_dir}")
+            raise FileNotFoundError(f"x_train.csv not found in {data_dir}")
 
         X_train = pd.read_csv(x_train_path)
 
         # y_train is optional
         y_train = None
-        y_label_encoder = None
         if os.path.exists(y_train_path):
             y_train = pd.read_csv(y_train_path)
             if isinstance(y_train, pd.DataFrame) and len(y_train.columns) == 1:
                 y_train = y_train.iloc[:, 0]
 
-            # Remap y_train classes to consecutive integers [0, 1, 2, ...]
-            # This is required for ML models like XGBoost which expect consecutive classes
+            # Remap y_train classes to consecutive integers [0, 1, 2, ...] for
+            # training (required for ML models like XGBoost which expect consecutive
+            # classes). The encoder is kept on self so sample() can invert this back
+            # to the original label space. See sample()'s docstring contract.
             from sklearn.preprocessing import LabelEncoder
 
-            y_label_encoder = LabelEncoder()
-            original_classes = y_train.unique()
-            y_train_remapped = y_label_encoder.fit_transform(y_train)
-            y_train = pd.Series(
-                y_train_remapped,
-                name=y_train.name if hasattr(y_train, "name") else "target",
+            self._target_col_name = (
+                y_train.name if hasattr(y_train, "name") else "target"
             )
+            self._y_label_encoder = LabelEncoder()
+            original_classes = y_train.unique()
+            y_train_remapped = self._y_label_encoder.fit_transform(y_train)
+            y_train = pd.Series(y_train_remapped, name=self._target_col_name)
             print(
-                f"Remapped y classes: {sorted(original_classes)} -> {sorted(y_label_encoder.transform(original_classes))}"
+                f"Remapped y classes: {sorted(original_classes)} -> {sorted(self._y_label_encoder.transform(original_classes))}"
             )
 
         print(f"Loaded training data: X shape={X_train.shape}", end="")
@@ -520,35 +594,29 @@ class PATEGAN(Model):
             x_synth = df_synth.drop(columns=target_cols)
             y_synth = df_synth[target_cols]
 
-            # Ensure all training classes are present in synthetic data (robustness for TSTR)
+            # Ensure all training classes are present in synthetic data (robustness
+            # for TSTR). sample() returns the target in its original label space
+            # (see sample()'s docstring), so compare against the original classes,
+            # not the internal remapped-integer ones used only for training.
             y_col = target_cols[0]
-            df_train = pd.concat(
-                [
-                    X_train.copy(),
-                    (
-                        y_train
-                        if isinstance(y_train, pd.DataFrame)
-                        else y_train.to_frame(name=y_col)
-                    ),
-                ],
-                axis=1,
-            )
-
-            unique_train = np.unique(df_train[y_col].values)
+            unique_train = np.unique(original_classes)
             unique_synth = np.unique(y_synth[y_col].values)
             missing_classes = set(unique_train) - set(unique_synth)
 
             if missing_classes:
-                print(
-                    f"[PATEGAN] Adding {len(missing_classes)} dummy samples to cover classes: {sorted(missing_classes)}"
+                # Cover missing classes by relabelling generated rows.
+                warnings.warn(
+                    f"PATE-GAN produced no samples for classes {sorted(missing_classes)}; "
+                    f"relabelling generated rows to cover them. Treat utility metrics "
+                    f"for these classes with caution.",
+                    stacklevel=2,
                 )
-                for cls in missing_classes:
-                    idx = np.where(df_train[y_col].values == cls)[0]
-                    if idx.size == 0:
-                        continue
-                    row = df_train.iloc[idx[0] : idx[0] + 1]
-                    x_dummy = row.drop(columns=[y_col])
-                    y_dummy = row[[y_col]]
+                for offset, cls in enumerate(sorted(missing_classes)):
+                    if x_synth.empty:
+                        break
+                    pos = offset % len(x_synth)
+                    x_dummy = x_synth.iloc[pos : pos + 1].copy()
+                    y_dummy = pd.DataFrame({y_col: [cls]})
                     x_synth = pd.concat([x_synth, x_dummy], ignore_index=True)
                     y_synth = pd.concat([y_synth, y_dummy], ignore_index=True)
 
@@ -561,54 +629,16 @@ class PATEGAN(Model):
                         f"[PATEGAN] Forced presence of a second class: {alt_classes[0]}"
                     )
 
-            # Cast to integers to ensure proper class labels and discrete features
+            # Cast feature columns to integers where they round-trip cleanly;
+            # leave the target column in its original dtype (may be non-numeric).
             for col in x_synth.columns:
                 try:
                     x_synth[col] = x_synth[col].astype(int)
                 except Exception:
                     pass
-            y_synth[y_col] = y_synth[y_col].astype(int)
-
-            # y_synth already has remapped classes [0, 1, 2, ...] since model was trained on remapped data
-            # This is what evaluation expects
         else:
             x_synth = df_synth
             y_synth = None
-
-        # Also remap y_test.csv to match the synthetic data's class encoding
-        # Get real_test_dir from kwargs (passed by pipeline)
-        real_test_dir = kwargs.get("real_test_dir")
-        if y_label_encoder is not None and real_test_dir is not None:
-            y_test_path = os.path.join(real_test_dir, "y_test.csv")
-            if os.path.exists(y_test_path):
-                y_test = pd.read_csv(y_test_path)
-                if isinstance(y_test, pd.DataFrame) and len(y_test.columns) == 1:
-                    y_test = y_test.iloc[:, 0]
-
-                # Only keep test samples with classes seen in training
-                test_mask = y_test.isin(y_label_encoder.classes_)
-                if not test_mask.all():
-                    print(
-                        f"Warning: Filtering {(~test_mask).sum()} test samples with unseen classes"
-                    )
-                    # Also filter x_test
-                    x_test_path = os.path.join(real_test_dir, "x_test.csv")
-                    if os.path.exists(x_test_path):
-                        x_test = pd.read_csv(x_test_path)
-                        x_test = x_test[test_mask]
-                        x_test.to_csv(x_test_path, index=False)
-                    y_test = y_test[test_mask]
-
-                # Transform y_test with same encoder
-                y_test_remapped = y_label_encoder.transform(y_test)
-                y_test = pd.DataFrame(
-                    y_test_remapped,
-                    columns=y_test.columns
-                    if isinstance(y_test, pd.DataFrame)
-                    else [y_test.name],
-                )
-                y_test.to_csv(y_test_path, index=False)
-                print("Remapped y_test.csv to match synthetic data encoding")
 
         # Save synthetic data
         if synthetic_dir is not None:
@@ -644,36 +674,14 @@ class PATEGAN(Model):
                 training_config,
                 privacy_config,
                 self.random_state,
+                target_col_name=self._target_col_name,
+                target_label_encoder=self._y_label_encoder,
             )
             print(f"Saved metadata.json to {metadata_path}")
 
-            artifact_state_dir = kwargs.get("artifact_state_dir")
+        self._maybe_save_artifact_state(artifact_state_dir)
 
-            if artifact_state_dir:
-                os.makedirs(artifact_state_dir, exist_ok=True)
-
-                state_metadata_path = os.path.join(
-                    artifact_state_dir,
-                    "metadata.json",
-                )
-
-                save_metadata(
-                    state_metadata_path,
-                    self.transformer,
-                    training_config,
-                    privacy_config,
-                    self.random_state,
-                )
-
-                import tensorflow.compat.v1 as tf
-
-                saver = tf.train.Saver()
-                saver.save(
-                    self._sess,
-                    os.path.join(artifact_state_dir, "pategan.ckpt"),
-                )
-
-            return self
+        return self
 
     def evaluate(
         self,
