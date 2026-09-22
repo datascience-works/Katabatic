@@ -170,9 +170,11 @@ class DataPrep:
                     df_sample[column] = df_sample[column].apply(lambda x: np.exp(x))
                 elif lower == 0:
                     df_sample[column] = df_sample[column].apply(
-                        lambda x: np.ceil(np.exp(x) - eps)
-                        if (np.exp(x) - eps) < 0
-                        else (np.exp(x) - eps)
+                        lambda x: (
+                            np.ceil(np.exp(x) - eps)
+                            if (np.exp(x) - eps) < 0
+                            else (np.exp(x) - eps)
+                        )
                     )
                 else:
                     df_sample[column] = df_sample[column].apply(
