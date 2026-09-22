@@ -8,6 +8,11 @@ import importlib.util
 import pandas as pd
 import pytest
 
+try:
+    import torch  # noqa: F401
+except ImportError:
+    pass
+
 
 def require_backend(module: str, probe: str) -> object:
     """Skip the calling module unless ``module`` is a real, usable install.
