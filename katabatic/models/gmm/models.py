@@ -2,15 +2,20 @@
 
 from __future__ import annotations
 
+import os
+
 import numpy as np
 import pandas as pd
+from scipy.stats import ks_2samp
 from sklearn.mixture import GaussianMixture
 from sklearn.preprocessing import StandardScaler
+
+from katabatic.models.base_model import Model
 
 from .utils import GMMUtilsMixin
 
 
-class GMMModel(GMMUtilsMixin):
+class GMMModel(Model, GMMUtilsMixin):
     """
     Class-conditional Gaussian Mixture Model generator.
 
@@ -19,7 +24,8 @@ class GMMModel(GMMUtilsMixin):
     - Encode categorical features as integers.
     - Fit a Gaussian Mixture Model for each target class.
     - Generate synthetic samples using the learned class distribution.
-    - Decode categorical values back to their original labels.
+    - Decode categorical values back to their original labels, clipping
+      continuous values back into the observed training range.
     """
 
     def __init__(
@@ -44,6 +50,8 @@ class GMMModel(GMMUtilsMixin):
         random_state : int
             Random seed used for reproducibility.
         """
+        super().__init__()
+
         self.target_col = target_col
         self.n_components = n_components
         self.covariance_type = covariance_type
@@ -55,6 +63,8 @@ class GMMModel(GMMUtilsMixin):
         self.features_ = None
         self.feature_types_ = {}
         self._continuous_is_int_ = {}
+        self._continuous_bounds_ = {}
+        self._n_train_ = None
 
         # Categorical encoders.
         self._cat_value_to_int_ = {}
@@ -66,9 +76,10 @@ class GMMModel(GMMUtilsMixin):
 
         self._rng = np.random.default_rng(random_state)
 
-    def fit(self, df: pd.DataFrame):
+    def fit(self, df: pd.DataFrame) -> GMMModel:
         """
-        Fit class-conditional Gaussian Mixture Models.
+        Fit class-conditional Gaussian Mixture Models directly from a
+        DataFrame that already includes the target column.
 
         Parameters
         ----------
@@ -81,15 +92,19 @@ class GMMModel(GMMUtilsMixin):
         # 1. Detect feature types.
         self._detect_feature_types(df)
 
-        # 2. Build categorical encoders.
+        # 2. Learn realistic bounds for continuous features, so generated
+        #    values can be clipped back into a plausible range later.
+        self._fit_continuous_bounds(df)
+
+        # 3. Build categorical encoders.
         self._fit_categorical_encoders(df)
 
-        # 3. Calculate target class distribution.
+        # 4. Calculate target class distribution.
         class_counts = df[self.target_col].value_counts(normalize=True)
         self.classes_ = class_counts.index.to_numpy()
         self.class_probs_ = class_counts.to_numpy()
 
-        # 4. Fit a GMM for each target class.
+        # 5. Fit a GMM for each target class.
         self._gmms_ = {}
         self._scalers_ = {}
 
@@ -116,6 +131,54 @@ class GMMModel(GMMUtilsMixin):
 
             self._gmms_[cls] = gmm
             self._scalers_[cls] = scaler
+
+        self._n_train_ = len(df)
+        self.is_fitted = True
+
+        return self
+
+    def train(
+        self,
+        data_dir: str,
+        *args,
+        synthetic_dir: str | None = None,
+        artifact_state_dir: str | None = None,
+        target_col: str | None = None,
+        **kwargs,
+    ) -> GMMModel:
+        """
+        Train the model on the given data (Katabatic ``Model`` contract).
+
+        Reads ``x_train.csv`` / ``y_train.csv`` from ``data_dir`` (written by
+        ``benchmarks/runner.py``'s ``preprocess_and_split``), recombines them,
+        and fits the class-conditional GMMs.
+
+        Parameters
+        ----------
+        data_dir : str
+            Directory containing ``x_train.csv`` and ``y_train.csv``.
+        synthetic_dir : str, optional
+            Currently unused for GMM; synthetic data is written separately
+            via ``sample()`` in the benchmark scripts.
+        artifact_state_dir : str, optional
+            Currently unused; GMM does not yet support artifact persistence.
+        target_col : str, optional
+            Overrides the target column name set at construction time.
+        """
+        del synthetic_dir, artifact_state_dir  # not yet supported for GMM
+
+        if target_col is not None:
+            self.target_col = target_col
+
+        x_path = os.path.join(data_dir, "x_train.csv")
+        y_path = os.path.join(data_dir, "y_train.csv")
+
+        X = pd.read_csv(x_path)
+        y = pd.read_csv(y_path)
+
+        combined = pd.concat([X, y], axis=1)
+
+        return self.fit(combined)
 
     def generate(
         self,
@@ -166,7 +229,8 @@ class GMMModel(GMMUtilsMixin):
                 columns=self.features_,
             )
 
-            # Decode categorical values and restore integer columns.
+            # Decode categorical values, clip continuous values back into a
+            # realistic range, and restore integer columns.
             df_decoded = self._decode_features(df_numeric)
             df_decoded[self.target_col] = cls
 
@@ -204,16 +268,19 @@ class GMMModel(GMMUtilsMixin):
 
     def sample(
         self,
-        n_rows: int,
+        n_samples: int | None = None,
+        *args,
         seed: int | None = None,
+        **kwargs,
     ) -> pd.DataFrame:
         """
         Generate synthetic data using the Katabatic sampling interface.
 
         Parameters
         ----------
-        n_rows : int
-            Number of synthetic rows to generate.
+        n_samples : int, optional
+            Number of synthetic rows to generate. Defaults to the number of
+            rows the model was trained on.
         seed : int, optional
             Seed used for reproducible sampling.
 
@@ -222,4 +289,49 @@ class GMMModel(GMMUtilsMixin):
         pd.DataFrame
             Generated synthetic dataset.
         """
-        return self.generate(n_rows=n_rows, seed=seed)
+        if self.classes_ is None:
+            raise RuntimeError("GMMModel must be fitted before calling sample().")
+
+        if n_samples is None:
+            n_samples = self._n_train_
+
+        return self.generate(n_rows=n_samples, seed=seed)
+
+    def evaluate(
+        self,
+        real_data: pd.DataFrame | None = None,
+        synthetic_data: pd.DataFrame | None = None,
+        **kwargs,
+    ) -> float:
+        """
+        Lightweight self-evaluation (Katabatic ``Model`` contract).
+
+        Computes the mean column-wise Kolmogorov-Smirnov statistic between
+        real and synthetic continuous features (lower is better; 0 means the
+        distributions are indistinguishable). The full multi-dimension
+        benchmark evaluation still runs separately via
+        ``benchmarks/runner.py``'s ``evaluate()``.
+        """
+        if real_data is None:
+            raise ValueError("evaluate() requires real_data for comparison.")
+
+        if synthetic_data is None:
+            synthetic_data = self.sample(n_samples=len(real_data))
+
+        continuous_cols = [
+            c for c, t in self.feature_types_.items() if t == "continuous"
+        ]
+
+        if not continuous_cols:
+            return 0.0
+
+        stats = [
+            ks_2samp(
+                real_data[col].dropna(),
+                synthetic_data[col].dropna(),
+            ).statistic
+            for col in continuous_cols
+            if col in synthetic_data.columns
+        ]
+
+        return float(np.mean(stats)) if stats else 0.0
