@@ -107,7 +107,7 @@ This dataset is from the [UCI Machine Learning Repository](https://archive.ics.u
 
 > Bock, R. (2004). *MAGIC Gamma Telescope* [Dataset]. UCI Machine Learning Repository. https://doi.org/10.24432/C52C8B
 
-## Dataset
+## Nursery
 
 This dataset is from the [UCI Machine Learning Repository](https://archive.ics.uci.edu/dataset/76/nursery).
 

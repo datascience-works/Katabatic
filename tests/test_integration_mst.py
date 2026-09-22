@@ -110,8 +110,7 @@ def test_mst_artifact_round_trip(tmp_path):
 
     data_dir.mkdir()
 
-    # Small discrete dataset for the MST smoke test.
-    df = pd.DataFrame(
+    base_df = pd.DataFrame(
         {
             "age": [
                 20,
@@ -139,6 +138,7 @@ def test_mst_artifact_round_trip(tmp_path):
             ],
         }
     )
+    df = pd.concat([base_df] * 10, ignore_index=True)
 
     df.to_csv(
         data_dir / "train_full.csv",

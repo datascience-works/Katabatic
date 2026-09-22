@@ -62,7 +62,7 @@ class CTGANModel(BaseModel):
         n_critic: int = 5,
         gumbel_tau: float = 0.2,
         seed: int = 42,
-        device: str | None = "cpu",
+        device: str | None = None,
         backend: str = "torch",
     ) -> None:
         super().__init__()

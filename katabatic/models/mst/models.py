@@ -249,6 +249,17 @@ class MSTModel(BaseModel):
                 f"{unknown_columns}"
             )
 
+        # Synthesizer.fit() requires every column to be classified as
+        # categorical, ordinal, or continuous. Any column left unclassified
+        # raises an error. Put all other columns into continuous if not in categorical.
+        continuous_columns = [
+            column for column in df.columns if column not in categorical_columns
+        ]
+
+        # snsynth needs some of the privacy budget to infer numeric bounds for
+        # continuous columns, errors otherwise.
+        preprocessor_eps = 0.1 * self.epsilon if continuous_columns else 0.0
+
         self._resolved_categorical_columns = categorical_columns
         self._resolved_delta = self._resolve_delta(len(df))
 
@@ -270,6 +281,8 @@ class MSTModel(BaseModel):
         self.synthesizer.fit(
             df,
             categorical_columns=categorical_columns,
+            continuous_columns=continuous_columns,
+            preprocessor_eps=preprocessor_eps,
         )
 
         self.is_fitted = True

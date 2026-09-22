@@ -13,19 +13,35 @@ from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 from katabatic.models.realtabformer.models import REaLTabFormerModel
 
 config = RunConfig(
-    dataset_name="car",
+    dataset_name="adult",
     model_name="realtabformer",
-    categorical_cols=["0", "1", "2", "3", "4", "5"],
-    continuous_cols=[],
-    target_col_raw="6",
-    constraints=None,
+    categorical_cols=[
+        "workclass",
+        "education",
+        "education-num",
+        "marital-status",
+        "occupation",
+        "relationship",
+        "race",
+        "sex",
+        "native-country",
+    ],
+    continuous_cols=["age", "fnlwgt", "capital-gain", "capital-loss", "hours-per-week"],
+    target_col_raw="class",
+    constraints={
+        "age": (17, 90),
+        "fnlwgt": (12285, 1490400),
+        "capital-gain": (0, 99999),
+        "capital-loss": (0, 4356),
+        "hours-per-week": (1, 99),
+    },
 )
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)
 
-# First real integration benchmark.
-# Keep epochs low initially so that the complete pipeline can be validated
-# before running a longer experiment.
+# Keep epochs low initially so the complete pipeline can be validated before
+# running a longer experiment (matches run_realtabformer_car.py). Adult is
+# the largest dataset in the fleet, so this is also the slowest of the five.
 EPOCHS = 5
 BATCH_SIZE = 8
 RANDOM_STATE = 1029
