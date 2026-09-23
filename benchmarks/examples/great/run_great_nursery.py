@@ -123,7 +123,16 @@ DROP_NAN = False  # drop rows with any NaN in the output
 config = RunConfig(
     dataset_name="nursery",
     model_name="great",
-    categorical_cols=["parents", "has_nurs", "form", "children", "housing", "finance", "social", "health"],
+    categorical_cols=[
+        "parents",
+        "has_nurs",
+        "form",
+        "children",
+        "housing",
+        "finance",
+        "social",
+        "health",
+    ],
     continuous_cols=[],
     target_col_raw="class",
     constraints={},
