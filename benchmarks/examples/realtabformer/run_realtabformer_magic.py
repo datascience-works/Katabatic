@@ -1,3 +1,8 @@
+# NOTE: This script can take a long time to run. REaLTabFormer fine-tunes a
+# GPT-2-based transformer, and training/sampling time scales with dataset
+# size and epoch count. A GPU is required for reasonable runtimes
+# See katabatic/models/realtabformer/README.md for known runtime limitations.
+
 import os
 import sys
 import time
