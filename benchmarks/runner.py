@@ -44,26 +44,15 @@ class RunConfig:
     )
 
 
-def _resolve_raw_data(dataset_name: str) -> str:
-    """raw_data/ used for local files, fallback to included data files otherwise."""
-    raw_path = os.path.join(REPO_ROOT, "raw_data", f"{dataset_name}.csv")
-    if os.path.exists(raw_path):
-        return raw_path
-
-    catalogue_path = os.path.join(
-        REPO_ROOT, "katabatic", "datasets", f"{dataset_name}.csv"
-    )
-    if os.path.exists(catalogue_path):
-        return catalogue_path
-
-    return raw_path
-
-
 def build_paths(config: RunConfig) -> dict:
     benchmarks_dir = os.path.join(REPO_ROOT, "benchmarks")
 
     return {
-        "raw_data": _resolve_raw_data(config.dataset_name),
+        "raw_data": os.path.join(
+            REPO_ROOT,
+            "raw_data",
+            f"{config.dataset_name}.csv",
+        ),
         "processed_data": os.path.join(
             benchmarks_dir,
             "processed",
@@ -152,6 +141,10 @@ def resolve_column_types(config: RunConfig, raw_df: pd.DataFrame) -> None:
         config.target_col_raw = dataset_spec["target_col"]
         config.categorical_cols = dataset_spec["categorical_cols"]
         config.continuous_cols = dataset_spec["continuous_cols"]
+
+        if config.constraints is None:
+            config.constraints = dataset_spec["constraints"] or None
+
         return
 
     # Generic fallback for unknown datasets.

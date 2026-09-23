@@ -6,14 +6,10 @@ sys.path.insert(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
 )
 
-from katabatic.models.codi.models import CODI  # noqa: E402
-from katabatic.models.ctgan.models import CTGANModel  # noqa: E402
-from katabatic.models.ganblr.models import GANBLR  # noqa: E402
-from katabatic.models.naivebayes.models import NaiveBayesModel  # noqa: E402
-
-MODELS = {
+MODELS_RUN = {
     "CODI": {
-        "class": CODI,
+        "module": "katabatic.models.codi.models",
+        "class": "CODI",
         "params": {
             "n_steps": 50,
             "epochs": 100,
@@ -21,7 +17,8 @@ MODELS = {
         },
     },
     "CTGAN": {
-        "class": CTGANModel,
+        "module": "katabatic.models.ctgan.models",
+        "class": "CTGANModel",
         "params": {
             "epochs": 100,
             "batch_size": 256,
@@ -29,18 +26,15 @@ MODELS = {
         },
     },
     "NAIVEBAYES": {
-        "class": NaiveBayesModel,
+        "module": "katabatic.models.naivebayes.models",
+        "class": "NaiveBayesModel",
         "params": {
             "seed": 42,
         },
     },
-    # Note: Hyper parameters for GANBLR are set within the models.py for GANBLR
     "GANBLR": {
-        "class": GANBLR,
+        "module": "katabatic.models.ganblr.models",
+        "class": "GANBLR",
         "params": {},
     },
 }
-
-
-# print(MODELS.keys())
-# print(model)

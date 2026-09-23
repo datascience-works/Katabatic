@@ -1,3 +1,4 @@
+import importlib
 import logging
 import os
 import platform
@@ -12,7 +13,6 @@ sys.path.insert(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
 )
 
-
 from runner import (
     RunConfig,
     evaluate,
@@ -20,19 +20,18 @@ from runner import (
     save_synthetic,
 )
 
-from katabatic.models.model_hyper_parameters import MODELS
+from katabatic.models.model_hyper_parameters import MODELS_RUN
 
 # Enter the model and dataset you want to run
-
 print("Models available are:")
-print(list(MODELS), " or select 'ALL' to run all models.")
+print(list(MODELS_RUN), " or select 'ALL' to run all models.")
 print("Select the model you wish to run.")
 
 model_chosen = input().upper()
 
 if model_chosen == "ALL":
-    model_chosen = list(MODELS)
-elif model_chosen not in list(MODELS):
+    model_chosen = list(MODELS_RUN)
+elif model_chosen not in list(MODELS_RUN):
     sys.exit("Error: Only the outlined choices can be entered!")
 else:
     model_chosen = [model_chosen]
@@ -122,9 +121,8 @@ def get_system_run_details() -> None:
 
 for m in model_chosen:
     config = RunConfig(
-        dataset_name="shuttle",
+        dataset_name="car",
         model_name=m,
-        # target_col_raw="6",
     )
 
     train_df, test_df, target_col, paths = preprocess_and_split(config)
@@ -133,10 +131,17 @@ for m in model_chosen:
     print("STEP 3 — Train ", m)
     print("=" * 60)
 
-    model_config = MODELS[m]
-    model_hp = model_config["class"](**model_config["params"])
+    model_config = MODELS_RUN[m]
 
-    model = model_hp  # CTGANModel(epochs=100, batch_size=512, seed=42)
+    module = importlib.import_module(model_config["module"])
+    model_class = getattr(module, model_config["class"])
+
+    model = model_class(**model_config["params"])
+
+    # model_config = MODELS[m]
+    # model_hp = model_config["class"](**model_config["params"])
+
+    # model = model_hp
     model.train(
         paths["split_dir"],
         paths["synthetic_dir"],
