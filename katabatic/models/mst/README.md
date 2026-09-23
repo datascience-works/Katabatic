@@ -232,19 +232,8 @@ model.train(
 
 ## Evaluation
 
-MST implements Katabatic's standard model interface:
-
-```python
-model.evaluate()
-```
-
-The current implementation returns:
-
-```text
-0.0
-```
-
-as a placeholder evaluation score for compatibility with the existing Katabatic model pipeline.
+MST has no meaningful standalone metric of its own, so `model.evaluate()` raises
+`NotImplementedError` pointing at `TSTREvaluation`.
 
 Calling `evaluate()` before training raises a `RuntimeError`.
 
