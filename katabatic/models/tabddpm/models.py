@@ -10,23 +10,16 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import torch
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, QuantileTransformer
 from torch.utils.data import DataLoader, TensorDataset
 
 from katabatic.models.base_model import Model
 
-# Core TabDDPM pieces (prefer external package; fallback to local utils)
-try:  # pragma: no cover - import guard
-    from tabddpm.model.gaussian_multinomial_diffusion import (
-        GaussianMultinomialDiffusion,  # type: ignore
-    )
-    from tabddpm.model.modules import MLPDiffusion  # type: ignore
+# Use the original TabDDPM diffusion and denoiser implementations.
+from .official.gaussian_multinomial_diffsuion import GaussianMultinomialDiffusion
+from .official.modules import MLPDiffusion
 
-    _TABDDPM_EXTERNAL = True
-except Exception:  # fallback to lightweight local implementations
-    from .utils import GaussianMultinomialDiffusion, MLPDiffusion
-
-    _TABDDPM_EXTERNAL = False
+_TABDDPM_EXTERNAL = True
 
 
 ArrayLike = pd.Series | pd.DataFrame | np.ndarray | Sequence
@@ -90,6 +83,7 @@ class Tabddpm(Model):
         self._feature_names_num: list[str] = []
         self._feature_names_cat: list[str] = []
         self._cat_label_encoders: dict[str, LabelEncoder] = {}
+        self._num_scaler: QuantileTransformer | None = None
 
         # last seen class distribution (for sampling)
         self._class_dist: torch.Tensor | None = None
@@ -115,13 +109,6 @@ class Tabddpm(Model):
             "sklearn",  # module import name
             "scipy",
         ]
-        # Only require external tabddpm if actually available/imported
-        try:  # pragma: no cover
-            import tabddpm  # type: ignore  # noqa: F401
-
-            deps.append("tabddpm")
-        except Exception:
-            pass
         return deps
 
     # --------------------------------- utilities ----------------------------------
@@ -213,7 +200,12 @@ class Tabddpm(Model):
                 y_train = y_train.iloc[:, 0]
 
             # Train using array mode
-            self.train(X_train, y_train, config=config)
+            self.train(
+                X_train,
+                y_train,
+                cat_cols=kwargs.get("categorical_cols"),
+                config=config,
+            )
 
             # Generate synthetic data and write CSVs for TSTR
             n_rows = len(X_train)
@@ -362,6 +354,19 @@ class Tabddpm(Model):
             X_cat_raw = pd.DataFrame(X_np[:, cat_idx]) if cat_idx else None
             num_cols = [f"num_{i}" for i in num_idx]
             cat_cols = [f"cat_{i}" for i in cat_idx]
+
+        # Fit numerical preprocessing on training rows only. The official
+        # Gaussian diffusion operates on approximately standard-normal features.
+        self._num_scaler = None
+        if X_num is not None and X_num.shape[1] > 0:
+            if not np.isfinite(X_num).all():
+                raise ValueError("Numerical training features contain NaN or infinity.")
+            self._num_scaler = QuantileTransformer(
+                n_quantiles=min(1000, len(X_num)),
+                output_distribution="normal",
+                random_state=int(self._cfg["seed"]),
+            )
+            X_num = self._num_scaler.fit_transform(X_num).astype(np.float32)
 
         # encode categoricals to 0..K-1 per column
         self._feature_names_num = list(num_cols)
@@ -623,6 +628,10 @@ class Tabddpm(Model):
         Yn = y_synth.cpu().numpy().ravel()
 
         if not as_dataframe:
+            if self._n_num > 0 and self._num_scaler is not None:
+                Xn[:, : self._n_num] = self._num_scaler.inverse_transform(
+                    Xn[:, : self._n_num]
+                )
             return Xn
 
         # reconstruct columns: [num ... | cat ...]
@@ -630,6 +639,8 @@ class Tabddpm(Model):
         start = 0
         if self._n_num > 0:
             num_block = Xn[:, start : start + self._n_num]
+            if self._num_scaler is not None:
+                num_block = self._num_scaler.inverse_transform(num_block)
             data.append(pd.DataFrame(num_block, columns=self._feature_names_num))
             start += self._n_num
 
