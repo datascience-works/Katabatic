@@ -7,6 +7,7 @@ from sklearn.preprocessing import LabelEncoder
 from tests.conftest import require_backend
 
 torch = require_backend("torch", "save")
+require_backend("tqdm", "tqdm")
 
 from katabatic.artifacts import LocalArtifactStore  # noqa: E402
 from katabatic.artifacts.refs import ModelRef  # noqa: E402
