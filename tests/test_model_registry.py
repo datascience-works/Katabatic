@@ -102,4 +102,11 @@ def test_supported_models_list():
         "pategan",
         "tabsyn",
         "great",
+        "smote",
+        "mst",
+        "privtree",
+        "arf",
+        "synthpop",
+        "naivebayes",
+        "realtabformer",
     }

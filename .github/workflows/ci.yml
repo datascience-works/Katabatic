@@ -30,7 +30,10 @@ jobs:
 
   lint-and-test:
     needs: changes
-    if: needs.changes.outputs.python == 'true' || needs.changes.outputs.ci == 'true'
+    # Always runs for main (release pushes/PRs), regardless of what has changed.
+    if: >
+      needs.changes.outputs.python == 'true' || needs.changes.outputs.ci == 'true' ||
+      github.base_ref == 'main' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -55,7 +58,7 @@ jobs:
         run: poetry install --with dev
 
       - name: Ruff
-        run: poetry run ruff check katabatic tests
+        run: poetry run ruff check --no-cache katabatic tests
 
       - name: Bandit (Security)
         run: poetry run bandit -r katabatic -ll
@@ -76,6 +79,12 @@ jobs:
           name: coverage-core
           path: .coverage.core
           include-hidden-files: true
+
+      - name: Core coverage floor
+        env:
+          COVERAGE_FILE: .coverage.core
+        run: |
+          poetry run coverage report --include="katabatic/pipeline/*,katabatic/utils/*,katabatic/datasets/*,katabatic/artifacts/*,katabatic/evaluate/*,katabatic/models/registry.py,katabatic/models/base_model.py" --fail-under=70
 
       - name: Build wheel
         run: poetry build
@@ -138,6 +147,28 @@ jobs:
             great:
               - 'katabatic/models/great/**'
               - 'tests/test_integration_great.py'
+            smote:
+              - 'katabatic/models/smote/**'
+              - 'tests/test_integration_smote.py'
+            mst:
+              - 'katabatic/models/mst/**'
+              - 'tests/test_integration_mst.py'
+            privtree:
+              - 'katabatic/models/privtree/**'
+              - 'tests/test_integration_privtree.py'
+            arf:
+              - 'katabatic/models/arf/**'
+              - 'tests/test_integration_arf.py'
+            synthpop:
+              - 'katabatic/models/synthpop/**'
+              - 'tests/test_integration_synthpop.py'
+            naivebayes:
+              - 'katabatic/models/naivebayes/**'
+              - 'tests/test_integration_naivebayes.py'
+            realtabformer:
+              - 'katabatic/models/realtabformer/**'
+              - 'tests/test_integration_realtabformer.py'
+
       - name: Build Dynamic Matrix
         id: build-matrix
         run: |
@@ -146,11 +177,21 @@ jobs:
             {"model": "ctgan", "torch": true},
             {"model": "pategan", "torch": false},
             {"model": "tabsyn", "torch": true},
-            {"model": "great", "torch": true}
+            {"model": "great", "torch": true},
+            {"model": "smote", "torch": false},
+            {"model": "mst", "torch": false},
+            {"model": "privtree", "torch": false},
+            {"model": "arf", "torch": false},
+            {"model": "synthpop", "torch": false, "r": true},
+            {"model": "naivebayes", "torch": false},
+            {"model": "realtabformer", "torch": true}
           ]'
 
-          # If a core file changed, run all models.
-          if [ "${{ steps.filter.outputs.core }}" == "true" ]; then
+          # Always run the full matrix for main (release pushes/PRs) so
+          # integration-<model> is safe to require there, or if a core file changed.
+          if [ "${{ steps.filter.outputs.core }}" == "true" ] || \
+             [ "${{ github.base_ref }}" == "main" ] || \
+             [ "${{ github.ref }}" == "refs/heads/main" ]; then
             MATRIX=$(echo "$ALL_MODELS" | jq -c '.')
           else
             # Otherwise, append only the models that changed.
@@ -185,6 +226,20 @@ jobs:
       - name: Install Poetry
         run: pip install poetry==${{ env.POETRY_VERSION }}
 
+      - name: Cache R library
+        if: matrix.r
+        uses: actions/cache@v6
+        with:
+          path: /usr/lib/R/site-library
+          key: r-synthpop-${{ runner.os }}
+
+      - name: Install R and the synthpop package
+        if: matrix.r
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y r-base
+          sudo Rscript -e "if (!requireNamespace('synthpop', quietly = TRUE)) install.packages('synthpop', repos='https://cloud.r-project.org/')"
+
       - name: Pre-install CPU torch
         if: matrix.torch
         run: poetry run pip install "torch>=2.13.0,<3.0.0" --index-url https://download.pytorch.org/whl/cpu
@@ -202,80 +257,20 @@ jobs:
           COVERAGE_FILE: .coverage.${{ matrix.model }}
         run: poetry run pytest tests/test_integration_${{ matrix.model }}.py -q --cov=katabatic --cov-report=
 
+      - name: Model promotion contract (${{ matrix.model }})
+        run: poetry run pytest tests/test_model_registry.py -k "${{ matrix.model }}" -v
+
+      - name: Model coverage report (${{ matrix.model }})
+        env:
+          COVERAGE_FILE: .coverage.${{ matrix.model }}
+        run: poetry run coverage report --include="katabatic/models/${{ matrix.model }}/*"
+
       - name: Upload Model Coverage
         uses: actions/upload-artifact@v7
         with:
           name: coverage-${{ matrix.model }}
           path: .coverage.${{ matrix.model }}
           include-hidden-files: true
-
-  model-contract-matrix:
-    # Derives model-contract's matrix from ModelRegistry.
-    runs-on: ubuntu-latest
-    needs: changes
-    if: needs.changes.outputs.python == 'true' || needs.changes.outputs.ci == 'true'
-    outputs:
-      matrix: ${{ steps.build.outputs.matrix }}
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version: "3.11"
-      - name: Install Poetry
-        run: pip install poetry==${{ env.POETRY_VERSION }}
-      - name: Install core deps (no model extras needed to read the registry)
-        run: poetry install --with dev
-      - name: Derive supported-model matrix from ModelRegistry
-        id: build
-        run: |
-          poetry run python -c "
-          import json
-          from katabatic.models.registry import ModelRegistry
-          rows = [
-              {'model': name, 'torch': 'torch' in ModelRegistry.get_model_config(name).get('dependencies', [])}
-              for name in ModelRegistry.get_supported_models()
-          ]
-          print(json.dumps(rows))
-          " > matrix.json
-          echo "matrix=$(cat matrix.json)" >> "$GITHUB_OUTPUT"
-
-  model-contract:
-    needs: [changes, model-contract-matrix]
-    if: needs.changes.outputs.python == 'true' || needs.changes.outputs.ci == 'true'
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include: ${{ fromJSON(needs.model-contract-matrix.outputs.matrix) }}
-    name: model-contract-${{ matrix.model }}
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version: "3.11"
-
-      - name: Cache Poetry environment
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/pypoetry
-          key: poetry-${{ matrix.model }}-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
-
-      - name: Install Poetry
-        run: pip install poetry==${{ env.POETRY_VERSION }}
-
-      - name: Pre-install CPU torch
-        if: matrix.torch
-        run: poetry run pip install "torch>=2.13.0,<3.0.0" --index-url https://download.pytorch.org/whl/cpu
-
-      - name: Install with ${{ matrix.model }} extra
-        run: poetry install --with dev -E ${{ matrix.model }}
-
-      - name: Remove triton
-        if: matrix.torch
-        run: poetry run pip uninstall -y triton
-
-      - name: Model promotion contract (${{ matrix.model }})
-        run: poetry run pytest tests/test_model_registry.py -k "${{ matrix.model }}" -v
 
   setup-script:
     # Verifies scripts/setup.py works on Linux, MacOS, and Windows.
@@ -336,7 +331,10 @@ jobs:
 
   docker-build:
     needs: changes
-    if: needs.changes.outputs.docker == 'true' || needs.changes.outputs.ci == 'true'
+    # Always runs for main (release pushes/PRs). Required on protect_main.
+    if: >
+      needs.changes.outputs.docker == 'true' || needs.changes.outputs.ci == 'true' ||
+      github.base_ref == 'main' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -384,6 +382,14 @@ jobs:
           merge-multiple: true
 
       - name: Combine and Report
+        env:
+          FULL_MATRIX: >-
+            ${{ needs.changes.outputs.core == 'true' ||
+                github.base_ref == 'main' || github.ref == 'refs/heads/main' }}
         run: |
           coverage combine
-          coverage report --show-missing --fail-under=45
+          if [ "$FULL_MATRIX" == "true" ]; then
+            coverage report --show-missing --fail-under=45
+          else
+            coverage report --show-missing
+          fi

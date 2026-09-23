@@ -103,10 +103,12 @@ The model logic was kept close to the original source implementation, with only 
 For compatibility with the Katabatic evaluation pipeline, the model also provides:
 
 ```python
-sample(n_rows, seed=None)
+sample(n_samples=None, seed=None)
 ```
 
-This allows reproducible sampling during stability evaluation while preserving the original `generate()` method.
+`n_samples` defaults to the number of rows the model was trained on when omitted, matching
+every other Katabatic model's `sample()` convention. This allows reproducible sampling during
+stability evaluation while preserving the original `generate()` method.
 
 ---
 
