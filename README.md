@@ -23,6 +23,7 @@ A framework for synthetic tabular data generation, providing a common interface 
 - [Models](#models)
 - [Datasets](#datasets)
 - [Evaluation](#evaluation)
+- [Benchmarking](#benchmarking)
 - [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
@@ -187,6 +188,8 @@ synthetic_data = model.sample(
 )
 ```
 
+For comparing multiple models against a benchmark dataset and getting a recommendation, see [Benchmarking](#benchmarking).
+
 ### Pipeline Usage
 
 The artifact-store flow shown in [Quick Start](#quick-start) is the recommended way to run
@@ -284,6 +287,60 @@ preservation, and DCR — distance to closest record) is available via
 (DataFrame-based) and, via its `from_artifact()` adapter, `TrainTestSplitPipeline`
 (artifact-store-based) runs.
 
+CTGAN with a score of 0.8650
+
+Rank  Model    Score
+1     CTGAN    0.8650  <-- Recommended
+2     GANBLR   0.7912
+```
+
+If running `ALL` mode (all models together), install every model's extras
+together first:
+
+```bash
+poetry install --with dev -E eval -E codi -E ctgan -E ganblr
+# NaiveBayes needs no extras
+```
+
+### Models are registered in `katabatic/models/model_hyper_parameters.py`:
+
+```python
+MODELS = {
+    "CODI": {
+        "class": CODI,
+        "params": {
+            "n_steps": 50,
+            "epochs": 100,
+            "batch_size": 256,
+        },
+    },
+    "CTGAN": {
+        "class": CTGANModel,
+    # ...
+}
+```
+
+To add a new model to the benchmark runner, register it here with its class and
+hyperparameters.
+
+### Valid Dataset Ingestion
+
+To confirm a dataset ingests correctly against `specs.py` before running it through
+a model, `benchmarks/validate_ingestion.py` checks all five current benchmark
+datasets end-to-end and reports pass/fail per dataset and can be used when adding a new dataset to registry.
+
+**Proof of concept status:** this replaces the previous per-dataset script duplication. Currently contains fixed dataset within script and set model list, expected to be generalised as development progress continues.
+
+## 🛠 Development
+
+### Recommended VS Code Extensions
+
+```bash
+# Install recommended extensions
+code --install-extension ms-python.python
+code --install-extension charliermarsh.ruff
+code --install-extension ms-toolsai.jupyter
+```
 ## Development
 
 ### Recommended VS Code Extensions
@@ -315,6 +372,7 @@ Katabatic/
 │   ├── artifacts/             # Versioned store helpers
 │   └── utils/                 # preprocess, split_dataset, ...
 ├── artifacts/                 # Local run outputs (gitignored)
+├── benchmarks/                # Unified benchmark runner, dataset specs, examples
 ├── docs/                      # EXPERIMENTAL_MODELS.md, etc.
 ├── examples/                  # Notebooks per model
 ├── tests/                     # Unit + integration tests

@@ -104,10 +104,10 @@ def get_system_run_details() -> None:
 
 config = RunConfig(
     dataset_name="car",
-    model_name="ganblr",
-    categorical_cols=["buying", "maint", "doors", "persons", "lug_boot", "safety"],
+    model_name="codi",
+    categorical_cols=["0", "1", "2", "3", "4", "5"],
     continuous_cols=[],
-    target_col_raw="class",
+    target_col_raw="6",
     constraints=None,
 )
 
@@ -117,6 +117,7 @@ print("\n" + "=" * 60)
 print("STEP 3 — Train CODI")
 print("=" * 60)
 model = CODI(n_steps=50, epochs=100, batch_size=256)
+
 model.train(
     paths["split_dir"],
     paths["synthetic_dir"],
