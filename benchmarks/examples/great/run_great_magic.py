@@ -1,3 +1,8 @@
+# NOTE: This script can take a long time to run. GReaT fine-tunes
+# a GPT-2 language model, and sampling retries generation in batches until
+# enough rows parse successfully. This can take well over an hour even on GPU.
+# See benchmarks/examples/great/README.md for known runtime limitations.
+
 import logging
 import os
 import platform
