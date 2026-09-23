@@ -1,7 +1,7 @@
 """Model registry for dynamic model loading.
 
 Officially supported models (smoke-tested, PyPI extras): ``ganblr``, ``ctgan``,
-``pategan``.
+``pategan``, ``tabsyn``, ``great``, ``smote``.
 Other registered models are experimental; see ``docs/EXPERIMENTAL_MODELS.md``.
 """
 
@@ -52,14 +52,21 @@ class ModelRegistry:
             "class": "GReaT",
             "dependencies": ["transformers", "torch"],
             "extra": "great",
-            "supported": False,
+            "supported": True,
+        },
+        "realtabformer": {
+            "module": "katabatic.models.realtabformer.models",
+            "class": "REaLTabFormerModel",
+            "dependencies": ["realtabformer", "transformers", "torch"],
+            "extra": "realtabformer",
+            "supported": True,
         },
         "tabsyn": {
             "module": "katabatic.models.tabsyn.models",
             "class": "TabSyn",
-            "dependencies": [],
+            "dependencies": ["torch", "tqdm"],
             "extra": "tabsyn",
-            "supported": False,
+            "supported": True,
         },
         "tabddpm": {
             "module": "katabatic.models.tabddpm.models",
@@ -75,6 +82,13 @@ class ModelRegistry:
             "extra": "pategan",
             "supported": True,
         },
+        "mst": {
+            "module": "katabatic.models.mst.models",
+            "class": "MSTModel",
+            "dependencies": ["snsynth", "mbi", "opendp"],
+            "extra": "mst",
+            "supported": True,
+        },
         "ctgan": {
             "module": "katabatic.models.ctgan.models",
             "class": "CTGANModel",
@@ -88,6 +102,49 @@ class ModelRegistry:
             "dependencies": ["sdv"],
             "extra": "gaussian_copula",
             "supported": False,
+        },
+        "kde": {
+            "module": "katabatic.models.kde.models",
+            "class": "KDESynthesizer",
+            # scikit-learn is already a core dependency; no extra needed.
+            "dependencies": ["sklearn"],
+            "extra": "kde",
+            "supported": False,
+        },
+        "arf": {
+            "module": "katabatic.models.arf.models",
+            "class": "ARFModel",
+            "dependencies": ["sklearn", "numpy", "pandas"],
+            "extra": "arf",
+            "supported": True,
+        },
+        "privtree": {
+            "module": "katabatic.models.privtree.models",
+            "class": "PrivTreeModel",
+            "dependencies": ["numpy", "pandas"],
+            "extra": "privtree",
+            "supported": True,
+        },
+        "synthpop": {
+            "module": "katabatic.models.synthpop.models",
+            "class": "SynthPop",
+            "dependencies": ["pandas"],
+            "extra": "synthpop",
+            "supported": True,
+        },
+        "naivebayes": {
+            "module": "katabatic.models.naivebayes.models",
+            "class": "NaiveBayesModel",
+            "dependencies": ["numpy", "pandas", "sklearn"],
+            "extra": "naivebayes",
+            "supported": True,
+        },
+        "smote": {
+            "module": "katabatic.models.smote.models",
+            "class": "SMOTEModel",
+            "dependencies": ["imblearn"],
+            "extra": "smote",
+            "supported": True,
         },
     }
 
@@ -138,9 +195,20 @@ class ModelRegistry:
         ]
 
         if missing_deps:
+            install_hint = model_info.get("install_hint")
+
+            if install_hint:
+                install_message = install_hint
+            elif model_info.get("extra"):
+                install_message = f"pip install katabatic[{model_info['extra']}]"
+            else:
+                install_message = (
+                    "See the model documentation for installation instructions."
+                )
+
             raise ImportError(
                 f"Missing dependencies for {model_name}: {missing_deps}. "
-                f"Install with: pip install katabatic[{model_info['extra']}]"
+                f"Install with: {install_message}"
             )
 
         try:

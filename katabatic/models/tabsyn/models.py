@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import os
-from typing import Any
+from dataclasses import replace
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pandas as pd
@@ -14,6 +17,10 @@ from .utils import (
     sample_tabsyn,
     train_tabsyn,
 )
+
+if TYPE_CHECKING:
+    from katabatic.artifacts.base import ArtifactStore
+    from katabatic.artifacts.refs import ModelRef
 
 
 class TabSyn(BaseModel):
@@ -75,25 +82,52 @@ class TabSyn(BaseModel):
     def train(
         self,
         data_dir: str,
-        save_dir: str | None = None,
-        extra_info: dict[str, Any] | None = None,
         *args,
+        synthetic_dir: str | None = None,
+        artifact_state_dir: str | None = None,
+        extra_info: dict[str, Any] | None = None,
         **kwargs,
-    ) -> "TabSyn":
-        """Train decoder & diffusion on the dataset located in `data_dir`,
-        then materialize x_synth.csv / y_synth.csv for TSTR."""
+    ) -> TabSyn:
+        """
+        Train decoder & diffusion on the dataset located in `data_dir`, then
+        materialize x_synth.csv / y_synth.csv for TSTR.
+
+        Parameters
+        ----------
+        data_dir : str
+            Directory containing TabSyn's preprocessed training arrays
+            (X_num_train.npy / X_cat_train.npy / y_train.npy / info.json).
+        synthetic_dir : str, optional
+            Directory to write the generated x_synth.csv / y_synth.csv to.
+            Defaults to synthetic/<dataset_name>/tabsyn.
+        artifact_state_dir : str, optional
+            When provided, the fitted model state is persisted here for
+            later retrieval via load_from_ref().
+
+        Returns
+        -------
+        TabSyn
+            Trained model instance.
+        """
         self.check_dependencies()
         # 1) fit model
+        cfg = replace(
+            self.config,
+            decoder_epochs=kwargs.get("decoder_epochs", self.config.decoder_epochs),
+            diffusion_epochs=kwargs.get(
+                "diffusion_epochs", self.config.diffusion_epochs
+            ),
+            diffusion_steps=kwargs.get("diffusion_steps", self.config.diffusion_steps),
+        )
         self.state = train_tabsyn(
             data_dir=data_dir,
-            cfg=self.config,
-            save_dir=save_dir,
+            cfg=cfg,
             extra_info=extra_info or {},
         )
         self.is_fitted = True
 
         # 2) Decide where to save synthetic data
-        synth_dir = kwargs.get("synthetic_dir")
+        synth_dir = synthetic_dir
         if not synth_dir or not isinstance(synth_dir, str):
             dataset_name = os.path.basename(os.path.normpath(data_dir)) or "dataset"
             synth_dir = os.path.join("synthetic", dataset_name, "tabsyn")
@@ -120,7 +154,7 @@ class TabSyn(BaseModel):
         # features = numerics + remaining categoricals
         X_cols = num_cols + cat_cols[1:]
 
-        x_synth = df_s[X_cols]
+        x_synth = df_s[X_cols].copy()
         y_synth = df_s[y_col]
 
         # Align synthetic feature names & order with real train CSV
@@ -149,6 +183,8 @@ class TabSyn(BaseModel):
         x_synth.to_csv(x_path, index=False)
         y_synth.to_csv(y_path, index=False, header=True)
         print(f"[TabSyn] Synthetic data saved:\n  X -> {x_path}\n  y -> {y_path}")
+
+        self._maybe_save_artifact_state(artifact_state_dir)
 
         return self
 
@@ -185,3 +221,95 @@ class TabSyn(BaseModel):
             else:
                 np.save(save_path, out)
         return out
+
+    def _save_artifact_state(self, artifact_state_dir: str) -> None:
+        """
+        Persist fitted state so the model can be rebuilt by load_from_ref().
+
+        Called from train() when the pipeline injects artifact_state_dir, which
+        it does for any model class declaring ARTIFACT_STATE_FILES.
+        """
+        import torch
+
+        state = self.state
+        precond = state.denoise_fn  # full _Precond, including its MLPDiffusion backbone
+
+        os.makedirs(artifact_state_dir, exist_ok=True)
+        bundle = {
+            "denoise_fn": precond.state_dict(),
+            "tokenizer": state.tokenizer_state,
+            "encoder": state.encoder_state,
+            "decoder": state.decoder_state,
+            # Metadata needed to rebuild TabSynState in TabSyn.load_from_ref().
+            "meta": {
+                "info": state.info,
+                "n_num": state.n_num,
+                "cat_sizes": state.cat_sizes,
+                "cat_encoders": state.cat_encoders,
+                "token_dim": state.token_dim,
+                "column_order": state.column_order,
+                "scaler_mean": state.scaler_mean,
+                "scaler_std": state.scaler_std,
+                "train_rows": state.train_rows,
+                "denoise_dim_t": precond.denoise_fn.dim_t,
+                "sigma_data": precond.sigma_data,
+                "num_steps": getattr(precond, "num_steps", 50),
+                "device": str(state.device),
+            },
+        }
+        target = os.path.join(artifact_state_dir, self.ARTIFACT_STATE_FILES[0])
+        torch.save(bundle, target)
+
+    @classmethod
+    def load_from_ref(cls, store: ArtifactStore, ref: ModelRef) -> TabSyn:
+        """
+        Rehydrate a trained TabSyn from a versioned artifact.
+        """
+        import torch
+
+        from .utils import MLPDiffusion, TabSynState, _Precond
+
+        state_path = cls._require_state_file(store, ref)
+
+        bundle = torch.load(state_path, map_location="cpu", weights_only=False)  # nosec B614: loading our own saved artifact store
+
+        if "meta" not in bundle:
+            raise ValueError(
+                f"TabSyn artifact at {state_path} predates the metadata bundle "
+                f"and cannot be reloaded. Retrain to regenerate it."
+            )
+
+        meta = bundle["meta"]
+        device = torch.device("cpu")
+
+        # Same in_dim formula sample_tabsyn() uses: one token per column.
+        n_cols = meta["n_num"] + len(meta["cat_sizes"])
+        d_in = n_cols * meta["token_dim"]
+
+        precond = _Precond(
+            MLPDiffusion(d_in=d_in, dim_t=meta["denoise_dim_t"]),
+            sigma_data=meta["sigma_data"],
+        )
+        precond.load_state_dict(bundle["denoise_fn"])
+        precond.num_steps = meta["num_steps"]
+        precond = precond.to(device).eval()
+
+        instance = cls()
+        instance.state = TabSynState(
+            info=meta["info"],
+            n_num=meta["n_num"],
+            cat_sizes=meta["cat_sizes"],
+            cat_encoders=meta["cat_encoders"],
+            token_dim=meta["token_dim"],
+            column_order=meta["column_order"],
+            scaler_mean=meta["scaler_mean"],
+            scaler_std=meta["scaler_std"],
+            tokenizer_state=bundle["tokenizer"],
+            encoder_state=bundle["encoder"],
+            decoder_state=bundle["decoder"],
+            denoise_fn=precond,
+            device=device,
+            train_rows=meta["train_rows"],
+        )
+        instance.is_fitted = True
+        return instance

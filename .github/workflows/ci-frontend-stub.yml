@@ -27,11 +27,6 @@ jobs:
     steps:
       - run: echo "Frontend change. Python checks skipped."
 
-  model-contract:
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Frontend change. Python checks skipped."
-
   wheel-smoke:
     runs-on: ubuntu-latest
     steps:
