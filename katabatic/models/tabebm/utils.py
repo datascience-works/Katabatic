@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Tuple, Optional
 
 import numpy as np
 import pandas as pd
 
 
-def infer_categorical_columns(df: pd.DataFrame) -> List[str]:
+def infer_categorical_columns(df: pd.DataFrame) -> list[str]:
     """
     Infer categorical columns using dtype + low-cardinality integer heuristic.
 
@@ -15,14 +14,19 @@ def infer_categorical_columns(df: pd.DataFrame) -> List[str]:
     - object or category => categorical
     - int columns with low cardinality (<= 20 and < 5% rows) => categorical
     """
-    cat_cols: List[str] = []
+    cat_cols: list[str] = []
     n_rows = max(len(df), 1)
 
     for col in df.columns:
         s = df[col]
         dt = str(s.dtype)
 
-        if dt == "object" or dt == "str" or dt.startswith("category") or dt.startswith("string"):
+        if (
+            dt == "object"
+            or dt == "str"
+            or dt.startswith("category")
+            or dt.startswith("string")
+        ):
             cat_cols.append(col)
             continue
 
@@ -34,20 +38,20 @@ def infer_categorical_columns(df: pd.DataFrame) -> List[str]:
     return cat_cols
 
 
-
 # Schema
+
 
 @dataclass
 class ColumnMeta:
     name: str
     kind: str  # "continuous" | "categorical"
-    categories: Optional[List[str]] = None  # for categorical
-    mean: Optional[float] = None            # for continuous (z-score)
-    std: Optional[float] = None             # for continuous (z-score)
+    categories: list[str] | None = None  # for categorical
+    mean: float | None = None  # for continuous (z-score)
+    std: float | None = None  # for continuous (z-score)
 
 
-def infer_schema(df: pd.DataFrame) -> List[ColumnMeta]:
-    schema: List[ColumnMeta] = []
+def infer_schema(df: pd.DataFrame) -> list[ColumnMeta]:
+    schema: list[ColumnMeta] = []
     cat_cols = set(infer_categorical_columns(df))
 
     for c in df.columns:
@@ -60,7 +64,7 @@ def infer_schema(df: pd.DataFrame) -> List[ColumnMeta]:
     return schema
 
 
-def fit_schema_stats(df: pd.DataFrame, schema: List[ColumnMeta]) -> None:
+def fit_schema_stats(df: pd.DataFrame, schema: list[ColumnMeta]) -> None:
     """
     Fit mean/std for continuous columns for z-score standardization.
     """
@@ -77,10 +81,11 @@ def fit_schema_stats(df: pd.DataFrame, schema: List[ColumnMeta]) -> None:
 
 # Encode / Decode
 
+
 def encode_df(
     df: pd.DataFrame,
-    schema: List[ColumnMeta],
-) -> Tuple[np.ndarray, Dict[str, Dict[str, int]], List[str]]:
+    schema: list[ColumnMeta],
+) -> tuple[np.ndarray, dict[str, dict[str, int]], list[str]]:
     """
     Encode df -> numeric matrix suitable for TabEBM.
 
@@ -93,15 +98,19 @@ def encode_df(
       cat_maps: mapping col -> {"cat_str": idx}
       col_order: original column order
     """
-    arrays: List[np.ndarray] = []
-    cat_maps: Dict[str, Dict[str, int]] = {}
-    col_order: List[str] = []
+    arrays: list[np.ndarray] = []
+    cat_maps: dict[str, dict[str, int]] = {}
+    col_order: list[str] = []
 
     for col in schema:
         col_order.append(col.name)
 
         if col.kind == "continuous":
-            vals = pd.to_numeric(df[col.name], errors="coerce").astype(float).values.reshape(-1, 1)
+            vals = (
+                pd.to_numeric(df[col.name], errors="coerce")
+                .astype(float)
+                .values.reshape(-1, 1)
+            )
             m = col.mean if col.mean is not None else float(np.nanmean(vals))
             s = col.std if col.std is not None else float(np.nanstd(vals))
             if s < 1e-8:
@@ -114,7 +123,12 @@ def encode_df(
             mapping = {v: i for i, v in enumerate(cats)}
             cat_maps[col.name] = mapping
 
-            idxs = df[col.name].astype(str).map(lambda v: mapping.get(v, -1)).values.astype(np.int64)
+            idxs = (
+                df[col.name]
+                .astype(str)
+                .map(lambda v: mapping.get(v, -1))
+                .values.astype(np.int64)
+            )
 
             # unknown -> random valid category (keeps values in-range)
             if len(cats) > 0:
@@ -124,13 +138,17 @@ def encode_df(
 
             arrays.append(idxs.reshape(-1, 1).astype(np.float32))
 
-    enc = np.concatenate(arrays, axis=1) if arrays else np.zeros((len(df), 0), dtype=np.float32)
+    enc = (
+        np.concatenate(arrays, axis=1)
+        if arrays
+        else np.zeros((len(df), 0), dtype=np.float32)
+    )
     return enc, cat_maps, col_order
 
 
 def decode_df(
     enc: np.ndarray,
-    schema: List[ColumnMeta],
+    schema: list[ColumnMeta],
 ) -> pd.DataFrame:
     """
     Decode numeric matrix back to dataframe in original feature space.
@@ -138,10 +156,10 @@ def decode_df(
     - continuous: inverse z-score
     - categorical: round -> clip -> map idx -> category string
     """
-    rows: List[Dict[str, object]] = []
+    rows: list[dict[str, object]] = []
 
     for i in range(enc.shape[0]):
-        row: Dict[str, object] = {}
+        row: dict[str, object] = {}
         ptr = 0
 
         for col in schema:
@@ -170,7 +188,8 @@ def decode_df(
 
 #  Convenience: full pipeline
 
-def fit_and_encode(df: pd.DataFrame) -> Tuple[np.ndarray, List[ColumnMeta], List[str]]:
+
+def fit_and_encode(df: pd.DataFrame) -> tuple[np.ndarray, list[ColumnMeta], list[str]]:
     """
     Convenience helper:
     - infer schema

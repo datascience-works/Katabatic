@@ -3,14 +3,15 @@ from __future__ import annotations
 import os
 import random
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
+import torch
 from sklearn.model_selection import train_test_split
 
 from katabatic.models.base_model import Model
-from .utils import infer_schema, fit_schema_stats, encode_df, decode_df
+
+from .utils import decode_df, encode_df, fit_schema_stats, infer_schema
 
 
 def seed_everything(seed: int) -> None:
@@ -21,7 +22,9 @@ def seed_everything(seed: int) -> None:
     torch.cuda.manual_seed_all(seed)
 
 
-def to_numpy(X: Union[np.ndarray, torch.Tensor, pd.DataFrame, pd.Series, None]) -> Optional[np.ndarray]:
+def to_numpy(
+    X: np.ndarray | torch.Tensor | pd.DataFrame | pd.Series | None,
+) -> np.ndarray | None:
     if isinstance(X, np.ndarray):
         return X
     if isinstance(X, torch.Tensor):
@@ -119,7 +122,7 @@ class _TabEBMBackend:
 
         # Gradient of nearest-neighbour distance
         diff_all = X_synth[:, None, :] - X_train[None, :, :]
-        dist_all = np.sqrt(np.sum(diff_all ** 2, axis=2) + eps)
+        dist_all = np.sqrt(np.sum(diff_all**2, axis=2) + eps)
 
         nearest_idx = np.argmin(dist_all, axis=1)
         nearest_diff = diff_all[np.arange(len(X_synth)), nearest_idx]
@@ -129,7 +132,7 @@ class _TabEBMBackend:
 
         # Gradient of mean distance to real class samples
         diff_real = X_synth[:, None, :] - X_real[None, :, :]
-        dist_real = np.sqrt(np.sum(diff_real ** 2, axis=2) + eps)
+        dist_real = np.sqrt(np.sum(diff_real**2, axis=2) + eps)
 
         grad_mean = np.mean(
             diff_real / dist_real[:, :, None],
@@ -153,10 +156,12 @@ class _TabEBMBackend:
         X_sur = np.array(surrogates, dtype=X.dtype)
 
         X_ebm = np.concatenate([X, X_sur], axis=0)
-        y_ebm = np.concatenate([
-            np.zeros(X.shape[0]),
-            np.ones(len(X_sur)),
-        ]).astype(int)
+        y_ebm = np.concatenate(
+            [
+                np.zeros(X.shape[0]),
+                np.ones(len(X_sur)),
+            ]
+        ).astype(int)
 
         return X_ebm, y_ebm
 
@@ -174,7 +179,7 @@ class TabEBMConfig:
 
 
 class TabEBMModel(Model):
-    def __init__(self, target_col: str = "target", config: Optional[TabEBMConfig] = None):
+    def __init__(self, target_col: str = "target", config: TabEBMConfig | None = None):
         super().__init__()
         self.target_col = target_col
         self.config = config or TabEBMConfig()
@@ -189,7 +194,12 @@ class TabEBMModel(Model):
     def train(self, output_dir: str, label_col=None, synthetic_dir=None, **kwargs):
         x_train = pd.read_csv(f"{output_dir}/x_train.csv")
         # Convert pandas StringDtype -> object so ordinal encoder handles them correctly
-        str_cols = [c for c in x_train.columns if str(x_train[c].dtype).startswith("string") or str(x_train[c].dtype) == "str"]
+        str_cols = [
+            c
+            for c in x_train.columns
+            if str(x_train[c].dtype).startswith("string")
+            or str(x_train[c].dtype) == "str"
+        ]
         if str_cols:
             x_train[str_cols] = x_train[str_cols].astype(object)
         y_train_df = pd.read_csv(f"{output_dir}/y_train.csv")
@@ -209,7 +219,7 @@ class TabEBMModel(Model):
         self._y_train = y_train
 
         self.is_fitted = True
-        
+
         x_synth, y_synth = self.sample(len(x_train))
 
         if synthetic_dir is not None:
@@ -249,7 +259,7 @@ class TabEBMModel(Model):
         if max_per_class == 0:
             return (
                 pd.DataFrame(columns=self.col_order_),
-                pd.Series([], name=self.target_col)
+                pd.Series([], name=self.target_col),
             )
 
         generated = self._tabebm.generate(
@@ -281,10 +291,13 @@ class TabEBMModel(Model):
             xs.append(dfc)
             ys.append(np.full(need, uniques[idx]))
 
-        x_synth = pd.concat(xs, ignore_index=True) if xs else pd.DataFrame(columns=self.col_order_)
+        x_synth = (
+            pd.concat(xs, ignore_index=True)
+            if xs
+            else pd.DataFrame(columns=self.col_order_)
+        )
         y_synth = pd.Series(
-            np.concatenate(ys) if ys else np.array([]),
-            name=self.target_col
+            np.concatenate(ys) if ys else np.array([]), name=self.target_col
         )
 
         return x_synth, y_synth
