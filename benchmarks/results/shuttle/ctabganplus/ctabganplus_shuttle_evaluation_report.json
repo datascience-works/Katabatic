@@ -1,0 +1,251 @@
+{
+  "composite_score": 0.8867,
+  "dimension_scores": {
+    "fidelity": 0.9496,
+    "utility": 0.9637,
+    "diversity": 0.8547,
+    "privacy": 0.8819,
+    "consistency": 0.4585,
+    "stability": 0.967
+  },
+  "weights_used": {
+    "fidelity": 0.25,
+    "utility": 0.35,
+    "diversity": 0.1,
+    "privacy": 0.15,
+    "consistency": 0.1,
+    "stability": 0.05
+  },
+  "full_results": {
+    "fidelity": {
+      "categorical_jsd": {},
+      "continuous_wasserstein": {
+        "Time": 0.0141,
+        "Rad Flow": 0.0038,
+        "Fpv Close": 0.0274,
+        "Fpv Open": 0.072,
+        "High": 0.0024,
+        "Bypass": 0.0004,
+        "Bpv Close": 0.0043,
+        "Bpv Open": 0.0516,
+        "Auto": 0.0075,
+        "avg": 0.0204
+      },
+      "correlation_diff": 0.0804,
+      "categorical_score": null,
+      "continuous_score": 0.9796,
+      "correlation_score": 0.9196,
+      "fidelity_score": 0.9496
+    },
+    "utility": {
+      "tstr": {
+        "LR": {
+          "accuracy": {
+            "mean": 0.9302,
+            "std": 0.0005
+          },
+          "f1": {
+            "mean": 0.9256,
+            "std": 0.0006
+          }
+        },
+        "DT": {
+          "accuracy": {
+            "mean": 0.945,
+            "std": 0.0141
+          },
+          "f1": {
+            "mean": 0.9443,
+            "std": 0.014
+          }
+        },
+        "RF": {
+          "accuracy": {
+            "mean": 0.9801,
+            "std": 0.0034
+          },
+          "f1": {
+            "mean": 0.9779,
+            "std": 0.0035
+          }
+        },
+        "LinearSVM": {
+          "accuracy": {
+            "mean": 0.8899,
+            "std": 0.0018
+          },
+          "f1": {
+            "mean": 0.8792,
+            "std": 0.0018
+          }
+        },
+        "MLP": {
+          "accuracy": {
+            "mean": 0.9699,
+            "std": 0.0044
+          },
+          "f1": {
+            "mean": 0.9677,
+            "std": 0.0045
+          }
+        }
+      },
+      "trtr": {
+        "LR": {
+          "accuracy": {
+            "mean": 0.9645,
+            "std": 0.0002
+          },
+          "f1": {
+            "mean": 0.9628,
+            "std": 0.0002
+          }
+        },
+        "DT": {
+          "accuracy": {
+            "mean": 0.9997,
+            "std": 0.0001
+          },
+          "f1": {
+            "mean": 0.9997,
+            "std": 0.0001
+          }
+        },
+        "RF": {
+          "accuracy": {
+            "mean": 0.9997,
+            "std": 0.0
+          },
+          "f1": {
+            "mean": 0.9996,
+            "std": 0.0
+          }
+        },
+        "LinearSVM": {
+          "accuracy": {
+            "mean": 0.9279,
+            "std": 0.0005
+          },
+          "f1": {
+            "mean": 0.9203,
+            "std": 0.0005
+          }
+        },
+        "MLP": {
+          "accuracy": {
+            "mean": 0.9993,
+            "std": 0.0001
+          },
+          "f1": {
+            "mean": 0.9993,
+            "std": 0.0001
+          }
+        }
+      },
+      "delta": {
+        "LR": {
+          "accuracy": 0.0343,
+          "f1": 0.0372
+        },
+        "DT": {
+          "accuracy": 0.0547,
+          "f1": 0.0554
+        },
+        "RF": {
+          "accuracy": 0.0196,
+          "f1": 0.0217
+        },
+        "LinearSVM": {
+          "accuracy": 0.038,
+          "f1": 0.0411
+        },
+        "MLP": {
+          "accuracy": 0.0294,
+          "f1": 0.0316
+        }
+      },
+      "utility_score": 0.9637
+    },
+    "diversity": {
+      "category_coverage": {},
+      "bin_coverage": {
+        "Time": 0.9,
+        "Rad Flow": 0.6,
+        "Fpv Close": 1.0,
+        "Fpv Open": 1.0,
+        "High": 0.3,
+        "Bypass": 0.1,
+        "Bpv Close": 0.7,
+        "Bpv Open": 1.0,
+        "Auto": 1.0,
+        "avg": 0.7333
+      },
+      "gower_similarity": 0.9761,
+      "diversity_score": 0.8547
+    },
+    "privacy": {
+      "mean_nndr": 0.9752,
+      "exact_duplicate_rate": 0.0,
+      "near_duplicate_rate": 0.3295,
+      "nndr_score": 0.9752,
+      "exact_dup_score": 1.0,
+      "near_dup_score": 0.6705,
+      "privacy_score": 0.8819
+    },
+    "consistency": {
+      "discriminator_accuracy": 0.9998,
+      "discriminator_score": 0.0004,
+      "constraint_violations": {},
+      "constraint_score": null,
+      "feature_importance_spearman": 0.9167,
+      "consistency_score": 0.4585
+    },
+    "stability": {
+      "n_runs": 5,
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "per_run_scores": [
+        {
+          "seed": 0,
+          "fidelity_score": 0.9502,
+          "diversity_score": 0.847
+        },
+        {
+          "seed": 1,
+          "fidelity_score": 0.9497,
+          "diversity_score": 0.8377
+        },
+        {
+          "seed": 2,
+          "fidelity_score": 0.9496,
+          "diversity_score": 0.848
+        },
+        {
+          "seed": 3,
+          "fidelity_score": 0.9502,
+          "diversity_score": 0.8577
+        },
+        {
+          "seed": 4,
+          "fidelity_score": 0.9498,
+          "diversity_score": 0.8469
+        }
+      ],
+      "mean_scores": {
+        "fidelity": 0.9499,
+        "diversity": 0.8475
+      },
+      "std_scores": {
+        "fidelity": 0.0003,
+        "diversity": 0.0063
+      },
+      "avg_std": 0.0033,
+      "stability_score": 0.967
+    }
+  }
+}
