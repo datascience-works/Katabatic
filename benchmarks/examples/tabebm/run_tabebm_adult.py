@@ -1,9 +1,18 @@
+import os
+import sys
 import warnings
-warnings.filterwarnings("ignore")
-import os, sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
-from katabatic.models.tabebm.models import TabEBMModel, TabEBMConfig
+
+from katabatic.models.tabebm.models import TabEBMConfig, TabEBMModel
+
+warnings.filterwarnings("ignore")
+
+
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
+
 
 config = RunConfig(
     dataset_name="adult",
@@ -47,6 +56,8 @@ model.train(output_dir=paths["split_dir"], synthetic_dir=paths["synthetic_dir"])
 
 x_synth, y_synth = model.sample(1000)  # testing only
 x_synth[target_col] = y_synth.values
-synthetic_df = save_synthetic(x_synth, train_df, paths, categorical_cols=config.categorical_cols)
+synthetic_df = save_synthetic(
+    x_synth, train_df, paths, categorical_cols=config.categorical_cols
+)
 
 evaluate(model, config, train_df, synthetic_df, target_col, paths, test_df)

@@ -27,9 +27,9 @@ This gradually pushes a starting point toward realistic-looking data while addin
 
 ### Research Paper
 
-**Title:** TabEBM: A Tabular Data Augmentation Method with Distinct Class-Specific Energy-Based Models  
-**Authors:** Andrei Margeloiu, Xiangjian Jiang, Nikola Simidjievski, Mateja Jamnik  
-**Venue:** NeurIPS 2024  
+**Title:** TabEBM: A Tabular Data Augmentation Method with Distinct Class-Specific Energy-Based Models
+**Authors:** Andrei Margeloiu, Xiangjian Jiang, Nikola Simidjievski, Mateja Jamnik
+**Venue:** NeurIPS 2024
 **Link:** https://arxiv.org/abs/2409.16118
 
 **Parameters we kept from the paper:**
