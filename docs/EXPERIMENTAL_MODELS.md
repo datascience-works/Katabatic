@@ -26,7 +26,20 @@ These models are listed in `ModelRegistry` with `supported: True`, and `tests/te
 Present in the codebase, but with no guarantee of **API stability or CI coverage**.
 `[tool.coverage.run].omit` in the root `pyproject.toml` is the closest available list of known-experimental models.
 
-### Registered (usable via `ModelRegistry.load_model()`)
+| Model | Extra | Notes |
+|-------|-------|-------|
+| GReaT | `great` | Has an integration test and CI job, but registered with `supported: False` — not yet promoted |
+| AIM | `aim` | Differentially private marginal-based synthesis using Private-PGM; has an artifact pipeline integration test and is registered with `supported: False` |
+| TabSyn | `tabsyn` | Heavy torch stack |
+| TabDDPM | `tabddpm` | Uses external `tabddpm` or local fallback |
+| CoDi | `codi` | Not in registry; see `examples/codi.ipynb` |
+| MedGAN | `medgan` | Not in registry; see `examples/medgan.ipynb` |
+
+Models noted "Not in registry" ship as source but can't be loaded through
+`ModelRegistry.load_model()` — import them directly from their module instead.
+
+Examples under `examples/` are best-effort. New contributions start as experimental
+until a maintainer adds an extra, a registry entry, and integration smoke coverage.
 
 | Model | Extra | Notes |
 | ------- | ------- | ------- |
