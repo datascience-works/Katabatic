@@ -124,7 +124,7 @@ for m in model_chosen:
     config = RunConfig(
         dataset_name="shuttle",
         model_name=m,
-        #target_col_raw="6",
+        # target_col_raw="6",
     )
 
     train_df, test_df, target_col, paths = preprocess_and_split(config)
@@ -197,25 +197,13 @@ print(f"{best_model} with a score of {best_score:.4f}")
 
 print("\n======= MODEL SCORE SUMMARY =======")
 
-sorted_results = sorted(
-    all_model_results.items(),
-    key=lambda x: x[1],
-    reverse=True
-)
+sorted_results = sorted(all_model_results.items(), key=lambda x: x[1], reverse=True)
 
-model_width = max(
-    len("Model"),
-    max(len(str(model)) for model in all_model_results)
-)
+model_width = max(len("Model"), max(len(str(model)) for model in all_model_results))
 
 print(f"{'Rank':<5}{'Model':<{model_width + 5}}{'Score':>5}")
 print("-" * (model_width + 19))
 
 for rank, (model, score) in enumerate(sorted_results, start=1):
     marker = " <-- Recommended" if model == best_model else ""
-    print(
-        f"{rank:<5}"
-        f"{model:<{model_width + 5}}"
-        f"{score:>5.4f}"
-        f"{marker}"
-    )
+    print(f"{rank:<5}{model:<{model_width + 5}}{score:>5.4f}{marker}")

@@ -20,6 +20,7 @@ from katabatic.utils.column_types import get_column_types  # noqa: E402
 from katabatic.utils.preprocess import preprocess_dataset  # noqa: E402
 from katabatic.utils.split_dataset import split_dataset  # noqa: E402
 
+
 @dataclass
 class RunConfig:
     dataset_name: str
