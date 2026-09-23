@@ -216,6 +216,8 @@ def save_metadata(
     training_config: dict[str, Any],
     privacy_config: dict[str, Any],
     seed: int = 42,
+    target_col_name: str | None = None,
+    target_label_encoder: LabelEncoder | None = None,
 ):
     """
     Save model metadata including schema and training configuration.
@@ -226,6 +228,11 @@ def save_metadata(
         training_config: Dictionary with training hyperparameters
         privacy_config: Dictionary with privacy parameters
         seed: Random seed used
+        target_col_name: Name of the target column, if any (used to invert the
+            class remap described below in sample()).
+        target_label_encoder: Encoder that remapped the target's original
+            classes to consecutive integers for training (separate from
+            transformer.label_encoders, which only covers feature columns).
     """
     metadata = {
         "schema": transformer.schema,
@@ -245,6 +252,12 @@ def save_metadata(
             if transformer.max_vals is not None
             else None,
         },
+        "target_col_name": target_col_name,
+        "target_label_encoder": (
+            {"classes": target_label_encoder.classes_.tolist()}
+            if target_label_encoder is not None
+            else None
+        ),
         "model_type": "PATEGAN",
         "framework_version": "0.1.0",
     }
