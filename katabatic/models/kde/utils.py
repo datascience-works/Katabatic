@@ -165,7 +165,8 @@ class KDEModel:
                         data_c[col] = np.full(n_c, np.nan)
                         continue
 
-                    samples = kde.sample(n_c, random_state=self.random_state).flatten()
+                    kde_seed = int(self._rng.integers(np.iinfo(np.int32).max))
+                    samples = kde.sample(n_c, random_state=kde_seed).flatten()
                     if self._continuous_is_int_.get(col, False):
                         samples = np.rint(samples).astype(int)
                     data_c[col] = samples

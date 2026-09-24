@@ -40,6 +40,7 @@ class KDESynthesizer(BaseModel):
         self._kde: KDEModel | None = None
         self._target_col: str | None = None
         self._feature_cols: list[str] = []
+        self._n_train_rows: int | None = None
 
     @classmethod
     def get_required_dependencies(cls) -> list[str]:
@@ -79,6 +80,7 @@ class KDESynthesizer(BaseModel):
             random_state=self.cfg["seed"],
         )
         self._kde.fit(df)
+        self._n_train_rows = len(df)
         self.is_fitted = True
 
         return self
@@ -176,11 +178,7 @@ class KDESynthesizer(BaseModel):
         ) as f:
             json.dump(meta, f, indent=2)
 
-        print(
-            f"[KDE] Synthetic data saved:\n"
-            f"  X -> {x_path_out}\n"
-            f"  y -> {y_path_out}"
-        )
+        print(f"[KDE] Synthetic data saved:\n  X -> {x_path_out}\n  y -> {y_path_out}")
 
         self._maybe_save_artifact_state(artifact_state_dir)
 
@@ -203,11 +201,7 @@ class KDESynthesizer(BaseModel):
         if cat_idx is None:
             return None
 
-        return {
-            self._feature_cols[i]
-            for i in cat_idx
-            if i < len(self._feature_cols)
-        }
+        return {self._feature_cols[i] for i in cat_idx if i < len(self._feature_cols)}
 
     def evaluate(self, *args, **kwargs) -> float:
         if not self.is_fitted:
@@ -227,7 +221,7 @@ class KDESynthesizer(BaseModel):
         if not self.is_fitted or self._kde is None:
             raise RuntimeError("Call train() before sample().")
 
-        n_rows = int(n_samples) if n_samples is not None else 1000
+        n_rows = int(n_samples) if n_samples is not None else self._n_train_rows
         return self._kde.generate(n_rows)
 
     def _save_artifact_state(self, artifact_state_dir: str) -> None:
@@ -238,6 +232,7 @@ class KDESynthesizer(BaseModel):
             "kde": self._kde,
             "target_col": self._target_col,
             "feature_cols": self._feature_cols,
+            "n_train_rows": self._n_train_rows,
             "is_fitted": self.is_fitted,
         }
 
@@ -264,6 +259,7 @@ class KDESynthesizer(BaseModel):
         instance._kde = state["kde"]
         instance._target_col = state["target_col"]
         instance._feature_cols = state["feature_cols"]
+        instance._n_train_rows = state["n_train_rows"]
         instance.is_fitted = state["is_fitted"]
 
         return instance
