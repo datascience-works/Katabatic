@@ -77,6 +77,31 @@ TrainTestSplitPipeline(model=FairTabDiffusion(sensitive_col="sex")).run(
 
 Adult, Car, Magic, Nursery, Shuttle (standard Katabatic benchmark set). For datasets without an obvious sensitive attribute (Car, Magic, Nursery, Shuttle), leave `sensitive_col=None` — the model then conditions on the label only. Note that with the default `balanced_sampling=True` the **label is still rebalanced to uniform**, so the synthetic class distribution will differ from the real one on imbalanced datasets (e.g. Shuttle, Car). Pass `balanced_sampling=False` to keep the real class distribution. For Adult, `sex` or `race` are natural choices for `sensitive_col`.
 
+## Benchmark results
+
+| Dataset | Fidelity | Utility | Diversity | Privacy | Consistency | Stability | Composite | Runtime |
+|---|---|---|---|---|---|---|---|---|
+| Car | 0.8664 | 0.8473 | 0.9752 | 0.4597 | 0.8589 | 0.9590 | **0.8135** | 41 s |
+| Nursery | 0.9006 | 0.8622 | 0.9806 | 0.4683 | 0.8575 | 0.9830 | **0.8301** | 3 min |
+| Magic | 0.9403 | 0.9362 | 0.9060 | 0.7090 | 0.5784 | 0.9875 | **0.8669** | 7 min |
+| Shuttle | 0.9345 | 0.9421 | 0.9710 | 0.8747 | 0.3848 | 0.9805 | **0.8792** | 9 min |
+| Adult | 0.9473 | 0.8866 | 0.9955 | 0.8588 | 0.5032 | 0.9940 | **0.8755** | 14 min |
+
+How to read these scores:
+
+| Dataset | Exact duplicates of real rows | Near-duplicates (Gower < 0.01) | Real-vs-synthetic classifier accuracy | TSTR / TRTR accuracy |
+|---|---|---|---|---|
+| Car | 81% | 0% | 0.58 | 0.683 / 0.861 |
+| Nursery | 80% | 0% | 0.54 | 0.745 / 0.896 |
+| Magic | 0% | 72% | 0.75 | 0.754 / 0.827 |
+| Shuttle | 0% | 32% | 0.92 | 0.906 / 0.978 |
+| Adult | 0% | 23% | 0.83 | 0.696 / 0.836 |
+
+- **The exact duplicates on car and nursery aren't memorisation.** Both datasets list every possible feature combination exactly once, so any valid synthetic row matches a real one. With an 80/20 split, about 80% of rows would match the training data by chance, which is what the model produces.
+- **Balanced sampling can lower TSTR on imbalanced datasets.** Labels are drawn uniformly by default, so the synthetic class mix differs from the real test set. Use `balanced_sampling=False` to keep the real class distribution.
+- **Consistency is the weakest dimension** on magic, shuttle and adult (0.38–0.58).
+- GPU memory peaked at under 0.5 GB on every dataset.
+
 ## Dependencies
 
 - `torch`, installed via the `fairtabdiffusion` extra:
