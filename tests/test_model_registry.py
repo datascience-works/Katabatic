@@ -108,6 +108,7 @@ def test_supported_models_list():
         "arf",
         "synthpop",
         "naivebayes",
+        "histogram",
         "realtabformer",
         "kde",
     }

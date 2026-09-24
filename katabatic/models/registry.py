@@ -132,6 +132,13 @@ class ModelRegistry:
             "extra": "naivebayes",
             "supported": True,
         },
+        "histogram": {
+            "module": "katabatic.models.histogram.models",
+            "class": "HistogramModel",
+            "dependencies": ["numpy", "pandas"],
+            "extra": "histogram",
+            "supported": True,
+        },
         "smote": {
             "module": "katabatic.models.smote.models",
             "class": "SMOTEModel",

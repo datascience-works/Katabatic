@@ -47,6 +47,7 @@ great = [
     "accelerate>=1.15.0",
     "fsspec>=2023.5.0,<=2026.2.0",
 ]
+histogram = []
 realtabformer = [
     "realtabformer==0.2.4",
     "transformers>=5.0.0,<6.0.0",
@@ -154,6 +155,7 @@ markers = [
     "arf: requires arf extra",
     "synthpop: requires synthpop extra (and R + CRAN synthpop packages)",
     "naivebayes: requires naivebayes extra",
+    "histogram: requires histogram extra",
     "realtabformer: requires realtabformer extra",
     "forked: run test in an isolated forked process (pytest-forked)",
 ]

@@ -17,6 +17,7 @@ Katabatic ships multiple generative model implementations. Only a subset is **of
 | ARF | `pip install katabatic[arf]` | Yes (artifact pipeline integration test) |
 | SynthPop | `pip install katabatic[synthpop]` | Yes (artifact pipeline integration test; also requires R + CRAN `synthpop` packages) |
 | Naive Bayes | `pip install katabatic[naivebayes]` | Yes (artifact pipeline integration test) |
+| Histogram | `pip install katabatic[histogram]` | Yes (artifact pipeline integration test) |
 | REaLTabFormer | `pip install katabatic[realtabformer]` | Yes (artifact pipeline integration test) |
 | KDE | `pip install katabatic[kde]` | Yes (artifact pipeline integration test) |
 
