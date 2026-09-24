@@ -138,8 +138,8 @@ class FsspecArtifactStore(ArtifactStore):
         if fsspec is None:  # pragma: no cover
             raise ImportError(
                 "FsspecArtifactStore requires fsspec and your backend's filesystem "
-                "package. Install katabatic[artifacts-s3], [artifacts-gcs], "
-                "[artifacts-azure], or [artifacts-remote] for all three."
+                "package. Install katabatic[artifacts-s3], [artifacts-gcs] or "
+                "[artifacts-azure]."
             ) from _IMPORT_ERROR
 
     def close(self) -> None:

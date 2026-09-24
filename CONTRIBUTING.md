@@ -213,8 +213,7 @@ tests/test_integration_ganblr.py + tests/test_integration_pategan.py -> 4 passed
 ```bash
 make test                     # fast tests, no model extras (matches CI's lint-and-test job)
 make integration MODEL=ganblr # integration tests for a single model extra
-make contract                 # model promotion contract for every supported model — safe with
-                               # -E all installed, since each model's case runs pytest-forked
+make contract MODEL=ganblr    # model promotion contract for a single model
 ```
 
 Run `make help` for the full target list, and see [.github/workflows/ci.yml](.github/workflows/ci.yml)
