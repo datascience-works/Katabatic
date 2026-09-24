@@ -7,29 +7,40 @@ sys.path.insert(
 
 from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
-from katabatic.models.naivebayes.models import NaiveBayesModel
+from katabatic.models.ctgan.models import CTGANModel
 
 config = RunConfig(
-    dataset_name="car",
-    model_name="naivebayes",
-    categorical_cols=["0", "1", "2", "3", "4", "5"],
-    continuous_cols=[],
-    target_col_raw="6",
-    constraints=None,
+    dataset_name="magic",
+    model_name="ctgan",
+    categorical_cols=[],
+    continuous_cols=[
+        "fLength",
+        "fWidth",
+        "fSize",
+        "fConc",
+        "fConc1",
+        "fAsym",
+        "fM3Long",
+        "fM3Trans",
+        "fAlpha",
+        "fDist",
+    ],
+    target_col_raw="class",
+    constraints={},
 )
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)
 
 print("\n" + "=" * 60)
-print("STEP 3 — Train Naive Bayes")
+print("STEP 3 — Train CTGAN")
 print("=" * 60)
-model = NaiveBayesModel(seed=42)
+model = CTGANModel(epochs=100, batch_size=512, seed=42)
 model.train(
     paths["split_dir"],
     categorical_cols=config.categorical_cols,
     continuous_cols=config.continuous_cols,
 )
-print("\nNaive Bayes training complete.")
+print("\nCTGAN training complete.")
 
 print("\n" + "=" * 60)
 print("STEP 4 — Generate synthetic data")

@@ -95,6 +95,22 @@ def install(
     subprocess.run(command, check=True)
 
 
+def remove_triton_if_present(poetry: str) -> None:
+    """Uninstall triton to avoid segfault on CPU-only torch."""
+    installed = (
+        subprocess.run(
+            [poetry, "run", "pip", "show", "triton"],
+            capture_output=True,
+        ).returncode
+        == 0
+    )
+    if not installed:
+        return
+
+    print("Removing triton...")
+    subprocess.run([poetry, "run", "pip", "uninstall", "-y", "triton"], check=True)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Set up the Katabatic development environment."
@@ -122,6 +138,7 @@ def main() -> int:
         print(f"Poetry found: {poetry}")
 
         install(poetry, operating_system, args.model)
+        remove_triton_if_present(poetry)
 
         print("Katabatic setup completed successfully.")
         return 0
