@@ -107,7 +107,10 @@ model = HistogramModel(
     random_state=42,
 )
 
-model.fit(train_df)
+model.train(
+    paths["split_dir"],
+    synthetic_dir=paths["synthetic_dir"],
+)
 
 print("\nHistogram training complete.")
 

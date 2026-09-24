@@ -165,6 +165,9 @@ jobs:
             naivebayes:
               - 'katabatic/models/naivebayes/**'
               - 'tests/test_integration_naivebayes.py'
+            histogram:
+              - 'katabatic/models/histogram/**'
+              - 'tests/test_integration_histogram.py'
             realtabformer:
               - 'katabatic/models/realtabformer/**'
               - 'tests/test_integration_realtabformer.py'
@@ -184,6 +187,7 @@ jobs:
             {"model": "arf", "torch": false},
             {"model": "synthpop", "torch": false, "r": true},
             {"model": "naivebayes", "torch": false},
+            {"model": "histogram", "torch": false},
             {"model": "realtabformer", "torch": true}
           ]'
 
