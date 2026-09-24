@@ -18,3 +18,6 @@ model = GANBLRPP(
 model.fit(X, y)
 
 synthetic_data = model.sample(size=100)
+## References
+
+- Zhang, Y., Zaidi, N. A., Zhou, J., & Li, G. (2022). *GANBLR++: Incorporating Capacity to Generate Numeric Attributes and Leveraging Unrestricted Bayesian Networks.* SDM 2022. doi:10.1137/1.9781611977172.34
