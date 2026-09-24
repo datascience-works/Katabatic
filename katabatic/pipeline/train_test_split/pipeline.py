@@ -310,10 +310,6 @@ class TrainTestSplitPipeline(Pipeline):
         store.open_path(mr.state_relpath).mkdir(parents=True, exist_ok=True)
         store.open_path(mr.synthetic_relpath).mkdir(parents=True, exist_ok=True)
 
-        # Ensure the dataset is actually present locally before a model
-        # reads it — matters when the dataset artifact was written by a
-        # different process/machine against a remote-backed store.
-        store.pull(ds_ref.root_relpath)
         dataset_dir = _dataset_dir_for_model(current_model, store, ds_ref)
         synthetic_dir = str(store.open_path(mr.synthetic_relpath))
 

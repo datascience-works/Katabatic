@@ -193,6 +193,9 @@ plus `_artifact_store`/`_evaluation_ref`/`_artifact_report_relpath` kwargs so `e
 write a report when called through the artifact pipeline (and skip that write when called
 directly with DataFrames). `FidelityEvaluation.from_artifact()` is the reference implementation.
 
+In either case, call `store.pull(path)` for each artifact path `from_artifact()` reads, so remote
+stores download files written on another machine. It's a no-op for `LocalArtifactStore`.
+
 ## Testing and Quality Assurance
 
 ### Running Tests Locally

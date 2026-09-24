@@ -1,4 +1,4 @@
-from katabatic.artifacts.base import ArtifactStore
+from katabatic.artifacts.base import ArtifactConflictError, ArtifactStore
 from katabatic.artifacts.dataset_split import (
     write_dataset_artifact,
     write_dataset_artifact_presplit,
@@ -11,14 +11,11 @@ from katabatic.artifacts.refs import (
     ModelRef,
     artifact_path_segment,
 )
-
-try:
-    from katabatic.artifacts.remote import FsspecArtifactStore
-except ImportError:
-    FsspecArtifactStore = None  # fsspec extra not installed
+from katabatic.artifacts.remote import FsspecArtifactStore
 
 __all__ = [
     "ArtifactStore",
+    "ArtifactConflictError",
     "LocalArtifactStore",
     "FsspecArtifactStore",
     "DatasetRef",
