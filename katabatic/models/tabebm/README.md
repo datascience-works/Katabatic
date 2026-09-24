@@ -4,7 +4,7 @@
 
 TabEBM (Tabular Energy-Based Model) is a method for generating synthetic tabular data. It creates **one separate model for each class label** in the dataset, which helps it learn the unique patterns of each class independently. It was published at NeurIPS 2024 by researchers at the University of Cambridge.
 
-Instead of learning a shared model for all classes, TabEBM trains a small binary classifier per class, then uses a sampling process called SGLD to generate new data points that look like they belong to that class.
+> **Implementation note:** the paper's method trains a binary TabPFN classifier per class and uses its output as the energy function. The Katabatic implementation (`_TabEBMBackend` in `models.py`) does **not** use TabPFN — it's a from-scratch NumPy energy approximation instead, explicitly to avoid TabPFN's torch/autograd dependency. The energy gradient at each point is approximated directly from distances to the real class samples and to synthetic hypercube negatives (see Key Idea below), with no classifier trained at all. This is a substantially different (and less expensive) approximation of the paper's method, not TabPFN under a different name — keep that in mind when comparing results to the paper.
 
 ---
 
@@ -12,14 +12,13 @@ Instead of learning a shared model for all classes, TabEBM trains a small binary
 
 For each class, TabEBM:
 1. Takes the real samples from that class as **positive examples**
-2. Creates fake "negative" samples placed far away from the real data (at the corners of a hypercube)
-3. Trains a binary classifier (TabPFN) to tell real vs. fake apart — this is the **surrogate task**
-4. Uses the trained classifier's output as an **energy function**: low energy = looks like real data
-5. Runs **SGLD sampling** to generate new points that move toward low-energy (realistic) regions
+2. Creates 4 fake "negative" samples placed at random corners of a hypercube, `distance_negative_class` standard deviations out
+3. Approximates an energy gradient at each candidate point directly from distances — the gradient toward the single nearest real/negative point, plus the mean gradient toward all real positive points — with no classifier in the loop
+4. Runs **SGLD sampling**: repeatedly nudges points against that gradient (toward realistic regions) with added noise, for a fixed number of steps
 
 The SGLD update at each step is:
 
-`x_new = x_old - (step_size / 2) × gradient_of_energy + small_random_noise`
+`x_new = x_old - step_size × gradient_estimate + small_random_noise`
 
 This gradually pushes a starting point toward realistic-looking data while adding a little noise to keep diversity.
 
@@ -41,7 +40,6 @@ This gradually pushes a starting point toward realistic-looking data while addin
 
 **What we changed for benchmarking:**
 - `max_data_size = 1000` — reduced from 10000 for faster testing
-- For large datasets (Credit Card, Covertype), we subsampled 2000 rows per class to avoid memory issues
 
 ---
 
@@ -49,12 +47,11 @@ This gradually pushes a starting point toward realistic-looking data while addin
 
 ### Training Details
 - Data is normalised before training (continuous columns: z-score, categorical columns: ordinal encoding)
-- For each class, a binary TabPFN classifier is trained on real samples (label=1) vs. hypercube negative samples (label=0)
-- TabPFN is a pre-trained transformer — it does not need gradient-based training itself, which makes this fast
-- The energy function is derived directly from the classifier's output probabilities
+- No classifier is trained. For each class, the energy gradient used by SGLD is computed directly from pairwise distances between candidate points and that class's real + surrogate-negative samples (see the implementation note above)
+- "Training" is therefore just fitting the schema/encoding and caching the (encoded) training data for use at sampling time — there's no optimisation loop
 
 ### Convergence Criteria
-- Training ends after TabPFN is fit (it is a zero-shot/in-context model, no iterative training loop)
+- There is no training loop to converge sd 0-`train()` completes as soon as the schema is fit
 - SGLD sampling runs for a fixed number of steps (`sgld_steps = 200`)
 
 ---
@@ -117,25 +114,26 @@ Generated files saved to `synthetic_dir`:
 ## Strengths
 
 - **Class-specific models** mean each class gets its own generator — useful when classes have very different distributions
-- **No neural network training from scratch** — uses pre-trained TabPFN, so it is relatively fast
-- **Works well with small datasets** — TabPFN is designed for small tabular data
-- **Good fidelity scores** across all datasets tested
+- **No classifier or neural network training at all** — sampling only needs the cached training data, so `train()` itself is nearly instant
+- **Good fidelity scores** in benchmarks so far
 
 ---
 
 ## Limitations
 
-- **Stability = 0.0** in all our benchmarks: because SGLD is a stochastic (random) process, results change each run. This makes it hard to reproduce exact outputs.
-- **Not suitable for very large datasets** without subsampling — the in-context learning in TabPFN has memory limits
-- **Privacy scores are lower** on some datasets (e.g. Adult, Bank Marketing) because the class-specific models can memorise small classes
+- **SGLD sampling scales quadratically with dataset size**: each step computes pairwise distances between every candidate point and every real/negative sample per class (`compute_energy_gradient`). This is the actual scaling bottleneck — not TabPFN memory limits, since TabPFN isn't used (see the implementation note above). `max_data_size` caps this per class via subsampling.
+- **Privacy scores are lower** on some datasets (e.g. Adult) because the class-specific generation can memorise small classes
 - **Consistency scores vary** — some feature correlations may not be perfectly preserved
+- **`sample()` always reuses the configured `seed`** (`TabEBMConfig.seed`, default 42) for every call, so repeated calls on the same fitted model are fully deterministic — this makes results reproducible run-to-run, but also means the stability evaluation dimension (which expects independent runs) isn't measuring genuine run-to-run variance for this model
 
 ---
 
-## Installation
+## Status
+
+TabEBM is an officially supported Katabatic model (`supported: True` in `ModelRegistry`).
 
 ```bash
-poetry install --extras tabebm
+pip install katabatic[tabebm]   # or: poetry install -E tabebm
 ```
 
 ---
@@ -158,104 +156,52 @@ config = TabEBMConfig(
 model = TabEBMModel(target_col="label", config=config)
 
 model.train(
-    output_dir="path/to/split_dir",    # folder with x_train.csv and y_train.csv
-    synthetic_dir="path/to/synth_dir"
+    "path/to/split_dir",  # folder with x_train.csv and y_train.csv
+    synthetic_dir="path/to/synth_dir",
 )
 
-x_synth, y_synth = model.sample(1000)
+synthetic_df = model.sample(1000)  # single DataFrame: features + target as the last column
 ```
 
-**Benchmark scripts for each dataset:**
+Through the artifact pipeline (recommended — also persists state for `load_from_ref`):
+
+```python
+from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
+
+TrainTestSplitPipeline(model=TabEBMModel()).run(
+    input_csv="data.csv",
+    dataset_name="mydata",
+    artifact_store=store,
+    model_name="tabebm",
+)
+```
+
+**Benchmark scripts:**
 - Adult: [`benchmarks/examples/tabebm/run_tabebm_adult.py`](benchmarks/examples/tabebm/run_tabebm_adult.py)
-- Bank Marketing: [`benchmarks/examples/tabebm/run_tabebm_bank_marketing.py`](benchmarks/examples/tabebm/run_tabebm_bank_marketing.py)
 - Car: [`benchmarks/examples/tabebm/run_tabebm_car.py`](benchmarks/examples/tabebm/run_tabebm_car.py)
-- Credit Card: [`benchmarks/examples/tabebm/run_tabebm_creditcard.py`](benchmarks/examples/tabebm/run_tabebm_creditcard.py)
-- Covertype: [`benchmarks/examples/tabebm/run_tabebm_covtype.py`](benchmarks/examples/tabebm/run_tabebm_covtype.py)
 
 ---
 
 ## Model Evaluation Benchmark Results
 
-> Note: Stability = 0.0 for all datasets. This is expected — TabEBM uses stochastic SGLD sampling, so results differ slightly each run.
-
-#### Adult Dataset
-
-Composite score: **0.7477**
-
-| Dimension | Score |
-|---|---|
-| Fidelity | 0.9482 |
-| Utility | 0.9304 |
-| Diversity | 0.8208 |
-| Privacy | 0.4299 |
-| Consistency | 0.3844 |
-| Stability | 0.0000 |
-
----
-
-#### Bank Marketing Dataset
-
-Composite score: **0.7757**
-
-| Dimension | Score |
-|---|---|
-| Fidelity | 0.9823 |
-| Utility | 0.9683 |
-| Diversity | 0.8583 |
-| Privacy | 0.4291 |
-| Consistency | 0.4098 |
-| Stability | 0.0000 |
-
----
 
 #### Car Dataset
 
-Composite score: **0.8349**
+Composite score: **0.8888**
 
 | Dimension | Score |
 |---|---|
-| Fidelity | 0.9836 |
-| Utility | 0.9785 |
-| Diversity | 0.9993 |
+| Fidelity | 0.9838 |
+| Utility | 0.9969 |
+| Diversity | 0.9989 |
 | Privacy | 0.3333 |
-| Consistency | 0.9664 |
-| Stability | 0.0000 |
+| Consistency | 0.9406 |
+| Stability | 1.0000 |
 
 ---
 
-#### Credit Card Dataset
+#### Adult Dataset
 
-Composite score: **0.8623**
-
-| Dimension | Score |
-|---|---|
-| Fidelity | 0.9311 |
-| Utility | 1.0000 |
-| Diversity | 0.8791 |
-| Privacy | 0.9059 |
-| Consistency | 0.5573 |
-| Stability | 0.0000 |
+Not yet re-verified after the promotion fixes (long-running; see Model Performance below). Whoever picks up the next Validation & Benchmarking pass should fill this in from a completed `run_tabebm_adult.py` run.
 
 ---
-
-#### Covertype Dataset
-
-Composite score: **0.7603**
-
-| Dimension | Score |
-|---|---|
-| Fidelity | 0.9765 |
-| Utility | 0.8061 |
-| Diversity | 0.6716 |
-| Privacy | 0.6434 |
-| Consistency | 0.7042 |
-| Stability | 0.0000 |
-
----
-
-## Model Performance
-
-- Runs on CPU (no GPU required)
-- Adult (48K rows, 15 cols): ~5–10 minutes
-- Covertype (464K rows, 54 cols, subsampled to 14K): ~10–15 minutes
-- Credit Card (284K rows, 31 cols, subsampled to 4K): ~5–10 minutes

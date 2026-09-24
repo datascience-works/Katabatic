@@ -139,6 +139,13 @@ class ModelRegistry:
             "extra": "histogram",
             "supported": True,
         },
+        "tabebm": {
+            "module": "katabatic.models.tabebm.models",
+            "class": "TabEBMModel",
+            "dependencies": ["numpy", "pandas", "sklearn", "torch"],
+            "extra": "tabebm",
+            "supported": True,
+        },
         "smote": {
             "module": "katabatic.models.smote.models",
             "class": "SMOTEModel",

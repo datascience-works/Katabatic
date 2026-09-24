@@ -168,6 +168,9 @@ jobs:
             histogram:
               - 'katabatic/models/histogram/**'
               - 'tests/test_integration_histogram.py'
+            tabebm:
+              - 'katabatic/models/tabebm/**'
+              - 'tests/test_integration_tabebm.py'
             realtabformer:
               - 'katabatic/models/realtabformer/**'
               - 'tests/test_integration_realtabformer.py'
@@ -188,6 +191,7 @@ jobs:
             {"model": "synthpop", "torch": false, "r": true},
             {"model": "naivebayes", "torch": false},
             {"model": "histogram", "torch": false},
+            {"model": "tabebm", "torch": true},
             {"model": "realtabformer", "torch": true}
           ]'
 

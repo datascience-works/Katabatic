@@ -109,5 +109,6 @@ def test_supported_models_list():
         "synthpop",
         "naivebayes",
         "histogram",
+        "tabebm",
         "realtabformer",
     }
