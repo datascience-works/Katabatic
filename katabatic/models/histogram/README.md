@@ -16,20 +16,45 @@ The Histogram implementation follows the Katabatic three-file model structure:
 - `models.py` – Contains the main Histogram model implementation and generation logic.
 - `utils.py` – Contains helper functions for calculating column distributions and sampling values.
 
+## Status
+
+Histogram is an officially supported and has no dependencies beyond Katabatic's core install.
+
+```bash
+pip install katabatic[histogram]   # or: poetry install -E histogram
+```
+
 ## Usage
+
+`train()` reads `train_full.csv` (or `x_train.csv` + `y_train.csv`) from a directory, fits the model, and writes `x_synth.csv` / `y_synth.csv`. Pass `artifact_state_dir` (the artifact pipeline does this automatically) to persist state for `HistogramModel.load_from_ref()`.
 
 ```python
 from katabatic.models.histogram import HistogramModel
 
 model = HistogramModel(random_state=42)
 
-model.fit(real_data)
+model.train("path/to/split_dir", synthetic_dir="path/to/synthetic_dir")
 
 synthetic_data = model.sample(
     len(real_data),
     seed=42,
 )
 ```
+
+Through the artifact pipeline:
+
+```python
+from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
+
+TrainTestSplitPipeline(model=HistogramModel()).run(
+    input_csv="data.csv",
+    dataset_name="mydata",
+    artifact_store=store,
+    model_name="histogram",
+)
+```
+
+Benchmark scripts for all five datasets live in [benchmarks/examples/histogram/](../../../benchmarks/examples/histogram/).
 
 ## How It Works
 
@@ -52,6 +77,8 @@ During synthetic data generation, the model independently samples values for eac
 ## Limitations
 
 The Histogram model treats every column independently. As a result, it may not fully preserve correlations or complex relationships between columns in the original dataset.
+
+Values are resampled from those observed in the training data (no binning or smoothing), so numeric columns never produce values outside the observed set. For evaluation, use the Katabatic evaluation pipeline.
 
 ## Evaluation
 

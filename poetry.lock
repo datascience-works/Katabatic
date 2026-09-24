@@ -7166,6 +7166,7 @@ ctgan = ["torch"]
 eval = ["xgboost"]
 ganblr = ["pgmpy", "pyitlib", "tensorflow", "tensorflow-io"]
 great = ["accelerate", "datasets", "fsspec", "huggingface-hub", "torch", "transformers"]
+histogram = []
 medgan = ["torch"]
 mst = ["opendp", "private-pgm", "smartnoise-synth"]
 naivebayes = []
@@ -7180,4 +7181,4 @@ tabsyn = ["category-encoders", "tomli", "tomli-w", "torch", "tqdm"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.12"
-content-hash = "2bf398e1d04764d2f97f7ecf848a5d28008603f71e895ce42804d5d719d9df11"
+content-hash = "2526c0f610cdc573aabf9b12ae097858122667e406bcfc957c2cf7ccd535800a"
