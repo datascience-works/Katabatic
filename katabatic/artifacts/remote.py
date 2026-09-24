@@ -155,9 +155,8 @@ class FsspecArtifactStore(ArtifactStore):
         local_file = self._local(path)
         remote_file = self._remote(path)
         local_mtime = local_file.stat().st_mtime
-        if (
-            self._last_synced_mtime.get(path) == local_mtime
-            and self.fs.exists(remote_file)
+        if self._last_synced_mtime.get(path) == local_mtime and self.fs.exists(
+            remote_file
         ):
             return  # local file unchanged since we last uploaded it
         self.fs.makedirs(self._parent(remote_file), exist_ok=True)
@@ -167,9 +166,10 @@ class FsspecArtifactStore(ArtifactStore):
     def _download_file(self, path: str) -> None:
         local_file = self._local(path)
         remote_file = self._remote(path)
-        if local_file.exists() and self._last_synced_mtime.get(
-            path
-        ) == local_file.stat().st_mtime:
+        if (
+            local_file.exists()
+            and self._last_synced_mtime.get(path) == local_file.stat().st_mtime
+        ):
             return  # local file already matches what we last downloaded
         local_file.parent.mkdir(parents=True, exist_ok=True)
         self.fs.get_file(remote_file, str(local_file))

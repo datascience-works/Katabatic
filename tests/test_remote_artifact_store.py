@@ -2,6 +2,7 @@
 so no real S3/GCS/Azure credentials are needed in CI. The same store class
 is used against real backends in prod by passing e.g. remote_root="s3://...".
 """
+
 from __future__ import annotations
 
 import uuid
@@ -110,9 +111,7 @@ def test_workdir_pulls_then_syncs_automatically(store, tmp_path):
         local_cache_dir=tmp_path / "third-cache",
     )
     again.pull("models/m1/state")
-    assert (
-        again.open_path("models/m1/state/weights.bin").read_bytes() == b"v2"
-    )
+    assert again.open_path("models/m1/state/weights.bin").read_bytes() == b"v2"
 
 
 @pytest.mark.artifacts_remote
