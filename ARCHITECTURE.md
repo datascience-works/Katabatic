@@ -139,8 +139,9 @@ katabatic/
 │   ├── train_test_split/    # TrainTestSplitPipeline (primary, tested path)
 │   └── evaluation_pipeline.py  # SyntheticEvaluationPipeline
 │
-├── artifacts/                # ArtifactStore: versioned datasets/models/evaluations on disk
+├── artifacts/                # ArtifactStore: versioned datasets/models/evaluations
 │   ├── base.py, local.py, refs.py, ids.py, dataset_split.py
+│   ├── remote.py             # FsspecArtifactStore: S3/GCS/Azure via a local cache + sync()/pull()
 │
 ├── datasets/                  # shipped example-dataset catalogue (adult/car/magic/nursery/shuttle
 │   │                           # — see datasets/README.md for the documented set)

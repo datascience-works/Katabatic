@@ -1,8 +1,7 @@
 """Model registry for dynamic model loading.
 
-Officially supported models (smoke-tested, PyPI extras): ``ganblr``, ``ctgan``,
-``pategan``, ``tabsyn``, ``great``, ``smote``.
-Other registered models are experimental; see ``docs/EXPERIMENTAL_MODELS.md``.
+Contains officially supported models (smoke-tested, PyPI extras).
+Other registered models are experimental. See ``docs/EXPERIMENTAL_MODELS.md``.
 """
 
 from __future__ import annotations

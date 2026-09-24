@@ -120,6 +120,9 @@ class FidelityEvaluation(Evaluation):
             test_dataset_version=dataset_ref.dataset_version,
         )
         store.open_path(eval_ref.root_relpath).mkdir(parents=True, exist_ok=True)
+        # Fetch inputs another machine may have written (no-op for local stores).
+        store.pull(model_ref.synthetic_relpath)
+        store.pull(dataset_ref.test_relpath)
         synthetic_dir = str(store.open_path(model_ref.synthetic_relpath))
         real_test_dir = str(store.open_path(dataset_ref.test_relpath))
         real_data, synthetic_data = _load_fidelity_data(synthetic_dir, real_test_dir)
@@ -256,6 +259,7 @@ class FidelityEvaluation(Evaluation):
             writer.writerow(["Metric", "Value"])
             for metric, value in results["summary"].items():
                 writer.writerow([metric, value])
+        store.sync(report_path)
         print(f"\nResults saved to: {p}")
 
     def _compute_jsd(self) -> dict:
