@@ -110,4 +110,5 @@ def test_supported_models_list():
         "naivebayes",
         "histogram",
         "realtabformer",
+        "kde",
     }

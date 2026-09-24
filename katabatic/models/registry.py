@@ -102,7 +102,7 @@ class ModelRegistry:
             # scikit-learn is already a core dependency; no extra needed.
             "dependencies": ["sklearn"],
             "extra": "kde",
-            "supported": False,
+            "supported": True,
         },
         "arf": {
             "module": "katabatic.models.arf.models",

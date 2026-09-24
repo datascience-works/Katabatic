@@ -4,11 +4,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Poetry](https://img.shields.io/badge/dependency-poetry-blue)](https://python-poetry.org/)
 
-A framework for synthetic tabular data generation, providing a common interface across GANBLR, CTGAN, PATE-GAN, TabSyn, and GReaT, plus additional experimental models.
+A framework for synthetic tabular data generation, providing a common interface across GANBLR, CTGAN, PATE-GAN, TabSyn, GReaT, and KDE, plus additional experimental models.
 
 ## Features
 
-- **Supported Generative Models**: GANBLR (GAN-based Bayesian Learning Rules), CTGAN (conditional tabular GAN), PATE-GAN (differentially private GAN), TabSyn (diffusion-based), and GReaT (transformer-based) — see [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md) for additional experimental models
+- **Supported Generative Models**: GANBLR (GAN-based Bayesian Learning Rules), CTGAN (conditional tabular GAN), PATE-GAN (differentially private GAN), TabSyn (diffusion-based), GReaT (transformer-based), and KDE (kernel density estimation) — see [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md) for additional experimental models
 - **Automated Pipeline**: End-to-end training, generation, and evaluation workflows
 - **TSTR Evaluation**: Train on Synthetic, Test on Real data evaluation methodology
 - **Data Preprocessing**: Automated tabular preprocessing (discretization and encoding)
@@ -71,6 +71,7 @@ Or install directly with Poetry / pip — useful for installing several extras a
 | NaiveBayes (supported) | `pip install katabatic[naivebayes]` or `poetry install -E naivebayes` |
 | Histogram (supported) | `pip install katabatic[histogram]` or `poetry install -E histogram` |
 | REaLTabFormer (supported) | `pip install katabatic[realtabformer]` or `poetry install -E realtabformer` |
+| KDE (supported) | `pip install katabatic[kde]` or `poetry install -E kde` |
 | TSTR + XGBoost | `pip install katabatic[eval]` or `poetry install -E eval` |
 | Development | `poetry install --with dev` |
 | All optional deps | `pip install katabatic[all]` |
