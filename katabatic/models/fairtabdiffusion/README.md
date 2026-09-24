@@ -20,13 +20,13 @@ Standard tabular diffusion models (e.g. TabDDPM, already in Katabatic) can inher
 
 ## Implementation notes
 
-This Katabatic port follows the same `Model` contract and on-disk conventions as `CTGANModel` (`katabatic/models/ctgan/models.py`):
+This Katabatic port follows the standard `Model` contract (`katabatic/models/base_model.py`):
 
-- `train(data_dir, synthetic_dir=None)` reads `train_full.csv` (or `x_train.csv` + `y_train.csv`) from `data_dir`, trains the model, then writes `x_synth.csv`, `y_synth.csv`, and `metadata.json` to `synthetic_dir`.
-- `evaluate()` is a placeholder returning `0.0` (actual evaluation is handled by Katabatic's evaluation pipeline).
-- `sample(n, conditional=None)` generates `n` synthetic rows, optionally conditioned on a fixed label value via `conditional={<label_col>: value}`.
+- `train(data_dir, *, categorical_cols=None, continuous_cols=None, synthetic_dir=None, artifact_state_dir=None)` reads `train_full.csv` (or `x_train.csv` + `y_train.csv`) from `data_dir`, trains the model, writes `x_synth.csv`, `y_synth.csv`, and `metadata.json` to `synthetic_dir` when given, and persists fitted state to `artifact_state_dir` for `load_from_ref()`. If `categorical_cols` isn't given, feature types are auto-detected (dtype + low-cardinality integers).
+- `sample(n_samples=None, *, conditional=None, seed=None)` generates `n_samples` rows (default: the training row count), features plus the label as the last column. `conditional={<label_col>: value}` fixes the label; `seed` makes the call reproducible.
+- `evaluate()` is not implemented (it raises `NotImplementedError`); use Katabatic's evaluation pipeline for metrics.
 
-The diffusion process is a lightweight Gaussian DDPM (MLP-based denoiser, not U-Net) operating over a min-max normalized encoding of Katabatic's standard discretized/integer-encoded columns, decoded back to categorical bins by rounding at sampling time. This is a simplification of the original paper's separate Gaussian/multinomial diffusion, chosen to keep the implementation dependency-light (PyTorch only, already used by `codi`, `ctgan`, `medgan`, `tabddpm`, `great`) while preserving the core fairness mechanism: **conditioning on a sensitive attribute + balanced (uniform) sampling at generation time**.
+The diffusion process is a lightweight Gaussian DDPM (MLP-based denoiser, not U-Net). Continuous columns are quantile-transformed to a normal distribution; categorical columns (including the label) are one-hot encoded and decoded by argmax. The denoiser is conditioned on the label and the sensitive attribute through learned embeddings. This is a simplification of the original paper's separate Gaussian/multinomial diffusion, chosen to keep the implementation dependency-light (PyTorch only) while preserving the core fairness mechanism: **conditioning on a sensitive attribute + balanced (uniform) sampling at generation time**.
 
 ## Usage
 
@@ -40,10 +40,23 @@ model = FairTabDiffusion(
     batch_size=256,
 )
 
-model.train(data_dir="sample_data/adult", synthetic_dir="synthetic/adult/fairtabdiffusion")
+model.train("sample_data/adult", synthetic_dir="synthetic/adult/fairtabdiffusion")
 
 # Optional: generate additional samples after training
-synthetic_df = model.sample(n=1000)
+synthetic_df = model.sample(1000, seed=42)
+```
+
+Through the artifact pipeline (also persists state for `FairTabDiffusion.load_from_ref`):
+
+```python
+from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
+
+TrainTestSplitPipeline(model=FairTabDiffusion(sensitive_col="sex")).run(
+    input_csv="data.csv",
+    dataset_name="mydata",
+    artifact_store=store,
+    model_name="fairtabdiffusion",
+)
 ```
 
 ## Constructor parameters
@@ -58,15 +71,19 @@ synthetic_df = model.sample(n=1000)
 | `lr` | `1e-3` | Adam learning rate. |
 | `seed` | `42` | Random seed. |
 | `device` | `None` (auto) | `"cuda"` or `"cpu"`. |
-| `balanced_sampling` | `True` | If `True`, `sample()` draws label/sensitive attribute uniformly (fair generation). If `False`, samples from the empirical training distribution instead. |
+| `balanced_sampling` | `True` | If `True`, `sample()` draws the label and sensitive attribute uniformly (fair generation). If `False`, both follow their empirical training distribution. |
 
 ## Datasets tested
 
-Adult, Car, Magic, Nursery, Shuttle (standard Katabatic benchmark set). For datasets without an obvious sensitive attribute (Car, Magic, Nursery, Shuttle), leave `sensitive_col=None` — the model degrades gracefully to unconditional (TabDDPM-style) diffusion. For Adult, `sex` or `race` are natural choices for `sensitive_col`.
+Adult, Car, Magic, Nursery, Shuttle (standard Katabatic benchmark set). For datasets without an obvious sensitive attribute (Car, Magic, Nursery, Shuttle), leave `sensitive_col=None` — the model then conditions on the label only. Note that with the default `balanced_sampling=True` the **label is still rebalanced to uniform**, so the synthetic class distribution will differ from the real one on imbalanced datasets (e.g. Shuttle, Car). Pass `balanced_sampling=False` to keep the real class distribution. For Adult, `sex` or `race` are natural choices for `sensitive_col`.
 
 ## Dependencies
 
-- `torch` (already an optional dependency in `pyproject.toml`, used by `codi`, `ctgan`, `medgan`, `tabddpm`, `great`).
+- `torch`, installed via the `fairtabdiffusion` extra:
+
+```bash
+pip install katabatic[fairtabdiffusion]   # or: poetry install -E fairtabdiffusion
+```
 
 ## Computational complexity
 
@@ -74,4 +91,4 @@ Low–Medium. A lightweight MLP-based DDPM (not U-Net based); trains comparably 
 
 ## Status
 
-Initial implementation — pending PEP 8/Ruff formatting pass, cross-validation, and benchmark runs across all five standard datasets before PR submission to `development`.
+Officially supported (`supported: True` in `ModelRegistry`), with an artifact-pipeline integration test in `tests/test_integration_fairtabdiffusion.py`.

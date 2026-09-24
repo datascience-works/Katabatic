@@ -72,6 +72,7 @@ Or install directly with Poetry / pip — useful for installing several extras a
 | Histogram (supported) | `pip install katabatic[histogram]` or `poetry install -E histogram` |
 | REaLTabFormer (supported) | `pip install katabatic[realtabformer]` or `poetry install -E realtabformer` |
 | KDE (supported) | `pip install katabatic[kde]` or `poetry install -E kde` |
+| FairTabDiffusion (supported) | `pip install katabatic[fairtabdiffusion]` or `poetry install -E fairtabdiffusion` |
 | TSTR + XGBoost | `pip install katabatic[eval]` or `poetry install -E eval` |
 | Development | `poetry install --with dev` |
 | All optional deps | `pip install katabatic[all]` |

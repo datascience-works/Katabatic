@@ -9,31 +9,14 @@ from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
 from katabatic.models.fairtabdiffusion.models import FairTabDiffusion
 
-# Statlog (Shuttle) dataset column layout (UCI):
-# ['time', 'Rad Flow', 'Fpv Close', 'Fpv Open', 'High', 'Bypass',
-#  'Bpv Close', 'Bpv Open', 'class']
-# All 8 features are continuous/integer-valued; 'class' is the target
-# with 7 levels (heavily imbalanced -- ~80% of rows are class 1).
-# NOTE: verify column names against your team's raw_data/shuttle.csv --
-# some distributions ship without a header row or with different column
-# naming (e.g. "col1".."col9"). Check with:
-#   head -1 raw_data/shuttle.csv
-# If there's no header, you'll need to add one before this script's
-# preprocess_and_split call will find 'class' as target_col_raw.
+# katabatic/datasets/shuttle.csv has columns [a1..a8]
+# All 9 features are continuous/integer-valued. 'class' is the target with
+# 7 levels (heavily imbalanced with ~80% of rows being class 1).
 config = RunConfig(
     dataset_name="shuttle",
     model_name="fairtabdiffusion",
     categorical_cols=[],
-    continuous_cols=[
-        "time",
-        "Rad Flow",
-        "Fpv Close",
-        "Fpv Open",
-        "High",
-        "Bypass",
-        "Bpv Close",
-        "Bpv Open",
-    ],
+    continuous_cols=["time", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8"],
     target_col_raw="class",
     constraints=None,
 )

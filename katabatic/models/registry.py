@@ -139,6 +139,13 @@ class ModelRegistry:
             "extra": "histogram",
             "supported": True,
         },
+        "fairtabdiffusion": {
+            "module": "katabatic.models.fairtabdiffusion.models",
+            "class": "FairTabDiffusion",
+            "dependencies": ["torch", "sklearn"],
+            "extra": "fairtabdiffusion",
+            "supported": True,
+        },
         "smote": {
             "module": "katabatic.models.smote.models",
             "class": "SMOTEModel",

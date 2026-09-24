@@ -111,4 +111,5 @@ def test_supported_models_list():
         "histogram",
         "realtabformer",
         "kde",
+        "fairtabdiffusion",
     }

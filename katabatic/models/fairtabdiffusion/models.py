@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import json
 import os
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -45,8 +46,13 @@ from .utils import (
     decode_columns,
     encode_columns,
     fit_transformers,
+    infer_categorical_columns,
     infer_schema,
 )
+
+if TYPE_CHECKING:
+    from katabatic.artifacts.base import ArtifactStore
+    from katabatic.artifacts.refs import ModelRef
 
 
 def _try_import(module: str):
@@ -67,6 +73,8 @@ def _category_indices(df: pd.DataFrame, col: ColumnMeta) -> np.ndarray:
 class FairTabDiffusion(BaseModel):
     """Fairness-aware Gaussian diffusion model for mixed-type tabular data."""
 
+    ARTIFACT_STATE_FILES = ("fairtabdiffusion_state.pt",)
+
     def __init__(
         self,
         *,
@@ -81,6 +89,7 @@ class FairTabDiffusion(BaseModel):
         balanced_sampling: bool = True,
     ) -> None:
         super().__init__()
+        self.check_dependencies()
         self.cfg = {
             "sensitive_col": sensitive_col,
             "epochs": epochs,
@@ -101,7 +110,9 @@ class FairTabDiffusion(BaseModel):
         self._enc_dim = 0
         self._blocks: dict[str, tuple[int, int]] = {}
         self._order: list[str] = []
-        self._train_df: pd.DataFrame | None = None
+        self._label_probs: np.ndarray | None = None
+        self._sensitive_probs: np.ndarray | None = None
+        self._n_train_rows: int | None = None
 
         self._net = None
         self._betas = None
@@ -153,10 +164,11 @@ class FairTabDiffusion(BaseModel):
     def train(
         self,
         data_dir: str,
+        *args,
         categorical_cols: list[str] | None = None,
         continuous_cols: list[str] | None = None,
         synthetic_dir: str | None = None,
-        *args,
+        artifact_state_dir: str | None = None,
         **kwargs,
     ) -> FairTabDiffusion:
         torch = _try_import("torch")
@@ -191,15 +203,19 @@ class FairTabDiffusion(BaseModel):
             y_col = y.columns[0]
             df = pd.concat([X, y[y_col]], axis=1)
 
-        self._train_df = df.copy()
         self._label_col = df.columns[-1]
+        self._n_train_rows = len(df)
 
         sensitive_col = self.cfg["sensitive_col"]
         self._sensitive_col = (
             sensitive_col if sensitive_col and sensitive_col in df.columns else None
         )
 
-        cat_cols_full = list(categorical_cols or [])
+        # Auto-detect feature types when none are provided.
+        if categorical_cols is not None:
+            cat_cols_full = list(categorical_cols)
+        else:
+            cat_cols_full = infer_categorical_columns(df)
         if self._label_col not in cat_cols_full:
             cat_cols_full = [*cat_cols_full, self._label_col]
 
@@ -225,6 +241,11 @@ class FairTabDiffusion(BaseModel):
         else:
             s_arr = np.zeros(len(df), dtype=np.int64)
             self._n_sensitive = 1
+
+        self._label_probs = np.bincount(y_arr, minlength=self._n_classes) / len(y_arr)
+        self._sensitive_probs = np.bincount(s_arr, minlength=self._n_sensitive) / len(
+            s_arr
+        )
 
         x_enc, self._blocks, self._order = encode_columns(df, self.schema)
         self._enc_dim = int(x_enc.shape[1])
@@ -266,7 +287,7 @@ class FairTabDiffusion(BaseModel):
 
         if synthetic_dir:
             os.makedirs(synthetic_dir, exist_ok=True)
-            df_s = self.sample(n=len(df))
+            df_s = self.sample(n_samples=len(df))
             feature_cols = [c for c in df.columns if c != self._label_col]
             x_synth = df_s[feature_cols].copy()
             y_synth = df_s[[self._label_col]].copy()
@@ -289,26 +310,51 @@ class FairTabDiffusion(BaseModel):
                 json.dump(meta, f, indent=2)
             print(f"[FairTabDiffusion] Synthetic data saved to {synthetic_dir}")
 
+        self._maybe_save_artifact_state(artifact_state_dir)
         return self
 
     def evaluate(self, *args, **kwargs) -> float:
         if not self.is_fitted:
             raise RuntimeError("Call train() before evaluate().")
-        return 0.0
+        raise NotImplementedError(
+            "FairTabDiffusion.evaluate() has no meaningful standalone metric to offer. "
+            "Use the Katabatic evaluation pipeline for cross-model metrics instead."
+        )
 
     def sample(
         self,
-        n: int | None = None,
-        conditional: dict | None = None,
+        n_samples: int | None = None,
         *args,
+        conditional: dict | None = None,
+        seed: int | None = None,
         **kwargs,
     ) -> pd.DataFrame:
+        """
+        Generate synthetic rows (features + label as the last column).
+
+        With ``balanced_sampling=True`` the label and sensitive attribute are
+        drawn uniformly; otherwise from their empirical training distribution.
+        ``conditional={<label_col>: value}`` fixes the label instead.
+        """
         if not self.is_fitted or self._net is None or self.schema is None:
             raise RuntimeError("Call train() before sample().")
 
         torch = _try_import("torch")
-        size = int(n) if n is not None else 1000
+        size = int(n_samples) if n_samples is not None else self._n_train_rows
         balanced = self.cfg["balanced_sampling"]
+        if seed is not None:
+            torch.manual_seed(seed)
+        # Unseeded calls draw from the global numpy state seeded in train().
+        rng = np.random.default_rng(
+            seed if seed is not None else np.random.randint(2**31 - 1)
+        )
+
+        def _draw(n_cats: int, probs: np.ndarray | None):
+            if balanced or probs is None:
+                idx = rng.integers(0, n_cats, size=size)
+            else:
+                idx = rng.choice(n_cats, size=size, p=probs)
+            return torch.tensor(idx, dtype=torch.long, device=self._device)
 
         with torch.no_grad():
             if conditional and self._label_col in conditional:
@@ -321,29 +367,12 @@ class FairTabDiffusion(BaseModel):
                     (size,), label_idx, dtype=torch.long, device=self._device
                 )
             else:
-                y_gen = torch.randint(
-                    0, max(self._n_classes, 1), (size,), device=self._device
-                )
+                y_gen = _draw(max(self._n_classes, 1), self._label_probs)
 
-            if balanced or self._sensitive_col is None or self._train_df is None:
-                s_gen = torch.randint(
-                    0, max(self._n_sensitive, 1), (size,), device=self._device
-                )
+            if self._sensitive_col is None:
+                s_gen = torch.zeros(size, dtype=torch.long, device=self._device)
             else:
-                schema_map = {c.name: c for c in self.schema}
-                sensitive_meta = schema_map[self._sensitive_col]
-                cats = sensitive_meta.categories or []
-                counts = (
-                    self._train_df[self._sensitive_col]
-                    .astype(str)
-                    .value_counts()
-                    .reindex(cats, fill_value=0)
-                    .to_numpy()
-                    + 1e-8
-                )
-                probs = counts / counts.sum()
-                s_np = np.random.choice(len(cats), size=size, p=probs)
-                s_gen = torch.tensor(s_np, dtype=torch.long, device=self._device)
+                s_gen = _draw(max(self._n_sensitive, 1), self._sensitive_probs)
 
             x = torch.randn(size, self._enc_dim, device=self._device)
             for t in reversed(range(self.cfg["timesteps"])):
@@ -376,3 +405,61 @@ class FairTabDiffusion(BaseModel):
 
         ordered_cols = [c.name for c in self.schema]
         return synthetic[ordered_cols]
+
+    def _save_artifact_state(self, artifact_state_dir: str) -> None:
+        import torch
+
+        os.makedirs(artifact_state_dir, exist_ok=True)
+        payload = {
+            "cfg": self.cfg,
+            "net_state": {k: v.cpu() for k, v in self._net.state_dict().items()},
+            "schema": self.schema,
+            "blocks": self._blocks,
+            "order": self._order,
+            "label_col": self._label_col,
+            "sensitive_col": self._sensitive_col,
+            "n_classes": self._n_classes,
+            "n_sensitive": self._n_sensitive,
+            "enc_dim": self._enc_dim,
+            "label_probs": self._label_probs,
+            "sensitive_probs": self._sensitive_probs,
+            "n_train_rows": self._n_train_rows,
+        }
+        torch.save(
+            payload, os.path.join(artifact_state_dir, self.ARTIFACT_STATE_FILES[0])
+        )
+
+    @classmethod
+    def load_from_ref(cls, store: ArtifactStore, ref: ModelRef) -> FairTabDiffusion:
+        import torch
+        from torch import nn
+
+        state_path = cls._require_state_file(store, ref)
+        # weights_only=False: the payload holds the fitted schema (sklearn
+        # QuantileTransformers), not just tensors.
+        payload = torch.load(  # nosec B614: loading our own saved artifact
+            state_path, map_location="cpu", weights_only=False
+        )
+
+        instance = cls(**payload["cfg"])
+        instance.schema = payload["schema"]
+        instance._blocks = payload["blocks"]
+        instance._order = payload["order"]
+        instance._label_col = payload["label_col"]
+        instance._sensitive_col = payload["sensitive_col"]
+        instance._n_classes = payload["n_classes"]
+        instance._n_sensitive = payload["n_sensitive"]
+        instance._enc_dim = payload["enc_dim"]
+        instance._label_probs = payload["label_probs"]
+        instance._sensitive_probs = payload["sensitive_probs"]
+        instance._n_train_rows = payload["n_train_rows"]
+
+        instance._device = torch.device(
+            instance.cfg["device"] or ("cuda" if torch.cuda.is_available() else "cpu")
+        )
+        instance._build_schedule(torch)
+        instance._net = instance._build_net(torch, nn, instance._enc_dim)
+        instance._net.load_state_dict(payload["net_state"])
+        instance._net.eval()
+        instance.is_fitted = True
+        return instance
