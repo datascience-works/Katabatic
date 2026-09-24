@@ -115,14 +115,14 @@ Generated files saved to `synthetic_dir`:
 
 - **Class-specific models** mean each class gets its own generator — useful when classes have very different distributions
 - **No classifier or neural network training at all** — sampling only needs the cached training data, so `train()` itself is nearly instant
-- **Good fidelity scores** in benchmarks so far
+- **High fidelity** in benchmarks (0.96–0.99), largely because samples stay on or next to real training rows.
 
 ---
 
 ## Limitations
 
 - **SGLD sampling cost grows with dataset size**: every step computes distances between each synthetic point and each (subsampled) training point of its class, so runtime scales with *synthetic rows × `max_data_size` × features × `sgld_steps`*. Memory is bounded (the gradient is computed in chunks), but large datasets such as Adult and Shuttle still take a long time on CPU. Lower `max_data_size` or `sgld_steps` to trade quality for speed.
-- **Privacy scores are lower** on some datasets (e.g. Adult) because the class-specific generation can memorise small classes
+- **Samples reproduce training rows.** The energy gradient pulls each sample towards its nearest training row. On all-categorical data (car, nursery, and magic as packaged) rounding then snaps it exactly onto that row, so 100% of synthetic rows are exact copies. On mixed data (shuttle, adult) 100% are near-duplicates and a classifier separates synthetic from real rows almost perfectly. Do not use this model where training records must not be disclosed.
 - **Consistency scores vary** — some feature correlations may not be perfectly preserved
 - **`sample()` always reuses the configured `seed`** (`TabEBMConfig.seed`, default 42) for every call, so repeated calls on the same fitted model are fully deterministic — this makes results reproducible run-to-run, but also means the stability evaluation dimension (which expects independent runs) isn't measuring genuine run-to-run variance for this model
 
@@ -187,24 +187,24 @@ TrainTestSplitPipeline(model=TabEBMModel()).run(
 
 ## Model Evaluation Benchmark Results
 
+| Dataset | Fidelity | Utility | Diversity | Privacy | Consistency | Stability | Composite | Runtime |
+|---|---|---|---|---|---|---|---|---|
+| Car | 0.9838 | 0.9969 | 0.9989 | 0.3333 | 0.9406 | 1.0000 | **0.8888** | 3 min |
+| Nursery | 0.9844 | 0.9623 | 0.9986 | 0.3333 | 0.4983 | 1.0000 | **0.8326** | 15 min |
+| Magic | 0.9887 | 0.9054 | 0.8683 | 0.3333 | 0.4723 | 1.0000 | **0.7981** | 42 min |
+| Shuttle | 0.9887 | 0.7677 | 0.9466 | 0.6413 | 0.4918 | 1.0000 | **0.8059** | 1 h 59 min |
+| Adult | 0.9570 | 0.9188 | 0.8658 | 0.3853 | 0.3935 | 1.0000 | **0.7946** | 1 h 33 min |
 
-#### Car Dataset
+How to read these scores:
 
-Composite score: **0.8888**
+| Dataset | Exact copies of training rows | Near-duplicates (Gower < 0.01) | Real-vs-synthetic classifier accuracy | TSTR / TRTR accuracy |
+|---|---|---|---|---|
+| Car | 100% | 0% | 0.44 | 0.856 / 0.861 |
+| Nursery | 100% | 0% | 0.94 | 0.859 / 0.896 |
+| Magic | 100% | 0% | 1.00 | 0.712 / 0.827 |
+| Shuttle | 0% | 100% | 1.00 | 0.740 / 0.978 |
+| Adult | 0% | 100% | 1.00 | 0.770 / 0.836 |
 
-| Dimension | Score |
-|---|---|
-| Fidelity | 0.9838 |
-| Utility | 0.9969 |
-| Diversity | 0.9989 |
-| Privacy | 0.3333 |
-| Consistency | 0.9406 |
-| Stability | 1.0000 |
-
----
-
-#### Adult Dataset
-
-Not yet re-verified after the promotion fixes (long-running; see Model Performance below). Whoever picks up the next Validation & Benchmarking pass should fill this in from a completed `run_tabebm_adult.py` run.
-
----
+- **Fidelity is high because the samples are (near-)copies of the training data**, not because the model has learned the distribution. The same explains TSTR matching TRTR on car. Privacy is correspondingly low.
+- **Stability is always 1.0** because `sample()` reuses the configured seed, so the stability runs are identical (see Limitations). It says nothing about run-to-run variance.
+- **Classifier accuracy on nursery and magic is high even though every row is a real training row.** So the model doesn't reproduce training rows in their real proportions.
