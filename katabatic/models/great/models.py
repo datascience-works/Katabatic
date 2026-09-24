@@ -636,16 +636,6 @@ class GReaT(Model):
 
         return pd.DataFrame(columns=self.columns)
 
-    def evaluate(self, *args, **kwargs):
-        """
-        Standalone evaluation is not implemented here.
-
-        Use Katabatic's SyntheticEvaluationPipeline or a TSTR/TRTR runner.
-        """
-        raise NotImplementedError(
-            "Use SyntheticEvaluationPipeline or an external TSTR/TRTR runner."
-        )
-
     def save(self, path: str):
         """
         Save GReaT model weights and configuration.

@@ -443,19 +443,6 @@ class MSTModel(BaseModel):
 
         return model
 
-    def evaluate(
-        self,
-        *args,
-        **kwargs,
-    ) -> float:
-        if not self.is_fitted:
-            raise RuntimeError("Call train() before evaluate().")
-
-        raise NotImplementedError(
-            "MSTModel.evaluate() has no meaningful standalone metric to offer."
-            "Use TSTREvaluation for cross-model metrics instead."
-        )
-
     def sample(
         self,
         n_samples: int | None = None,

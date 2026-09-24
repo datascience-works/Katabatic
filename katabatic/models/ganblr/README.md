@@ -103,6 +103,9 @@ model.train(
 
 ```
 
+`model.evaluate(real_df, target_col=..., test_data=...)`, inherited from `Model`, scores the
+trained model on Katabatic's six evaluation dimensions. GANBLR's own quick TSTR accuracy check is called with `evaluate_tstr(x, y, model="lr")`.
+
 ---
 
 ## Model Evaluation Benchmarks Results

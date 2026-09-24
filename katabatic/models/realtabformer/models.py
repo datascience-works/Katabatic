@@ -228,21 +228,6 @@ class REaLTabFormerModel(BaseModel):
 
         return synthetic_df.reset_index(drop=True)
 
-    def evaluate(self, *args, **kwargs) -> float:
-        """
-        Placeholder evaluation hook required by Katabatic's Model interface.
-
-        Evaluation metrics are handled by Katabatic's benchmarking and
-        evaluation pipeline rather than inside this model wrapper.
-        """
-
-        if not self.is_fitted:
-            raise RuntimeError(
-                "The REaLTabFormer model must be trained before evaluation."
-            )
-
-        return 0.0
-
     def _save_artifact_state(self, artifact_state_dir: str) -> None:
         """
         Persist fitted REaLTabFormer state for the Katabatic artifact pipeline.

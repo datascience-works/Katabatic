@@ -169,17 +169,6 @@ class SynthPop(Model):
 
         return df_synth.reset_index(drop=True)
 
-    def evaluate(self, *args, **kwargs) -> float:
-        """
-        SynthPop is a synthetic data generator rather than a predictive model.
-
-        Evaluation is performed separately through Katabatic's TSTR
-        benchmarking pipeline.
-        """
-        raise NotImplementedError(
-            "SynthPop evaluation is performed through the TSTR benchmarking pipeline."
-        )
-
     def _save_artifact_state(self, artifact_state_dir: str) -> None:
         state = {
             "seed": self.seed,

@@ -521,20 +521,6 @@ class CTGANModel(BaseModel):
 
         return self
 
-    def evaluate(self, *args, **kwargs) -> float:
-        """
-        Not implemented for CTGAN.
-
-        Use katabatic.evaluate.tstr.evaluation.TSTREvaluation (typically via
-        TrainTestSplitPipeline) for comparable, artifact-logged metrics.
-        """
-        if not self.is_fitted:
-            raise RuntimeError("Call train() before evaluate().")
-        raise NotImplementedError(
-            "CTGANModel.evaluate() is not implemented; use TSTREvaluation "
-            "(typically via TrainTestSplitPipeline) instead."
-        )
-
     def sample(
         self,
         n_samples: int | None = None,

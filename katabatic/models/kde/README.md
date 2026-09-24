@@ -182,7 +182,6 @@ If `data_dir/info.json` exists with a `cat_col_idx` key (Katabatic's dataset-reg
 
 - Continuous KDE samples are not clipped to the real data's observed range — a feature that peaks near zero can occasionally sample a small negative value. Not corrected in this version; flagged here for whoever picks up the Validation & Benchmark pass.
 - Per-feature KDEs are independent given the class — cross-feature correlation within a class is not modeled beyond what the shared class label induces. Each (feature, class) KDE is sampled with its own random draw; sampling every feature with one fixed seed would make all columns pick the same training row and copy real rows.
-- `evaluate()` is not implemented (it raises `NotImplementedError`); use the Katabatic evaluation pipeline for cross-model metrics.
 - No conditional generation on arbitrary feature values yet (only via the class label, same limitation noted in PATE-GAN's README).
 
 ***

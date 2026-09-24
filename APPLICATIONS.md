@@ -207,7 +207,7 @@ graph TB
 The researcher implements their novel algorithm using their preferred approach (e.g., normalizing flows for tabular data).
 
 **Step 2: Implement the Interface**
-Katabatic provides a simple `Model` interface. The researcher implements three methods: `train()` for fitting on a data directory, `sample()` for generating synthetic rows, and `evaluate()` for a model-specific score.
+Katabatic provides a simple `Model` interface. The researcher implements two methods: `train()` for fitting on a data directory and `sample()` for generating synthetic rows. Every model inherits `evaluate()`, which scores it on the same six evaluation dimensions as the benchmarks.
 
 **Step 3: Register the Model**
 The new model is added to Katabatic's model registry, making it available throughout the framework.

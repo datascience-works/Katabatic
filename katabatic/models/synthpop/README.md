@@ -156,8 +156,7 @@ res = pipe.run(
 
 ## Evaluation
 
-`SynthPop.evaluate()` raises `NotImplementedError` as evaluation is done through
-the `TSTREvaluation`/`SyntheticEvaluationPipeline`.
+`model.evaluate(real_df, target_col=..., test_data=...)`, inherited from `Model`, scores the fitted model on Katabatic's six dimensions (fidelity, utility via TSTR, diversity, privacy, consistency and stability) and returns an `EvaluationReport` (`report.dimension_scores`, `report.composite_score`).
 
 ## Parameter Guide
 
