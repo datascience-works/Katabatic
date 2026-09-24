@@ -7176,6 +7176,7 @@ realtabformer = ["realtabformer", "torch", "transformers"]
 smote = ["imbalanced-learn"]
 synthpop = []
 tabddpm = ["category-encoders", "rtdl_revisiting_models", "torch"]
+tablegan = ["torch"]
 tabsyn = ["category-encoders", "tomli", "tomli-w", "torch", "tqdm"]
 
 [metadata]

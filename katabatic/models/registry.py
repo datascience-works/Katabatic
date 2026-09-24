@@ -96,6 +96,11 @@ class ModelRegistry:
             "extra": "ctgan",
             "supported": True,
         },
+        "tablegan": {
+            "module": "katabatic.models.tablegan.models",
+            "class": "TableGANModel",
+            "dependencies": ["torch"],
+            "extra": "tablegan",
         "kde": {
             "module": "katabatic.models.kde.models",
             "class": "KDESynthesizer",
