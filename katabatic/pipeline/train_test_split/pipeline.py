@@ -310,6 +310,10 @@ class TrainTestSplitPipeline(Pipeline):
         store.open_path(mr.state_relpath).mkdir(parents=True, exist_ok=True)
         store.open_path(mr.synthetic_relpath).mkdir(parents=True, exist_ok=True)
 
+        # Ensure the dataset is actually present locally before a model
+        # reads it — matters when the dataset artifact was written by a
+        # different process/machine against a remote-backed store.
+        store.pull(ds_ref.root_relpath)
         dataset_dir = _dataset_dir_for_model(current_model, store, ds_ref)
         synthetic_dir = str(store.open_path(mr.synthetic_relpath))
 
@@ -324,6 +328,7 @@ class TrainTestSplitPipeline(Pipeline):
             train_kw.setdefault("artifact_state_dir", state_path)
 
         current_model.train(dataset_dir, *args, **train_kw)
+        store.sync(mr.root_relpath)  # no-op for local-backed stores
 
         config = train_kw.get("config")
         if config is not None:
@@ -351,6 +356,8 @@ class TrainTestSplitPipeline(Pipeline):
             per = _per_evaluation_kw(evaluation_kwargs, evaluation)
             merged = {**eval_merged_base, **per}
             ref = _run_single_evaluation_artifact(evaluation, store, mr, ds_ref, merged)
+            if ref is not None:
+                store.sync(ref.root_relpath)  # no-op for local-backed stores
             evaluation_refs.append(ref)
 
         self.last_model = current_model

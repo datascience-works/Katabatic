@@ -12,9 +12,15 @@ from katabatic.artifacts.refs import (
     artifact_path_segment,
 )
 
+try:
+    from katabatic.artifacts.remote import FsspecArtifactStore
+except ImportError:
+    FsspecArtifactStore = None  # fsspec extra not installed
+
 __all__ = [
     "ArtifactStore",
     "LocalArtifactStore",
+    "FsspecArtifactStore",
     "DatasetRef",
     "ModelRef",
     "EvaluationRef",
