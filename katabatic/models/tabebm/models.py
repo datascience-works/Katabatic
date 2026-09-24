@@ -58,18 +58,23 @@ class _TabEBMBackend:
         y = to_numpy(y).reshape(-1)
 
         if X.shape[0] > self.max_data_size:
-            X, _, y, _ = train_test_split(
+            X_sub, _, y_sub, _ = train_test_split(
                 X,
                 y,
                 train_size=self.max_data_size,
                 stratify=y,
                 random_state=seed,
             )
+            # Stratified subsampling can drop very rare classes entirely; keep
+            # their rows so every class can still be generated.
+            dropped = np.isin(y, np.setdiff1d(np.unique(y), np.unique(y_sub)))
+            X = np.concatenate([X_sub, X[dropped]])
+            y = np.concatenate([y_sub, y[dropped]])
 
         results = {}
         unique_classes = np.unique(y)
 
-        for class_idx, cls in enumerate(unique_classes):
+        for cls in unique_classes:
             X_cls = X[y == cls]
 
             if len(X_cls) == 0:
@@ -105,12 +110,29 @@ class _TabEBMBackend:
                     repl = rng.integers(0, X_cls.shape[0], size=int(nan_rows.sum()))
                     X_sgld[nan_rows] = X_cls[repl]
 
-            results[f"class_{class_idx}"] = X_sgld.astype(np.float32)
+            # Keyed by class rather than position so `sample()` looks up the right class.
+            results[f"class_{int(cls)}"] = X_sgld.astype(np.float32)
 
         return results
 
     @staticmethod
-    def compute_energy_gradient(X_synth, X_train, X_real):
+    def compute_energy_gradient(X_synth, X_train, X_real, max_elements=16_000_000):
+        # Process rows in chunks efficiently compute per-feature energy gradient.
+        per_row = max(X_train.shape[0], X_real.shape[0]) * max(X_synth.shape[1], 1)
+        chunk = max(1, max_elements // max(per_row, 1))
+        if len(X_synth) > chunk:
+            return np.concatenate(
+                [
+                    _TabEBMBackend._energy_gradient(
+                        X_synth[i : i + chunk], X_train, X_real
+                    )
+                    for i in range(0, len(X_synth), chunk)
+                ]
+            )
+        return _TabEBMBackend._energy_gradient(X_synth, X_train, X_real)
+
+    @staticmethod
+    def _energy_gradient(X_synth, X_train, X_real):
         eps = 1e-8
 
         # Gradient of nearest-neighbour distance

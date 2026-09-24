@@ -67,3 +67,28 @@ def test_tabebm_artifact_pipeline_smoke(tmp_path, tiny_binary_csv):
 
     with pytest.raises(NotImplementedError):
         reloaded.evaluate()
+
+
+def test_tabebm_rare_class_survives_subsampling(tmp_path):
+    """Regression: a class dropped by subsampling crashed or shifted labels."""
+    import numpy as np
+    import pandas as pd
+
+    from katabatic.models.tabebm.models import TabEBMConfig
+
+    # Class "b" is rare and appears between "a" and "c", so a positional key
+    # mismatch would mislabel "c" rows as "b".
+    labels = ["a"] * 600 + ["b"] * 2 + ["c"] * 600
+    centre = {"a": 0.0, "b": 50.0, "c": 100.0}
+    rng = np.random.default_rng(0)
+    x = [centre[lab] + rng.normal() for lab in labels]
+    pd.DataFrame({"x": x}).to_csv(tmp_path / "x_train.csv", index=False)
+    pd.DataFrame({"y": labels}).to_csv(tmp_path / "y_train.csv", index=False)
+
+    model = TabEBMModel(config=TabEBMConfig(max_data_size=100, sgld_steps=20))
+    model.train(str(tmp_path))
+    out = model.sample(3000)
+
+    assert set(out["y"]) == {"a", "b", "c"}
+    for lab, mean in out.groupby("y")["x"].mean().items():
+        assert abs(mean - centre[lab]) < 10, (lab, mean)

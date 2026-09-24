@@ -62,7 +62,7 @@ Defined in `TabEBMConfig` in `models.py`:
 
 | Parameter | Default | Description |
 |---|---|---|
-| `max_data_size` | 10000 | Max training samples per class (we use 1000 for testing) |
+| `max_data_size` | 10000 | Max training rows used for sampling; larger training sets are stratified-subsampled down to this size (every class is kept, however rare). The benchmark scripts use 1000 |
 | `starting_point_noise_std` | 0.01 | Noise added to starting points before SGLD |
 | `sgld_step_size` | 0.01 | Step size for each SGLD gradient update |
 | `sgld_noise_std` | 0.01 | Noise injected at each SGLD step |
@@ -121,7 +121,7 @@ Generated files saved to `synthetic_dir`:
 
 ## Limitations
 
-- **SGLD sampling scales quadratically with dataset size**: each step computes pairwise distances between every candidate point and every real/negative sample per class (`compute_energy_gradient`). This is the actual scaling bottleneck — not TabPFN memory limits, since TabPFN isn't used (see the implementation note above). `max_data_size` caps this per class via subsampling.
+- **SGLD sampling cost grows with dataset size**: every step computes distances between each synthetic point and each (subsampled) training point of its class, so runtime scales with *synthetic rows × `max_data_size` × features × `sgld_steps`*. Memory is bounded (the gradient is computed in chunks), but large datasets such as Adult and Shuttle still take a long time on CPU. Lower `max_data_size` or `sgld_steps` to trade quality for speed.
 - **Privacy scores are lower** on some datasets (e.g. Adult) because the class-specific generation can memorise small classes
 - **Consistency scores vary** — some feature correlations may not be perfectly preserved
 - **`sample()` always reuses the configured `seed`** (`TabEBMConfig.seed`, default 42) for every call, so repeated calls on the same fitted model are fully deterministic — this makes results reproducible run-to-run, but also means the stability evaluation dimension (which expects independent runs) isn't measuring genuine run-to-run variance for this model
@@ -179,6 +179,9 @@ TrainTestSplitPipeline(model=TabEBMModel()).run(
 **Benchmark scripts:**
 - Adult: [`benchmarks/examples/tabebm/run_tabebm_adult.py`](benchmarks/examples/tabebm/run_tabebm_adult.py)
 - Car: [`benchmarks/examples/tabebm/run_tabebm_car.py`](benchmarks/examples/tabebm/run_tabebm_car.py)
+- Magic: [`benchmarks/examples/tabebm/run_tabebm_magic.py`](benchmarks/examples/tabebm/run_tabebm_magic.py)
+- Nursery: [`benchmarks/examples/tabebm/run_tabebm_nursery.py`](benchmarks/examples/tabebm/run_tabebm_nursery.py)
+- Shuttle: [`benchmarks/examples/tabebm/run_tabebm_shuttle.py`](benchmarks/examples/tabebm/run_tabebm_shuttle.py)
 
 ---
 

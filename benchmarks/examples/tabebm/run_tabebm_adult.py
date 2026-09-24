@@ -56,7 +56,7 @@ tabebm_config = TabEBMConfig(
 )
 
 model = TabEBMModel(target_col=target_col, config=tabebm_config)
-model.train(paths["split_dir"], synthetic_dir=paths["synthetic_dir"])
+model.train(paths["split_dir"])
 
 synthetic_df = model.sample(len(train_df))
 synthetic_df = save_synthetic(
