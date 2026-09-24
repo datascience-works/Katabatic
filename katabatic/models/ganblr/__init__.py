@@ -8,7 +8,6 @@ and Logistic Regression’s relationship (GANBLR).
 Paper: https://www.computer.org/csdl/proceedings-article/icdm/2021/239800a916/1Aqx3a4iqsw
 """
 
-
 from katabatic.models.ganblr.models import GANBLR
 
 __all__ = ["GANBLR"]
