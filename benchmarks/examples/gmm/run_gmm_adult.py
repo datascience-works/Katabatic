@@ -122,7 +122,7 @@ model = GMMModel(
     random_state=42,
 )
 
-model.fit(train_df)
+model.train(paths["split_dir"], target_col=target_col)
 
 print("\nGMM training complete.")
 

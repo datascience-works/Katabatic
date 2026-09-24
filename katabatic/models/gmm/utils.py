@@ -27,6 +27,25 @@ class GMMUtilsMixin:
                     np.integer,
                 )
 
+    def _fit_continuous_bounds(self, df: pd.DataFrame):
+        """Record the observed min/max of each continuous feature.
+
+        A Gaussian mixture has unbounded support, so sampling can otherwise
+        land in the tails and produce implausible values (e.g. negative
+        ages, huge capital gains). Clipping generated values back into the
+        range actually observed in training keeps output realistic without
+        changing the underlying sampling.
+        """
+        self._continuous_bounds_ = {}
+
+        for col in self.features_:
+            if self.feature_types_[col] != "continuous":
+                continue
+
+            col_min = float(df[col].min())
+            col_max = float(df[col].max())
+            self._continuous_bounds_[col] = (col_min, col_max)
+
     def _fit_categorical_encoders(self, df: pd.DataFrame):
         """Build categorical value-to-integer and integer-to-value mappings."""
         self._cat_value_to_int_ = {}
@@ -61,14 +80,23 @@ class GMMUtilsMixin:
     def _decode_features(self, X: pd.DataFrame) -> pd.DataFrame:
         """Decode generated numeric features back to original values."""
         X_out = pd.DataFrame(index=X.index)
+        bounds = getattr(self, "_continuous_bounds_", {})
 
         for col in self.features_:
             if self.feature_types_[col] == "continuous":
+                values = X[col].to_numpy()
+
+                # Clip to the observed training range before rounding, since
+                # GMM sampling has no inherent bounds and can otherwise
+                # violate real-world constraints (e.g. negative capital-gain).
+                if col in bounds:
+                    low, high = bounds[col]
+                    values = np.clip(values, low, high)
+
                 if self._continuous_is_int_.get(col, False):
-                    vals = np.rint(X[col].to_numpy()).astype(int)
-                    X_out[col] = vals
+                    X_out[col] = np.rint(values).astype(int)
                 else:
-                    X_out[col] = X[col]
+                    X_out[col] = values
             else:
                 i_to_v = self._cat_int_to_value_[col]
                 vals = np.rint(X[col].to_numpy()).astype(int)
