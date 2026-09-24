@@ -66,6 +66,9 @@ class TSTREvaluation(Evaluation):
             test_dataset_version=dataset_ref.dataset_version,
         )
         store.open_path(eval_ref.root_relpath).mkdir(parents=True, exist_ok=True)
+        # Fetch inputs another machine may have written (no-op for local stores).
+        store.pull(model_ref.synthetic_relpath)
+        store.pull(dataset_ref.test_relpath)
         synthetic_dir = str(store.open_path(model_ref.synthetic_relpath))
         real_test_dir = str(store.open_path(dataset_ref.test_relpath))
         report_rel = eval_ref.report_relpath
@@ -211,6 +214,7 @@ class TSTREvaluation(Evaluation):
             writer = csv.writer(file)
             writer.writerow(["Model", "Metric", "Value"])
             writer.writerows(lines)
+        store.sync(report_path)
         print(f"\nResults saved to: {p}")
 
     @staticmethod

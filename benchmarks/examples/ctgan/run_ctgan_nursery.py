@@ -10,38 +10,12 @@ from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 from katabatic.models.ctgan.models import CTGANModel
 
 config = RunConfig(
-    dataset_name="bank_marketing",
+    dataset_name="nursery",
     model_name="ctgan",
-    categorical_cols=[
-        "job",
-        "marital",
-        "education",
-        "default",
-        "housing",
-        "loan",
-        "contact",
-        "month",
-        "poutcome",
-    ],
-    continuous_cols=[
-        "age",
-        "balance",
-        "day",
-        "duration",
-        "campaign",
-        "pdays",
-        "previous",
-    ],
-    target_col_raw="y",
-    constraints={
-        "age": (18, 95),  # legal working/banking age range
-        "balance": (-8020, None),  # min observed in dataset, no upper bound
-        "day": (1, 31),  # day of month
-        "duration": (0, None),  # call duration in seconds, cannot be negative
-        "campaign": (1, None),  # at least 1 contact was made
-        "pdays": (-1, None),  # -1 = not previously contacted, otherwise >= 0
-        "previous": (0, None),  # number of previous contacts, cannot be negative
-    },
+    categorical_cols=["0", "1", "2", "3", "4", "5", "6", "7"],
+    continuous_cols=[],
+    target_col_raw="8",
+    constraints={},
 )
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)

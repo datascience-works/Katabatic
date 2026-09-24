@@ -4,11 +4,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Poetry](https://img.shields.io/badge/dependency-poetry-blue)](https://python-poetry.org/)
 
-A framework for synthetic tabular data generation, providing a common interface across GANBLR, CTGAN, PATE-GAN, TabSyn, and GReaT, plus additional experimental models.
+A framework for synthetic tabular data generation, providing a common interface across GANBLR, CTGAN, PATE-GAN, TabSyn, GReaT, and KDE, plus additional experimental models.
 
 ## Features
 
-- **Supported Generative Models**: GANBLR (GAN-based Bayesian Learning Rules), CTGAN (conditional tabular GAN), PATE-GAN (differentially private GAN), TabSyn (diffusion-based), and GReaT (transformer-based) — see [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md) for additional experimental models
+- **Supported Generative Models**: GANBLR (GAN-based Bayesian Learning Rules), CTGAN (conditional tabular GAN), PATE-GAN (differentially private GAN), TabSyn (diffusion-based), GReaT (transformer-based), and KDE (kernel density estimation) — see [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md) for additional experimental models
 - **Automated Pipeline**: End-to-end training, generation, and evaluation workflows
 - **TSTR Evaluation**: Train on Synthetic, Test on Real data evaluation methodology
 - **Data Preprocessing**: Automated tabular preprocessing (discretization and encoding)
@@ -69,10 +69,12 @@ Or install directly with Poetry / pip — useful for installing several extras a
 | ARF (supported) | `pip install katabatic[arf]` or `poetry install -E arf` |
 | SynthPop (supported, requires R) | `pip install katabatic[synthpop]` or `poetry install -E synthpop` — also needs R + CRAN `synthpop` packages, see [katabatic/models/synthpop/README.md](katabatic/models/synthpop/README.md) |
 | NaiveBayes (supported) | `pip install katabatic[naivebayes]` or `poetry install -E naivebayes` |
+| Histogram (supported) | `pip install katabatic[histogram]` or `poetry install -E histogram` |
 | REaLTabFormer (supported) | `pip install katabatic[realtabformer]` or `poetry install -E realtabformer` |
+| KDE (supported) | `pip install katabatic[kde]` or `poetry install -E kde` |
 | TSTR + XGBoost | `pip install katabatic[eval]` or `poetry install -E eval` |
+| Several models | `pip install "katabatic[ganblr,ctgan]"` or `poetry install -E ganblr -E ctgan` |
 | Development | `poetry install --with dev` |
-| All optional deps | `pip install katabatic[all]` |
 
 Experimental models (`tabddpm`, `codi`, `medgan`, etc.) are documented in [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md).
 For contributor work: `poetry install --with dev -E ganblr -E ctgan -E pategan -E eval && poetry env activate`.
@@ -110,6 +112,28 @@ results = pipeline.run(
 )
 # results["model_ref"], results["evaluation_refs"] — TSTR metrics on disk
 ```
+
+#### Remote artifact stores
+
+To keep artifacts in S3, GCS or Azure, so a model trained on one machine can be reloaded or
+evaluated on another, pass an `FsspecArtifactStore` as `artifact_store=` instead:
+
+```bash
+pip install katabatic[artifacts-s3]  # or artifacts-gcs, artifacts-azure; combine for several clouds
+```
+
+```python
+from katabatic.artifacts import FsspecArtifactStore
+
+store = FsspecArtifactStore("s3://my-bucket/katabatic", local_cache_dir="artifact-cache")
+```
+
+Files are cached locally and transferred only when they change; the pipeline and
+`load_from_ref()` handle this automatically. A store never overwrites a remote file it hasn't
+read at its current version: `save_json()`, `save_bytes()` and `sync()` raise
+`ArtifactConflictError` instead, so load the file, re-apply your change and save again.
+`exists()` downloads the file it checks. The store is thread-safe, but don't share one
+`local_cache_dir` between processes.
 
 ### Jupyter Notebook
 

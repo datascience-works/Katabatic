@@ -152,7 +152,7 @@ flowchart LR
     end
 
     subgraph "With Katabatic"
-        A2[Implement TabFlow] --> B2[Inherit BaseModel interface]
+        A2[Implement TabFlow] --> B2[Inherit Model interface]
         B2 --> C2[Register in Model Registry]
         C2 --> D2[Run standardized pipeline]
         D2 --> E2[Automatic evaluation]
@@ -173,7 +173,7 @@ Katabatic provides a **plug-and-play architecture** where the researcher can int
 ```mermaid
 graph TB
     subgraph "Researcher's Work"
-        A[Develop Novel Algorithm] --> B[Implement BaseModel Interface]
+        A[Develop Novel Algorithm] --> B[Implement Model Interface]
         B --> C[Add to Model Registry]
     end
 
@@ -207,7 +207,7 @@ graph TB
 The researcher implements their novel algorithm using their preferred approach (e.g., normalizing flows for tabular data).
 
 **Step 2: Implement the Interface**
-Katabatic provides a simple BaseModel interface. The researcher implements just two methods: `fit()` for training and `generate()` for creating synthetic data.
+Katabatic provides a simple `Model` interface. The researcher implements three methods: `train()` for fitting on a data directory, `sample()` for generating synthetic rows, and `evaluate()` for a model-specific score.
 
 **Step 3: Register the Model**
 The new model is added to Katabatic's model registry, making it available throughout the framework.
@@ -215,7 +215,7 @@ The new model is added to Katabatic's model registry, making it available throug
 **Step 4: Run Benchmarks Automatically**
 Katabatic's standardized pipeline automatically:
 
-- Tests the new model against all baseline models (CTGAN, CWGAN, GANBLR, TabDDPM, etc.)
+- Tests the new model against all baseline models (CTGAN, GANBLR, PATE-GAN, GReaT, etc.)
 - Uses identical data preprocessing for fair comparisons
 - Runs on multiple benchmark datasets (Adult, Car, Magic, Nursery, Shuttle)
 - Handles dependency isolation so models don't conflict
@@ -363,7 +363,7 @@ If you're developing new generative models:
 
 **Model Integration**
 
-1. Implement the BaseModel interface with your novel algorithm
+1. Implement the `Model` interface with your novel algorithm
 2. Register your model in the model registry
 
 **Evaluation & Analysis** 3. Run standardized benchmarks against existing models 4. Analyze results using consistent metrics across datasets
@@ -378,23 +378,36 @@ Katabatic handles all the infrastructure so you can focus on innovation.
 
 ### Comprehensive Model Support
 
-Katabatic includes multiple state-of-the-art generative models:
+Katabatic includes 12 officially supported generative models (see `katabatic/models/registry.py`
+and `docs/EXPERIMENTAL_MODELS.md` for the authoritative, up-to-date list):
 
 **GAN-Based Models**
 
 - **CTGAN** - Conditional Tabular GAN
-- **CWGAN** - Conditional Wasserstein GAN
 - **GANBLR** - GAN with Bayesian Learning Rules
-- **MedGAN** - Medical data generation GAN
-- **PATEGAN** - Private Aggregation of Teacher Ensembles GAN
+- **PATE-GAN** - Private Aggregation of Teacher Ensembles GAN
 
-**Transformer & Diffusion Models**
+**Transformer-Based Models**
 
 - **GReaT** - Generation of Realistic Tabular data
-- **TabDDPM** - Tabular Denoising Diffusion Probabilistic Models
-- **TabSyn** - Tabular Synthesis with advanced techniques
+- **REaLTabFormer** - Transformer-based tabular data generation
 
-Each model is carefully integrated with consistent interfaces and isolated dependencies.
+**Diffusion-Based Models**
+
+- **TabSyn** - Latent-diffusion tabular synthesis
+
+**Statistical & Tree-Based Models**
+
+- **ARF** - Adversarial Random Forest
+- **MST** - Differentially private synthesis via Maximum Spanning Tree
+- **PrivTree** - Differentially private hierarchical tree partitioning
+- **SynthPop** - CART-based sequential conditional synthesis (via R)
+- **Naive Bayes** - Probabilistic generative baseline
+- **SMOTE** - Minority-class oversampling
+
+A longer tail of experimental models (not yet promoted to fully supported) also ships in the
+repository — see `docs/EXPERIMENTAL_MODELS.md` for that list and its stability caveats. Each
+supported model is carefully integrated with consistent interfaces and isolated dependencies.
 
 ### Rigorous Evaluation
 
@@ -509,7 +522,7 @@ Have a novel generative model? Consider contributing it to Katabatic!
 
 **Development**
 
-1. Implement the BaseModel interface
+1. Implement the `Model` interface
 2. Include unit tests
 
 **Documentation** 3. Add documentation and examples 4. Submit a pull request

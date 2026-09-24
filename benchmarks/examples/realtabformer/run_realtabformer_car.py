@@ -1,6 +1,13 @@
+# NOTE: This script can take a long time to run. REaLTabFormer fine-tunes a
+# GPT-2-based transformer, and training/sampling time scales with dataset
+# size and epoch count. A GPU is required for reasonable runtimes
+# See katabatic/models/realtabformer/README.md for known runtime limitations.
+
 import os
 import sys
 import time
+
+import torch
 
 sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -27,7 +34,7 @@ train_df, test_df, target_col, paths = preprocess_and_split(config)
 EPOCHS = 5
 BATCH_SIZE = 8
 RANDOM_STATE = 1029
-DEVICE = "cpu"
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"  # auto-detect GPU
 N_CRITIC = 5
 
 print("\n" + "=" * 60)

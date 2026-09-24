@@ -10,6 +10,11 @@ REaLTabFormer supports both tabular and relational data generation. The current 
 
 This integration is currently experimental within Katabatic.
 
+> **Hardware & runtime:** A GPU is required in practice for reasonable runtimes — CPU training
+> is not viable for anything beyond a toy dataset. REaLTabFormer fine-tunes a GPT-2-based
+> transformer, so training/sampling time scales with dataset size, batch size, and epoch count,
+> and can take a long time even on GPU.
+
 ---
 
 ### Key Idea
@@ -196,7 +201,7 @@ The metadata records information including the model name, target column, number
 
 ## Limitations
 
-- Transformer-based training can be computationally expensive compared with simpler synthetic data generation methods.
+- Transformer-based training can be computationally expensive compared with simpler synthetic data generation methods. A powerful GPU is required for practical runtimes; expect training and sampling to take a long time on larger datasets even with a GPU.
 
 - CPU is used by default in the Katabatic wrapper, which may result in longer training times for larger datasets or higher epoch counts.
 

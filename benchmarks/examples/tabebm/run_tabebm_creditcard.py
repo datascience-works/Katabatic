@@ -1,16 +1,23 @@
 import os
 import sys
+import warnings
+
+import pandas as pd
+from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
+
+from katabatic.models.tabebm.models import TabEBMConfig, TabEBMModel
+
+warnings.filterwarnings("ignore")
+
 
 sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
-from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
-from katabatic.models.ctgan.models import CTGANModel
 
 config = RunConfig(
     dataset_name="creditcard",
-    model_name="ctgan",
+    model_name="tabebm",
     categorical_cols=[],
     continuous_cols=[
         "Time",
@@ -77,27 +84,40 @@ config = RunConfig(
         "V28": (-15.43, 33.85),
         "Amount": (0.0, 25691.16),
     },
+    max_train_rows=None,
 )
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)
 
-print("\n" + "=" * 60)
-print("STEP 3 — Train CTGAN")
-print("=" * 60)
-model = CTGANModel(epochs=100, batch_size=512, seed=42)
-model.train(
-    paths["split_dir"],
-    categorical_cols=config.categorical_cols,
-    continuous_cols=config.continuous_cols,
+# Subsample x_train/y_train so TabEBM doesn't load 115MB into memory
+_groups = []
+for cls_val in train_df[target_col].unique():
+    _g = train_df[train_df[target_col] == cls_val]
+    _groups.append(_g.sample(n=min(len(_g), 2000), random_state=42))
+_sub = pd.concat(_groups).reset_index(drop=True)
+_sub.drop(columns=[target_col]).to_csv(
+    os.path.join(paths["split_dir"], "x_train.csv"), index=False
 )
-print("\nCTGAN training complete.")
+_sub[[target_col]].to_csv(os.path.join(paths["split_dir"], "y_train.csv"), index=False)
 
-print("\n" + "=" * 60)
-print("STEP 4 — Generate synthetic data")
-print("=" * 60)
-synthetic_df = model.sample(len(train_df))
+tabebm_config = TabEBMConfig(
+    max_data_size=1000,
+    starting_point_noise_std=0.01,
+    sgld_step_size=0.01,
+    sgld_noise_std=0.01,
+    sgld_steps=200,
+    distance_negative_class=5.0,
+    seed=42,
+)
+
+model = TabEBMModel(target_col=target_col, config=tabebm_config)
+model.train(output_dir=paths["split_dir"], synthetic_dir=paths["synthetic_dir"])
+
+x_synth, y_synth = model.sample(1000)
+x_synth[target_col] = y_synth.values
+
 synthetic_df = save_synthetic(
-    synthetic_df, train_df, paths, categorical_cols=config.categorical_cols
+    x_synth, train_df, paths, categorical_cols=config.categorical_cols
 )
-
-evaluate(model, config, train_df, synthetic_df, target_col, paths, test_df)
+eval_train_df = train_df.sample(n=5000, random_state=42)
+evaluate(model, config, eval_train_df, synthetic_df, target_col, paths, test_df)

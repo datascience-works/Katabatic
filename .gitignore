@@ -2,6 +2,7 @@
 
 # Local pipeline outputs (not for version control)
 artifacts/
+!katabatic/artifacts/
 benchmarks/processed/
 benchmarks/results/
 benchmarks/splits/
@@ -239,3 +240,4 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+*:Zone.Identifier

@@ -165,9 +165,15 @@ jobs:
             naivebayes:
               - 'katabatic/models/naivebayes/**'
               - 'tests/test_integration_naivebayes.py'
+            histogram:
+              - 'katabatic/models/histogram/**'
+              - 'tests/test_integration_histogram.py'
             realtabformer:
               - 'katabatic/models/realtabformer/**'
               - 'tests/test_integration_realtabformer.py'
+            kde:
+              - 'katabatic/models/kde/**'
+              - 'tests/test_integration_kde.py'
 
       - name: Build Dynamic Matrix
         id: build-matrix
@@ -184,7 +190,9 @@ jobs:
             {"model": "arf", "torch": false},
             {"model": "synthpop", "torch": false, "r": true},
             {"model": "naivebayes", "torch": false},
-            {"model": "realtabformer", "torch": true}
+            {"model": "realtabformer", "torch": true},
+            {"model": "kde", "torch": false},
+            {"model": "histogram", "torch": false}
           ]'
 
           # Always run the full matrix for main (release pushes/PRs) so
@@ -230,7 +238,7 @@ jobs:
         if: matrix.r
         uses: actions/cache@v6
         with:
-          path: /usr/lib/R/site-library
+          path: /usr/local/lib/R/site-library
           key: r-synthpop-${{ runner.os }}
 
       - name: Install R and the synthpop package

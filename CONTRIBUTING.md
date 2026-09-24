@@ -193,6 +193,9 @@ plus `_artifact_store`/`_evaluation_ref`/`_artifact_report_relpath` kwargs so `e
 write a report when called through the artifact pipeline (and skip that write when called
 directly with DataFrames). `FidelityEvaluation.from_artifact()` is the reference implementation.
 
+In either case, call `store.pull(path)` for each artifact path `from_artifact()` reads, so remote
+stores download files written on another machine. It's a no-op for `LocalArtifactStore`.
+
 ## Testing and Quality Assurance
 
 ### Running Tests Locally
@@ -210,8 +213,7 @@ tests/test_integration_ganblr.py + tests/test_integration_pategan.py -> 4 passed
 ```bash
 make test                     # fast tests, no model extras (matches CI's lint-and-test job)
 make integration MODEL=ganblr # integration tests for a single model extra
-make contract                 # model promotion contract for every supported model — safe with
-                               # -E all installed, since each model's case runs pytest-forked
+make contract MODEL=ganblr    # model promotion contract for a single model
 ```
 
 Run `make help` for the full target list, and see [.github/workflows/ci.yml](.github/workflows/ci.yml)

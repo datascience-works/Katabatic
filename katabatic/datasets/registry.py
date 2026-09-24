@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from katabatic.artifacts.base import ArtifactStore
+from katabatic.artifacts.base import ArtifactConflictError, ArtifactStore
 from katabatic.artifacts.local import LocalArtifactStore
 from katabatic.artifacts.refs import artifact_path_segment
 from katabatic.datasets.profile import infer_dataset_profile
@@ -16,6 +16,8 @@ def _iso_now() -> str:
 
 
 REGISTRY_RELPATH = "registry/datasets.json"
+# Retries when another writer updates the registry between our load and save.
+_SAVE_ATTEMPTS = 5
 
 
 class DatasetRegistry:
@@ -52,12 +54,6 @@ class DatasetRegistry:
         target_column: str | None = None,
     ) -> dict[str, Any]:
         key = artifact_path_segment(dataset_name)
-        raw = self._load_raw()
-        if key in raw["datasets"]:
-            raise ValueError(
-                f"dataset name already registered: {dataset_name!r} (key {key!r})"
-            )
-
         profile = infer_dataset_profile(
             csv_path, target_column=target_column, dataset_name=dataset_name
         )
@@ -65,9 +61,21 @@ class DatasetRegistry:
             **profile,
             "registered_at": _iso_now(),
         }
-        raw["datasets"][key] = entry
-        self._save_raw(raw)
-        return entry
+        attempts = 0
+        while True:
+            raw = self._load_raw()
+            if key in raw["datasets"]:
+                raise ValueError(
+                    f"dataset name already registered: {dataset_name!r} (key {key!r})"
+                )
+            raw["datasets"][key] = entry
+            try:
+                self._save_raw(raw)
+                return entry
+            except ArtifactConflictError:
+                attempts += 1
+                if attempts == _SAVE_ATTEMPTS:
+                    raise
 
     def register_if_absent(
         self,
@@ -83,7 +91,14 @@ class DatasetRegistry:
         _ = artifact_path_segment(dataset_name)
         existing = self.get(dataset_name)
         if existing is None:
-            return self.register(dataset_name, csv_path, target_column=target_column)
+            try:
+                return self.register(
+                    dataset_name, csv_path, target_column=target_column
+                )
+            except ValueError:  # registered concurrently by another writer
+                existing = self.get(dataset_name)
+                if existing is None:
+                    raise
 
         tc = target_column or existing.get("target_column")
         try:

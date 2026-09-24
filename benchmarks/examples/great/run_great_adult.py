@@ -1,3 +1,8 @@
+# NOTE: This script can take a long time to run. GReaT fine-tunes
+# a GPT-2 language model, and sampling retries generation in batches until
+# enough rows parse successfully. This can take well over an hour even on GPU.
+# See benchmarks/examples/great/README.md for known runtime limitations.
+
 import logging
 import os
 import platform
@@ -7,6 +12,7 @@ from time import perf_counter
 
 import pandas as pd
 import psutil
+import torch
 
 sys.path.insert(
     0,
@@ -22,8 +28,6 @@ from runner import (
 
 from katabatic.models.great.models import GReaT  # noqa: E402
 
-# run in cpu mode(if GPU is limited)
-# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 logging.getLogger("pgmpy").setLevel(logging.ERROR)
 warnings.filterwarnings("ignore")
@@ -60,7 +64,7 @@ def get_runtime_summary(
         model_name
         + " has taken "
         + str(time_diff)
-        + " seconds to run the adult "
+        + " seconds to run the "
         + dataset_name
         + " dataset."
     )
@@ -114,30 +118,39 @@ FLOAT_PRECISION = None
 TEMPERATURE = 0.7  # generation temperature (lower = more conservative)
 MAX_LENGTH = 100  # max tokens per generated row
 K = 100  # rows attempted per generation batch
-DEVICE = "cuda"  # "cpu" or "cuda"
+DEVICE = (
+    str(torch.accelerator.current_accelerator())
+    if torch.accelerator.is_available()
+    else "cpu"
+)  # auto-detect GPU/other accelerator
 GUIDED_SAMPLING = False  # True = feature-by-feature (slower, sometimes more reliable)
 RANDOM_FEATURE_ORDER = True  # shuffle column order in guided sampling prompts
 DROP_NAN = False  # drop rows with any NaN in the output
 # SEED = config.seed  # generation seed for reproducibility
 
 config = RunConfig(
-    dataset_name="magic",
+    dataset_name="adult",
     model_name="great",
     categorical_cols=[
-        "fLength",
-        "fWidth",
-        "fSize",
-        "fConc",
-        "fConc1",
-        "fAsym",
-        "fM3Long",
-        "fM3Trans",
-        "fAlpha",
-        "fDist",
+        "workclass",
+        "education",
+        "education-num",
+        "marital-status",
+        "occupation",
+        "relationship",
+        "race",
+        "sex",
+        "native-country",
     ],
-    continuous_cols=[],
+    continuous_cols=["age", "fnlwgt", "capital-gain", "capital-loss", "hours-per-week"],
     target_col_raw="class",
-    constraints={},
+    constraints={
+        "age": (17, 90),
+        "fnlwgt": (12285, 1490400),
+        "capital-gain": (0, 99999),
+        "capital-loss": (0, 4356),
+        "hours-per-week": (1, 99),
+    },
 )
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)
@@ -166,7 +179,9 @@ print("\nGReaT training complete.")
 print("\n" + "=" * 60)
 print("STEP 4 — Generate synthetic data")
 print("=" * 60)
-synthetic_df = pd.DataFrame(model.sample(len(train_df)), columns=train_df.columns)
+synthetic_df = pd.DataFrame(
+    model.sample(len(train_df), device=DEVICE), columns=train_df.columns
+)
 synthetic_df = save_synthetic(
     synthetic_df,
     train_df,

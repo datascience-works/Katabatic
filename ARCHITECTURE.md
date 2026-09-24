@@ -44,9 +44,10 @@ flowchart TD
 ```
 
 The supported models (`supported: True` in `ModelRegistry`, `katabatic/models/registry.py`) are
-`ganblr`, `ctgan`, `pategan`, `tabsyn`, and `great`. See `docs/EXPERIMENTAL_MODELS.md` for the
-other model directories under `katabatic/models/` — some registered with `supported: False`,
-some not registered at all — which are experimental and out of scope here.
+`ganblr`, `ctgan`, `pategan`, `tabsyn`, `great`, `smote`, `mst`, `privtree`, `arf`, `synthpop`,
+`naivebayes`, and `realtabformer`. See `docs/EXPERIMENTAL_MODELS.md` for the other model
+directories under `katabatic/models/` — some registered with `supported: False`, some not
+registered at all — which are experimental and out of scope here.
 
 ## `SyntheticEvaluationPipeline` flow
 
@@ -90,6 +91,13 @@ classDiagram
     Model <|-- PATEGAN
     Model <|-- TabSyn
     Model <|-- GReaT
+    Model <|-- SMOTEModel
+    Model <|-- MSTModel
+    Model <|-- PrivTreeModel
+    Model <|-- ARFModel
+    Model <|-- SynthPop
+    Model <|-- NaiveBayesModel
+    Model <|-- REaLTabFormerModel
 
     Evaluation <|-- FidelityEvaluation
     Evaluation <|-- UtilityEvaluation
@@ -131,8 +139,9 @@ katabatic/
 │   ├── train_test_split/    # TrainTestSplitPipeline (primary, tested path)
 │   └── evaluation_pipeline.py  # SyntheticEvaluationPipeline
 │
-├── artifacts/                # ArtifactStore: versioned datasets/models/evaluations on disk
+├── artifacts/                # ArtifactStore: versioned datasets/models/evaluations
 │   ├── base.py, local.py, refs.py, ids.py, dataset_split.py
+│   ├── remote.py             # FsspecArtifactStore: S3/GCS/Azure via a local cache + sync()/pull()
 │
 ├── datasets/                  # shipped example-dataset catalogue (adult/car/magic/nursery/shuttle
 │   │                           # — see datasets/README.md for the documented set)

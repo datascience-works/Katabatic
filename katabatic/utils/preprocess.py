@@ -50,7 +50,7 @@ def fill_categorical_nulls(df: pd.DataFrame) -> pd.DataFrame:
         if not is_numerical(df_copy[col]):
             df_copy[col] = df_copy[col].astype(str).str.strip()
             df_copy[col] = df_copy[col].replace(
-                {"nan": "Missing", "missing": "Missing"}
+                {"nan": "Missing", "missing": "Missing", "None": "Missing"}
             )
     return df_copy
 

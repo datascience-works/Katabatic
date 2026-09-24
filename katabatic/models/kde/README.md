@@ -108,21 +108,21 @@ Evaluated end-to-end via `benchmarks/examples/kde/run_kde_<dataset>.py` against 
 | Dataset | Composite | Fidelity | Utility | Diversity | Privacy | Consistency | Stability |
 |---|---|---|---|---|---|---|---|
 | car | 0.8435 | 0.9827 | 0.8874 | 0.9993 | 0.4612 | 0.6900 | 0.9825 |
-| adult | 0.9179 | 0.9932 | 0.9780 | 0.9588 | 0.9660 | 0.3676 | 0.9950 |
-| magic | 0.8916 | 0.9960 | 0.9952 | 0.8676 | 0.4216 | 0.9431 | 1.0000 |
 | nursery | 0.8642 | 0.9949 | 0.9136 | 0.9988 | 0.4587 | 0.7731 | 0.9950 |
-| shuttle | 0.9081 | 0.9964 | 0.9980 | 0.9486 | 0.5915 | 0.7608 | 1.0000 |
+| magic | 0.8837 | 0.9408 | 0.9377 | 0.8644 | 0.8633 | 0.5476 | 0.9925 |
+| shuttle | 0.9272 | 0.9666 | 0.9836 | 0.9479 | 0.9816 | 0.4964 | 0.9930 |
+| adult | — | — | — | — | — | — | — |
 
-Fidelity, diversity, and stability are consistently strong across all 5. **Privacy is the model's clearest weak point on the low-cardinality categorical datasets** (car, magic, nursery — all 0.42–0.59): class-conditional histograms over a small category space reproduce the training distribution closely enough that this trades off against privacy. `adult`, with higher-cardinality and mixed continuous features, scores far better on privacy (0.97) but noticeably worse on consistency (0.37) — worth keeping in mind before using KDE where either property specifically matters (see PATE-GAN's README for a model built around a differential-privacy guarantee instead).
+Fidelity, diversity, and stability are consistently strong. **Privacy is the model's clearest weak point on the low-cardinality, all-categorical datasets** (car, nursery — both ≈0.46): class-conditional histograms over a small category space reproduce the training distribution closely enough that this trades off against privacy. The continuous-feature datasets (magic, shuttle) score far better on privacy (0.86–0.98) but lower on consistency (0.50–0.55), because each continuous feature is sampled independently given the class — worth keeping in mind before using KDE where either property specifically matters (see PATE-GAN's README for a model built around a differential-privacy guarantee instead).
 
 ***
 
 ## Installation
 
-No extra dependencies needed — `scikit-learn` is a core dependency:
+KDE is an officially supported model (`supported: True` in `ModelRegistry`). No extra dependencies are needed — `scikit-learn` is a core dependency, and the `kde` extra is empty:
 
 ```bash
-poetry install
+pip install katabatic[kde]   # or: poetry install -E kde
 ```
 
 ## Quick Start
@@ -135,7 +135,7 @@ from katabatic.models.kde import KDESynthesizer
 model = KDESynthesizer(kernel="gaussian", bandwidth=None, seed=42)
 model.train(data_dir="sample_data/car", synthetic_dir="synthetic/car/kde")
 
-synthetic_df = model.sample(n=1000)
+synthetic_df = model.sample(n_samples=1000)  # omit n_samples to match the training row count
 ```
 
 ### Pipeline Usage (Recommended)
@@ -181,7 +181,8 @@ If `data_dir/info.json` exists with a `cat_col_idx` key (Katabatic's dataset-reg
 ## Limitations
 
 - Continuous KDE samples are not clipped to the real data's observed range — a feature that peaks near zero can occasionally sample a small negative value. Not corrected in this version; flagged here for whoever picks up the Validation & Benchmark pass.
-- Per-feature KDEs are independent given the class — cross-feature correlation within a class is not modeled beyond what the shared class label induces.
+- Per-feature KDEs are independent given the class — cross-feature correlation within a class is not modeled beyond what the shared class label induces. Each (feature, class) KDE is sampled with its own random draw; sampling every feature with one fixed seed would make all columns pick the same training row and copy real rows.
+- `evaluate()` is not implemented (it raises `NotImplementedError`); use the Katabatic evaluation pipeline for cross-model metrics.
 - No conditional generation on arbitrary feature values yet (only via the class label, same limitation noted in PATE-GAN's README).
 
 ***
