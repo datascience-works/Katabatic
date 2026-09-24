@@ -1,28 +1,23 @@
-.PHONY: clear-cache install-core install-model install-all setup-dev help ci lint format security test build integration hooks contract
+.PHONY: clear-cache install-core install-model setup-dev help ci lint format security test build integration hooks contract
+
+# Fails a target that needs MODEL when none was given.
+require-model = @if [ -z "$(MODEL)" ]; then echo "Error: specify a model, e.g. make $@ MODEL=ganblr"; exit 1; fi
 
 # Core installation (minimal dependencies)
 install-core:
 	@echo "Installing core Katabatic dependencies..."
 	poetry install
 
-# Install specified model
+# Install one or more models, e.g. MODEL="ganblr ctgan"
 install-model:
-	@if [ -z "$(MODEL)" ]; then \
-		echo "Error: specify a model, e.g. make install-model MODEL=ganblr"; \
-		exit 1; \
-	fi
+	$(require-model)
 	@echo "Installing $(MODEL) model dependencies..."
-	poetry install -E $(MODEL)
+	poetry install $(addprefix -E ,$(MODEL))
 
-# Install all model dependencies
-install-all:
-	@echo "Installing all model dependencies..."
-	poetry install -E all
-
-# Setup full development environment
+# Setup development environment, plus any models given in MODEL
 setup-dev:
-	@echo "Setting up full development environment..."
-	poetry install --with dev -E all
+	@echo "Setting up development environment..."
+	poetry install --with dev $(addprefix -E ,$(MODEL))
 	poetry run pre-commit install
 
 clear-cache:
@@ -60,15 +55,16 @@ build:
 	@echo "Building wheel..."
 	poetry build
 
-# Run a model promotion contract test
+# Run the model promotion contract for a specific model (mirrors CI).
 contract:
-	@echo "Running model promotion contract test..."
-	poetry run pip install "torch>=2.13.0,<3.0.0" --index-url https://download.pytorch.org/whl/cpu
-	poetry install --with dev -E all
-	poetry run pytest tests/test_model_registry.py -v
+	$(require-model)
+	@echo "Running model promotion contract test for $(MODEL)..."
+	poetry install --with dev -E $(MODEL)
+	poetry run pytest tests/test_model_registry.py -k "$(MODEL)" -v
 
 # Run an integration test for a specific model.
 integration:
+	$(require-model)
 	@echo "Running integration tests for $(MODEL)..."
 	poetry install --with dev -E $(MODEL)
 	poetry run pytest -m "integration and $(MODEL)" -q
@@ -86,11 +82,10 @@ help:
 	@echo ""
 	@echo "Installation:"
 	@echo "  make install-core       Install core dependencies only"
-	@echo "  make install-model MODEL=x   Install a specific model's deps (e.g. MODEL=ctgan)"
-	@echo "  make install-all             Install all model dependencies"
+	@echo "  make install-model MODEL=x   Install model deps (e.g. MODEL=ctgan or MODEL=\"ganblr ctgan\")"
 	@echo ""
 	@echo "Development Setup:"
-	@echo "  make setup-dev          Setup full development environment (all extras + hooks)"
+	@echo "  make setup-dev          Setup dev environment + hooks (add MODEL=... for model extras)"
 	@echo "  make hooks              Install and run pre-commit hooks"
 	@echo ""
 	@echo "Maintenance:"
@@ -102,5 +97,5 @@ help:
 	@echo "  make format             Auto-fix formatting and lint issues"
 	@echo "  make test               Run fast tests with coverage"
 	@echo "  make integration MODEL=ctgan   Run integration tests for a model"
-	@echo "  make contract           Run the model promotion contract (all supported models)"
+	@echo "  make contract MODEL=ctgan      Run the model promotion contract for a model"
 	@echo "  make hooks              Install pre-commit hooks"

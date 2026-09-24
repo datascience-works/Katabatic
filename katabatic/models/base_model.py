@@ -129,6 +129,7 @@ class Model(ABC):
         Resolve a single-file artifact state path under ref.state_relpath.
         """
         name = filename or cls.ARTIFACT_STATE_FILES[0]
+        store.pull(ref.state_relpath)  # no-op for local-backed stores
         state_path = store.open_path(f"{ref.state_relpath}/{name}")
         if not state_path.is_file():
             raise FileNotFoundError(
@@ -142,6 +143,7 @@ class Model(ABC):
         """
         Resolve a multi-file artifact state directory under ref.state_relpath.
         """
+        store.pull(ref.state_relpath)  # no-op for local-backed stores
         state_dir = store.open_path(ref.state_relpath)
         if not state_dir.is_dir():
             raise FileNotFoundError(
