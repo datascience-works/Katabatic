@@ -65,12 +65,12 @@ config = RunConfig(
     categorical_cols=[
         "workclass",
         "education",
-        "educational-num",
+        "education-num",
         "marital-status",
         "occupation",
         "relationship",
         "race",
-        "gender",
+        "sex",
         "native-country",
     ],
     continuous_cols=[

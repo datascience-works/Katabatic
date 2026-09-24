@@ -18,19 +18,18 @@ from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 from katabatic.models.realtabformer.models import REaLTabFormerModel
 
 config = RunConfig(
-    dataset_name="car",
+    dataset_name="nursery",
     model_name="realtabformer",
-    categorical_cols=["0", "1", "2", "3", "4", "5"],
+    categorical_cols=["0", "1", "2", "3", "4", "5", "6", "7"],
     continuous_cols=[],
-    target_col_raw="6",
+    target_col_raw="8",
     constraints=None,
 )
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)
 
-# First real integration benchmark.
-# Keep epochs low initially so that the complete pipeline can be validated
-# before running a longer experiment.
+# Keep epochs low initially so the complete pipeline can be validated before
+# running a longer experiment (matches run_realtabformer_car.py).
 EPOCHS = 5
 BATCH_SIZE = 8
 RANDOM_STATE = 1029
