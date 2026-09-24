@@ -6,9 +6,15 @@ import re
 
 import pytest
 
-from katabatic.artifacts import LocalArtifactStore
-from katabatic.models.ctabganplus.models import CTABGANPlus
-from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
+from tests.conftest import require_backend
+
+require_backend("torch", "save")
+
+from katabatic.artifacts import LocalArtifactStore  # noqa: E402
+from katabatic.models.ctabganplus.models import CTABGANPlus  # noqa: E402
+from katabatic.pipeline.train_test_split.pipeline import (  # noqa: E402
+    TrainTestSplitPipeline,
+)
 
 
 @pytest.mark.integration
