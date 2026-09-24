@@ -2,13 +2,11 @@ from __future__ import annotations
 
 import os
 import pickle
-import random
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
-import torch
 from sklearn.model_selection import train_test_split
 
 from katabatic.models.base_model import Model
@@ -20,21 +18,11 @@ if TYPE_CHECKING:
     from katabatic.artifacts.refs import ModelRef
 
 
-def seed_everything(seed: int) -> None:
-    os.environ["PL_GLOBAL_SEED"] = str(seed)
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-
-
 def to_numpy(
-    X: np.ndarray | torch.Tensor | pd.DataFrame | pd.Series | None,
+    X: np.ndarray | pd.DataFrame | pd.Series | None,
 ) -> np.ndarray | None:
     if isinstance(X, np.ndarray):
         return X
-    if isinstance(X, torch.Tensor):
-        return X.detach().cpu().numpy()
     if isinstance(X, pd.DataFrame):
         return X.to_numpy()
     if isinstance(X, pd.Series):
@@ -46,8 +34,7 @@ def to_numpy(
 
 class _TabEBMBackend:
     """
-    NumPy-based TabEBM backend.
-    Avoids torch/autograd kernel crashes.
+    NumPy-based TabEBM backend (no torch dependency).
     """
 
     def __init__(self, max_data_size: int = 10000):
@@ -203,7 +190,7 @@ class TabEBMModel(Model):
 
     @classmethod
     def get_required_dependencies(cls) -> list[str]:
-        return ["numpy", "pandas", "sklearn", "torch"]
+        return ["numpy", "pandas", "sklearn"]
 
     def train(
         self,

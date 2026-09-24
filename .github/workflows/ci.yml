@@ -195,7 +195,7 @@ jobs:
             {"model": "realtabformer", "torch": true},
             {"model": "smote", "torch": false},
             {"model": "synthpop", "torch": false, "r": true},
-            {"model": "tabebm", "torch": true},
+            {"model": "tabebm", "torch": false},
             {"model": "tabsyn", "torch": true}
           ]'
 

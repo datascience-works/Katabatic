@@ -142,7 +142,7 @@ class ModelRegistry:
         "tabebm": {
             "module": "katabatic.models.tabebm.models",
             "class": "TabEBMModel",
-            "dependencies": ["numpy", "pandas", "sklearn", "torch"],
+            "dependencies": ["numpy", "pandas", "sklearn"],
             "extra": "tabebm",
             "supported": True,
         },
