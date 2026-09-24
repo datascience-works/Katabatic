@@ -192,7 +192,7 @@ jobs:
             {"model": "naivebayes", "torch": false},
             {"model": "realtabformer", "torch": true},
             {"model": "kde", "torch": false},
-            {"model": "histogram", "torch": false},
+            {"model": "histogram", "torch": false}
           ]'
 
           # Always run the full matrix for main (release pushes/PRs) so
