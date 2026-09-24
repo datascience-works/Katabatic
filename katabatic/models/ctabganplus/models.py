@@ -231,11 +231,7 @@ class CTABGANSynthesizer:
                     continue
 
                 noise = torch.randn(
-                    len(real),
-                    self.random_dim,
-                    1,
-                    1,
-                    device=self.device,
+                    len(real), self.random_dim, 1, 1, device=self.device
                 )
 
                 fake = self.generator(noise)
@@ -252,6 +248,28 @@ class CTABGANSynthesizer:
                     F.relu(1.0 + d_fake)
                 )
 
+                if self.classifier is not None:
+                    target_dim = self.classifier.str_end[1] - self.classifier.str_end[0]
+                    real_pred, real_label = self.classifier(real)
+
+                    if target_dim == 1:
+                        c_loss_fn = torch.nn.SmoothL1Loss()
+                        real_c_loss = c_loss_fn(
+                            real_pred, real_label.view(-1).type_as(real_pred)
+                        )
+                    elif target_dim == 2:
+                        c_loss_fn = torch.nn.BCELoss()
+                        real_c_loss = c_loss_fn(
+                            real_pred, real_label.type_as(real_pred)
+                        )
+                    else:
+                        c_loss_fn = torch.nn.CrossEntropyLoss()
+                        real_c_loss = c_loss_fn(
+                            real_pred, torch.argmax(real_label, dim=-1)
+                        )
+
+                    loss_d = loss_d + real_c_loss
+
                 self.opt_d.zero_grad()
                 loss_d.backward()
                 self.opt_d.step()
@@ -261,14 +279,39 @@ class CTABGANSynthesizer:
 
                 loss_g = -torch.mean(g_fake)
 
+                if self.classifier is not None:
+                    target_dim = self.classifier.str_end[1] - self.classifier.str_end[0]
+                    fake_pred, fake_label = self.classifier(fake)
+
+                    if target_dim == 1:
+                        c_loss_fn = torch.nn.SmoothL1Loss()
+                        fake_c_loss = c_loss_fn(
+                            fake_pred, fake_label.view(-1).type_as(fake_pred)
+                        )
+                    elif target_dim == 2:
+                        c_loss_fn = torch.nn.BCELoss()
+                        fake_c_loss = c_loss_fn(
+                            fake_pred, fake_label.type_as(fake_pred)
+                        )
+                    else:
+                        c_loss_fn = torch.nn.CrossEntropyLoss()
+                        fake_c_loss = c_loss_fn(
+                            fake_pred, torch.argmax(fake_label, dim=-1)
+                        )
+
+                    loss_g = loss_g + fake_c_loss
+
                 self.opt_g.zero_grad()
                 loss_g.backward()
                 self.opt_g.step()
 
             logger.info("CTAB-GAN+ epoch %s/%s completed", epoch + 1, self.epochs)
 
-    def sample(self, n):
+    def sample(self, n, seed=None):
         """Generate synthetic records from the trained generator."""
+
+        if seed is not None:
+            torch.manual_seed(seed)
 
         self.generator.eval()
         steps = n // self.batch_size + 1
@@ -308,16 +351,17 @@ class CTABGANSynthesizer:
     def _gen_layers(self):
         """Build generator layers for the selected image side."""
 
+        base = self.num_channels
         layers = [
-            ConvTranspose2d(self.random_dim, 256, 4, 1, 0),
+            ConvTranspose2d(self.random_dim, base * 4, 4, 1, 0),
             ReLU(True),
         ]
 
         current_size = 4
-        current_channels = 256
+        current_channels = base * 4
 
         while current_size < self.Gtransformer.height:
-            next_channels = max(current_channels // 2, 64)
+            next_channels = max(current_channels // 2, base)
 
             layers += [
                 ConvTranspose2d(current_channels, next_channels, 4, 2, 1),
@@ -334,15 +378,16 @@ class CTABGANSynthesizer:
     def _dis_layers(self):
         """Build discriminator layers for the selected image side."""
 
+        base = self.num_channels
         reduced_side = self.Dtransformer.height // 4
 
         return [
-            Conv2d(1, 64, 4, 2, 1),
+            Conv2d(1, base, 4, 2, 1),
             LeakyReLU(0.2),
-            Conv2d(64, 128, 4, 2, 1),
+            Conv2d(base, base * 2, 4, 2, 1),
             LeakyReLU(0.2),
             torch.nn.Flatten(),
-            Linear(128 * reduced_side * reduced_side, 1),
+            Linear(base * 2 * reduced_side * reduced_side, 1),
         ]
 
 
@@ -462,7 +507,9 @@ class CTABGANPlus(Model):
 
         return self
 
-    def sample(self, n_samples: int | None = None, *args, **kwargs) -> pd.DataFrame:
+    def sample(
+        self, n_samples: int | None = None, *args, seed=None, **kwargs
+    ) -> pd.DataFrame:
         """Generate synthetic samples as a single DataFrame."""
 
         if not self.is_fitted or self.data_prep is None:
@@ -471,7 +518,7 @@ class CTABGANPlus(Model):
         if n_samples is None:
             n_samples = self._n_train or 100
 
-        synthetic_data = self.synthesizer.sample(n_samples)
+        synthetic_data = self.synthesizer.sample(n_samples, seed=seed)
         return self.data_prep.inverse_prep(synthetic_data)
 
     def evaluate(self, X_real: pd.DataFrame | None = None, **kwargs) -> float:

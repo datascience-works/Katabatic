@@ -15,16 +15,16 @@ config = RunConfig(
     categorical_cols=[
         "workclass",
         "education",
-        "educational-num",
+        "education-num",
         "marital-status",
         "occupation",
         "relationship",
         "race",
-        "gender",
+        "sex",
         "native-country",
     ],
     continuous_cols=["age", "fnlwgt", "capital-gain", "capital-loss", "hours-per-week"],
-    target_col_raw="income",
+    target_col_raw="class",
     constraints={
         "age": (17, 90),
         "fnlwgt": (12285, 1490400),
@@ -71,6 +71,11 @@ model.train(
 print("\nCTAB-GAN+ training complete.")
 
 print("\n" + "=" * 60)
+print("STEP 3b — Seed reproducibility check")
+print("=" * 60)
+seed_df1 = model.sample(50, seed=42)
+seed_df2 = model.sample(50, seed=42)
+print("Seed reproducibility (df1 == df2):", seed_df1.equals(seed_df2))
 print("STEP 4 — Generate synthetic data")
 print("=" * 60)
 synthetic_df = model.sample(len(train_df))
