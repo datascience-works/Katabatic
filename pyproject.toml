@@ -37,6 +37,7 @@ artifacts-gcs = ["fsspec>=2023.5.0,<=2026.2.0", "gcsfs>=2023.5.0,<=2026.2.0"]
 artifacts-azure = ["fsspec>=2023.5.0,<=2026.2.0", "adlfs>=2023.5.0,<=2026.2.0"]
 kde = []
 ctgan = ["torch>=2.14.0,<3.0.0"]
+ctabganplus = ["torch>=2.14.0,<3.0.0"]
 ganblr = [
     "tensorflow==2.21.*",
     "tensorflow-io==0.37.1",
@@ -136,6 +137,7 @@ markers = [
     "mst: requires mst extra",
     "privtree: requires privtree extra",
     "arf: requires arf extra",
+    "ctabganplus: requires ctabganplus extra",
     "synthpop: requires synthpop extra (and R + CRAN synthpop packages)",
     "naivebayes: requires naivebayes extra",
     "histogram: requires histogram extra",
