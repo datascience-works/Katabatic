@@ -7,11 +7,11 @@ sys.path.insert(
 
 from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
-from katabatic.models.ctgan.models import CTGANModel
+from katabatic.models.mst.models import MSTModel
 
 config = RunConfig(
     dataset_name="adult",
-    model_name="ctgan",
+    model_name="mst",
     categorical_cols=[
         "workclass",
         "education",
@@ -26,26 +26,25 @@ config = RunConfig(
     continuous_cols=["age", "fnlwgt", "capital-gain", "capital-loss", "hours-per-week"],
     target_col_raw="class",
     constraints={
-        "age": (17, 90),  # working age range
-        "fnlwgt": (12285, 1490400),  # census sampling weight, dataset min/max
-        "capital-gain": (0, 99999),  # cannot be negative, capped at 99999 in dataset
-        "capital-loss": (0, 4356),  # cannot be negative, capped at 4356 in dataset
-        "hours-per-week": (1, 99),  # at least 1 hour, max 99 in dataset
+        "age": (17, 90),
+        "fnlwgt": (12285, 1490400),
+        "capital-gain": (0, 99999),
+        "capital-loss": (0, 4356),
+        "hours-per-week": (1, 99),
     },
 )
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)
 
 print("\n" + "=" * 60)
-print("STEP 3 — Train CTGAN")
+print("STEP 3 — Train MST")
 print("=" * 60)
-model = CTGANModel(epochs=100, batch_size=512, seed=42)
+model = MSTModel(categorical_columns=config.categorical_cols + [target_col])
 model.train(
     paths["split_dir"],
-    categorical_cols=config.categorical_cols,
-    continuous_cols=config.continuous_cols,
+    synthetic_dir=paths["synthetic_dir"],
 )
-print("\nCTGAN training complete.")
+print("\nMST training complete.")
 
 print("\n" + "=" * 60)
 print("STEP 4 — Generate synthetic data")
