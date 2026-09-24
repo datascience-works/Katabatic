@@ -174,25 +174,29 @@ jobs:
             realtabformer:
               - 'katabatic/models/realtabformer/**'
               - 'tests/test_integration_realtabformer.py'
+            kde:
+              - 'katabatic/models/kde/**'
+              - 'tests/test_integration_kde.py'
 
       - name: Build Dynamic Matrix
         id: build-matrix
         run: |
           ALL_MODELS='[
-            {"model": "ganblr", "torch": false},
-            {"model": "ctgan", "torch": true},
-            {"model": "pategan", "torch": false},
-            {"model": "tabsyn", "torch": true},
-            {"model": "great", "torch": true},
-            {"model": "smote", "torch": false},
-            {"model": "mst", "torch": false},
-            {"model": "privtree", "torch": false},
             {"model": "arf", "torch": false},
-            {"model": "synthpop", "torch": false, "r": true},
-            {"model": "naivebayes", "torch": false},
+            {"model": "ctgan", "torch": true},
+            {"model": "ganblr", "torch": false},
+            {"model": "great", "torch": true},
             {"model": "histogram", "torch": false},
+            {"model": "kde", "torch": false},
+            {"model": "mst", "torch": false},
+            {"model": "naivebayes", "torch": false},
+            {"model": "pategan", "torch": false},
+            {"model": "privtree", "torch": false},
+            {"model": "realtabformer", "torch": true},
+            {"model": "smote", "torch": false},
+            {"model": "synthpop", "torch": false, "r": true},
             {"model": "tabebm", "torch": true},
-            {"model": "realtabformer", "torch": true}
+            {"model": "tabsyn", "torch": true}
           ]'
 
           # Always run the full matrix for main (release pushes/PRs) so
