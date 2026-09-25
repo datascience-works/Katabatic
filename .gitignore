@@ -12,6 +12,8 @@ sample_data/
 synthetic/
 Results/
 
+.python-version
+
 
 # GReaT trainer artifacts
 **/trainer_great/**
