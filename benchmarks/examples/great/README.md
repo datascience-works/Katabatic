@@ -45,7 +45,7 @@ poetry install
 ## Usage
 
 Benchmark script:
-- Adult Income: [benchmarks/examples/great/run_great_adult.py](benchmarks/examples/great/run_great_adult.py)
+- Adult Income: [benchmarks/examples/great/run_great_adult.py](run_great_adult.py)
 
 ```python
 from katabatic.models.great.models import GReaT

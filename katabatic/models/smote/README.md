@@ -83,8 +83,8 @@ synthetic_df = model.sample(1000)
 ### Evaluation Pipeline Benchmark Scripts
 
 Evaluation pipeline Benchmark Scripts for each dataset:
-- Magic [benchmarks/examples/MODEL/smote/magic](benchmarks/examples/smote/run_smote_magic.py)
-- Shuttle [benchmarks/examples/MODEL/smote/shuttle](benchmarks/examples/smote/run_smote_shuttle.py)
+- Magic [benchmarks/examples/smote/magic](../../../benchmarks/examples/smote/run_smote_magic.py)
+- Shuttle [benchmarks/examples/smote/shuttle](../../../benchmarks/examples/smote/run_smote_shuttle.py)
 
 ---
 

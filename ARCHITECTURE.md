@@ -47,9 +47,9 @@ flowchart TD
 
 The supported models (`supported: True` in `ModelRegistry`, `katabatic/models/registry.py`) are
 `ganblr`, `ctgan`, `pategan`, `tabsyn`, `great`, `smote`, `mst`, `privtree`, `arf`, `synthpop`,
-`naivebayes`, and `realtabformer`. See `docs/EXPERIMENTAL_MODELS.md` for the other model
-directories under `katabatic/models/` — some registered with `supported: False`, some not
-registered at all — which are experimental and out of scope here.
+`naivebayes`, `histogram`, `realtabformer`, `kde` and `fairtabdiffusion`. Experimental models
+live under `katabatic/experimental/models/`, outside the semantic-versioning guarantee; see
+`docs/EXPERIMENTAL_MODELS.md`.
 
 ## `SyntheticEvaluationPipeline` flow
 
@@ -104,7 +104,10 @@ classDiagram
     Model <|-- ARFModel
     Model <|-- SynthPop
     Model <|-- NaiveBayesModel
+    Model <|-- HistogramModel
     Model <|-- REaLTabFormerModel
+    Model <|-- KDESynthesizer
+    Model <|-- FairTabDiffusion
 
     Evaluation <|-- FidelityEvaluation
     Evaluation <|-- UtilityEvaluation
@@ -153,7 +156,10 @@ katabatic/
 ├── models/
 │   ├── base_model.py       # Model ABC (train/sample), shared evaluate(), artifact-state hooks
 │   ├── registry.py         # ModelRegistry — declarative model lookup + install extras
-│   └── <model_name>/       # one dir per model; see docs/EXPERIMENTAL_MODELS.md for the full list
+│   └── <model_name>/       # one dir per supported model
+│
+├── experimental/
+│   └── models/<model_name>/  # experimental models; no API stability guarantee
 │
 ├── evaluate/
 │   ├── base_evaluation.py  # Evaluation ABC (DataFrame-based; used by SyntheticEvaluationPipeline)
@@ -179,5 +185,7 @@ katabatic/
 
 benchmarks/
 ├── runner.py                  # RunConfig + SyntheticEvaluationPipeline helpers
-└── examples/                  # per-model run scripts.
+└── examples/                  # per-model run scripts
+
+examples/                      # quickstart, evaluation and remote-store notebooks (run in CI)
 ```

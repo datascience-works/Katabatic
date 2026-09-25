@@ -66,11 +66,11 @@ See `benchmarks/examples/codi/` for full runs.
 
 ## Usage
 Evaluation pipeline Benchmark Scripts for each dataset:
-- Adult [benchmarks/examples/codi/run_codi_adult](benchmarks/examples/codi)
-- Shuttle [benchmarks/examples/codi/run_codi_shuttle](benchmarks/examples/codi)
-- Car [benchmarks/examples/codi/run_codi_car](benchmarks/examples/codi)
-- Magic [benchmarks/examples/codi/run_codi_magic](benchmarks/examples/codi)
-- Nursery [benchmarks/examples/codi/run_codi_nursery](benchmarks/examples/codi)
+- Adult [benchmarks/examples/codi/run_codi_adult](../../../../benchmarks/examples/codi)
+- Shuttle [benchmarks/examples/codi/run_codi_shuttle](../../../../benchmarks/examples/codi)
+- Car [benchmarks/examples/codi/run_codi_car](../../../../benchmarks/examples/codi)
+- Magic [benchmarks/examples/codi/run_codi_magic](../../../../benchmarks/examples/codi)
+- Nursery [benchmarks/examples/codi/run_codi_nursery](../../../../benchmarks/examples/codi)
 
 ```python
 

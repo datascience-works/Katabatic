@@ -123,8 +123,8 @@ poetry install --extras tabsyn
 ```
 ## Usage
 Benchmark scripts for each dataset:
-- Car: [benchmarks/examples/tabsyn/run_tabsyn_car.py](benchmarks/examples/tabsyn)
-- Adult: [benchmarks/examples/tabsyn/run_tabsyn_adult.py](benchmarks/examples/tabsyn)
+- Car: [benchmarks/examples/tabsyn/run_tabsyn_car.py](../../../benchmarks/examples/tabsyn)
+- Adult: [benchmarks/examples/tabsyn/run_tabsyn_adult.py](../../../benchmarks/examples/tabsyn)
 
 ```python
 from katabatic.models.tabsyn.models import TabSyn

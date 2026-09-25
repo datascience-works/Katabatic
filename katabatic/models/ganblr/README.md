@@ -85,11 +85,11 @@ poetry install --extras ganblr
 
 ## Usage
 Evaluation pipeline Benchmark Scripts for each dataset:
-- Adult [benchmarks/examples/ganblr/run_ganblr_adult](benchmarks/examples/ganblr)
-- Shuttle [benchmarks/examples/ganblr/run_ganblr_shuttle](benchmarks/examples/ganblr)
-- Car [benchmarks/examples/ganblr/run_ganblr_car](benchmarks/examples/ganblr)
-- Magic [benchmarks/examples/ganblr/run_ganblr_magic](benchmarks/examples/ganblr)
-- Nursery [benchmarks/examples/ganblr/run_ganblr_nursery](benchmarks/examples/ganblr)
+- Adult [benchmarks/examples/ganblr/run_ganblr_adult](../../../benchmarks/examples/ganblr)
+- Shuttle [benchmarks/examples/ganblr/run_ganblr_shuttle](../../../benchmarks/examples/ganblr)
+- Car [benchmarks/examples/ganblr/run_ganblr_car](../../../benchmarks/examples/ganblr)
+- Magic [benchmarks/examples/ganblr/run_ganblr_magic](../../../benchmarks/examples/ganblr)
+- Nursery [benchmarks/examples/ganblr/run_ganblr_nursery](../../../benchmarks/examples/ganblr)
 
 ```python
 from katabatic.models.ganblr.models import GANBLR

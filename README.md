@@ -4,21 +4,23 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Poetry](https://img.shields.io/badge/dependency-poetry-blue)](https://python-poetry.org/)
 
-A framework for synthetic tabular data generation, providing a common interface across GANBLR, CTGAN, PATE-GAN, TabSyn, GReaT, and KDE, plus additional experimental models.
+A framework for synthetic tabular data generation: 15 supported generative models behind one interface, a six-dimension evaluation, and versioned artifacts that can live on local disk or in cloud storage.
 
 ## Features
 
-- **Supported Generative Models**: GANBLR (GAN-based Bayesian Learning Rules), CTGAN (conditional tabular GAN), PATE-GAN (differentially private GAN), TabSyn (diffusion-based), GReaT (transformer-based), and KDE (kernel density estimation) — see [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md) for additional experimental models
+- **Supported Generative Models**: GAN-based (GANBLR, CTGAN, PATE-GAN), diffusion (TabSyn, FairTabDiffusion), language-model (GReaT, REaLTabFormer), differentially private (MST, PrivTree, PATE-GAN) and statistical baselines (ARF, KDE, Histogram, NaiveBayes, SMOTE, SynthPop). Experimental models live in `katabatic.experimental`; see [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md)
 - **Automated Pipeline**: End-to-end training, generation, and evaluation workflows
-- **TSTR Evaluation**: Train on Synthetic, Test on Real data evaluation methodology
-- **Data Preprocessing**: Automated tabular preprocessing (discretization and encoding)
-- **Extensible Architecture**: Easy to add new models and evaluation metrics
+- **Six-Dimension Evaluation**: `model.evaluate()` scores fidelity, utility (TSTR), diversity, privacy, consistency and stability, plus a weighted composite
+- **Versioned Artifacts**: datasets, trained models and evaluations stored locally or in S3, GCS or Azure
+- **Data Preprocessing**: Discretization and encoding for models that need discrete data
+- **Extensible Architecture**: Bring your own model (subclass `Model`) or evaluation (`evaluate(pipeline=...)`)
 
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
+- [Examples](#examples)
 - [Usage](#usage)
 - [Models](#models)
 - [Datasets](#datasets)
@@ -39,7 +41,7 @@ A framework for synthetic tabular data generation, providing a common interface 
 
 ```bash
 git clone https://github.com/datascience-works/Katabatic.git
-cd katabatic
+cd Katabatic
 pyenv local 3.11.9   # or otherwise select Python 3.11.x
 ```
 
@@ -70,7 +72,6 @@ Or install directly with Poetry / pip — useful for installing several extras a
 | SynthPop (supported, requires R) | `pip install katabatic[synthpop]` or `poetry install -E synthpop` — also needs R + CRAN `synthpop` packages, see [katabatic/models/synthpop/README.md](katabatic/models/synthpop/README.md) |
 | NaiveBayes (supported) | `pip install katabatic[naivebayes]` or `poetry install -E naivebayes` |
 | Histogram (supported) | `pip install katabatic[histogram]` or `poetry install -E histogram` |
-| TabEBM (supported) | `pip install katabatic[tabebm]` or `poetry install -E tabebm` |
 | REaLTabFormer (supported) | `pip install katabatic[realtabformer]` or `poetry install -E realtabformer` |
 | KDE (supported) | `pip install katabatic[kde]` or `poetry install -E kde` |
 | FairTabDiffusion (supported) | `pip install katabatic[fairtabdiffusion]` or `poetry install -E fairtabdiffusion` |
@@ -78,10 +79,10 @@ Or install directly with Poetry / pip — useful for installing several extras a
 | Several models | `pip install "katabatic[ganblr,ctgan]"` or `poetry install -E ganblr -E ctgan` |
 | Development | `poetry install --with dev` |
 
-Experimental models (`tabddpm`, `codi`, `medgan`, etc.) are documented in [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md).
+Experimental models (TabEBM, TabDDPM, GANBLR++, CoDi, MedGAN, TVAE-GAN, GMM, TabKDE) live in `katabatic.experimental.models`, with no API stability guarantee; see [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md).
 For contributor work: `poetry install --with dev -E ganblr -E ctgan -E pategan -E eval && poetry env activate`.
 
-For GPU-accelerated GReaT training: `poetry add torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118`.
+For GPU training, install the PyTorch build for your CUDA version from [pytorch.org](https://pytorch.org/get-started/locally/) into the same environment.
 
 ### Verify Installation
 
@@ -99,7 +100,7 @@ Versioned datasets, models, and evaluations under `artifacts/`. See [GANBLR_FLOW
 ```python
 from katabatic.artifacts import LocalArtifactStore
 from katabatic.models.ganblr.models import GANBLR
-from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
+from katabatic.pipeline import TrainTestSplitPipeline
 from katabatic.utils.preprocess import preprocess_tabular
 
 preprocess_tabular("katabatic/datasets/car.csv", "preprocessed_data/car.csv")
@@ -130,6 +131,12 @@ from katabatic.artifacts import FsspecArtifactStore
 store = FsspecArtifactStore("s3://my-bucket/katabatic", local_cache_dir="artifact-cache")
 ```
 
+> **Experimental:** `FsspecArtifactStore` is tested against fsspec's in-memory filesystem but
+> not yet against real S3, GCS or Azure buckets
+> ([#239](https://github.com/datascience-works/Katabatic/issues/239)). Until it is, its API may
+> change in a minor release: it's the one exception to semantic versioning outside
+> `katabatic.experimental`.
+
 Files are cached locally and transferred only when they change; the pipeline and
 `load_from_ref()` handle this automatically. A store never overwrites a remote file it hasn't
 read at its current version: `save_json()`, `save_bytes()` and `sync()` raise
@@ -137,25 +144,27 @@ read at its current version: `save_json()`, `save_bytes()` and `sync()` raise
 `exists()` downloads the file it checks. The store is thread-safe, but don't share one
 `local_cache_dir` between processes.
 
-### Jupyter Notebook
+**Only load models from storage you trust.** Most models save their state with pickle, so
+`load_from_ref()` runs code from the store.
 
-For interactive development, launch Jupyter:
+## Examples
 
-```bash
-# Start Jupyter Lab
-poetry run jupyter lab
+The notebooks in [examples/](examples/) run with the core install and are executed in CI:
 
-# Or Jupyter Notebook
-poetry run jupyter notebook
-```
+| Notebook | Shows |
+| --- | --- |
+| [quickstart.ipynb](examples/quickstart.ipynb) | Pick any model by name, train it through the pipeline, generate rows and reload the trained model |
+| [evaluation.ipynb](examples/evaluation.ipynb) | Score a model on the six dimensions, run a subset, or plug in your own evaluation |
+| [remote_artifact_store.ipynb](examples/remote_artifact_store.ipynb) | Share artifacts between machines through S3, GCS or Azure |
 
-See `example.ipynb` for a complete walkthrough.
+Open them in VS Code, or install Jupyter first (`pip install jupyterlab`). Per-model benchmark
+scripts are in [benchmarks/examples/](benchmarks/examples/).
 
 ## Usage
 
 ### Data Preprocessing
 
-Katabatic requires discrete/categorical data. Use the built-in preprocessing utilities:
+Some models, such as GANBLR, need discrete data. Use the built-in preprocessing utilities to discretize numerical features and encode categorical ones:
 
 ```python
 from katabatic.utils.preprocess import preprocess_tabular
@@ -199,7 +208,7 @@ data = pd.read_csv("path/to/your_data.csv")
 
 # Initialize and train model
 model = GReaT(
-    llm='gpt-2',  # or 'microsoft/DialoGPT-medium'
+    llm='gpt2',  # any Hugging Face causal language model
     epochs=100,
     batch_size=8
 )
@@ -221,6 +230,10 @@ instead of `artifact_store=`/`dataset_name=` — see [GANBLR_FLOW.md](GANBLR_FLO
 for that layout.
 
 ## Models
+
+Most supported models have a README in `katabatic/models/<name>/` covering the paper, parameters
+and benchmark results; [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md) lists them all. A few of
+the most used:
 
 ### GANBLR (GAN-based Bayesian Learning Rules)
 
@@ -287,7 +300,8 @@ report.composite_score    # 0.87
 ```
 
 Pass `dimensions=["utility"]` to run a subset, or `synthetic_data=...` to score data you already
-generated.
+generated. If a dimension fails, `evaluate()` warns, leaves it out of the composite and records
+the error in `report.errors`; the other dimensions still run.
 
 To use your own evaluation, pass it as `pipeline=`, in the same way scikit-learn takes a `scoring=`
 argument. It can be any object with a `run()` method. `evaluate()` still does the sampling and
@@ -365,14 +379,17 @@ poetry run mypy katabatic/                     # optional
 ```text
 Katabatic/
 ├── katabatic/                 # Installable package (PyPI wheel)
-│   ├── models/                # supported + experimental generative models
-│   ├── pipeline/              # TrainTestSplitPipeline, cross-validation
-│   ├── evaluate/              # TSTR, statistical fidelity
+│   ├── models/                # supported models, base Model class, ModelRegistry
+│   ├── experimental/          # experimental models (no API stability guarantee)
+│   ├── pipeline/              # TrainTestSplitPipeline, SyntheticEvaluationPipeline
+│   ├── evaluate/              # TSTR and the six evaluation dimensions
 │   ├── artifacts/             # Versioned store helpers
+│   ├── datasets/              # packaged benchmark datasets and DatasetRegistry
 │   └── utils/                 # preprocess, split_dataset, ...
 ├── artifacts/                 # Local run outputs (gitignored)
-├── docs/                      # EXPERIMENTAL_MODELS.md, etc.
-├── examples/                  # Notebooks per model
+├── docs/                      # EXPERIMENTAL_MODELS.md, FUTURE_WORK.md
+├── benchmarks/                # per-model benchmark scripts (benchmarks/examples/)
+├── examples/                  # quickstart, evaluation and remote-store notebooks
 ├── tests/                     # Unit + integration tests
 ├── GANBLR_FLOW.md             # Artifact pipeline walkthrough
 ├── pyproject.toml

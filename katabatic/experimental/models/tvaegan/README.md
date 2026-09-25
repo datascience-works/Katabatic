@@ -105,7 +105,7 @@ No extra dependencies required beyond the core project setup
 
 ## Usage
 Benchmark scripts for each dataset:
-- Car: [benchmarks/examples/tvaegan/run_tvaegan_car.py](benchmarks/examples/tvaegan)
+- Car: [benchmarks/examples/tvaegan/run_tvaegan_car.py](../../../../benchmarks/examples/tvaegan)
 
 ```python
 from katabatic.experimental.models.tvaegan.models import TVAEGANModel
