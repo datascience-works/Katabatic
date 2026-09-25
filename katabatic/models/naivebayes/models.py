@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import pickle
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -8,6 +10,10 @@ import pandas as pd
 from katabatic.models.base_model import Model as BaseModel
 
 from .utils import infer_feature_types
+
+if TYPE_CHECKING:
+    from katabatic.artifacts.base import ArtifactStore
+    from katabatic.artifacts.refs import ModelRef
 
 
 class NaiveBayesModel(BaseModel):
@@ -23,6 +29,8 @@ class NaiveBayesModel(BaseModel):
     match the current Katabatic Model interface (confirmed against the real
     CTGANModel implementation in katabatic/models/ctgan/models.py).
     """
+
+    ARTIFACT_STATE_FILES = ("naivebayes_state.pkl",)
 
     def __init__(self, laplace_alpha: float = 1.0, seed: int = 42) -> None:
         super().__init__()
@@ -40,6 +48,7 @@ class NaiveBayesModel(BaseModel):
 
         self._cat_probs_ = {}
         self._cont_stats_ = {}
+        self._n_train_rows: int | None = None
 
         self._rng = np.random.default_rng(seed)
 
@@ -119,6 +128,7 @@ class NaiveBayesModel(BaseModel):
                 self._fit_continuous_feature(df, feature)
 
         self.is_fitted = True
+        self._n_train_rows = len(df)
         return self
 
     def _generate(self, n_rows: int) -> pd.DataFrame:
@@ -185,10 +195,11 @@ class NaiveBayesModel(BaseModel):
     def train(
         self,
         data_dir: str,
+        *args,
         synthetic_dir: str | None = None,
         categorical_cols: list | None = None,
         continuous_cols: list | None = None,
-        *args,
+        artifact_state_dir: str | None = None,
         **kwargs,
     ) -> NaiveBayesModel:
         """
@@ -229,7 +240,7 @@ class NaiveBayesModel(BaseModel):
             synth_dir = os.path.join("synthetic", dataset_name, "naivebayes")
         os.makedirs(synth_dir, exist_ok=True)
 
-        df_s = self.sample(n=len(df))
+        df_s = self.sample(n_samples=len(df))
         x_synth = df_s[df.columns[:-1]].copy()
         y_synth = df_s[[self.target_col]].copy()
 
@@ -237,9 +248,10 @@ class NaiveBayesModel(BaseModel):
         y_synth.to_csv(os.path.join(synth_dir, "y_synth.csv"), index=False, header=True)
 
         print(f"[NaiveBayes] Synthetic data saved to: {synth_dir}")
+        self._maybe_save_artifact_state(artifact_state_dir)
         return self
 
-    def sample(self, n: int | None = None, *args, **kwargs) -> pd.DataFrame:
+    def sample(self, n_samples: int | None = None, *args, **kwargs) -> pd.DataFrame:
         """
         Generate synthetic data as a DataFrame with the same column order as
         training data (features..., target last), matching CTGANModel.sample().
@@ -247,17 +259,45 @@ class NaiveBayesModel(BaseModel):
         if not self.is_fitted:
             raise RuntimeError("Call train() before sample().")
 
-        n_rows = int(n) if n is not None else len(self.classes_) * 100
+        n_rows = int(n_samples) if n_samples is not None else self._n_train_rows
         df_synth = self._generate(n_rows)
         ordered_cols = self.features_ + [self.target_col]
         return df_synth[ordered_cols]
 
-    def evaluate(self, *args, **kwargs) -> float:
-        """
-        Consistent with CTGANModel: the real evaluation happens externally via
-        SyntheticEvaluationPipeline in runner.py, so this just confirms the
-        model has been trained (matches the pattern of other models in this repo).
-        """
-        if not self.is_fitted:
-            raise RuntimeError("Call train() before evaluate().")
-        return 0.0
+    def _save_artifact_state(self, artifact_state_dir: str) -> None:
+        state = {
+            "laplace_alpha": self.laplace_alpha,
+            "seed": self.seed,
+            "target_col": self.target_col,
+            "classes_": self.classes_,
+            "class_probs_": self.class_probs_,
+            "features_": self.features_,
+            "feature_types_": self.feature_types_,
+            "_continuous_is_int_": self._continuous_is_int_,
+            "_cat_probs_": self._cat_probs_,
+            "_cont_stats_": self._cont_stats_,
+            "n_train_rows": self._n_train_rows,
+        }
+        os.makedirs(artifact_state_dir, exist_ok=True)
+        state_path = os.path.join(artifact_state_dir, self.ARTIFACT_STATE_FILES[0])
+        with open(state_path, "wb") as f:
+            pickle.dump(state, f)
+
+    @classmethod
+    def load_from_ref(cls, store: ArtifactStore, ref: ModelRef) -> NaiveBayesModel:
+        state_path = cls._require_state_file(store, ref)
+        with open(state_path, "rb") as f:
+            state = pickle.load(f)  # nosec B301: loading our own saved model artifact
+
+        instance = cls(laplace_alpha=state["laplace_alpha"], seed=state["seed"])
+        instance.target_col = state["target_col"]
+        instance.classes_ = state["classes_"]
+        instance.class_probs_ = state["class_probs_"]
+        instance.features_ = state["features_"]
+        instance.feature_types_ = state["feature_types_"]
+        instance._continuous_is_int_ = state["_continuous_is_int_"]
+        instance._cat_probs_ = state["_cat_probs_"]
+        instance._cont_stats_ = state["_cont_stats_"]
+        instance._n_train_rows = state.get("n_train_rows")
+        instance.is_fitted = True
+        return instance

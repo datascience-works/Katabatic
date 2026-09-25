@@ -1,42 +1,59 @@
-# Experimental models
+# Experimental Models
 
-Katabatic ships multiple generative model implementations. Only a subset is **officially supported**; the rest are experimental. `ModelRegistry.get_supported_models()` in [katabatic/models/registry.py](../katabatic/models/registry.py) is the source of truth — the tables below reflect its current contents.
+Katabatic ships multiple generative model implementations. Only a subset is **officially supported**; the rest are experimental. `ModelRegistry.get_supported_models()` in [katabatic/models/registry.py](../katabatic/models/registry.py) is authoritative — the tables below mirror its current contents.
 
-## Supported models
+## Supported Models
 
 | Model | Extra | Smoke-tested |
-|-------|-------|--------------|
+| ------- | ------- | -------------- |
 | GANBLR | `pip install katabatic[ganblr]` | Yes (artifact pipeline integration test) |
 | CTGAN | `pip install katabatic[ctgan]` | Yes (artifact pipeline integration test) |
 | PATE-GAN | `pip install katabatic[pategan]` | Yes (artifact pipeline integration test) |
+| TabSyn | `pip install katabatic[tabsyn]` | Yes (artifact pipeline integration test) |
+| GReaT | `pip install katabatic[great]` | Yes (artifact pipeline integration test) |
+| SMOTE | `pip install katabatic[smote]` | Yes (artifact pipeline integration test) |
+| MST | `pip install katabatic[mst]` | Yes (artifact pipeline integration test) |
+| PrivTree | `pip install katabatic[privtree]` | Yes (artifact pipeline integration test) |
+| ARF | `pip install katabatic[arf]` | Yes (artifact pipeline integration test) |
+| SynthPop | `pip install katabatic[synthpop]` | Yes (artifact pipeline integration test; also requires R + CRAN `synthpop` packages) |
+| Naive Bayes | `pip install katabatic[naivebayes]` | Yes (artifact pipeline integration test) |
+| Histogram | `pip install katabatic[histogram]` | Yes (artifact pipeline integration test) |
+| REaLTabFormer | `pip install katabatic[realtabformer]` | Yes (artifact pipeline integration test) |
+| KDE | `pip install katabatic[kde]` | Yes (artifact pipeline integration test) |
+| FairTabDiffusion | `pip install katabatic[fairtabdiffusion]` | Yes (artifact pipeline integration test) |
 
 These models are listed in `ModelRegistry` with `supported: True`, and `tests/test_model_registry.py::test_supported_models_list` pins this exact set. Use the artifact pipeline documented in [GANBLR_FLOW.md](../GANBLR_FLOW.md) and the README quick start.
 
-## Experimental models
+## Experimental Models
 
-Available in the codebase and installable via optional extras, but **API stability
-and CI coverage are not guaranteed**:
+Experimental models live in `katabatic.experimental.models` and have no guarantee of **API stability or CI coverage**. Everything outside `katabatic.experimental` follows semantic versioning. `tests/test_model_registry.py` checks that a registered model is supported if and only if it lives outside `katabatic/experimental/`.
 
-| Model | Extra | Notes |
-|-------|-------|-------|
-| GReaT | `great` | Has an integration test and CI job, but registered with `supported: False` — not yet promoted |
-| TabSyn | `tabsyn` | Heavy torch stack |
-| TabDDPM | `tabddpm` | Uses external `tabddpm` or local fallback |
-| CoDi | `codi` | Not in registry; see `examples/codi.ipynb` |
-| MedGAN | `medgan` | Not in registry; see `examples/medgan.ipynb` |
+### Registered (usable via `ModelRegistry.load_model()`)
 
-Models noted "Not in registry" ship as source but can't be loaded through
-`ModelRegistry.load_model()` — import them directly from their module instead.
+| Model | Import | Extra | Notes |
+| ------- | ------- | ------- | ------- |
+| TabEBM | `katabatic.experimental.models.tabebm.models.TabEBMModel` | `tabebm` | Passes the promotion contract, but samples reproduce training rows; see its README |
+| TabDDPM | `katabatic.experimental.models.tabddpm.models.Tabddpm` | `tabddpm` | Uses external `tabddpm` package, with a local fallback |
+| GANBLR++ | `katabatic.experimental.models.ganblrpp.GANBLRPP` | `ganblr` | GANBLR with numerical columns; no integration test yet |
 
-Examples under `examples/` are best-effort. New contributions start as experimental
-until a maintainer adds an extra, a registry entry, and integration smoke coverage.
+### Not registered (import directly; `ModelRegistry.load_model()` will not find them)
 
-## Promoting a model to supported
+| Model | Import | Extra | Notes |
+| ------- | ------- | ------- | ------- |
+| CoDi | `katabatic.experimental.models.codi.CODI` | `codi` | |
+| MedGAN | `katabatic.experimental.models.medgan.MEDGAN` | `medgan` | |
+| TVAE-GAN | `katabatic.experimental.models.tvaegan.TVAEGANModel` | *(none)* | |
+| GMM | `katabatic.experimental.models.gmm.GMMModel` | *(none)* | Does not subclass `Model`: implements its own `fit`/`sample`, with no `train`/`evaluate` |
+| TabKDE (updated) | `katabatic.experimental.models.tabkde_updated.TabKDEModel` | *(none)* | Does not subclass `Model` |
 
-1. Add or verify a PyPI extra for the model under `[project.optional-dependencies]` in the root `pyproject.toml` (no per-model `pyproject.toml`/`poetry.lock`), and run `poetry lock`.
-2. Add an integration smoke test at `tests/test_integration_<model_name>.py` that exercises the real artifact pipeline (train → sample → evaluate, state persisted via `ARTIFACT_STATE_FILES` and reloaded via `load_from_ref`).
-3. Add the model to the `ALL_MODELS` matrix and `paths-filter` block in [.github/workflows/ci.yml](../.github/workflows/ci.yml) so its integration job runs in CI.
-4. Register the model in `katabatic/models/registry.py` with `supported: True`, and confirm it passes the promotion contract in `tests/test_model_registry.py::test_model_promotion_contract` (also update `test_supported_models_list`'s expected set).
-5. Update the README install matrix and this file.
+Benchmark scripts for these models are in `benchmarks/examples/<model>/`. They are provided for reference and are not run in CI.
 
-See [MODEL_CONTRIBUTIONS.md](../MODEL_CONTRIBUTIONS.md#promoting-a-model-from-experimental-to-supported) for the full promotion checklist.
+## Promoting a Model to Supported
+
+See [MODEL_CONTRIBUTIONS.md](../MODEL_CONTRIBUTIONS.md#promoting-a-model-from-experimental-to-supported)
+for the full checklist (test harness, promotion contract, CI wiring, dependency extras). In
+short: add a PyPI extra and integration test, wire the model into the `changes` job in
+[.github/workflows/ci.yml](../.github/workflows/ci.yml), move its folder from
+`katabatic/experimental/models/` to `katabatic/models/`, then update its registry `module`
+path, flip `supported: True` in `katabatic/models/registry.py` and update this file and the
+README install matrix.

@@ -1,0 +1,216 @@
+:root {
+  --ink: #16152a;
+  --muted: #6f7287;
+  --line: #e8e8f0;
+  --page: #f7f7fb;
+  --panel: #ffffff;
+  --purple: #6656e8;
+  --purple-dark: #4f42ca;
+  --purple-soft: #eeeafd;
+  --red: #c23b3b;
+  --red-soft: #fdecec;
+  --red-line: #f3c9c9;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--page);
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--page);
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* ---- Upload Dataset page ---- */
+
+.upload-page {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 48px 32px;
+}
+
+.upload-heading h1 {
+  margin: 0;
+  font-size: 1.7rem;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+.upload-heading p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.upload-error-banner {
+  margin-top: 20px;
+  padding: 13px 15px;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  border: 1px solid var(--red-line);
+  background: var(--red-soft);
+  color: var(--red);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 550;
+}
+
+.upload-error-banner svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.upload-dropzone {
+  margin-top: 20px;
+  padding: 56px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 2px;
+  border: 2px dashed var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+  box-shadow: 0 2px 4px rgba(28, 24, 63, 0.02);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.upload-dropzone.dragging {
+  border-color: var(--purple);
+  background: var(--purple-soft);
+}
+
+.upload-dropzone.has-error {
+  border-color: var(--red-line);
+  background: var(--red-soft);
+}
+
+.upload-dropzone-icon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 14px;
+  border-radius: 50%;
+  background: var(--purple-soft);
+  color: var(--purple);
+}
+
+.upload-dropzone.has-error .upload-dropzone-icon {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.upload-dropzone p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.upload-dropzone .or {
+  color: #b5b6c4;
+  font-weight: 600;
+}
+
+.upload-browse-button {
+  margin-top: 16px;
+  min-height: 40px;
+  padding: 0 18px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #ffffff;
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 650;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.upload-browse-button:hover {
+  border-color: #c9c4f4;
+  color: var(--purple-dark);
+}
+
+.upload-supported-format {
+  margin-top: 12px;
+  color: #a5a6b8;
+  font-size: 0.76rem;
+}
+
+.upload-file-name {
+  margin-top: 6px;
+  font-weight: 650;
+  font-size: 0.92rem;
+  color: var(--ink);
+}
+
+.upload-file-size {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.upload-remove-button {
+  margin-top: 10px;
+  border: 0;
+  background: transparent;
+  color: var(--red);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.upload-remove-button:hover {
+  text-decoration: underline;
+}
+
+.upload-actions {
+  margin-top: 28px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.upload-submit-button {
+  min-height: 44px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--purple);
+  color: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 700;
+  box-shadow: 0 8px 18px rgba(102, 86, 232, 0.23);
+  transition: background 0.15s ease;
+}
+
+.upload-submit-button:hover:not(:disabled) {
+  background: var(--purple-dark);
+}
+
+.upload-submit-button:disabled {
+  cursor: not-allowed;
+  background: #d4d3e0;
+  box-shadow: none;
+}
+/* Preserve the centered upload flow within the common workspace shell. */
+.upload-heading .eyebrow { margin: 0 0 8px; color: var(--purple); font-size: .72rem; font-weight: 800; letter-spacing: .13em; }
+.upload-heading h1 { font-size: clamp(1.85rem, 3vw, 2.4rem); line-height: 1.15; letter-spacing: -.04em; }
+.upload-page { padding-top: 38px; }
+.upload-file-name { max-width: 100%; overflow-wrap: anywhere; }
+@media (max-width: 760px) { .upload-page { padding: 26px 16px 22px; } }
+
+.upload-preview-note { margin: 18px 0 0; color: var(--muted); font-size: .78rem; line-height: 1.5; }

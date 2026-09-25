@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 
 from katabatic.utils.column_types import is_numerical
@@ -48,7 +50,7 @@ def fill_categorical_nulls(df: pd.DataFrame) -> pd.DataFrame:
         if not is_numerical(df_copy[col]):
             df_copy[col] = df_copy[col].astype(str).str.strip()
             df_copy[col] = df_copy[col].replace(
-                {"nan": "Missing", "missing": "Missing"}
+                {"nan": "Missing", "missing": "Missing", "None": "Missing"}
             )
     return df_copy
 
@@ -98,6 +100,9 @@ def preprocess_dataset(
     y = y.fillna("Missing").astype(str).str.strip()
 
     df_processed = pd.concat([X, y], axis=1)
+    parent_dir = os.path.dirname(output_path)
+    if parent_dir:
+        os.makedirs(parent_dir, exist_ok=True)
     df_processed.to_csv(output_path, index=False)
     print(f"Saved preprocessed dataset to: {output_path}")
 

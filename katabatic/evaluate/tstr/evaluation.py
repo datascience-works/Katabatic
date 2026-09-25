@@ -5,11 +5,12 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 from sklearn.neural_network import MLPClassifier
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler
 
 try:
     from xgboost import XGBClassifier
@@ -65,6 +66,9 @@ class TSTREvaluation(Evaluation):
             test_dataset_version=dataset_ref.dataset_version,
         )
         store.open_path(eval_ref.root_relpath).mkdir(parents=True, exist_ok=True)
+        # Fetch inputs another machine may have written (no-op for local stores).
+        store.pull(model_ref.synthetic_relpath)
+        store.pull(dataset_ref.test_relpath)
         synthetic_dir = str(store.open_path(model_ref.synthetic_relpath))
         real_test_dir = str(store.open_path(dataset_ref.test_relpath))
         report_rel = eval_ref.report_relpath
@@ -89,22 +93,49 @@ class TSTREvaluation(Evaluation):
         )
         return inst, eval_ref
 
+    @staticmethod
+    def _encode_features(
+        x_train: pd.DataFrame, x_test: pd.DataFrame
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """
+        One-hot encode categorical columns, passing numeric columns through unchanged, fitting only on x_train.
+        """
+        categorical_cols = x_train.select_dtypes(
+            include=["object", "category", "string"]
+        ).columns.tolist()
+        if not categorical_cols:
+            return (
+                np.asarray(x_train, dtype=float),
+                np.asarray(x_test, dtype=float),
+            )
+
+        encoder = ColumnTransformer(
+            transformers=[
+                ("cat", OneHotEncoder(handle_unknown="ignore"), categorical_cols),
+            ],
+            remainder="passthrough",
+        )
+        x_train_enc = encoder.fit_transform(x_train)
+        x_test_enc = encoder.transform(x_test)
+        if hasattr(x_train_enc, "toarray"):
+            x_train_enc = x_train_enc.toarray()
+        if hasattr(x_test_enc, "toarray"):
+            x_test_enc = x_test_enc.toarray()
+        return np.asarray(x_train_enc, dtype=float), np.asarray(x_test_enc, dtype=float)
+
     def evaluate(self):
         results = {}
 
-        # Convert to numpy array to prevent feature name conflict
-        x_train = np.asarray(self.x_train)
-        x_test = np.asarray(self.x_test)
-
-        if x_train.shape[1] != x_test.shape[1]:
+        if self.x_train.shape[1] != self.x_test.shape[1]:
             raise ValueError(
-                f"TSTR feature-count mismatch. Synthetic has {x_train.shape[1]} columns while real test has {x_test.shape[1]}."
+                f"TSTR feature-count mismatch. Synthetic has {self.x_train.shape[1]} columns while real test has {self.x_test.shape[1]}."
             )
 
-        # Calculate class imbalance ratio for XGBoost
-        num_neg = np.sum(self.y_train == 0)
-        num_pos = np.sum(self.y_train == 1)
-        scale_pos_weight = num_neg / num_pos if num_pos > 0 else 1.0
+        x_train, x_test = self._encode_features(self.x_train, self.x_test)
+
+        # Encode labels.
+        label_encoder = LabelEncoder().fit(self.y_train)
+        y_train_encoded = label_encoder.transform(self.y_train)
 
         models: dict[str, Any] = {
             "LR": LogisticRegression(),
@@ -112,7 +143,11 @@ class TSTREvaluation(Evaluation):
             "RF": RandomForestClassifier(),
         }
         if XGBClassifier is not None:
-            models["XGBoost"] = XGBClassifier(scale_pos_weight=scale_pos_weight)
+            xgb_params = {}
+            if len(label_encoder.classes_) == 2:
+                num_neg, num_pos = np.bincount(y_train_encoded)
+                xgb_params["scale_pos_weight"] = num_neg / num_pos
+            models["XGBoost"] = XGBClassifier(**xgb_params)
         else:
             warnings.warn(
                 "xgboost is not installed; TSTR will skip the XGBoost classifier. "
@@ -127,6 +162,10 @@ class TSTREvaluation(Evaluation):
                 model.fit(x_train_scaled, self.y_train)
                 y_pred = model.predict(x_test_scaled)
                 y_prob = model.predict_proba(x_test_scaled)[:, 1]
+            elif name == "XGBoost":
+                model.fit(x_train, y_train_encoded)
+                y_pred = label_encoder.inverse_transform(model.predict(x_test))
+                y_prob = model.predict_proba(x_test)[:, 1]
             else:
                 model.fit(x_train, self.y_train)
                 y_pred = model.predict(x_test)
@@ -182,6 +221,7 @@ class TSTREvaluation(Evaluation):
             writer = csv.writer(file)
             writer.writerow(["Model", "Metric", "Value"])
             writer.writerows(lines)
+        store.sync(report_path)
         print(f"\nResults saved to: {p}")
 
     @staticmethod

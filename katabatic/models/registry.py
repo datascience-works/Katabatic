@@ -1,8 +1,7 @@
 """Model registry for dynamic model loading.
 
-Officially supported models (smoke-tested, PyPI extras): ``ganblr``, ``ctgan``,
-``pategan``.
-Other registered models are experimental; see ``docs/EXPERIMENTAL_MODELS.md``.
+Contains officially supported models (smoke-tested, PyPI extras).
+Other registered models are experimental. See ``docs/EXPERIMENTAL_MODELS.md``.
 """
 
 from __future__ import annotations
@@ -47,12 +46,26 @@ class ModelRegistry:
                 ],
             },
         },
+        "ganblrpp": {
+            "module": "katabatic.experimental.models.ganblrpp.models",
+            "class": "GANBLRPP",
+            "dependencies": ["tensorflow", "pgmpy", "pyitlib", "scipy"],
+            "extra": "ganblr",
+            "supported": False,
+        },
         "great": {
             "module": "katabatic.models.great.models",
             "class": "GReaT",
             "dependencies": ["transformers", "torch"],
             "extra": "great",
-            "supported": False,
+            "supported": True,
+        },
+        "realtabformer": {
+            "module": "katabatic.models.realtabformer.models",
+            "class": "REaLTabFormerModel",
+            "dependencies": ["realtabformer", "transformers", "torch"],
+            "extra": "realtabformer",
+            "supported": True,
         },
         "tabsyn": {
             "module": "katabatic.models.tabsyn.models",
@@ -62,7 +75,7 @@ class ModelRegistry:
             "supported": True,
         },
         "tabddpm": {
-            "module": "katabatic.models.tabddpm.models",
+            "module": "katabatic.experimental.models.tabddpm.models",
             "class": "Tabddpm",
             "dependencies": [],
             "extra": "tabddpm",
@@ -75,11 +88,86 @@ class ModelRegistry:
             "extra": "pategan",
             "supported": True,
         },
+        "mst": {
+            "module": "katabatic.models.mst.models",
+            "class": "MSTModel",
+            "dependencies": ["snsynth", "mbi", "opendp"],
+            "extra": "mst",
+            # private-pgm (the mbi module) is a Git dependency, which PyPI doesn't allow in extras.
+            "install_hint": 'pip install "katabatic[mst]" "'
+            + "private-pgm @ git+https://github.com/ryan112358/private-pgm.git"
+            + '@01f02f17eba440f4e76c1d06fa5ee9eed0bd2bca"',
+            "supported": True,
+        },
         "ctgan": {
             "module": "katabatic.models.ctgan.models",
             "class": "CTGANModel",
             "dependencies": ["torch", "sklearn"],
             "extra": "ctgan",
+            "supported": True,
+        },
+        "kde": {
+            "module": "katabatic.models.kde.models",
+            "class": "KDESynthesizer",
+            # scikit-learn is already a core dependency; no extra needed.
+            "dependencies": ["sklearn"],
+            "extra": "kde",
+            "supported": True,
+        },
+        "arf": {
+            "module": "katabatic.models.arf.models",
+            "class": "ARFModel",
+            "dependencies": ["sklearn", "numpy", "pandas"],
+            "extra": "arf",
+            "supported": True,
+        },
+        "privtree": {
+            "module": "katabatic.models.privtree.models",
+            "class": "PrivTreeModel",
+            "dependencies": ["numpy", "pandas"],
+            "extra": "privtree",
+            "supported": True,
+        },
+        "synthpop": {
+            "module": "katabatic.models.synthpop.models",
+            "class": "SynthPop",
+            "dependencies": ["pandas"],
+            "extra": "synthpop",
+            "supported": True,
+        },
+        "naivebayes": {
+            "module": "katabatic.models.naivebayes.models",
+            "class": "NaiveBayesModel",
+            "dependencies": ["numpy", "pandas", "sklearn"],
+            "extra": "naivebayes",
+            "supported": True,
+        },
+        "histogram": {
+            "module": "katabatic.models.histogram.models",
+            "class": "HistogramModel",
+            "dependencies": ["numpy", "pandas"],
+            "extra": "histogram",
+            "supported": True,
+        },
+        "fairtabdiffusion": {
+            "module": "katabatic.models.fairtabdiffusion.models",
+            "class": "FairTabDiffusion",
+            "dependencies": ["torch", "sklearn"],
+            "extra": "fairtabdiffusion",
+            "supported": True,
+        },
+        "tabebm": {
+            "module": "katabatic.experimental.models.tabebm.models",
+            "class": "TabEBMModel",
+            "dependencies": ["numpy", "pandas", "sklearn"],
+            "extra": "tabebm",
+            "supported": False,
+        },
+        "smote": {
+            "module": "katabatic.models.smote.models",
+            "class": "SMOTEModel",
+            "dependencies": ["imblearn"],
+            "extra": "smote",
             "supported": True,
         },
     }
@@ -131,9 +219,20 @@ class ModelRegistry:
         ]
 
         if missing_deps:
+            install_hint = model_info.get("install_hint")
+
+            if install_hint:
+                install_message = install_hint
+            elif model_info.get("extra"):
+                install_message = f"pip install katabatic[{model_info['extra']}]"
+            else:
+                install_message = (
+                    "See the model documentation for installation instructions."
+                )
+
             raise ImportError(
                 f"Missing dependencies for {model_name}: {missing_deps}. "
-                f"Install with: pip install katabatic[{model_info['extra']}]"
+                f"Install with: {install_message}"
             )
 
         try:

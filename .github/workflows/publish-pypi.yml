@@ -1,11 +1,9 @@
 # Publish katabatic to PyPI (production).
 #
-# Setup (choose one):
-#   Trusted publishing (recommended): https://docs.pypi.org/trusted-publishers/
-#     - PyPI project → Publishing → Add trusted publisher
-#     - Owner: datascience-works, repo: Katabatic, workflow: publish-pypi.yml
-#     - Environment name: pypi (create in GitHub repo Settings → Environments)
-#   API token: add repo secret PYPI_API_TOKEN (uncomment password in publish step)
+# Authentication: currently the PYPI_API_TOKEN repo secret. To switch to Trusted Publishing
+# (https://docs.pypi.org/trusted-publishers/), a PyPI project owner adds a trusted publisher
+# (owner: datascience-works, repo: Katabatic, workflow: publish-pypi.yml, environment: pypi);
+# then remove the password line in the publish step.
 #
 # Triggers:
 #   - GitHub Release published (recommended): create release from tag v1.2.3
@@ -24,9 +22,13 @@ on:
     types: [published]
   workflow_dispatch:
 
+
 concurrency:
   group: publish-pypi-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
+
+env:
+  POETRY_VERSION: "2.4.3"
 
 jobs:
   publish:
@@ -49,7 +51,18 @@ jobs:
           python-version: "3.11"
 
       - name: Install Poetry
-        run: pip install poetry==2.4.2
+        run: pip install poetry==${{ env.POETRY_VERSION }}
+
+      - name: Check the release tag matches the package version
+        if: github.event_name == 'release'
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          version="$(poetry version --short)"
+          if [ "$TAG" != "v$version" ]; then
+            echo "::error::Release tag $TAG does not match pyproject.toml version $version (expected v$version)."
+            exit 1
+          fi
 
       - name: Validate project metadata
         run: poetry check
@@ -62,4 +75,4 @@ jobs:
         with:
           packages-dir: dist/
           skip-existing: true
-          password: ${{ secrets.PYPI_API_TOKEN }}  # if not using trusted publishing
+          password: ${{ secrets.PYPI_API_TOKEN }}  # remove to use Trusted Publishing. Must be configured on PyPI.

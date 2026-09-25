@@ -53,13 +53,13 @@ Both stages use early stopping via `patience`. Testing found that longer trainin
 
 | Parameter | Default | Notes |
 |---|---|---|
-| `d_token` | 4 | Matches paper (Appendix G.1) |
+| `d_token` | 16 | |
 | `decoder_epochs` | 50 | VAE training epochs, tokenizer, encoder, decoder trained jointly |
 | `decoder_batch_size` | 2048 | Not tuned |
 | `diffusion_epochs` | 500 | Ceiling only, testing showed 2000 significantly improves results over the default |
 | `diffusion_batch_size` | 4096 | Not tuned |
-| `diffusion_hidden_dim` | 1024 | Matches paper |
-| `diffusion_steps` | 15 | Matches paper's recommendation, under 20 for optimal results |
+| `diffusion_hidden_dim` | 512 | |
+| `diffusion_steps` | 50 | |
 | `lr` | 1e-3 | Not tuned |
 | `weight_decay` | 0.0 | Not tuned |
 | `patience` | 20 | Testing showed 500 significantly improves results when combined with more diffusion_epochs |
@@ -100,12 +100,10 @@ Generated files (when using `train()`):
 When calling `sample()` directly, output columns are generically named (`num_0`, `num_1`, ..., `cat_0`, `cat_1`, ...) and must be renamed to match the real dataset's column order before use. See `benchmarks/examples/tabsyn/run_tabsyn_car.py` for a working example of this rename logic.
 
 ## Evaluation
-`evaluate()` returns a reconstruction loss (a blend of MSE fornumeric
-columns and cross entropy for categorical columns), not accuracy or F1. Lower is better.
+`model.evaluate(real_df, target_col=..., test_data=...)`, inherited from `Model`, scores the fitted model on Katabatic's six dimensions (fidelity, utility via TSTR, diversity, privacy, consistency and stability) and returns an `EvaluationReport` (`report.dimension_scores`, `report.composite_score`).
 
-The full evaluation used for validation is `SyntheticEvaluationPipeline`
-(`katabatic/pipeline/evaluation_pipeline.py`), which reports 6 dimensions:
-fidelity, utility, diversity, privacy, consistency, and stability, combined into a single composite score.
+`evaluate_loss(data_dir=..., split="test")` returns TabSyn's reconstruction loss (a blend of MSE for
+numeric columns and cross entropy for categorical columns), not accuracy or F1; lower is better.
 
 ## Strengths
 - Handles mixed numeric and categorical columns in one unified pipeline
@@ -125,8 +123,8 @@ poetry install --extras tabsyn
 ```
 ## Usage
 Benchmark scripts for each dataset:
-- Car: [benchmarks/examples/tabsyn/run_tabsyn_car.py](benchmarks/examples/tabsyn)
-- Adult: [benchmarks/examples/tabsyn/run_tabsyn_adult.py](benchmarks/examples/tabsyn)
+- Car: [benchmarks/examples/tabsyn/run_tabsyn_car.py](../../../benchmarks/examples/tabsyn)
+- Adult: [benchmarks/examples/tabsyn/run_tabsyn_adult.py](../../../benchmarks/examples/tabsyn)
 
 ```python
 from katabatic.models.tabsyn.models import TabSyn

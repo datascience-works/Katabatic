@@ -17,7 +17,7 @@ from runner import (  # noqa: E402
     save_synthetic,
 )
 
-from katabatic.models.gmm import GMMModel  # noqa: E402
+from katabatic.experimental.models.gmm import GMMModel  # noqa: E402
 
 start_time = perf_counter()
 

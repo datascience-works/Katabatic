@@ -45,7 +45,7 @@ poetry install
 ## Usage
 
 Benchmark script:
-- Adult Income: [benchmarks/examples/great/run_great_adult.py](benchmarks/examples/great/run_great_adult.py)
+- Adult Income: [benchmarks/examples/great/run_great_adult.py](run_great_adult.py)
 
 ```python
 from katabatic.models.great.models import GReaT
@@ -67,8 +67,6 @@ synthetic_df = model.sample(
     device="cuda",
 )
 ```
-
-> **Note:** Use `model.fit()`, not `model.train()`. The `train()` method silently overrides epochs to 2.
 
 ---
 
@@ -93,6 +91,10 @@ Composite score: **0.469**
 
 ## Model Performance
 
+> **Hardware & runtime:** A GPU is required for practical use. CPU training/sampling is not
+> viable. Expect the full pipeline to take multiple hours; runtime depends on epoch count,
+> dataset size, and how many sampling retries are needed (see Limitations below).
+
 Training time: several hours on a single NVIDIA RTX 4090 (24GB VRAM), 310 epochs, full Adult Income training set (39,073 rows).
 
 Output files:
@@ -112,3 +114,6 @@ Output files:
 - Requires GPU — CPU training is impractical
 - Can generate NaN rows, causing the utility evaluator to fail
 - Slow to train
+- Sampling can be slow or fail to complete even after training finishes: GReaT retries
+  generation in batches until enough rows parse successfully, and a lightly-trained model (low
+  epoch count) may require many retries, sometimes exceeding an hour even on GPU.

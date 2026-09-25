@@ -5,8 +5,9 @@ sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 
-from katabatic.models.tvaegan.models import TVAEGANModel
 from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
+
+from katabatic.experimental.models.tvaegan.models import TVAEGANModel
 
 config = RunConfig(
     dataset_name="adult",
@@ -14,55 +15,46 @@ config = RunConfig(
     categorical_cols=[
         "workclass",
         "education",
-        "educational-num",
         "marital-status",
         "occupation",
         "relationship",
         "race",
-        "gender",
+        "sex",
         "native-country",
     ],
-    continuous_cols=["age", "fnlwgt", "capital-gain", "capital-loss", "hours-per-week"],
-    target_col_raw="income",
-    constraints={
-        "age": (17, 90),
-        "fnlwgt": (12285, 1490400),
-        "capital-gain": (0, 99999),
-        "capital-loss": (0, 4356),
-        "hours-per-week": (1, 99),
-    },
+    continuous_cols=[
+        "age",
+        "fnlwgt",
+        "education-num",
+        "capital-gain",
+        "capital-loss",
+        "hours-per-week",
+    ],
+    target_col_raw="class",
+    constraints=None,
 )
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)
 
 print("\n" + "=" * 60)
-print("STEP 3 — Train TVAEGAN")
+print("STEP 3 : Train TVAE-GAN")
 print("=" * 60)
-model = TVAEGANModel(
-    epochs=10,
-    batch_size=500,
-    cat_emb_size=25,
-    num_emb_size=25,
-    w_regularize=1.0,
-    w_reconstruct=10.0,
-    s_generat=5,
-    s_encoder=5,
-    lr_generat=5e-5,
-    lr_critic=5e-5,
-    lr_encoder=5e-5,
-    clip=0.01,
-    dropout=0.1,
-    hidden_layers_multipliers=[1.0, 1.0],
-    shuffle=True,
-    random_state=42,
-)
+model = TVAEGANModel(epochs=200, discriminator_hidden_dims=[32, 16])
 model.train(paths["split_dir"], paths["synthetic_dir"])
-print("\nTVAEGAN training complete.")
+print("\nTVAE-GAN training complete.")
 
 print("\n" + "=" * 60)
-print("STEP 4 — Generate synthetic data")
+print("STEP 4 : Generate synthetic data")
 print("=" * 60)
 synthetic_df = model.sample(len(train_df))
+print("SYNTH COLUMNS:", synthetic_df.columns.tolist())
+print(synthetic_df.head(10))
+
+print("Synthetic label distribution:")
+print(synthetic_df[target_col].value_counts())
+print("Real label distribution:")
+print(train_df[target_col].value_counts())
+
 synthetic_df = save_synthetic(
     synthetic_df, train_df, paths, categorical_cols=config.categorical_cols
 )

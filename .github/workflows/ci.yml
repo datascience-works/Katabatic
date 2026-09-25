@@ -4,14 +4,17 @@ on:
   push:
     branches: [main, development]
     paths-ignore:
-      - 'frontend/**' #Note: To be removed once front-end moved to its own repo.
+      - 'frontend/**' #TODO: To be removed once front-end moved to its own repo.
   pull_request:
     branches: [main, development]
     paths-ignore:
-      - 'frontend/**' #Note: To be removed once front-end moved to its own repo.
+      - 'frontend/**' #TODO: To be removed once front-end moved to its own repo.
 
 permissions:
   contents: read
+
+env:
+  POETRY_VERSION: "2.4.3"
 
 jobs:
   pre-commit:
@@ -21,10 +24,16 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
-      - run: pip install pre-commit
+      - run: pip install poetry==${{ env.POETRY_VERSION }} pre-commit
+      - run: poetry install --with dev
       - run: pre-commit run --all-files
 
   lint-and-test:
+    needs: changes
+    # Always runs for main (release pushes/PRs), regardless of what has changed.
+    if: >
+      needs.changes.outputs.python == 'true' || needs.changes.outputs.ci == 'true' ||
+      github.base_ref == 'main' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -40,7 +49,7 @@ jobs:
           key: poetry-lint-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install Poetry
-        run: pip install poetry==2.4.2
+        run: pip install poetry==${{ env.POETRY_VERSION }}
 
       - name: Validate project + lock in sync
         run: poetry check --lock
@@ -49,7 +58,7 @@ jobs:
         run: poetry install --with dev
 
       - name: Ruff
-        run: poetry run ruff check katabatic tests
+        run: poetry run ruff check --no-cache katabatic tests
 
       - name: Bandit (Security)
         run: poetry run bandit -r katabatic -ll
@@ -62,7 +71,7 @@ jobs:
       - name: Pytest (fast)
         env:
           COVERAGE_FILE: .coverage.core
-        run: poetry run pytest -q --ignore=tests/test_model_registry.py --cov=katabatic --cov-report=term-missing
+        run: poetry run pytest -q --deselect tests/test_model_registry.py::test_model_promotion_contract --cov=katabatic --cov-report=term-missing
 
       - name: Upload Core Coverage
         uses: actions/upload-artifact@v7
@@ -70,6 +79,12 @@ jobs:
           name: coverage-core
           path: .coverage.core
           include-hidden-files: true
+
+      - name: Core coverage floor
+        env:
+          COVERAGE_FILE: .coverage.core
+        run: |
+          poetry run coverage report --include="katabatic/pipeline/*,katabatic/utils/*,katabatic/datasets/*,katabatic/artifacts/*,katabatic/evaluate/*,katabatic/models/registry.py,katabatic/models/base_model.py" --fail-under=70
 
       - name: Build wheel
         run: poetry build
@@ -79,12 +94,34 @@ jobs:
     outputs:
       matrix: ${{ steps.build-matrix.outputs.matrix }}
       core: ${{ steps.filter.outputs.core }}
+      python: ${{ steps.filter.outputs.python }}
+      docker: ${{ steps.filter.outputs.docker }}
+      scripts: ${{ steps.filter.outputs.scripts }}
+      ci: ${{ steps.filter.outputs.ci }}
     steps:
       - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
+            ci:
+              - '.github/workflows/**'
+            python:
+              - 'katabatic/**'
+              - 'tests/**'
+              - 'pyproject.toml'
+              - 'poetry.lock'
+              - '.pre-commit-config.yaml'
+            docker:
+              - 'Dockerfile'
+              - '.dockerignore'
+              - 'katabatic/**'
+              - 'pyproject.toml'
+              - 'poetry.lock'
+            scripts:
+              - 'scripts/**'
+              - 'pyproject.toml'
+              - 'poetry.lock'
             core:
               - 'pyproject.toml'
               - 'poetry.lock'
@@ -107,18 +144,66 @@ jobs:
             tabsyn:
               - 'katabatic/models/tabsyn/**'
               - 'tests/test_integration_tabsyn.py'
+            great:
+              - 'katabatic/models/great/**'
+              - 'tests/test_integration_great.py'
+            smote:
+              - 'katabatic/models/smote/**'
+              - 'tests/test_integration_smote.py'
+            mst:
+              - 'katabatic/models/mst/**'
+              - 'tests/test_integration_mst.py'
+            privtree:
+              - 'katabatic/models/privtree/**'
+              - 'tests/test_integration_privtree.py'
+            arf:
+              - 'katabatic/models/arf/**'
+              - 'tests/test_integration_arf.py'
+            synthpop:
+              - 'katabatic/models/synthpop/**'
+              - 'tests/test_integration_synthpop.py'
+            naivebayes:
+              - 'katabatic/models/naivebayes/**'
+              - 'tests/test_integration_naivebayes.py'
+            histogram:
+              - 'katabatic/models/histogram/**'
+              - 'tests/test_integration_histogram.py'
+            realtabformer:
+              - 'katabatic/models/realtabformer/**'
+              - 'tests/test_integration_realtabformer.py'
+            kde:
+              - 'katabatic/models/kde/**'
+              - 'tests/test_integration_kde.py'
+            fairtabdiffusion:
+              - 'katabatic/models/fairtabdiffusion/**'
+              - 'tests/test_integration_fairtabdiffusion.py'
+
       - name: Build Dynamic Matrix
         id: build-matrix
         run: |
           ALL_MODELS='[
-            {"model": "ganblr", "torch": false},
-            {"model": "ctgan", "torch": true},
-            {"model": "pategan", "torch": false},
-            {"model": "tabsyn", "torch": true}
+            {"model": "arf", "torch": false},
+            {"model": "ctgan", "torch": true, "heavy": true},
+            {"model": "fairtabdiffusion", "torch": true},
+            {"model": "ganblr", "torch": false, "heavy": true},
+            {"model": "great", "torch": true, "heavy": true},
+            {"model": "histogram", "torch": false},
+            {"model": "kde", "torch": false},
+            {"model": "mst", "torch": false, "heavy": true},
+            {"model": "naivebayes", "torch": false},
+            {"model": "pategan", "torch": false, "heavy": true},
+            {"model": "privtree", "torch": false},
+            {"model": "realtabformer", "torch": true, "heavy": true},
+            {"model": "smote", "torch": false},
+            {"model": "synthpop", "torch": false, "r": true},
+            {"model": "tabsyn", "torch": true, "heavy": true}
           ]'
 
-          # If a core file changed, run all models.
-          if [ "${{ steps.filter.outputs.core }}" == "true" ]; then
+          # Always run the full matrix for main (release pushes/PRs) so
+          # integration-<model> is safe to require there, or if a core file changed.
+          if [ "${{ steps.filter.outputs.core }}" == "true" ] || \
+             [ "${{ github.base_ref }}" == "main" ] || \
+             [ "${{ github.ref }}" == "refs/heads/main" ]; then
             MATRIX=$(echo "$ALL_MODELS" | jq -c '.')
           else
             # Otherwise, append only the models that changed.
@@ -144,26 +229,55 @@ jobs:
         with:
           python-version: "3.11"
 
+      # Heavy (torch/TensorFlow) environments are 2-10 GiB each, caching them overflows
+      # the repo's 10 GB cache limit and evicts every other cache, so they download instead.
       - name: Cache Poetry environment
+        if: ${{ !matrix.heavy }}
         uses: actions/cache@v6
         with:
           path: ~/.cache/pypoetry
           key: poetry-${{ matrix.model }}-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install Poetry
-        run: pip install poetry==2.4.2
+        run: pip install poetry==${{ env.POETRY_VERSION }}
+
+      # Prebuilt Linux binaries from Posit Package Manager, so R packages aren't compiled.
+      - name: Set up R
+        if: matrix.r
+        uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - name: Install the synthpop R package
+        if: matrix.r
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          packages: any::synthpop
 
       - name: Pre-install CPU torch
         if: matrix.torch
         run: poetry run pip install "torch>=2.13.0,<3.0.0" --index-url https://download.pytorch.org/whl/cpu
 
       - name: Install with ${{ matrix.model }} extra
-        run: poetry install --with dev -E ${{ matrix.model }}
+        run: poetry install --with dev -E ${{ matrix.model }} ${{ matrix.model == 'mst' && '--with mst' || '' }}
+
+      - name: Remove triton
+        if: matrix.torch
+        # Triton segfaults on CPU version of torch. Removes if in pipeline.
+        run: poetry run pip uninstall -y triton
 
       - name: Integration tests (${{ matrix.model }})
         env:
           COVERAGE_FILE: .coverage.${{ matrix.model }}
         run: poetry run pytest tests/test_integration_${{ matrix.model }}.py -q --cov=katabatic --cov-report=
+
+      - name: Model promotion contract (${{ matrix.model }})
+        run: poetry run pytest tests/test_model_registry.py -k "${{ matrix.model }}" -v
+
+      - name: Model coverage report (${{ matrix.model }})
+        env:
+          COVERAGE_FILE: .coverage.${{ matrix.model }}
+        run: poetry run coverage report --include="katabatic/models/${{ matrix.model }}/*"
 
       - name: Upload Model Coverage
         uses: actions/upload-artifact@v7
@@ -172,38 +286,12 @@ jobs:
           path: .coverage.${{ matrix.model }}
           include-hidden-files: true
 
-  model-contract:
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.build-matrix.outputs.matrix }}
-      core: ${{ steps.filter.outputs.core }}
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version: "3.11"
-
-      - name: Cache Poetry environment
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/pypoetry
-          key: poetry-contract-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
-
-      - name: Install Poetry
-        run: pip install poetry==2.4.2
-
-      - name: Pre-install CPU torch
-        run: poetry run pip install "torch>=2.13.0,<3.0.0" --index-url https://download.pytorch.org/whl/cpu
-
-      - name: Install supported model extras
-        run: poetry install --with dev -E all
-
-      - name: Model promotion contract
-        run: poetry run pytest tests/test_model_registry.py -v
-
   setup-script:
     # Verifies scripts/setup.py works on Linux, MacOS, and Windows.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/development'
+    needs: changes
+    if: >
+      github.event_name == 'push' && github.ref == 'refs/heads/development' &&
+      (needs.changes.outputs.scripts == 'true' || needs.changes.outputs.ci == 'true')
     strategy:
       fail-fast: false
       matrix:
@@ -221,10 +309,10 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.cache/pypoetry
-          key: poetry-${{ matrix.model }}-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+          key: poetry-setup-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install Poetry
-        run: pip install poetry==2.4.2
+        run: pip install poetry==${{ env.POETRY_VERSION }}
 
       - name: Run setup script
         run: python scripts/setup.py
@@ -244,7 +332,7 @@ jobs:
 
       - name: Install Poetry and build
         run: |
-          pip install poetry==2.4.2
+          pip install poetry==${{ env.POETRY_VERSION }}
           poetry build
 
       - name: Install wheel in clean venv
@@ -256,6 +344,11 @@ jobs:
             assert katabatic.__version__ == expected, f'{katabatic.__version__} != {expected}'"
 
   docker-build:
+    needs: changes
+    # Always runs for main (release pushes/PRs). Required on protect_main.
+    if: >
+      needs.changes.outputs.docker == 'true' || needs.changes.outputs.ci == 'true' ||
+      github.base_ref == 'main' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -284,8 +377,7 @@ jobs:
     if: >
       always() &&
       needs.lint-and-test.result == 'success' &&
-      (needs.changes.outputs.core == 'true' ||
-        (github.event_name == 'push' && github.ref == 'refs/heads/development'))
+      needs.changes.outputs.python == 'true'
 
     steps:
       - uses: actions/checkout@v7
@@ -304,6 +396,14 @@ jobs:
           merge-multiple: true
 
       - name: Combine and Report
+        env:
+          FULL_MATRIX: >-
+            ${{ needs.changes.outputs.core == 'true' ||
+                github.base_ref == 'main' || github.ref == 'refs/heads/main' }}
         run: |
           coverage combine
-          coverage report --show-missing --fail-under=45
+          if [ "$FULL_MATRIX" == "true" ]; then
+            coverage report --show-missing --fail-under=45
+          else
+            coverage report --show-missing
+          fi

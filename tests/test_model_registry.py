@@ -1,4 +1,5 @@
 import importlib
+import os
 import pathlib
 
 import pytest
@@ -19,10 +20,17 @@ def get_supported_models():
 
 MODELS_TO_TEST = get_supported_models()
 
+# Fall back to running in-process if os doesn't have "fork" method.
+_forked_or_noop = pytest.mark.forked if hasattr(os, "fork") else (lambda fn: fn)
 
+
+@_forked_or_noop
 @pytest.mark.parametrize("model_name, config", MODELS_TO_TEST)
 def test_model_promotion_contract(model_name, config):
-    """Contract test: every supported model must meet the promotion contract."""
+    """Contract test: every supported model must meet the promotion contract.
+
+    Runs each model in its own forked process, avoiding exceeded CI runner memory leading to SIGSEGV/SIGBUS.
+    """
 
     # 1. Registry entry has a non-null extra and matches the model name.
     assert config.get("extra"), f"'{model_name}' missing/empty 'extra' in registry."
@@ -93,4 +101,27 @@ def test_supported_models_list():
         "ctgan",
         "pategan",
         "tabsyn",
+        "great",
+        "smote",
+        "mst",
+        "privtree",
+        "arf",
+        "synthpop",
+        "naivebayes",
+        "histogram",
+        "realtabformer",
+        "kde",
+        "fairtabdiffusion",
     }
+
+
+@pytest.mark.parametrize("model_name", ModelRegistry.get_available_models())
+def test_support_status_matches_package_location(model_name):
+    """Supported models live in katabatic.models; experimental ones in katabatic.experimental."""
+    config = ModelRegistry.get_model_config(model_name)
+    experimental = config["module"].startswith("katabatic.experimental.")
+    assert experimental != config["supported"], (
+        f"'{model_name}' is {'supported' if config['supported'] else 'experimental'} "
+        f"but its module is {config['module']}. Move it to "
+        f"{'katabatic.models' if config['supported'] else 'katabatic.experimental.models'}."
+    )

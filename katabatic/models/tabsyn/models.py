@@ -82,13 +82,33 @@ class TabSyn(BaseModel):
     def train(
         self,
         data_dir: str,
-        save_dir: str | None = None,
-        extra_info: dict[str, Any] | None = None,
         *args,
+        synthetic_dir: str | None = None,
+        artifact_state_dir: str | None = None,
+        extra_info: dict[str, Any] | None = None,
         **kwargs,
     ) -> TabSyn:
-        """Train decoder & diffusion on the dataset located in `data_dir`,
-        then materialize x_synth.csv / y_synth.csv for TSTR."""
+        """
+        Train decoder & diffusion on the dataset located in `data_dir`, then
+        materialize x_synth.csv / y_synth.csv for TSTR.
+
+        Parameters
+        ----------
+        data_dir : str
+            Directory containing TabSyn's preprocessed training arrays
+            (X_num_train.npy / X_cat_train.npy / y_train.npy / info.json).
+        synthetic_dir : str, optional
+            Directory to write the generated x_synth.csv / y_synth.csv to.
+            Defaults to synthetic/<dataset_name>/tabsyn.
+        artifact_state_dir : str, optional
+            When provided, the fitted model state is persisted here for
+            later retrieval via load_from_ref().
+
+        Returns
+        -------
+        TabSyn
+            Trained model instance.
+        """
         self.check_dependencies()
         # 1) fit model
         cfg = replace(
@@ -102,13 +122,12 @@ class TabSyn(BaseModel):
         self.state = train_tabsyn(
             data_dir=data_dir,
             cfg=cfg,
-            save_dir=save_dir,
             extra_info=extra_info or {},
         )
         self.is_fitted = True
 
         # 2) Decide where to save synthetic data
-        synth_dir = kwargs.get("synthetic_dir")
+        synth_dir = synthetic_dir
         if not synth_dir or not isinstance(synth_dir, str):
             dataset_name = os.path.basename(os.path.normpath(data_dir)) or "dataset"
             synth_dir = os.path.join("synthetic", dataset_name, "tabsyn")
@@ -165,9 +184,11 @@ class TabSyn(BaseModel):
         y_synth.to_csv(y_path, index=False, header=True)
         print(f"[TabSyn] Synthetic data saved:\n  X -> {x_path}\n  y -> {y_path}")
 
+        self._maybe_save_artifact_state(artifact_state_dir)
+
         return self
 
-    def evaluate(
+    def evaluate_loss(
         self,
         *,
         data_dir: str,
@@ -175,7 +196,7 @@ class TabSyn(BaseModel):
     ) -> float:
         """Return a scalar loss on the given split (lower is better)."""
         if not self.is_fitted or self.state is None:
-            raise RuntimeError("Call train() before evaluate().")
+            raise RuntimeError("Call train() before evaluate_loss().")
         return evaluate_tabsyn(self.state, data_dir=data_dir, split=split)
 
     def sample(
@@ -201,6 +222,44 @@ class TabSyn(BaseModel):
                 np.save(save_path, out)
         return out
 
+    def _save_artifact_state(self, artifact_state_dir: str) -> None:
+        """
+        Persist fitted state so the model can be rebuilt by load_from_ref().
+
+        Called from train() when the pipeline injects artifact_state_dir, which
+        it does for any model class declaring ARTIFACT_STATE_FILES.
+        """
+        import torch
+
+        state = self.state
+        precond = state.denoise_fn  # full _Precond, including its MLPDiffusion backbone
+
+        os.makedirs(artifact_state_dir, exist_ok=True)
+        bundle = {
+            "denoise_fn": precond.state_dict(),
+            "tokenizer": state.tokenizer_state,
+            "encoder": state.encoder_state,
+            "decoder": state.decoder_state,
+            # Metadata needed to rebuild TabSynState in TabSyn.load_from_ref().
+            "meta": {
+                "info": state.info,
+                "n_num": state.n_num,
+                "cat_sizes": state.cat_sizes,
+                "cat_encoders": state.cat_encoders,
+                "token_dim": state.token_dim,
+                "column_order": state.column_order,
+                "scaler_mean": state.scaler_mean,
+                "scaler_std": state.scaler_std,
+                "train_rows": state.train_rows,
+                "denoise_dim_t": precond.denoise_fn.dim_t,
+                "sigma_data": precond.sigma_data,
+                "num_steps": getattr(precond, "num_steps", 50),
+                "device": str(state.device),
+            },
+        }
+        target = os.path.join(artifact_state_dir, self.ARTIFACT_STATE_FILES[0])
+        torch.save(bundle, target)
+
     @classmethod
     def load_from_ref(cls, store: ArtifactStore, ref: ModelRef) -> TabSyn:
         """
@@ -210,14 +269,7 @@ class TabSyn(BaseModel):
 
         from .utils import MLPDiffusion, TabSynState, _Precond
 
-        state_file = cls.ARTIFACT_STATE_FILES[0]
-        state_path = store.open_path(f"{ref.state_relpath}/{state_file}")
-
-        if not state_path.is_file():
-            raise FileNotFoundError(
-                f"No TabSyn artifact for ref {ref!r} at {state_path}. "
-                f"The model must be trained through a pipeline that passes save_dir."
-            )
+        state_path = cls._require_state_file(store, ref)
 
         bundle = torch.load(state_path, map_location="cpu", weights_only=False)  # nosec B614: loading our own saved artifact store
 
