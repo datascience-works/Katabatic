@@ -1,6 +1,6 @@
 # Model Contributions
 
-New models start **experimental**. A model is promoted to **supported** once it has a PyPI extra in the root `pyproject.toml`, a registry entry with `supported: True` in [katabatic/models/registry.py](katabatic/models/registry.py), an integration test, and it passes the model promotion contract enforced by [tests/test_model_registry.py](tests/test_model_registry.py). See [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md) for the current supported/experimental split, or check `ModelRegistry.get_supported_models()` directly.
+New models start **experimental**, in `katabatic/experimental/models/`, which has no API stability guarantee. A model is promoted to **supported** once it has a PyPI extra in the root `pyproject.toml`, a registry entry with `supported: True` in [katabatic/models/registry.py](katabatic/models/registry.py), an integration test, and it passes the model promotion contract enforced by [tests/test_model_registry.py](tests/test_model_registry.py). Promotion moves its folder to `katabatic/models/`, whose import paths are covered by semantic versioning. See [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md) for the current supported/experimental split, or check `ModelRegistry.get_supported_models()` directly.
 
 ## Contribution Workflow
 
@@ -16,12 +16,12 @@ Replace `<model_name>` with the actual name of your model (e.g., `tabddpm`).
 
 ### Step 2: Add Your Model
 
-Inside the `katabatic/models/` directory:
+Inside the `katabatic/experimental/models/` directory:
 
 1. Create a new folder for your model:
 
    ```text
-   katabatic/models/<model_name>/
+   katabatic/experimental/models/<model_name>/
    ```
 
 2. Within that folder, follow the format used in existing models (e.g. `ganblr`, `ctgan`). Typically including a 3-file format:
@@ -66,11 +66,11 @@ Add an entry to `ModelRegistry._models` in [katabatic/models/registry.py](kataba
 
 ```python
 "<model_name>": {
-    "module": "katabatic.models.<model_name>.models",
+    "module": "katabatic.experimental.models.<model_name>.models",
     "class": "<ModelClassName>",
     "dependencies": ["some-package"],  # importable module names, used for the runtime dependency check
     "extra": "<model_name>",           # must match the pyproject.toml extra and the registry key
-    "supported": False,                # new models start unsupported
+    "supported": False,                # new models start unsupported (and in katabatic/experimental/)
 },
 ```
 
@@ -111,4 +111,4 @@ Promotion is done by a maintainer once a model has proven stable. It requires al
 2. **Model promotion contract**: `tests/test_model_registry.py::test_model_promotion_contract` passes for the model — it checks that the registry `extra` is non-empty and equals the model name; `module`/`class` are declared and import cleanly; the model class exposes `train`, `sample`, and `load_from_ref`; `ARTIFACT_STATE_FILES` is non-empty; and the integration test file from Step 4 exists. `load_from_ref` must override the base class's default (which raises `NotImplementedError`); `_save_artifact_state` follows the same pattern but isn't separately checked here — it's exercised implicitly whenever the integration test round-trips state through the artifact pipeline.
 3. **CI checks are green**: add the model to the `changes` job's `ALL_MODELS` list and its `paths-filter` block in [.github/workflows/ci.yml](.github/workflows/ci.yml), so `integration-<model_name>` runs on relevant changes. That job runs both the integration test and the model promotion contract (step 2 above) as separate steps in one run — no separate YAML wiring needed for the contract check itself.
 4. **Dependencies live in the model's own extra**: declared under `[project.optional-dependencies].<model_name>` in the root `pyproject.toml` (not bundled into an unrelated extra), with `poetry.lock` up to date.
-5. **Switch to supported status**: once 1–4 are satisfied, flip `"supported": False` to `"supported": True` for the model in `katabatic/models/registry.py`, update the expected set in `tests/test_model_registry.py::test_supported_models_list`, remove the model's directory from the coverage `omit` list in `pyproject.toml` if present, and update `docs/EXPERIMENTAL_MODELS.md` and the README install matrix to move it out of the experimental table.
+5. **Switch to supported status**: once 1–4 are satisfied, move the model's folder with `git mv katabatic/experimental/models/<model_name> katabatic/models/<model_name>` and update imports of the old path (its own modules, tests and `benchmarks/examples/<model_name>/`). In `katabatic/models/registry.py`, change the model's `module` to `katabatic.models.<model_name>.models` and flip `"supported": False` to `"supported": True`; `tests/test_model_registry.py::test_support_status_matches_package_location` fails if the two disagree. Then update the expected set in `tests/test_model_registry.py::test_supported_models_list`, and move the model from the experimental to the supported table in `docs/EXPERIMENTAL_MODELS.md` and the README install matrix. Coverage and the API stability guarantee follow the folder: `katabatic/experimental/*` is omitted from coverage.

@@ -7,7 +7,7 @@ sys.path.insert(
 
 from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
-from katabatic.models.medgan.models import MEDGAN
+from katabatic.experimental.models.medgan.models import MEDGAN
 
 config = RunConfig(
     dataset_name="adult",

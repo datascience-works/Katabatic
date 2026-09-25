@@ -7,7 +7,7 @@ sys.path.insert(
 
 from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
-from katabatic.models.tvaegan.models import TVAEGANModel
+from katabatic.experimental.models.tvaegan.models import TVAEGANModel
 
 config = RunConfig(
     dataset_name="adult",

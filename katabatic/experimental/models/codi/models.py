@@ -21,8 +21,7 @@ import torch
 import torch.nn.functional as F
 from sklearn.metrics import accuracy_score, f1_score, r2_score
 
-from katabatic.models.base_model import Model
-from katabatic.models.codi.utils import (
+from katabatic.experimental.models.codi.utils import (
     GaussianDiffusionSampler,
     GaussianDiffusionTrainer,
     MultinomialDiffusion,
@@ -34,6 +33,7 @@ from katabatic.models.codi.utils import (
     save_metadata,
     set_global_seed,
 )
+from katabatic.models.base_model import Model
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

@@ -68,7 +68,7 @@ class ModelRegistry:
             "supported": True,
         },
         "tabddpm": {
-            "module": "katabatic.models.tabddpm.models",
+            "module": "katabatic.experimental.models.tabddpm.models",
             "class": "Tabddpm",
             "dependencies": [],
             "extra": "tabddpm",
@@ -146,11 +146,11 @@ class ModelRegistry:
             "supported": True,
         },
         "tabebm": {
-            "module": "katabatic.models.tabebm.models",
+            "module": "katabatic.experimental.models.tabebm.models",
             "class": "TabEBMModel",
             "dependencies": ["numpy", "pandas", "sklearn"],
             "extra": "tabebm",
-            "supported": True,
+            "supported": False,
         },
         "smote": {
             "module": "katabatic.models.smote.models",

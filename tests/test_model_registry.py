@@ -109,8 +109,19 @@ def test_supported_models_list():
         "synthpop",
         "naivebayes",
         "histogram",
-        "tabebm",
         "realtabformer",
         "kde",
         "fairtabdiffusion",
     }
+
+
+@pytest.mark.parametrize("model_name", ModelRegistry.get_available_models())
+def test_support_status_matches_package_location(model_name):
+    """Supported models live in katabatic.models; experimental ones in katabatic.experimental."""
+    config = ModelRegistry.get_model_config(model_name)
+    experimental = config["module"].startswith("katabatic.experimental.")
+    assert experimental != config["supported"], (
+        f"'{model_name}' is {'supported' if config['supported'] else 'experimental'} "
+        f"but its module is {config['module']}. Move it to "
+        f"{'katabatic.models' if config['supported'] else 'katabatic.experimental.models'}."
+    )

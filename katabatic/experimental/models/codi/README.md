@@ -39,7 +39,7 @@ poetry install --extras codi
 ## Usage
 
 ```python
-from katabatic.models.codi import CODI
+from katabatic.experimental.models.codi import CODI
 from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
 
 pipeline = TrainTestSplitPipeline(model=CODI)
@@ -51,7 +51,7 @@ pipeline.run(
 )
 ```
 
-See `examples/codi.ipynb` for more examples.
+See `benchmarks/examples/codi/` for full runs.
 
 ## Key Features
 

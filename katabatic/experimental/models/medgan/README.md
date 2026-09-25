@@ -25,7 +25,7 @@ poetry install --extras medgan
 ## Usage
 
 ```python
-from katabatic.models.medgan import MEDGAN
+from katabatic.experimental.models.medgan import MEDGAN
 from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
 
 pipeline = TrainTestSplitPipeline(model=MEDGAN)
@@ -37,7 +37,7 @@ pipeline.run(
 )
 ```
 
-See `examples/medgan.ipynb` for more examples.
+See `benchmarks/examples/medgan/` for full runs.
 
 ## Key Features
 

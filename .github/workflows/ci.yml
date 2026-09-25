@@ -168,9 +168,6 @@ jobs:
             histogram:
               - 'katabatic/models/histogram/**'
               - 'tests/test_integration_histogram.py'
-            tabebm:
-              - 'katabatic/models/tabebm/**'
-              - 'tests/test_integration_tabebm.py'
             realtabformer:
               - 'katabatic/models/realtabformer/**'
               - 'tests/test_integration_realtabformer.py'
@@ -199,7 +196,6 @@ jobs:
             {"model": "realtabformer", "torch": true, "heavy": true},
             {"model": "smote", "torch": false},
             {"model": "synthpop", "torch": false, "r": true},
-            {"model": "tabebm", "torch": false},
             {"model": "tabsyn", "torch": true, "heavy": true}
           ]'
 
@@ -313,7 +309,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.cache/pypoetry
-          key: poetry-${{ matrix.model }}-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+          key: poetry-setup-${{ runner.os }}-${{ hashFiles('poetry.lock') }}
 
       - name: Install Poetry
         run: pip install poetry==${{ env.POETRY_VERSION }}
