@@ -13,13 +13,20 @@ repos:
       - id: check-merge-conflict
       - id: check-added-large-files
 
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.1
+  - repo: local
     hooks:
       - id: ruff-check
-        args: [--fix]
-
+        name: ruff check
+        entry: poetry run ruff check --fix
+        language: system
+        types: [python]
+        require_serial: true
       - id: ruff-format
+        name: ruff format
+        entry: poetry run ruff format
+        language: system
+        types: [python]
+        require_serial: true
 
   - repo: https://github.com/compilerla/conventional-pre-commit
     rev: v4.4.0

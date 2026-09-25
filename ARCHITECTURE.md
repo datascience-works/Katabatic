@@ -2,84 +2,76 @@
 
 ## Overview
 
-Katabatic is a library of tabular data generative models with a 6-dimension evaluation pipeline. Every model follows the same abstract interface, and any generated synthetic dataset can be scored through the same pipeline regardless of which model produced it.
+Katabatic is a library of tabular data generative models sharing one abstract `Model` interface
+(`train`/`sample`/`evaluate`). Two separate pipelines can run a model end to end:
+
+- **`TrainTestSplitPipeline`** (`katabatic/pipeline/train_test_split/`) — the primary, tested
+  path. Splits data, trains a model, scores it with **TSTR** (`katabatic/evaluate/tstr/`), and
+  optionally versions everything (dataset, model state, evaluation) under an `ArtifactStore`
+  (`katabatic/artifacts/`). Every supported model's integration test exercises this path.
+- **`SyntheticEvaluationPipeline`** (`katabatic/pipeline/evaluation_pipeline.py`) — a richer,
+  in-memory scorer across 6 dimensions (fidelity, utility, diversity, privacy, consistency,
+  stability), producing one weighted composite score. Used by `benchmarks/runner.py`.
+
+**These two are not interchangeable by default.** `TrainTestSplitPipeline`'s evaluation slot
+expects a directory/artifact-store-based class with a `from_artifact()` classmethod (see
+`TSTREvaluation`); `SyntheticEvaluationPipeline`'s dimensions expect the `Evaluation` ABC's
+DataFrame-based `__init__(real_data, synthetic_data)`. A class can support both by implementing
+`from_artifact()` as a thin adapter that reads the pipeline's CSVs into DataFrames and delegates
+to its own DataFrame-based logic — `FidelityEvaluation` does exactly this (see
+`katabatic/evaluate/fidelity/evaluation.py`), verified by
+`tests/test_train_test_split_pipeline.py::test_artifact_fidelity_evaluation_smoke`. `TSTREvaluation`
+itself takes the inverse approach (directory-based by default, no DataFrame mode). See
+`CONTRIBUTING.md`'s "Adding New Evaluations" section before writing a new one.
 
 ---
 
-## Full Architecture
+## `TrainTestSplitPipeline` flow
 
 ```mermaid
 flowchart TD
-    %% ── Data Preparation ──────────────────────────────────────
-    A[(Raw Dataset\nCSV)] -->|encode_preprocess| B[Preprocessed Data\ncleaned, original col names + types preserved]
-    B -->|split_dataset\nstratified 80/20| C[Train Split] & D[Test Split]
-
-    %% ── Model Training ────────────────────────────────────────
-    C -->|model.train| E[Generative Model]
-
-    subgraph models [katabatic/models/]
-        direction LR
-        M1[CTGAN]
-        M2[CoDi]
-        M3[TabDDPM]
-        M4[GANBLR]
-        M5[GReaT]
-        M6[Tabsyn]
-        M7[MedGAN]
-        M8[PATEGAN]
+    A[(input_csv)] -->|split_dataset| B[train split] & C[test split]
+    B -->|model.train data_dir, synthetic_dir, artifact_state_dir| D[fitted Model]
+    D -->|model.sample| E[(synthetic CSVs)]
+    D -->|_save_artifact_state| F[(versioned state)]
+    B & C & E -->|TSTREvaluation.from_artifact| G[TSTR metrics]
+    subgraph store [ArtifactStore, optional]
+        B
+        C
+        F
+        G
     end
+```
 
-    E --- models
+The supported models (`supported: True` in `ModelRegistry`, `katabatic/models/registry.py`) are
+`ganblr`, `ctgan`, `pategan`, `tabsyn`, `great`, `smote`, `mst`, `privtree`, `arf`, `synthpop`,
+`naivebayes`, and `realtabformer`. See `docs/EXPERIMENTAL_MODELS.md` for the other model
+directories under `katabatic/models/` — some registered with `supported: False`, some not
+registered at all — which are experimental and out of scope here.
 
-    %% ── Synthetic Data Generation ─────────────────────────────
-    E -->|model.sample| F[(Synthetic\nDataFrame)]
+## `SyntheticEvaluationPipeline` flow
 
-    %% ── Evaluation Pipeline ───────────────────────────────────
-    C & D & F -->|train + test + synthetic| G
-
-    subgraph pipeline [katabatic/pipeline/evaluation_pipeline.py]
-        G[SyntheticEvaluationPipeline]
-
-        G --> FID[Fidelity\nJSD · Wasserstein · Correlation]
-        G --> UTL[Utility\nTSTR vs TRTR · 5 classifiers]
-        G --> DIV[Diversity\nCategory · Bin · Gower Coverage]
-        G --> PRV[Privacy\nNNDR · Exact · Near Duplicates]
-        G --> CON[Consistency\nDiscriminator · Constraints · Feature Importance]
-        G --> STB[Stability\nMulti-run Variance · seeds 0–4]
-    end
-
-    %% ── Report ────────────────────────────────────────────────
-    FID & UTL & DIV & PRV & CON & STB --> R
-
-    subgraph report [katabatic/evaluate/report/composite.py]
-        R[EvaluationReport]
-        R --> W["Weighted Composite Score [0–1]\nUtility 35% · Fidelity 25% · Privacy 15%\nDiversity 10% · Consistency 10% · Stability 5%"]
-    end
-
-    W --> OUT1[JSON Report]
-    W --> OUT2[CSV Summary]
-    W --> OUT3[Console Output]
-
-    %% ── Runner helper (benchmarks only) ───────────────────────
-    subgraph runner [benchmarks/runner.py]
-        RC[RunConfig\ndataset · model · columns · constraints]
-        RC --> PPS[preprocess_and_split]
-        RC --> SS[save_synthetic]
-        RC --> EV[evaluate]
-    end
+```mermaid
+flowchart TD
+    C[train split] & F[(synthetic DataFrame)] --> G[SyntheticEvaluationPipeline]
+    G --> FID[Fidelity] & UTL[Utility] & DIV[Diversity] & PRV[Privacy] & CON[Consistency] & STB[Stability]
+    FID & UTL & DIV & PRV & CON & STB --> R[EvaluationReport]
+    R --> W["Weighted composite score [0-1]\nUtility 35% - Fidelity 25% - Privacy 15%\nDiversity 10% - Consistency 10% - Stability 5%"]
+    W --> OUT1[JSON report] & OUT2[CSV summary] & OUT3[Console output]
 ```
 
 ---
 
-## Abstract Base Classes
+## Abstract base classes
 
 ```mermaid
 classDiagram
     class Model {
         <<abstract>>
-        +train(dataset_dir, **kwargs) Model
+        +train(data_dir, *args, synthetic_dir, artifact_state_dir, **kwargs) Self
         +sample(n_samples, **kwargs) DataFrame
-        +evaluate(**kwargs) float
+        +evaluate(**kwargs) float | dict
+        +load_from_ref(store, ref)$ Model
         +check_dependencies() bool
     }
 
@@ -91,18 +83,21 @@ classDiagram
     }
 
     class Pipeline {
-        <<abstract>>
         +run(*args, **kwargs)
     }
 
-    Model <|-- CTGANModel
-    Model <|-- CODI
-    Model <|-- Tabddpm
     Model <|-- GANBLR
+    Model <|-- CTGANModel
+    Model <|-- PATEGAN
+    Model <|-- TabSyn
     Model <|-- GReaT
-    Model <|-- Tabsyn
-    Model <|-- MedGANSynthesizer
-    Model <|-- PATEGANSynthesizer
+    Model <|-- SMOTEModel
+    Model <|-- MSTModel
+    Model <|-- PrivTreeModel
+    Model <|-- ARFModel
+    Model <|-- SynthPop
+    Model <|-- NaiveBayesModel
+    Model <|-- REaLTabFormerModel
 
     Evaluation <|-- FidelityEvaluation
     Evaluation <|-- UtilityEvaluation
@@ -111,72 +106,51 @@ classDiagram
     Evaluation <|-- ConsistencyEvaluation
     Evaluation <|-- StabilityEvaluation
 
+    Pipeline <|-- TrainTestSplitPipeline
     Pipeline <|-- SyntheticEvaluationPipeline
 
     SyntheticEvaluationPipeline --> Evaluation : orchestrates
-    SyntheticEvaluationPipeline --> EvaluationReport : returns
+    TrainTestSplitPipeline --> TSTREvaluation : uses
 ```
+
+`Pipeline` (`katabatic/pipeline/base_pipeline.py`) is a plain class, not `abc.ABC` — `run()` just
+raises `NotImplementedError` if not overridden. `TSTREvaluation` doesn't subclass `Evaluation`
+(see the two-convention note above).
 
 ---
 
-## Data Flow
+## Directory structure
 
-```mermaid
-flowchart LR
-    A[raw CSV] --> B[encode_preprocess\ncleaned CSV]
-    B --> C[train_full.csv] & T[test_full.csv]
-    C --> D[model.train]
-    D --> E[model.sample]
-    E --> F[synthetic DataFrame]
-    C & T & F --> G[SyntheticEvaluationPipeline]
-    G --> H[EvaluationReport\ncomposite_score\ndimension_scores]
-```
-
----
-
-## Directory Structure
-
-```
+```text
 katabatic/
 ├── models/
-│   ├── base_model.py          # Abstract Model base class
-│   ├── registry.py            # Dynamic model loader
-│   ├── ctgan/                 # CTGAN implementation
-│   ├── codi/                  # CoDi implementation
-│   ├── tabddpm/               # TabDDPM implementation
-│   ├── ganblr/                # GANBLR implementation
-│   ├── great/                 # GReaT implementation
-│   ├── tabsyn/                # Tabsyn implementation
-│   ├── medgan/                # MedGAN implementation
-│   └── pategan/               # PATEGAN implementation
+│   ├── base_model.py       # Model ABC: train/sample/evaluate + artifact-state hooks
+│   ├── registry.py         # ModelRegistry — declarative model lookup + install extras
+│   └── <model_name>/       # one dir per model; see docs/EXPERIMENTAL_MODELS.md for the full list
 │
 ├── evaluate/
-│   ├── base_evaluation.py     # Abstract Evaluation base class
-│   ├── fidelity/              # JSD + Wasserstein + Correlation
-│   ├── utility/               # TSTR vs TRTR across 5 classifiers
-│   ├── diversity/             # Category + Bin + Gower coverage
-│   ├── privacy/               # NNDR + duplicate detection
-│   ├── consistency/           # Discriminator + constraints + feature importance
-│   ├── stability/             # Multi-run variance
-│   └── report/                # EvaluationReport + composite scoring
+│   ├── base_evaluation.py  # Evaluation ABC (DataFrame-based; used by SyntheticEvaluationPipeline)
+│   ├── tstr/                # TSTREvaluation (directory/artifact-store-based; used by TrainTestSplitPipeline)
+│   ├── fidelity/, utility/, diversity/, privacy/, consistency/, stability/  # the 6 dimensions
+│   └── report/              # EvaluationReport + composite scoring
 │
 ├── pipeline/
-│   ├── base_pipeline.py       # Abstract Pipeline base class
-│   └── evaluation_pipeline.py # SyntheticEvaluationPipeline (main)
+│   ├── base_pipeline.py
+│   ├── train_test_split/    # TrainTestSplitPipeline (primary, tested path)
+│   └── evaluation_pipeline.py  # SyntheticEvaluationPipeline
+│
+├── artifacts/                # ArtifactStore: versioned datasets/models/evaluations
+│   ├── base.py, local.py, refs.py, ids.py, dataset_split.py
+│   ├── remote.py             # FsspecArtifactStore: S3/GCS/Azure via a local cache + sync()/pull()
+│
+├── datasets/                  # shipped example-dataset catalogue (adult/car/magic/nursery/shuttle
+│   │                           # — see datasets/README.md for the documented set)
+│   ├── README.md, registry.py, compatibility.py, profile.py, *.csv
 │
 └── utils/
-    ├── column_types.py        # Categorical/continuous auto-detection
-    ├── split_dataset.py       # Stratified train/test split
-    └── preprocess.py          # encode_preprocess + data cleaning
+    ├── column_types.py, split_dataset.py, preprocess.py, train_test_consistency.py
 
 benchmarks/
-├── runner.py                  # RunConfig + shared pipeline helpers
-└── examples/                  # reference run scripts — copy and adapt for your model
-    ├── run_ctgan_adult.py
-    ├── run_codi_adult.py
-    ├── run_tabddpm_adult.py
-    └── run_ctgan_bank_marketing.py
-datasets/
-├── adult.csv
-└── bank_marketing.csv
+├── runner.py                  # RunConfig + SyntheticEvaluationPipeline helpers
+└── examples/                  # per-model run scripts.
 ```

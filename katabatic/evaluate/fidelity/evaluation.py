@@ -1,10 +1,35 @@
+import csv
+from typing import Any
+
 import numpy as np
 import pandas as pd
 from scipy.spatial.distance import jensenshannon
 from scipy.stats import wasserstein_distance
+from sklearn.neighbors import NearestNeighbors
 
+from katabatic.artifacts.base import ArtifactStore
+from katabatic.artifacts.ids import new_eval_id
+from katabatic.artifacts.refs import DatasetRef, EvaluationRef, ModelRef
 from katabatic.evaluate.base_evaluation import Evaluation
 from katabatic.utils.column_types import get_column_types
+
+
+def _load_fidelity_data(
+    synthetic_dir: str, real_test_dir: str
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Reconstruct combined (features + target) real/synthetic frames from the
+    artifact pipeline's per-column CSVs, mirroring TSTREvaluation's load_data()."""
+    x_synth = pd.read_csv(f"{synthetic_dir}/x_synth.csv")
+    y_synth = pd.read_csv(f"{synthetic_dir}/y_synth.csv")
+    x_test = pd.read_csv(f"{real_test_dir}/x_test.csv")
+    y_test = pd.read_csv(f"{real_test_dir}/y_test.csv")
+    real_data = pd.concat(
+        [x_test.reset_index(drop=True), y_test.reset_index(drop=True)], axis=1
+    )
+    synthetic_data = pd.concat(
+        [x_synth.reset_index(drop=True), y_synth.reset_index(drop=True)], axis=1
+    )
+    return real_data, synthetic_data
 
 
 class FidelityEvaluation(Evaluation):
@@ -46,8 +71,17 @@ class FidelityEvaluation(Evaluation):
         synthetic_data: pd.DataFrame,
         categorical_cols: list = None,
         continuous_cols: list = None,
+        **kwargs,
     ):
         super().__init__(real_data, synthetic_data)
+
+        # Set only via from_artifact(); when present, evaluate() writes its
+        # results into the artifact store instead of just printing/returning them.
+        self._artifact_store: ArtifactStore | None = kwargs.pop("_artifact_store", None)
+        self._evaluation_ref: EvaluationRef | None = kwargs.pop("_evaluation_ref", None)
+        self._artifact_report_relpath: str | None = kwargs.pop(
+            "_artifact_report_relpath", None
+        )
 
         if categorical_cols is None and continuous_cols is None:
             self.categorical_cols, self.continuous_cols = get_column_types(
@@ -62,10 +96,63 @@ class FidelityEvaluation(Evaluation):
             self.categorical_cols = categorical_cols or []
             self.continuous_cols = continuous_cols or []
 
+    @classmethod
+    def from_artifact(
+        cls,
+        store: ArtifactStore,
+        model_ref: ModelRef,
+        dataset_ref: DatasetRef,
+        eval_run_id: str | None = None,
+        **kwargs,
+    ) -> tuple["FidelityEvaluation", EvaluationRef]:
+        """Artifact-pipeline adapter: reads the same x/y CSVs TSTREvaluation does,
+        recombines them into (real_data, synthetic_data) frames, and wires up
+        artifact-mode report writing. Lets FidelityEvaluation run through
+        TrainTestSplitPipeline despite its DataFrame-based constructor."""
+        eval_run_id = eval_run_id or new_eval_id()
+        eval_ref = EvaluationRef(
+            evaluation_type="fidelity",
+            eval_run_id=eval_run_id,
+            model_name=model_ref.model_name,
+            dataset_name=dataset_ref.dataset_name,
+            dataset_version=dataset_ref.dataset_version,
+            train_run_id=model_ref.train_run_id,
+            test_dataset_version=dataset_ref.dataset_version,
+        )
+        store.open_path(eval_ref.root_relpath).mkdir(parents=True, exist_ok=True)
+        # Fetch inputs another machine may have written (no-op for local stores).
+        store.pull(model_ref.synthetic_relpath)
+        store.pull(dataset_ref.test_relpath)
+        synthetic_dir = str(store.open_path(model_ref.synthetic_relpath))
+        real_test_dir = str(store.open_path(dataset_ref.test_relpath))
+        real_data, synthetic_data = _load_fidelity_data(synthetic_dir, real_test_dir)
+
+        skip = frozenset(
+            {
+                "_artifact_store",
+                "_evaluation_ref",
+                "_artifact_report_relpath",
+                "synthetic_dir",
+                "real_test_dir",
+                "real_train_dir",
+            }
+        )
+        init_kw = {k: v for k, v in kwargs.items() if k not in skip}
+        inst = cls(
+            real_data,
+            synthetic_data,
+            _artifact_store=store,
+            _evaluation_ref=eval_ref,
+            _artifact_report_relpath=eval_ref.report_relpath,
+            **init_kw,
+        )
+        return inst, eval_ref
+
     def evaluate(self) -> dict:
         jsd_results = self._compute_jsd()
         wd_results = self._compute_wasserstein()
         corr_diff = self._compute_correlation_diff()
+        dcr_mean = self._compute_dcr()
 
         # Component scores in [0, 1] — higher is better.
         # Check for actual per-column entries, not just the 'avg' sentinel key,
@@ -76,6 +163,7 @@ class FidelityEvaluation(Evaluation):
 
         active = [s for s in [cat_score, cont_score, corr_score] if s is not None]
         fidelity_score = round(float(np.mean(active)), 4) if active else 0.0
+        mean_jsd = jsd_results["avg"] if len(jsd_results) > 1 else None
 
         results = {
             "categorical_jsd": jsd_results,
@@ -85,10 +173,94 @@ class FidelityEvaluation(Evaluation):
             "continuous_score": cont_score,
             "correlation_score": corr_score,
             "fidelity_score": fidelity_score,
+            "dcr_mean": dcr_mean,
+            "summary": {
+                "fidelity_score": fidelity_score,
+                "mean_jsd": mean_jsd,
+                "dcr_mean": dcr_mean,
+            },
         }
 
         self._print_summary(results)
+
+        if (
+            self._artifact_store is not None
+            and self._evaluation_ref is not None
+            and self._artifact_report_relpath is not None
+        ):
+            self._save_results_artifact(results)
+
         return results
+
+    def _compute_dcr(self) -> float | None:
+        """Distance to Closest Record: for each synthetic row, the Euclidean
+        distance (in a jointly-scaled feature space) to its nearest real row,
+        averaged. Categorical columns are one-hot encoded on the union of real +
+        synthetic categories; continuous columns are min-max scaled by the real
+        data's range. Lower means synthetic rows sit closer to real ones — a
+        fidelity/privacy-adjacent signal, not a substitute for a formal privacy
+        audit. Returns None if there are no usable columns or rows.
+        """
+        cols = [
+            c
+            for c in (self.categorical_cols + self.continuous_cols)
+            if c in self.real_data.columns and c in self.synthetic_data.columns
+        ]
+        if not cols:
+            return None
+
+        real = self.real_data[cols].dropna()
+        synth = self.synthetic_data[cols].dropna()
+        if real.empty or synth.empty:
+            return None
+
+        real_parts = []
+        synth_parts = []
+
+        cat_cols = [c for c in self.categorical_cols if c in cols]
+        if cat_cols:
+            combined = pd.concat(
+                [real[cat_cols].astype(str), synth[cat_cols].astype(str)],
+                keys=["real", "synth"],
+            )
+            encoded = pd.get_dummies(combined, columns=cat_cols)
+            real_parts.append(encoded.loc["real"].to_numpy(dtype=float))
+            synth_parts.append(encoded.loc["synth"].to_numpy(dtype=float))
+
+        cont_cols = [c for c in self.continuous_cols if c in cols]
+        if cont_cols:
+            real_cont = real[cont_cols].to_numpy(dtype=float)
+            synth_cont = synth[cont_cols].to_numpy(dtype=float)
+            col_min = real_cont.min(axis=0)
+            col_range = real_cont.max(axis=0) - col_min
+            col_range[col_range == 0] = 1.0
+            real_parts.append((real_cont - col_min) / col_range)
+            synth_parts.append((synth_cont - col_min) / col_range)
+
+        real_matrix = np.concatenate(real_parts, axis=1)
+        synth_matrix = np.concatenate(synth_parts, axis=1)
+
+        neighbors = NearestNeighbors(n_neighbors=1).fit(real_matrix)
+        distances, _ = neighbors.kneighbors(synth_matrix)
+        return round(float(np.mean(distances)), 4)
+
+    def _save_results_artifact(self, results: dict[str, Any]) -> None:
+        store = self._artifact_store
+        ref = self._evaluation_ref
+        assert store is not None and ref is not None
+
+        store.save_json(ref.metrics_relpath, results)
+
+        report_path = self._artifact_report_relpath
+        p = store.open_path(report_path)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with open(p, mode="w", newline="", encoding="utf-8") as file:
+            writer = csv.writer(file)
+            writer.writerow(["Metric", "Value"])
+            for metric, value in results["summary"].items():
+                writer.writerow([metric, value])
+        store.sync(report_path)
+        print(f"\nResults saved to: {p}")
 
     def _compute_jsd(self) -> dict:
         if not self.categorical_cols:

@@ -5,12 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-09-12
+
+### Fixed
+
+- `publish-pypi.yml` triggered on both `release: published` and `push: tags: v*`, so publishing a GitHub Release from a fresh tag fired both events and started two runs against the same version; only the first could succeed since PyPI rejects re-uploading an existing version/filename, even from a legitimate rebuild. Removed the redundant tag-push trigger, leaving `release: published` (and manual dispatch) as the only ways to publish.
+- `publish-pypi.yml` unconditionally passed `password: ${{ secrets.PYPI_API_TOKEN }}`, which disables PyPI Trusted Publishing even when configured. Reverted to Trusted Publishing (the workflow already carries the required `id-token: write` permission) and added `skip-existing: true` as a safety net against future duplicate-publish attempts.
+- Ruff import-order violation in `katabatic/models/great/great_dataset.py`.
+
+## [0.3.0] - 2026-09-12
+
+### Added
+
+- New experimental models: SynthPop (`katabatic.models.synthpop`), GMM, Naive Bayes, SMOTE (numeric-only oversampling), and an updated TabKDE, each with a benchmark evaluation script.
+- PATE-GAN and TabSyn promoted to supported: rebuilt/aligned with their original paper and reference implementations, `load_from_ref` implemented, integration tests added, and new `pategan`/`tabsyn` pytest markers registered. The registry now lists four supported models: `ganblr`, `ctgan`, `pategan`, `tabsyn`.
+- `smote` PyPI extra (`imbalanced-learn`).
+- Cross-platform setup with Windows support, including a CI job that verifies installs across operating systems.
+- Data dictionary documenting the five benchmark datasets (`datasets/README.md`).
+- `pre-commit` check folded into the local `make ci` run, matching CI.
+
+### Changed
+
+- PyPI classifier moved from Alpha to Beta.
+- Poetry 2.4.1 -> 2.4.2; `torch` 2.13.0 -> 2.14.0; `tensorflow-io` 0.31.0 -> 0.37.1; `xgboost` 3.0.2 -> 3.2.0; `ruff` 0.16.4 -> 0.16.6.
+- `statsmodels` dropped from the `all` extra in favour of `imbalanced-learn` (for SMOTE).
+- Coverage `omit` list updated to reflect current promotions: `pategan` and `tabsyn` now covered; `gmm`, `naivebayes`, and `smote` added as newly-registered experimental models.
+
+### Fixed
+
+- Removed a dangling `katabatic` console-script entry point in `pyproject.toml` left over after the legacy CLI (`init-model`, `register-dataset`, `pin-notebook-kernel`) was removed; installing the package and running `katabatic` would otherwise fail with `ModuleNotFoundError`.
+
+### Removed
+
+- Legacy CLI (`katabatic/cli/`): `init-model`, `register-dataset`, and `pin-notebook-kernel` commands.
+- Large tracked data files no longer needed in version control: stale `sample_data/`, `discretized_data/`, `Results/`, `benchmarks/results/` artifacts, `.DS_Store` files, notebook checkpoint output, and outdated setup/pin scripts. `katabatic/datasets/` is now gitignored (aside from its `README.md`).
+- TabEBM model, added and removed within this release cycle; not shipped.
+
 ## [0.2.0] - 2026-08-28
 
 ### Added
 
 - Six-dimension evaluation pipeline: fidelity, utility, diversity, privacy, consistency, and stability (`katabatic.pipeline.evaluation_pipeline`).
-- Six additional models registered as experimental: `codi`, `ctgan`, `medgan`, `pategan`, `tabddpm`, `tabsyn`.
+- Four additional models registered as experimental: `ctgan`, `pategan`, `tabddpm`, `tabsyn`. (`codi` and `medgan` ship as source but are not in the registry.)
 - Model promotion contract, enforced automatically by the `model-contract` CI job: registry entry with matching extra, importable module and class, pipeline interface (`train`, `sample`, `load_from_ref`), non-empty `ARTIFACT_STATE_FILES`, and an integration test.
 - Parameterised contract test harness (`tests/test_model_registry.py`) covering every model marked supported.
 - CTGAN integration test with a full artifact round-trip: state persistence, reload via `load_from_ref`, and sampling with column-order verification.
@@ -50,11 +86,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stale per-model `pyproject.toml` and `poetry.lock` files.
 - `dev_deps.py`, repo-root `main.py` and `utils.py`, and `katabatic/models/ganblr/kdb.py`.
 
-
-## [0.1.0a1] - 2026-05-22
-
-First public **alpha** release on TestPyPI / PyPI.
-
 ## [0.1.0] - 2026-05-22
 
 ### Added
@@ -83,5 +114,12 @@ First public **alpha** release on TestPyPI / PyPI.
 - Repo-root `utils` module (use `katabatic.utils.preprocess`).
 - `python main.py` entry point (use `katabatic` CLI).
 
-[0.1.0a1]: https://github.com/datascience-works/Katabatic/releases/tag/v0.1.0a1
+## [0.1.0a1] - 2026-05-22
+
+First public **alpha** release on TestPyPI / PyPI.
+
+[0.3.1]: https://github.com/datascience-works/Katabatic/releases/tag/v0.3.1
+[0.3.0]: https://github.com/datascience-works/Katabatic/releases/tag/v0.3.0
+[0.2.0]: https://github.com/datascience-works/Katabatic/releases/tag/v0.2.0
 [0.1.0]: https://github.com/datascience-works/Katabatic/releases/tag/v0.1.0
+[0.1.0a1]: https://github.com/datascience-works/Katabatic/releases/tag/v0.1.0a1
