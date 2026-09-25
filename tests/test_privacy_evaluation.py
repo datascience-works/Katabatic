@@ -111,3 +111,17 @@ def test_print_summary_warns_on_high_duplicate_rates(capsys):
     captured = capsys.readouterr()
     assert "Privacy Evaluation" in captured.out
     assert "possible memorisation" in captured.out.lower()
+
+
+@pytest.mark.parametrize("column_types", ["auto", "partial"])
+def test_text_columns_are_compared_as_categories(column_types):
+    """Text columns must not collapse to NaN distances, which hid every copied row."""
+    real = pd.DataFrame(
+        {"colour": ["red", "blue", "green", "red"], "size": ["S", "M", "L", "XL"]}
+    )
+    novel = pd.DataFrame({"colour": ["pink", "teal"], "size": ["XS", "XXL"]})
+    synth = pd.concat([real.iloc[:2], novel], ignore_index=True)
+    kwargs = {} if column_types == "auto" else {"categorical_cols": ["colour"]}
+    results = PrivacyEvaluation(real, synth, **kwargs).evaluate()
+
+    assert results["exact_duplicate_rate"] == 0.5
