@@ -46,6 +46,13 @@ class ModelRegistry:
                 ],
             },
         },
+        "ganblrpp": {
+            "module": "katabatic.models.ganblrpp.models",
+            "class": "GANBLRPP",
+            "dependencies": ["tensorflow", "pgmpy", "pyitlib", "scipy"],
+            "extra": "ganblr",
+            "supported": False,
+        },
         "great": {
             "module": "katabatic.models.great.models",
             "class": "GReaT",
