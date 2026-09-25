@@ -177,6 +177,9 @@ jobs:
             kde:
               - 'katabatic/models/kde/**'
               - 'tests/test_integration_kde.py'
+            fairtabdiffusion:
+              - 'katabatic/models/fairtabdiffusion/**'
+              - 'tests/test_integration_fairtabdiffusion.py'
 
       - name: Build Dynamic Matrix
         id: build-matrix
@@ -184,6 +187,7 @@ jobs:
           ALL_MODELS='[
             {"model": "arf", "torch": false},
             {"model": "ctgan", "torch": true, "heavy": true},
+            {"model": "fairtabdiffusion", "torch": true},
             {"model": "ganblr", "torch": false, "heavy": true},
             {"model": "great", "torch": true, "heavy": true},
             {"model": "histogram", "torch": false},

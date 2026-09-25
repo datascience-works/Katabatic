@@ -112,4 +112,5 @@ def test_supported_models_list():
         "tabebm",
         "realtabformer",
         "kde",
+        "fairtabdiffusion",
     }

@@ -138,6 +138,13 @@ class ModelRegistry:
             "extra": "histogram",
             "supported": True,
         },
+        "fairtabdiffusion": {
+            "module": "katabatic.models.fairtabdiffusion.models",
+            "class": "FairTabDiffusion",
+            "dependencies": ["torch", "sklearn"],
+            "extra": "fairtabdiffusion",
+            "supported": True,
+        },
         "tabebm": {
             "module": "katabatic.models.tabebm.models",
             "class": "TabEBMModel",

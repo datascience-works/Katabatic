@@ -9,32 +9,14 @@ from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
 from katabatic.models.fairtabdiffusion.models import FairTabDiffusion
 
-# Nursery dataset column layout (UCI):
-# ['parents', 'has_nurs', 'form', 'children', 'housing', 'finance',
-#  'social', 'health', 'class']
-# All 8 features + target are categorical (children is technically
-# ordinal: 1, 2, 3, more -- treated as categorical here, same approach
-# used for Car's "doors"/"persons" columns).
-# NOTE: verify against your team's raw_data/nursery.csv -- if the target
-# column is named differently (e.g. "final_evaluation" instead of
-# "class"), you'll hit the same error pattern seen with Adult's
-# 'income' vs 'class' mismatch. Check with:
-#   head -1 raw_data/nursery.csv
+# katabatic/datasets/nursery.csv uses positional headers ["0"-"8"]
+# All 8 features + target are categorical.
 config = RunConfig(
     dataset_name="nursery",
     model_name="fairtabdiffusion",
-    categorical_cols=[
-        "parents",
-        "has_nurs",
-        "form",
-        "children",
-        "housing",
-        "finance",
-        "social",
-        "health",
-    ],
+    categorical_cols=["0", "1", "2", "3", "4", "5", "6", "7"],
     continuous_cols=[],
-    target_col_raw="class",
+    target_col_raw="8",
     constraints=None,
 )
 
