@@ -168,6 +168,9 @@ jobs:
             histogram:
               - 'katabatic/models/histogram/**'
               - 'tests/test_integration_histogram.py'
+            tabebm:
+              - 'katabatic/models/tabebm/**'
+              - 'tests/test_integration_tabebm.py'
             realtabformer:
               - 'katabatic/models/realtabformer/**'
               - 'tests/test_integration_realtabformer.py'
@@ -179,20 +182,21 @@ jobs:
         id: build-matrix
         run: |
           ALL_MODELS='[
-            {"model": "ganblr", "torch": false},
-            {"model": "ctgan", "torch": true},
-            {"model": "pategan", "torch": false},
-            {"model": "tabsyn", "torch": true},
-            {"model": "great", "torch": true},
-            {"model": "smote", "torch": false},
-            {"model": "mst", "torch": false},
-            {"model": "privtree", "torch": false},
             {"model": "arf", "torch": false},
-            {"model": "synthpop", "torch": false, "r": true},
-            {"model": "naivebayes", "torch": false},
-            {"model": "realtabformer", "torch": true},
+            {"model": "ctgan", "torch": true, "heavy": true},
+            {"model": "ganblr", "torch": false, "heavy": true},
+            {"model": "great", "torch": true, "heavy": true},
+            {"model": "histogram", "torch": false},
             {"model": "kde", "torch": false},
-            {"model": "histogram", "torch": false}
+            {"model": "mst", "torch": false, "heavy": true},
+            {"model": "naivebayes", "torch": false},
+            {"model": "pategan", "torch": false, "heavy": true},
+            {"model": "privtree", "torch": false},
+            {"model": "realtabformer", "torch": true, "heavy": true},
+            {"model": "smote", "torch": false},
+            {"model": "synthpop", "torch": false, "r": true},
+            {"model": "tabebm", "torch": false},
+            {"model": "tabsyn", "torch": true, "heavy": true}
           ]'
 
           # Always run the full matrix for main (release pushes/PRs) so
@@ -225,7 +229,10 @@ jobs:
         with:
           python-version: "3.11"
 
+      # Heavy (torch/TensorFlow) environments are 2-10 GiB each, caching them overflows
+      # the repo's 10 GB cache limit and evicts every other cache, so they download instead.
       - name: Cache Poetry environment
+        if: ${{ !matrix.heavy }}
         uses: actions/cache@v6
         with:
           path: ~/.cache/pypoetry
@@ -234,19 +241,18 @@ jobs:
       - name: Install Poetry
         run: pip install poetry==${{ env.POETRY_VERSION }}
 
-      - name: Cache R library
+      # Prebuilt Linux binaries from Posit Package Manager, so R packages aren't compiled.
+      - name: Set up R
         if: matrix.r
-        uses: actions/cache@v6
+        uses: r-lib/actions/setup-r@v2
         with:
-          path: /usr/local/lib/R/site-library
-          key: r-synthpop-${{ runner.os }}
+          use-public-rspm: true
 
-      - name: Install R and the synthpop package
+      - name: Install the synthpop R package
         if: matrix.r
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y r-base
-          sudo Rscript -e "if (!requireNamespace('synthpop', quietly = TRUE)) install.packages('synthpop', repos='https://cloud.r-project.org/')"
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          packages: any::synthpop
 
       - name: Pre-install CPU torch
         if: matrix.torch

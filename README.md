@@ -70,11 +70,12 @@ Or install directly with Poetry / pip — useful for installing several extras a
 | SynthPop (supported, requires R) | `pip install katabatic[synthpop]` or `poetry install -E synthpop` — also needs R + CRAN `synthpop` packages, see [katabatic/models/synthpop/README.md](katabatic/models/synthpop/README.md) |
 | NaiveBayes (supported) | `pip install katabatic[naivebayes]` or `poetry install -E naivebayes` |
 | Histogram (supported) | `pip install katabatic[histogram]` or `poetry install -E histogram` |
+| TabEBM (supported) | `pip install katabatic[tabebm]` or `poetry install -E tabebm` |
 | REaLTabFormer (supported) | `pip install katabatic[realtabformer]` or `poetry install -E realtabformer` |
 | KDE (supported) | `pip install katabatic[kde]` or `poetry install -E kde` |
 | TSTR + XGBoost | `pip install katabatic[eval]` or `poetry install -E eval` |
+| Several models | `pip install "katabatic[ganblr,ctgan]"` or `poetry install -E ganblr -E ctgan` |
 | Development | `poetry install --with dev` |
-| All optional deps | `pip install katabatic[all]` |
 
 Experimental models (`tabddpm`, `codi`, `medgan`, etc.) are documented in [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md).
 For contributor work: `poetry install --with dev -E ganblr -E ctgan -E pategan -E eval && poetry env activate`.
@@ -112,6 +113,28 @@ results = pipeline.run(
 )
 # results["model_ref"], results["evaluation_refs"] — TSTR metrics on disk
 ```
+
+#### Remote artifact stores
+
+To keep artifacts in S3, GCS or Azure, so a model trained on one machine can be reloaded or
+evaluated on another, pass an `FsspecArtifactStore` as `artifact_store=` instead:
+
+```bash
+pip install katabatic[artifacts-s3]  # or artifacts-gcs, artifacts-azure; combine for several clouds
+```
+
+```python
+from katabatic.artifacts import FsspecArtifactStore
+
+store = FsspecArtifactStore("s3://my-bucket/katabatic", local_cache_dir="artifact-cache")
+```
+
+Files are cached locally and transferred only when they change; the pipeline and
+`load_from_ref()` handle this automatically. A store never overwrites a remote file it hasn't
+read at its current version: `save_json()`, `save_bytes()` and `sync()` raise
+`ArtifactConflictError` instead, so load the file, re-apply your change and save again.
+`exists()` downloads the file it checks. The store is thread-safe, but don't share one
+`local_cache_dir` between processes.
 
 ### Jupyter Notebook
 
