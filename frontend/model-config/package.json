@@ -1,9 +1,9 @@
 {
-  "name": "katabatic-dipsan-model-config",
+  "name": "katabatic-model-config",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node ../Katabatic-Manya-Dashboard/dev-workspace.mjs",
+    "dev": "node ../main-dashboard/dev-workspace.mjs",
     "build": "next build",
     "start": "next start -p 3001"
   },

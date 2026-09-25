@@ -1,4 +1,4 @@
-# Katabatic — Katabatic-Bright-UploadDataset
+# Katabatic — model-config
 
 ## Run all four pages on one port
 
@@ -13,7 +13,7 @@ npm --prefix frontend/results-dashboard run dev
 
 Open **http://localhost:5173**. Only one server and one terminal are required.
 `npm run dev` from any of the four frontend directories starts this same workspace.
-The earlier `npm --prefix frontend/Katabatic-Manya-Dashboard run dev:workspace`
+The `npm --prefix frontend/main-dashboard run dev:workspace`
 command also starts the single server.
 
 | Page | Route |
