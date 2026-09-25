@@ -12,7 +12,7 @@ GANBLR++ extends the GANBLR framework by incorporating numerical attribute handl
 
 For numerical columns, the implementation uses `DMMDiscretizer` before model training. After synthetic data is generated, the numerical features are converted back to their original numerical form.
 
-The GANBLR++ research paper also proposes the use of a Dirichlet Mixture Model and unrestricted Bayesian Networks to improve numerical data generation and model flexibility. 
+The GANBLR++ research paper also proposes the use of a Dirichlet Mixture Model and unrestricted Bayesian Networks to improve numerical data generation and model flexibility.
 
 ---
 
@@ -20,13 +20,13 @@ The GANBLR++ research paper also proposes the use of a Dirichlet Mixture Model a
 
 GANBLR++ is based on:
 
-Zhang, Y., Zaidi, N. A., Zhou, J., & Li, G. (2022).  
-**GANBLR++: Incorporating Capacity to Generate Numeric Attributes and Leveraging Unrestricted Bayesian Networks.**  
+Zhang, Y., Zaidi, N. A., Zhou, J., & Li, G. (2022).
+**GANBLR++: Incorporating Capacity to Generate Numeric Attributes and Leveraging Unrestricted Bayesian Networks.**
 Proceedings of the 2022 SIAM International Conference on Data Mining (SDM), pp. 298–306.
 
 DOI: `10.1137/1.9781611977172.34`
 
-The paper introduces GANBLR++ as an extension of GANBLR with the ability to generate numerical attributes. 
+The paper introduces GANBLR++ as an extension of GANBLR with the ability to generate numerical attributes.
 ---
 
 ## Approach
@@ -129,7 +129,7 @@ Typical Katabatic pipeline outputs include:
 
 GANBLR++ synthetic data can be evaluated using the Katabatic evaluation pipeline.
 
-The Katabatic framework supports Train on Synthetic, Test on Real (TSTR) evaluation and other synthetic-data quality metrics. 
+The Katabatic framework supports Train on Synthetic, Test on Real (TSTR) evaluation and other synthetic-data quality metrics.
 
 ---
 
@@ -165,7 +165,7 @@ poetry install -E ganblr
 ## Usage
 
 ```python
-from katabatic.models.ganblrpp import GANBLRPP
+from katabatic.experimental.models.ganblrpp import GANBLRPP
 
 model = GANBLRPP(
     numerical_columns=["column_name"]

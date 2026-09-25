@@ -111,6 +111,9 @@ pytest = "^9.1.1"
 pytest-cov = "^7.1.0"
 pytest-mock = "^3.15.1"
 pytest-forked = "^1.7.5"
+# Executes examples/*.ipynb in tests/test_examples.py
+nbclient = "^0.11.0"
+nbformat = "^5.11.1"
 fsspec = ">=2023.5.0,<=2026.2.0"
 # Security tools
 bandit = "^1.9.4"

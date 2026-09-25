@@ -34,6 +34,7 @@ Experimental models live in `katabatic.experimental.models` and have no guarante
 | ------- | ------- | ------- | ------- |
 | TabEBM | `katabatic.experimental.models.tabebm.models.TabEBMModel` | `tabebm` | Passes the promotion contract, but samples reproduce training rows; see its README |
 | TabDDPM | `katabatic.experimental.models.tabddpm.models.Tabddpm` | `tabddpm` | Uses external `tabddpm` package, with a local fallback |
+| GANBLR++ | `katabatic.experimental.models.ganblrpp.GANBLRPP` | `ganblr` | GANBLR with numerical columns; no integration test yet |
 
 ### Not registered (import directly; `ModelRegistry.load_model()` will not find them)
 
