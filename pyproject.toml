@@ -94,16 +94,8 @@ Documentation = "https://github.com/datascience-works/Katabatic#readme"
 "Bug Tracker" = "https://github.com/datascience-works/Katabatic/issues"
 
 [tool.coverage.run]
-# Experimental models are excluded until they have integration tests.
-omit = [
-    "katabatic/models/codi/*",
-    "katabatic/models/gmm/*",
-    "katabatic/models/medgan/*",
-    "katabatic/models/tabddpm/*",
-    "katabatic/models/tabkde_updated/*",
-    "katabatic/models/tvaegan/*",
-
-]
+# Experimental code has no coverage requirement until it is promoted.
+omit = ["katabatic/experimental/*"]
 
 [tool.poetry]
 # Poetry-specific build config only.

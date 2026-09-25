@@ -130,7 +130,7 @@ Generated files saved to `synthetic_dir`:
 
 ## Status
 
-TabEBM is an officially supported Katabatic model (`supported: True` in `ModelRegistry`).
+TabEBM is experimental (`supported: False` in `ModelRegistry`). It passes the promotion contract, but its samples reproduce training rows (see Limitations), so it stays experimental until the sampler generates new rows.
 
 ```bash
 pip install katabatic[tabebm]   # or: poetry install -E tabebm
@@ -141,7 +141,7 @@ pip install katabatic[tabebm]   # or: poetry install -E tabebm
 ## Usage
 
 ```python
-from katabatic.models.tabebm.models import TabEBMModel, TabEBMConfig
+from katabatic.experimental.models.tabebm.models import TabEBMModel, TabEBMConfig
 
 config = TabEBMConfig(
     max_data_size=1000,

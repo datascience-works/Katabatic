@@ -13,7 +13,10 @@ from runner import (  # noqa: E402
     save_synthetic,
 )
 
-from katabatic.models.tabebm.models import TabEBMConfig, TabEBMModel  # noqa: E402
+from katabatic.experimental.models.tabebm.models import (  # noqa: E402
+    TabEBMConfig,
+    TabEBMModel,
+)
 
 warnings.filterwarnings("ignore")
 config = RunConfig(

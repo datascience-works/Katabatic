@@ -14,13 +14,13 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from katabatic.models.base_model import Model
-from katabatic.models.medgan.utils import (
+from katabatic.experimental.models.medgan.utils import (
     Autoencoder,
     Discriminator,
     Generator,
     sample_noise,
 )
+from katabatic.models.base_model import Model
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

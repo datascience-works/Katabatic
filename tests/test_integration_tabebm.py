@@ -9,8 +9,8 @@ import pandas as pd
 import pytest
 
 from katabatic.artifacts import LocalArtifactStore
+from katabatic.experimental.models.tabebm.models import TabEBMModel
 from katabatic.models.base_model import EVALUATION_DIMENSIONS
-from katabatic.models.tabebm.models import TabEBMModel
 from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
 
 
@@ -80,7 +80,7 @@ def test_tabebm_rare_class_survives_subsampling(tmp_path):
     import numpy as np
     import pandas as pd
 
-    from katabatic.models.tabebm.models import TabEBMConfig
+    from katabatic.experimental.models.tabebm.models import TabEBMConfig
 
     # Class "b" is rare and appears between "a" and "c", so a positional key
     # mismatch would mislabel "c" rows as "b".

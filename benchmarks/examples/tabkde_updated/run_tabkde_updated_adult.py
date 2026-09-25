@@ -22,7 +22,7 @@ from runner import (  # noqa: E402
     save_synthetic,
 )
 
-from katabatic.models.tabkde_updated import TabKDEModel  # noqa: E402
+from katabatic.experimental.models.tabkde_updated import TabKDEModel  # noqa: E402
 
 # Run in CPU mode if GPU is limited
 # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
