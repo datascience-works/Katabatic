@@ -4,8 +4,8 @@ Production-level implementation of MEG for the Katabatic framework.
 
 ## Paper
 
-**MEG: Masked Ensemble Tabular Data Generator**  
-Zhang et al.  
+**MEG: Masked Ensemble Tabular Data Generator**
+Zhang et al.
 [Pre-publication Draft](https://www.nayyarzaidi.com/papers/MEG_Pre-publication_Draft.pdf)
 
 
