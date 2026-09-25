@@ -8,7 +8,7 @@ A framework for synthetic tabular data generation: 15 supported generative model
 
 ## Features
 
-- **Supported Generative Models**: GAN-based (GANBLR, CTGAN, PATE-GAN), diffusion (TabSyn, FairTabDiffusion), language-model (GReaT, REaLTabFormer), differentially private (MST, PrivTree, PATE-GAN) and statistical baselines (ARF, KDE, Histogram, NaiveBayes, SMOTE, SynthPop). Experimental models live in `katabatic.experimental`; see [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md)
+- **Supported Generative Models**: GAN-based (GANBLR, CTGAN, PATE-GAN), diffusion (TabSyn, FairTabDiffusion), language-model (GReaT, REaLTabFormer), differentially private (MST, PrivTree, PATE-GAN) and statistical baselines (ARF, KDE, Histogram, NaiveBayes, SMOTE, SynthPop). Experimental models live in `katabatic.experimental`; see [docs/EXPERIMENTAL_MODELS.md](https://github.com/datascience-works/Katabatic/blob/main/docs/EXPERIMENTAL_MODELS.md)
 - **Automated Pipeline**: End-to-end training, generation, and evaluation workflows
 - **Six-Dimension Evaluation**: `model.evaluate()` scores fidelity, utility (TSTR), diversity, privacy, consistency and stability, plus a weighted composite
 - **Versioned Artifacts**: datasets, trained models and evaluations stored locally or in S3, GCS or Azure
@@ -69,7 +69,7 @@ Or install directly with Poetry / pip — useful for installing several extras a
 | MST (supported) | `pip install katabatic[mst]` or `poetry install -E mst` |
 | PrivTree (supported) | `pip install katabatic[privtree]` or `poetry install -E privtree` |
 | ARF (supported) | `pip install katabatic[arf]` or `poetry install -E arf` |
-| SynthPop (supported, requires R) | `pip install katabatic[synthpop]` or `poetry install -E synthpop` — also needs R + CRAN `synthpop` packages, see [katabatic/models/synthpop/README.md](katabatic/models/synthpop/README.md) |
+| SynthPop (supported, requires R) | `pip install katabatic[synthpop]` or `poetry install -E synthpop` — also needs R + CRAN `synthpop` packages, see [katabatic/models/synthpop/README.md](https://github.com/datascience-works/Katabatic/blob/main/katabatic/models/synthpop/README.md) |
 | NaiveBayes (supported) | `pip install katabatic[naivebayes]` or `poetry install -E naivebayes` |
 | Histogram (supported) | `pip install katabatic[histogram]` or `poetry install -E histogram` |
 | REaLTabFormer (supported) | `pip install katabatic[realtabformer]` or `poetry install -E realtabformer` |
@@ -79,7 +79,7 @@ Or install directly with Poetry / pip — useful for installing several extras a
 | Several models | `pip install "katabatic[ganblr,ctgan]"` or `poetry install -E ganblr -E ctgan` |
 | Development | `poetry install --with dev` |
 
-Experimental models (TabEBM, TabDDPM, GANBLR++, CoDi, MedGAN, TVAE-GAN, GMM, TabKDE) live in `katabatic.experimental.models`, with no API stability guarantee; see [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md).
+Experimental models (TabEBM, TabDDPM, GANBLR++, CoDi, MedGAN, TVAE-GAN, GMM, TabKDE) live in `katabatic.experimental.models`, with no API stability guarantee; see [docs/EXPERIMENTAL_MODELS.md](https://github.com/datascience-works/Katabatic/blob/main/docs/EXPERIMENTAL_MODELS.md).
 For contributor work: `poetry install --with dev -E ganblr -E ctgan -E pategan -E eval && poetry env activate`.
 
 For GPU training, install the PyTorch build for your CUDA version from [pytorch.org](https://pytorch.org/get-started/locally/) into the same environment.
@@ -95,7 +95,7 @@ python -c "from katabatic.models.registry import ModelRegistry; print(ModelRegis
 
 ### Artifact pipeline (recommended)
 
-Versioned datasets, models, and evaluations under `artifacts/`. See [GANBLR_FLOW.md](GANBLR_FLOW.md) for details.
+Versioned datasets, models, and evaluations under `artifacts/`. See [GANBLR_FLOW.md](https://github.com/datascience-works/Katabatic/blob/main/GANBLR_FLOW.md) for details.
 
 ```python
 from katabatic.artifacts import LocalArtifactStore
@@ -149,16 +149,16 @@ read at its current version: `save_json()`, `save_bytes()` and `sync()` raise
 
 ## Examples
 
-The notebooks in [examples/](examples/) run with the core install and are executed in CI:
+The notebooks in [examples/](https://github.com/datascience-works/Katabatic/tree/main/examples) run with the core install and are executed in CI:
 
 | Notebook | Shows |
 | --- | --- |
-| [quickstart.ipynb](examples/quickstart.ipynb) | Pick any model by name, train it through the pipeline, generate rows and reload the trained model |
-| [evaluation.ipynb](examples/evaluation.ipynb) | Score a model on the six dimensions, run a subset, or plug in your own evaluation |
-| [remote_artifact_store.ipynb](examples/remote_artifact_store.ipynb) | Share artifacts between machines through S3, GCS or Azure |
+| [quickstart.ipynb](https://github.com/datascience-works/Katabatic/blob/main/examples/quickstart.ipynb) | Pick any model by name, train it through the pipeline, generate rows and reload the trained model |
+| [evaluation.ipynb](https://github.com/datascience-works/Katabatic/blob/main/examples/evaluation.ipynb) | Score a model on the six dimensions, run a subset, or plug in your own evaluation |
+| [remote_artifact_store.ipynb](https://github.com/datascience-works/Katabatic/blob/main/examples/remote_artifact_store.ipynb) | Share artifacts between machines through S3, GCS or Azure |
 
 Open them in VS Code, or install Jupyter first (`pip install jupyterlab`). Per-model benchmark
-scripts are in [benchmarks/examples/](benchmarks/examples/).
+scripts are in [benchmarks/examples/](https://github.com/datascience-works/Katabatic/tree/main/benchmarks/examples).
 
 ## Usage
 
@@ -226,13 +226,13 @@ synthetic_data = model.sample(
 
 The artifact-store flow shown in [Quick Start](#quick-start) is the recommended way to run
 `TrainTestSplitPipeline`. It also supports a legacy, non-artifact-store mode — pass `output_dir=`
-instead of `artifact_store=`/`dataset_name=` — see [GANBLR_FLOW.md](GANBLR_FLOW.md#legacy-directory-layout-optional)
+instead of `artifact_store=`/`dataset_name=` — see [GANBLR_FLOW.md](https://github.com/datascience-works/Katabatic/blob/main/GANBLR_FLOW.md#legacy-directory-layout-optional)
 for that layout.
 
 ## Models
 
 Most supported models have a README in `katabatic/models/<name>/` covering the paper, parameters
-and benchmark results; [docs/EXPERIMENTAL_MODELS.md](docs/EXPERIMENTAL_MODELS.md) lists them all. A few of
+and benchmark results; [docs/EXPERIMENTAL_MODELS.md](https://github.com/datascience-works/Katabatic/blob/main/docs/EXPERIMENTAL_MODELS.md) lists them all. A few of
 the most used:
 
 ### GANBLR (GAN-based Bayesian Learning Rules)
@@ -260,7 +260,7 @@ the most used:
 - **Features**:
   - WGAN-GP adversarial training
   - Differential privacy via a Gaussian noise mechanism
-  - Adapted from Jordon et al. (ICLR 2019) — see [katabatic/models/pategan/README.md](katabatic/models/pategan/README.md) for how this implementation differs from the paper
+  - Adapted from Jordon et al. (ICLR 2019) — see [katabatic/models/pategan/README.md](https://github.com/datascience-works/Katabatic/blob/main/katabatic/models/pategan/README.md) for how this implementation differs from the paper
 
 ### TabSyn (Score-based Diffusion in Latent Space)
 
@@ -283,7 +283,7 @@ the most used:
 ## Datasets
 
 Models are benchmarked against five datasets in the data catalogue — see
-[katabatic/datasets/README.md](katabatic/datasets/README.md) for details on each.
+[katabatic/datasets/README.md](https://github.com/datascience-works/Katabatic/blob/main/katabatic/datasets/README.md) for details on each.
 
 ## Evaluation
 
@@ -387,7 +387,7 @@ Katabatic/
 │   ├── datasets/              # packaged benchmark datasets and DatasetRegistry
 │   └── utils/                 # preprocess, split_dataset, ...
 ├── artifacts/                 # Local run outputs (gitignored)
-├── docs/                      # EXPERIMENTAL_MODELS.md, FUTURE_WORK.md
+├── docs/                      # EXPERIMENTAL_MODELS.md
 ├── benchmarks/                # per-model benchmark scripts (benchmarks/examples/)
 ├── examples/                  # quickstart, evaluation and remote-store notebooks
 ├── tests/                     # Unit + integration tests
@@ -408,8 +408,8 @@ pip install dist/katabatic-*.whl
 
 ## Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for the development guide
-(architecture, adding pipelines/evaluations, testing) and [MODEL_CONTRIBUTIONS.md](MODEL_CONTRIBUTIONS.md)
+We welcome contributions! See [CONTRIBUTING.md](https://github.com/datascience-works/Katabatic/blob/main/CONTRIBUTING.md) for the development guide
+(architecture, adding pipelines/evaluations, testing) and [MODEL_CONTRIBUTIONS.md](https://github.com/datascience-works/Katabatic/blob/main/MODEL_CONTRIBUTIONS.md)
 for adding or promoting a model. In short:
 
 1. **Fork** the repository
@@ -419,7 +419,7 @@ for adding or promoting a model. In short:
 4. **Push** to the branch and **open** a Pull Request into `development`
 
 Formatting, linting, and security scans run via `pre-commit` (`ruff format`, `ruff check`, plus
-the hooks in [.pre-commit-config.yaml](.pre-commit-config.yaml)):
+the hooks in [.pre-commit-config.yaml](https://github.com/datascience-works/Katabatic/blob/main/.pre-commit-config.yaml)):
 
 ```bash
 pip install pre-commit
@@ -429,7 +429,7 @@ pre-commit run --all-files
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/datascience-works/Katabatic/blob/main/LICENSE) file for details.
 
 ## Support
 
