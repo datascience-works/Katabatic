@@ -112,6 +112,7 @@ def test_supported_models_list():
         "realtabformer",
         "kde",
         "fairtabdiffusion",
+        "tabkde",
     }
 
 

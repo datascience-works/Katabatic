@@ -1,12 +1,10 @@
 import logging
 import os
 import platform
-import random
 import sys
 import warnings
 from time import perf_counter
 
-import numpy as np
 import pandas as pd
 import psutil
 
@@ -22,7 +20,7 @@ from runner import (  # noqa: E402
     save_synthetic,
 )
 
-from katabatic.experimental.models.tabkde_updated import TabKDEModel  # noqa: E402
+from katabatic.models.tabkde import TabKDEModel  # noqa: E402
 
 # Run in CPU mode if GPU is limited
 # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
@@ -30,29 +28,6 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 logging.getLogger("pgmpy").setLevel(logging.ERROR)
 warnings.filterwarnings("ignore")
 start_time = perf_counter()
-
-
-class TabKDEEvaluationAdapter(TabKDEModel):
-    """
-    Make TabKDE compatible with the Katabatic evaluation pipeline.
-
-    The original TabKDE sample() method may return a tuple,
-    while the evaluation pipeline expects a pandas DataFrame.
-
-    The stability evaluator also passes a seed argument.
-    """
-
-    def sample(self, n, seed=None):
-        if seed is not None:
-            random.seed(seed)
-            np.random.seed(seed)
-
-        result = super().sample(n)
-
-        if isinstance(result, tuple):
-            return result[0]
-
-        return result
 
 
 # Adding system and run duration summary
@@ -125,7 +100,7 @@ def get_system_run_details() -> None:
 
 config = RunConfig(
     dataset_name="shuttle",
-    model_name="tabkde_updated",
+    model_name="tabkde",
     categorical_cols=[],
     continuous_cols=[
         "time",
@@ -144,13 +119,13 @@ config = RunConfig(
 train_df, test_df, target_col, paths = preprocess_and_split(config)
 
 print("\n" + "=" * 60)
-print("STEP 3 - Train TabKDE Updated - Shuttle")
+print("STEP 3 - Train TabKDE - Shuttle")
 print("=" * 60)
 
-model = TabKDEEvaluationAdapter()
+model = TabKDEModel()
 model.fit(train_df)
 
-print("\nTabKDE Updated training complete.")
+print("\nTabKDE training complete.")
 
 print("\n" + "=" * 60)
 print("STEP 4 - Generate synthetic data")

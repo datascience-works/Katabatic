@@ -104,7 +104,7 @@ model = TabKDEModel(
 )
 
 model.fit(x_train, y_train)
-synth_df, _ = model.sample(n_samples=len(x_train))
+synth_df = model.sample(n_samples=len(x_train))  # returns a DataFrame; pass seed= for reproducible draws
 ```
 
 Output:
@@ -128,22 +128,25 @@ Expected synthetic outputs:
 Example pipeline usage (typical Katabatic flow):
 
 ```python
-from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
+from katabatic.artifacts import LocalArtifactStore
 from katabatic.models.tabkde import TabKDEModel
+from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
 
-pipeline = TrainTestSplitPipeline(
-    model=lambda: TabKDEModel(
-        n_dcr_splits=10,
-        max_gmm_components=10,
-        noise_std=0.01,
-        random_state=42
-    ),
+store = LocalArtifactStore("artifacts")
+
+pipeline = TrainTestSplitPipeline(model=TabKDEModel(random_state=42))
+result = pipeline.run(
     input_csv="raw_data/adult.csv",
-    output_dir="sample_data/adult",
-    synthetic_dir="synthetic/adult/tabkde"
+    dataset_name="adult",
+    artifact_store=store,
+    model_name="tabkde",
+    test_size=0.2,
+    seed=42,
 )
 
-pipeline.run()
+# Reload the trained model later from its versioned artifact
+model = TabKDEModel.load_from_ref(store, result["model_ref"])
+synthetic = model.sample(1000, seed=0)
 ```
 
 ## Parameter Guide

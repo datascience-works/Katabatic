@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- TabKDE promoted to supported: `katabatic.experimental.models.tabkde_updated` renamed and moved to `katabatic.models.tabkde`, now subclassing `Model` with artifact persistence (`load_from_ref`) and CI integration tests.
+
+### Fixed
+- TabKDE: numeric class labels were returned as interpolated fractions (e.g. 0.37); labels now round-trip exactly.
+- TabKDE: `seed` did not reach the GMM radius draw, so seeded draws were not reproducible and a fixed `random_state` returned identical rows on every `sample()` call.
+
 ## [1.0.0] - 2026-09-25
 
 The first stable release of Katabatic: a single interface for training, sampling, evaluating, and versioning synthetic tabular data models.

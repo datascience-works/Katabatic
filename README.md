@@ -8,7 +8,7 @@ A framework for synthetic tabular data generation: 15 supported generative model
 
 ## Features
 
-- **Supported Generative Models**: GAN-based (GANBLR, CTGAN, PATE-GAN), diffusion (TabSyn, FairTabDiffusion), language-model (GReaT, REaLTabFormer), differentially private (MST, PrivTree, PATE-GAN) and statistical baselines (ARF, KDE, Histogram, NaiveBayes, SMOTE, SynthPop). Experimental models live in `katabatic.experimental`; see [docs/EXPERIMENTAL_MODELS.md](https://github.com/datascience-works/Katabatic/blob/main/docs/EXPERIMENTAL_MODELS.md)
+- **Supported Generative Models**: GAN-based (GANBLR, CTGAN, PATE-GAN), diffusion (TabSyn, FairTabDiffusion), language-model (GReaT, REaLTabFormer), differentially private (MST, PrivTree, PATE-GAN) and statistical baselines (ARF, KDE, TabKDE, Histogram, NaiveBayes, SMOTE, SynthPop). Experimental models live in `katabatic.experimental`; see [docs/EXPERIMENTAL_MODELS.md](https://github.com/datascience-works/Katabatic/blob/main/docs/EXPERIMENTAL_MODELS.md)
 - **Automated Pipeline**: End-to-end training, generation, and evaluation workflows
 - **Six-Dimension Evaluation**: `model.evaluate()` scores fidelity, utility (TSTR), diversity, privacy, consistency and stability, plus a weighted composite
 - **Versioned Artifacts**: datasets, trained models and evaluations stored locally or in S3, GCS or Azure
@@ -75,11 +75,12 @@ Or install directly with Poetry / pip — useful for installing several extras a
 | REaLTabFormer (supported) | `pip install "katabatic[realtabformer]"` or `poetry install -E realtabformer` |
 | KDE (supported) | `pip install "katabatic[kde]"` or `poetry install -E kde` |
 | FairTabDiffusion (supported) | `pip install "katabatic[fairtabdiffusion]"` or `poetry install -E fairtabdiffusion` |
+| TabKDE (supported) | `pip install "katabatic[tabkde]"` or `poetry install -E tabkde` |
 | TSTR + XGBoost | `pip install "katabatic[eval]"` or `poetry install -E eval` |
 | Several models | `pip install "katabatic[ganblr,ctgan]"` or `poetry install -E ganblr -E ctgan` |
 | Development | `poetry install --with dev` |
 
-Experimental models (TabEBM, TabDDPM, GANBLR++, CoDi, MedGAN, TVAE-GAN, GMM, TabKDE) live in `katabatic.experimental.models`, with no API stability guarantee; see [docs/EXPERIMENTAL_MODELS.md](https://github.com/datascience-works/Katabatic/blob/main/docs/EXPERIMENTAL_MODELS.md).
+Experimental models (TabEBM, TabDDPM, GANBLR++, CoDi, MedGAN, TVAE-GAN, GMM) live in `katabatic.experimental.models`, with no API stability guarantee; see [docs/EXPERIMENTAL_MODELS.md](https://github.com/datascience-works/Katabatic/blob/main/docs/EXPERIMENTAL_MODELS.md).
 For contributor work: `poetry install --with dev -E ganblr -E ctgan -E pategan -E eval && poetry env activate`.
 
 For GPU training, install the PyTorch build for your CUDA version from [pytorch.org](https://pytorch.org/get-started/locally/) into the same environment.

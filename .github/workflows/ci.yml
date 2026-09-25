@@ -177,6 +177,9 @@ jobs:
             fairtabdiffusion:
               - 'katabatic/models/fairtabdiffusion/**'
               - 'tests/test_integration_fairtabdiffusion.py'
+            tabkde:
+              - 'katabatic/models/tabkde/**'
+              - 'tests/test_integration_tabkde.py'
 
       - name: Build Dynamic Matrix
         id: build-matrix
@@ -196,6 +199,7 @@ jobs:
             {"model": "realtabformer", "torch": true, "heavy": true},
             {"model": "smote", "torch": false},
             {"model": "synthpop", "torch": false, "r": true},
+            {"model": "tabkde", "torch": false},
             {"model": "tabsyn", "torch": true, "heavy": true}
           ]'
 
