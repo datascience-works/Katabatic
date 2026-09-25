@@ -165,7 +165,7 @@ poetry install -E ganblr
 ## Usage
 
 ```python
-from katabatic.models.ganblrpp import GANBLRPP
+from katabatic.experimental.models.ganblrpp import GANBLRPP
 
 model = GANBLRPP(
     numerical_columns=["column_name"]
