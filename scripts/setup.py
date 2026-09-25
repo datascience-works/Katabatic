@@ -90,6 +90,8 @@ def install(
 
     if model:
         command.extend(["-E", model])
+    if model == "mst":
+        command.extend(["--with", "mst"])
 
     print("Installing Katabatic dependencies...")
     subprocess.run(command, check=True)

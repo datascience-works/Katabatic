@@ -21,8 +21,12 @@ MST is therefore available as an experimental model but is not currently part of
 Install the MST optional dependencies with:
 
 ```bash
-pip install "katabatic[mst]"
+pip install "katabatic[mst]" "private-pgm @ git+https://github.com/ryan112358/private-pgm.git@01f02f17eba440f4e76c1d06fa5ee9eed0bd2bca"
+# or, from a clone of the repository:
+poetry install -E mst --with mst
 ```
+
+Private-PGM isn't on PyPI, and PyPI doesn't allow Git dependencies in a package's extras, so it must be installed separately.
 
 The MST integration uses:
 

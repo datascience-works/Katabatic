@@ -68,10 +68,10 @@ privtree = []
 smote = ["imbalanced-learn==0.14.2"]
 tabebm = []
 synthpop = []
+# MST requires private-pgm, which isn't on PyPI. See the optional "mst" Poetry group below.
 mst = [
     "smartnoise-synth==1.0.5",
     "opendp>=0.14.1,<0.15",
-    "private-pgm @ git+https://github.com/ryan112358/private-pgm.git@01f02f17eba440f4e76c1d06fa5ee9eed0bd2bca",
 ]
 tabddpm = [
     "torch>=2.14.0,<3.0.0",
@@ -119,6 +119,14 @@ fsspec = ">=2023.5.0,<=2026.2.0"
 bandit = "^1.9.4"
 pip-audit = "^2.10.1"
 pre-commit = "^4.6.2"
+
+# private-pgm for the mst extra as PyPI rejects packages with Git dependencies.
+# install with `poetry install -E mst --with mst`.
+[tool.poetry.group.mst]
+optional = true
+
+[tool.poetry.group.mst.dependencies]
+private-pgm = { git = "https://github.com/ryan112358/private-pgm.git", rev = "01f02f17eba440f4e76c1d06fa5ee9eed0bd2bca" }
 
 [tool.pytest.ini_options]
 markers = [

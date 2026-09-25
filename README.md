@@ -66,7 +66,7 @@ Or install directly with Poetry / pip — useful for installing several extras a
 | TabSyn (supported) | `pip install katabatic[tabsyn]` or `poetry install -E tabsyn` |
 | GReaT (supported) | `pip install katabatic[great]` or `poetry install -E great` |
 | SMOTE (supported) | `pip install katabatic[smote]` or `poetry install -E smote` |
-| MST (supported) | `pip install katabatic[mst]` or `poetry install -E mst` |
+| MST (supported) | `pip install katabatic[mst] "private-pgm @ git+https://github.com/ryan112358/private-pgm.git@01f02f17eba440f4e76c1d06fa5ee9eed0bd2bca"` or `poetry install -E mst --with mst`: private-pgm isn't on PyPI, so it installs separately |
 | PrivTree (supported) | `pip install katabatic[privtree]` or `poetry install -E privtree` |
 | ARF (supported) | `pip install katabatic[arf]` or `poetry install -E arf` |
 | SynthPop (supported, requires R) | `pip install katabatic[synthpop]` or `poetry install -E synthpop` — also needs R + CRAN `synthpop` packages, see [katabatic/models/synthpop/README.md](https://github.com/datascience-works/Katabatic/blob/main/katabatic/models/synthpop/README.md) |
