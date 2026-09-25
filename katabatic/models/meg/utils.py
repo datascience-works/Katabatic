@@ -8,7 +8,7 @@ to support mixed-type tabular data handling.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Tuple
+
 import numpy as np
 import pandas as pd
 
@@ -20,11 +20,12 @@ class Schema:
 
     Stores column types, categorical mappings, and encoded feature layout.
     """
-    columns: List[str]
-    cat_cols: List[str]
-    num_cols: List[str]
-    cat_values: Dict[str, List[str]]
-    cat_blocks: Dict[str, Tuple[int, int]]
+
+    columns: list[str]
+    cat_cols: list[str]
+    num_cols: list[str]
+    cat_values: dict[str, list[str]]
+    cat_blocks: dict[str, tuple[int, int]]
     d_enc: int
 
 
@@ -36,7 +37,7 @@ def infer_schema(X: pd.DataFrame) -> Schema:
     """
     cols = list(X.columns)
     cat_cols, num_cols = [], []
-    cat_values: Dict[str, List[str]] = {}
+    cat_values: dict[str, list[str]] = {}
 
     for c in cols:
         if X[c].dtype == "object" or str(X[c].dtype).startswith("category"):
@@ -45,7 +46,7 @@ def infer_schema(X: pd.DataFrame) -> Schema:
         else:
             num_cols.append(c)
 
-    cat_blocks: Dict[str, Tuple[int, int]] = {}
+    cat_blocks: dict[str, tuple[int, int]] = {}
     cursor = 0
 
     # Assign index ranges for each column in encoded space
@@ -111,7 +112,7 @@ def decode_df(X_enc: np.ndarray, schema: Schema) -> pd.DataFrame:
 
     Converts one-hot categorical blocks into labels and restores numerical columns.
     """
-    data: Dict[str, np.ndarray] = {}
+    data: dict[str, np.ndarray] = {}
     cursor = 0
 
     for c in schema.columns:
@@ -123,8 +124,7 @@ def decode_df(X_enc: np.ndarray, schema: Schema) -> pd.DataFrame:
             cats = schema.cat_values[c]
 
             data[c] = np.array(
-                [cats[i] if 0 <= i < len(cats) else cats[0] for i in idx],
-                dtype=object
+                [cats[i] if 0 <= i < len(cats) else cats[0] for i in idx], dtype=object
             )
             cursor = e
         else:
@@ -134,14 +134,14 @@ def decode_df(X_enc: np.ndarray, schema: Schema) -> pd.DataFrame:
     return pd.DataFrame(data)
 
 
-def make_spans(schema: Schema) -> List[Tuple[int, int]]:
+def make_spans(schema: Schema) -> list[tuple[int, int]]:
     """
     Create feature spans used for masked training.
 
     Each categorical column is treated as a block, while numerical features
     are treated as individual spans.
     """
-    spans: List[Tuple[int, int]] = []
+    spans: list[tuple[int, int]] = []
     used = set()
 
     # Add categorical blocks
