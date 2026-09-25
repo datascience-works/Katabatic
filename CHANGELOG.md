@@ -5,18 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0] - 2026-09-25
 
 The first stable release of Katabatic: a single interface for training, sampling, evaluating, and versioning synthetic tabular data models.
 
 ### Highlights
 
 - **15 supported generative models behind one interface.** GAN-based (GANBLR, CTGAN, PATE-GAN), diffusion (TabSyn, FairTabDiffusion), language-model (GReaT, REaLTabFormer), differentially private (MST, PrivTree, PATE-GAN) and statistical baselines (ARF, KDE, Histogram, NaiveBayes, SMOTE, SynthPop). Every model trains with `train(data_dir)`, generates rows with `sample(n_samples)` and reloads a trained model from its artifacts with `load_from_ref()`, and each has an integration test run in CI.
-- **Models by name.** `get_model("ctgan")` and `list_supported_models()` find models through `ModelRegistry`. Each model installs as its own extra, e.g. `pip install "katabatic[ganblr,ctgan]"`, and a missing dependency raises an error naming the extra to install.
+- **Models by name.** `get_model("ctgan")` and `list_supported_models()` find models through `ModelRegistry`. Each model installs as its own extra, e.g. `pip install "katabatic[ganblr,ctgan]"`, and a missing dependency raises an error naming what to install. MST also needs Private-PGM, which installs separately because it isn't on PyPI.
 - **Six-dimension evaluation.** `model.evaluate(real_df)` scores fidelity, utility (train on synthetic, test on real), diversity, privacy, consistency and stability, and combines them into a weighted composite. Run a subset with `dimensions=`, or pass your own evaluation as `pipeline=`, as scikit-learn takes `scoring=`. A dimension that fails is reported in `report.errors` rather than scored.
 - **End-to-end pipeline with versioned artifacts.** `TrainTestSplitPipeline` splits a CSV, trains a model, generates synthetic data and evaluates it, recording the dataset split, trained model and evaluations in an artifact store so any run can be reloaded or re-evaluated. `LocalArtifactStore` keeps them on disk.
 - **Cloud artifact storage (experimental).** `FsspecArtifactStore` keeps artifacts in S3, GCS or Azure through a local cache, so a model trained on one machine can be evaluated on another. A write that would overwrite a newer change from another machine raises `ArtifactConflictError` instead. Install with the `artifacts-s3`, `artifacts-gcs` or `artifacts-azure` extra.
-- **Datasets.** Five benchmark datasets ship with the package (adult, car, magic, nursery and shuttle). `DatasetRegistry` profiles any CSV and can check it against a model's requirements, and `preprocess_tabular()` discretises and encodes data for models that need discrete input.
+- **Datasets.** Five benchmark datasets ship with the package (adult, car, magic, nursery and shuttle). `DatasetRegistry` profiles any CSV and can check it against a model's requirements, and `preprocess_tabular()` cleans raw CSVs before training.
 - **Examples and benchmarks.** Notebooks for the quickstart, evaluation and cloud storage run in CI, and per-model benchmark scripts cover the five datasets.
 - **Experimental models** (TabEBM, TabDDPM, GANBLR++, CoDi, MedGAN, TVAE-GAN, GMM and TabKDE) live in `katabatic.experimental.models`, outside the stability guarantee. A model is promoted to supported once it passes the promotion contract, which the test suite enforces.
 - **Tooling.** Python 3.11 with Poetry, a Dockerfile, Makefile targets that mirror CI, and pre-commit hooks for Ruff and conventional commits.
@@ -140,6 +140,7 @@ The first stable release of Katabatic: a single interface for training, sampling
 
 First public **alpha** release on TestPyPI / PyPI.
 
+[1.0.0]: https://github.com/datascience-works/Katabatic/releases/tag/v1.0.0
 [0.3.1]: https://github.com/datascience-works/Katabatic/releases/tag/v0.3.1
 [0.3.0]: https://github.com/datascience-works/Katabatic/releases/tag/v0.3.0
 [0.2.0]: https://github.com/datascience-works/Katabatic/releases/tag/v0.2.0

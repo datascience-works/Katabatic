@@ -1,5 +1,8 @@
 .PHONY: clear-cache install-core install-model setup-dev help ci lint format security test build integration hooks contract
 
+# mst's private-pgm dependency is in an optional Poetry group, since PyPI rejects Git dependencies.
+mst-group = $(if $(filter mst,$(MODEL)),--with mst)
+
 # Fails a target that needs MODEL when none was given.
 require-model = @if [ -z "$(MODEL)" ]; then echo "Error: specify a model, e.g. make $@ MODEL=ganblr"; exit 1; fi
 
@@ -12,12 +15,12 @@ install-core:
 install-model:
 	$(require-model)
 	@echo "Installing $(MODEL) model dependencies..."
-	poetry install $(addprefix -E ,$(MODEL))
+	poetry install $(addprefix -E ,$(MODEL)) $(mst-group)
 
 # Setup development environment, plus any models given in MODEL
 setup-dev:
 	@echo "Setting up development environment..."
-	poetry install --with dev $(addprefix -E ,$(MODEL))
+	poetry install --with dev $(addprefix -E ,$(MODEL)) $(mst-group)
 	poetry run pre-commit install
 
 clear-cache:
@@ -59,14 +62,14 @@ build:
 contract:
 	$(require-model)
 	@echo "Running model promotion contract test for $(MODEL)..."
-	poetry install --with dev -E $(MODEL)
+	poetry install --with dev -E $(MODEL) $(mst-group)
 	poetry run pytest tests/test_model_registry.py -k "$(MODEL)" -v
 
 # Run an integration test for a specific model.
 integration:
 	$(require-model)
 	@echo "Running integration tests for $(MODEL)..."
-	poetry install --with dev -E $(MODEL)
+	poetry install --with dev -E $(MODEL) $(mst-group)
 	poetry run pytest -m "integration and $(MODEL)" -q
 
 # Install and activate pre-commit hooks.

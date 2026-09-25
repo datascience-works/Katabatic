@@ -259,7 +259,7 @@ jobs:
         run: poetry run pip install "torch>=2.13.0,<3.0.0" --index-url https://download.pytorch.org/whl/cpu
 
       - name: Install with ${{ matrix.model }} extra
-        run: poetry install --with dev -E ${{ matrix.model }}
+        run: poetry install --with dev -E ${{ matrix.model }} ${{ matrix.model == 'mst' && '--with mst' || '' }}
 
       - name: Remove triton
         if: matrix.torch

@@ -93,6 +93,10 @@ class ModelRegistry:
             "class": "MSTModel",
             "dependencies": ["snsynth", "mbi", "opendp"],
             "extra": "mst",
+            # private-pgm (the mbi module) is a Git dependency, which PyPI doesn't allow in extras.
+            "install_hint": 'pip install "katabatic[mst]" "'
+            + "private-pgm @ git+https://github.com/ryan112358/private-pgm.git"
+            + '@01f02f17eba440f4e76c1d06fa5ee9eed0bd2bca"',
             "supported": True,
         },
         "ctgan": {
