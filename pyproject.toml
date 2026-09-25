@@ -65,6 +65,7 @@ pategan = [
 ]
 privtree = []
 smote = ["imbalanced-learn==0.14.2"]
+tabebm = []
 synthpop = []
 mst = [
     "smartnoise-synth==1.0.5",
@@ -139,6 +140,7 @@ markers = [
     "synthpop: requires synthpop extra (and R + CRAN synthpop packages)",
     "naivebayes: requires naivebayes extra",
     "histogram: requires histogram extra",
+    "tabebm: requires tabebm extra",
     "realtabformer: requires realtabformer extra",
     "forked: run test in an isolated forked process (pytest-forked)",
     "artifacts_remote: requires fsspec (memory:// backend, no cloud creds needed)",

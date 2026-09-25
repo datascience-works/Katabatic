@@ -1,34 +1,28 @@
 from __future__ import annotations
 
 import os
-import random
+import pickle
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
-import torch
 from sklearn.model_selection import train_test_split
 
 from katabatic.models.base_model import Model
 
 from .utils import decode_df, encode_df, fit_schema_stats, infer_schema
 
-
-def seed_everything(seed: int) -> None:
-    os.environ["PL_GLOBAL_SEED"] = str(seed)
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+if TYPE_CHECKING:
+    from katabatic.artifacts.base import ArtifactStore
+    from katabatic.artifacts.refs import ModelRef
 
 
 def to_numpy(
-    X: np.ndarray | torch.Tensor | pd.DataFrame | pd.Series | None,
+    X: np.ndarray | pd.DataFrame | pd.Series | None,
 ) -> np.ndarray | None:
     if isinstance(X, np.ndarray):
         return X
-    if isinstance(X, torch.Tensor):
-        return X.detach().cpu().numpy()
     if isinstance(X, pd.DataFrame):
         return X.to_numpy()
     if isinstance(X, pd.Series):
@@ -40,8 +34,7 @@ def to_numpy(
 
 class _TabEBMBackend:
     """
-    NumPy-based TabEBM backend.
-    Avoids torch/autograd kernel crashes.
+    NumPy-based TabEBM backend (no torch dependency).
     """
 
     def __init__(self, max_data_size: int = 10000):
@@ -65,18 +58,23 @@ class _TabEBMBackend:
         y = to_numpy(y).reshape(-1)
 
         if X.shape[0] > self.max_data_size:
-            X, _, y, _ = train_test_split(
+            X_sub, _, y_sub, _ = train_test_split(
                 X,
                 y,
                 train_size=self.max_data_size,
                 stratify=y,
                 random_state=seed,
             )
+            # Stratified subsampling can drop very rare classes entirely; keep
+            # their rows so every class can still be generated.
+            dropped = np.isin(y, np.setdiff1d(np.unique(y), np.unique(y_sub)))
+            X = np.concatenate([X_sub, X[dropped]])
+            y = np.concatenate([y_sub, y[dropped]])
 
         results = {}
         unique_classes = np.unique(y)
 
-        for class_idx, cls in enumerate(unique_classes):
+        for cls in unique_classes:
             X_cls = X[y == cls]
 
             if len(X_cls) == 0:
@@ -112,12 +110,29 @@ class _TabEBMBackend:
                     repl = rng.integers(0, X_cls.shape[0], size=int(nan_rows.sum()))
                     X_sgld[nan_rows] = X_cls[repl]
 
-            results[f"class_{class_idx}"] = X_sgld.astype(np.float32)
+            # Keyed by class rather than position so `sample()` looks up the right class.
+            results[f"class_{int(cls)}"] = X_sgld.astype(np.float32)
 
         return results
 
     @staticmethod
-    def compute_energy_gradient(X_synth, X_train, X_real):
+    def compute_energy_gradient(X_synth, X_train, X_real, max_elements=16_000_000):
+        # Process rows in chunks efficiently compute per-feature energy gradient.
+        per_row = max(X_train.shape[0], X_real.shape[0]) * max(X_synth.shape[1], 1)
+        chunk = max(1, max_elements // max(per_row, 1))
+        if len(X_synth) > chunk:
+            return np.concatenate(
+                [
+                    _TabEBMBackend._energy_gradient(
+                        X_synth[i : i + chunk], X_train, X_real
+                    )
+                    for i in range(0, len(X_synth), chunk)
+                ]
+            )
+        return _TabEBMBackend._energy_gradient(X_synth, X_train, X_real)
+
+    @staticmethod
+    def _energy_gradient(X_synth, X_train, X_real):
         eps = 1e-8
 
         # Gradient of nearest-neighbour distance
@@ -179,8 +194,12 @@ class TabEBMConfig:
 
 
 class TabEBMModel(Model):
+    ARTIFACT_STATE_FILES = ("tabebm_state.pkl",)
+
     def __init__(self, target_col: str = "target", config: TabEBMConfig | None = None):
         super().__init__()
+        self.check_dependencies()
+
         self.target_col = target_col
         self.config = config or TabEBMConfig()
 
@@ -191,8 +210,20 @@ class TabEBMModel(Model):
         self._x_train = None
         self._y_train = None
 
-    def train(self, output_dir: str, label_col=None, synthetic_dir=None, **kwargs):
-        x_train = pd.read_csv(f"{output_dir}/x_train.csv")
+    @classmethod
+    def get_required_dependencies(cls) -> list[str]:
+        return ["numpy", "pandas", "sklearn"]
+
+    def train(
+        self,
+        data_dir: str,
+        *args,
+        label_col=None,
+        synthetic_dir: str | None = None,
+        artifact_state_dir: str | None = None,
+        **kwargs,
+    ) -> TabEBMModel:
+        x_train = pd.read_csv(f"{data_dir}/x_train.csv")
         # Convert pandas StringDtype -> object so ordinal encoder handles them correctly
         str_cols = [
             c
@@ -202,7 +233,7 @@ class TabEBMModel(Model):
         ]
         if str_cols:
             x_train[str_cols] = x_train[str_cols].astype(object)
-        y_train_df = pd.read_csv(f"{output_dir}/y_train.csv")
+        y_train_df = pd.read_csv(f"{data_dir}/y_train.csv")
 
         if label_col is None:
             label_col = y_train_df.columns[0]
@@ -220,26 +251,30 @@ class TabEBMModel(Model):
 
         self.is_fitted = True
 
-        x_synth, y_synth = self.sample(len(x_train))
-
         if synthetic_dir is not None:
             os.makedirs(synthetic_dir, exist_ok=True)
 
-            pd.DataFrame(x_synth, columns=x_train.columns).to_csv(
-                os.path.join(synthetic_dir, "x_synth.csv"),
-                index=False,
+            df_s = self.sample(n_samples=len(x_train))
+            df_s[self.col_order_].to_csv(
+                os.path.join(synthetic_dir, "x_synth.csv"), index=False
+            )
+            df_s[[self.target_col]].to_csv(
+                os.path.join(synthetic_dir, "y_synth.csv"), index=False
             )
 
-            pd.DataFrame(y_synth, columns=[self.target_col]).to_csv(
-                os.path.join(synthetic_dir, "y_synth.csv"),
-                index=False,
-            )
-
+        self._maybe_save_artifact_state(artifact_state_dir)
         return self
 
-    def sample(self, n: int):
+    def sample(
+        self,
+        n_samples: int | None = None,
+        *args,
+        **kwargs,
+    ) -> pd.DataFrame:
         if not self.is_fitted or self.schema_ is None or self.col_order_ is None:
             raise RuntimeError("TabEBMModel not fitted. Call train() first.")
+
+        n = int(n_samples) if n_samples is not None else len(self._x_train)
 
         X_enc, _, _ = encode_df(self._x_train, self.schema_)
 
@@ -257,10 +292,7 @@ class TabEBMModel(Model):
 
         max_per_class = int(per_class.max()) if len(per_class) else 0
         if max_per_class == 0:
-            return (
-                pd.DataFrame(columns=self.col_order_),
-                pd.Series([], name=self.target_col),
-            )
+            return pd.DataFrame(columns=[*self.col_order_, self.target_col])
 
         generated = self._tabebm.generate(
             X=X_enc,
@@ -300,7 +332,46 @@ class TabEBMModel(Model):
             np.concatenate(ys) if ys else np.array([]), name=self.target_col
         )
 
-        return x_synth, y_synth
+        result = x_synth.copy()
+        result[self.target_col] = y_synth.to_numpy()
+        return result
 
-    def evaluate(self, *args, **kwargs):
-        return None
+    def evaluate(self, *args, **kwargs) -> float:
+        """
+        TabEBMModel has no meaningful standalone metric to offer.
+        Use the Katabatic evaluation pipeline for cross-model metrics instead.
+        """
+        if not self.is_fitted:
+            raise RuntimeError("Call train() before evaluate().")
+        raise NotImplementedError(
+            "TabEBMModel.evaluate() has no meaningful standalone metric to offer. "
+            "Use the Katabatic evaluation pipeline for cross-model metrics instead."
+        )
+
+    def _save_artifact_state(self, artifact_state_dir: str) -> None:
+        os.makedirs(artifact_state_dir, exist_ok=True)
+        state = {
+            "target_col": self.target_col,
+            "config": self.config,
+            "schema_": self.schema_,
+            "col_order_": self.col_order_,
+            "x_train": self._x_train,
+            "y_train": self._y_train,
+        }
+        state_path = os.path.join(artifact_state_dir, self.ARTIFACT_STATE_FILES[0])
+        with open(state_path, "wb") as f:
+            pickle.dump(state, f)
+
+    @classmethod
+    def load_from_ref(cls, store: ArtifactStore, ref: ModelRef) -> TabEBMModel:
+        state_path = cls._require_state_file(store, ref)
+        with open(state_path, "rb") as f:
+            state = pickle.load(f)  # nosec B301: loading our own saved model artifact
+
+        instance = cls(target_col=state["target_col"], config=state["config"])
+        instance.schema_ = state["schema_"]
+        instance.col_order_ = state["col_order_"]
+        instance._x_train = state["x_train"]
+        instance._y_train = state["y_train"]
+        instance.is_fitted = True
+        return instance

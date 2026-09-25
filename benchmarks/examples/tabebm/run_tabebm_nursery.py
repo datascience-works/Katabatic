@@ -17,11 +17,11 @@ from katabatic.models.tabebm.models import TabEBMConfig, TabEBMModel  # noqa: E4
 
 warnings.filterwarnings("ignore")
 config = RunConfig(
-    dataset_name="car",
+    dataset_name="nursery",
     model_name="tabebm",
-    categorical_cols=["0", "1", "2", "3", "4", "5"],
+    categorical_cols=["0", "1", "2", "3", "4", "5", "6", "7"],
     continuous_cols=[],
-    target_col_raw="6",
+    target_col_raw="8",
     constraints=None,
 )
 
