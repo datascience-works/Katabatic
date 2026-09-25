@@ -13,7 +13,6 @@ https://github.com/sebhaan/TabPFGen
 import logging
 import warnings
 from pathlib import Path
-from typing import Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -24,15 +23,15 @@ from tabpfn import TabPFNClassifier, TabPFNRegressor
 try:
     from katabatic.models.base_model import Model
 except ImportError:
+
     class Model:
         """Fallback base class when running outside the Katabatic package."""
+
         pass
 
 
 warnings.filterwarnings(
-    "ignore",
-    category=UserWarning,
-    module="sklearn.preprocessing._encoders"
+    "ignore", category=UserWarning, module="sklearn.preprocessing._encoders"
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -80,7 +79,7 @@ class TabPFGen:
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(random_state)
 
-    def _infer_device(self, device: Optional[str]) -> torch.device:
+    def _infer_device(self, device: str | None) -> torch.device:
         """
         Select the computation device.
 
@@ -150,9 +149,7 @@ class TabPFGen:
         noise = torch.randn_like(x_synth) * np.sqrt(2 * self.sgld_step_size)
 
         return (
-            x_synth
-            - self.sgld_step_size * grad
-            + self.sgld_noise_scale * noise
+            x_synth - self.sgld_step_size * grad + self.sgld_noise_scale * noise
         ).detach()
 
     def generate_classification(
@@ -161,7 +158,7 @@ class TabPFGen:
         y_train: np.ndarray,
         n_samples: int,
         balance_classes: bool = True,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Generate synthetic samples for classification datasets.
 
@@ -202,18 +199,12 @@ class TabPFGen:
 
                 x_init = (
                     x_train[sample_idx]
-                    + torch.randn(
-                        class_count,
-                        X_train.shape[1],
-                        device=self.device
-                    ) * 0.01
+                    + torch.randn(class_count, X_train.shape[1], device=self.device)
+                    * 0.01
                 )
 
                 y_init = torch.full(
-                    (class_count,),
-                    int(cls),
-                    device=self.device,
-                    dtype=torch.long
+                    (class_count,), int(cls), device=self.device, dtype=torch.long
                 )
 
                 x_synth_list.append(x_init)
@@ -223,19 +214,19 @@ class TabPFGen:
             y_synth = torch.cat(y_synth_list, dim=0)
 
         else:
-            x_synth = torch.randn(
-                n_samples,
-                X_train.shape[1],
-                device=self.device,
-                dtype=torch.float32
-            ) * 0.01
+            x_synth = (
+                torch.randn(
+                    n_samples, X_train.shape[1], device=self.device, dtype=torch.float32
+                )
+                * 0.01
+            )
 
             y_synth = torch.randint(
                 low=0,
                 high=len(classes),
                 size=(n_samples,),
                 device=self.device,
-                dtype=torch.long
+                dtype=torch.long,
             )
 
         for step in range(self.n_sgld_steps):
@@ -275,7 +266,7 @@ class TabPFGen:
         X_train: np.ndarray,
         y_train: np.ndarray,
         n_samples: int,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Generate synthetic samples for regression datasets.
 
@@ -296,10 +287,7 @@ class TabPFGen:
         y_placeholder = torch.zeros(len(X_scaled), device=self.device)
 
         x_synth = torch.randn(
-            n_samples,
-            X_train.shape[1],
-            device=self.device,
-            dtype=torch.float32
+            n_samples, X_train.shape[1], device=self.device, dtype=torch.float32
         )
 
         y_synth_placeholder = torch.zeros(n_samples, device=self.device)
@@ -351,7 +339,7 @@ class TabPFGenModel(Model):
         sgld_noise_scale: float = 0.01,
         balance_classes: bool = True,
         device: str = "auto",
-        y_col: Optional[str] = None,
+        y_col: str | None = None,
         random_state: int = 42,
     ):
         super().__init__()
@@ -443,7 +431,8 @@ class TabPFGenModel(Model):
             cat_cols = [c for c in categorical_cols if c in X_train_df.columns]
         else:
             cat_cols = [
-                c for c in X_train_df.columns
+                c
+                for c in X_train_df.columns
                 if not pd.api.types.is_numeric_dtype(X_train_df[c])
             ]
 
@@ -478,7 +467,11 @@ class TabPFGenModel(Model):
                 n_samples=len(y_train),
                 balance_classes=self.balance_classes,
             )
-            label_col = self.y_col or y_train_df.columns[0] if len(y_train_df.columns) > 0 else "class"
+            label_col = (
+                self.y_col or y_train_df.columns[0]
+                if len(y_train_df.columns) > 0
+                else "class"
+            )
 
         elif self.task == "regression":
             X_syn, y_syn = gen.generate_regression(
@@ -486,7 +479,11 @@ class TabPFGenModel(Model):
                 y_train=y_train,
                 n_samples=len(y_train),
             )
-            label_col = self.y_col or y_train_df.columns[0] if len(y_train_df.columns) > 0 else "target"
+            label_col = (
+                self.y_col or y_train_df.columns[0]
+                if len(y_train_df.columns) > 0
+                else "target"
+            )
 
         else:
             raise ValueError(

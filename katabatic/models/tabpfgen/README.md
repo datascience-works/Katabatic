@@ -16,9 +16,9 @@ TabPFGen is an energy-based generation approach that uses TabPFN as a guiding mo
 
 ### Research Paper
 
-**TabPFGen: Tabular Data Generation with TabPFN**  
-Junwei Ma, Apoorv Dankar, George Stein, Guangwei Yu, Anthony Caterini  
-Layer 6 AI, Toronto, Canada  
+**TabPFGen: Tabular Data Generation with TabPFN**
+Junwei Ma, Apoorv Dankar, George Stein, Guangwei Yu, Anthony Caterini
+Layer 6 AI, Toronto, Canada
 
 Paper link: https://arxiv.org/abs/2406.05216
 
@@ -282,10 +282,10 @@ TabPFGen relies on the TabPFN library, which requires a **one-time license accep
 
 ### Steps to Set Up:
 
-1. Visit: https://ux.priorlabs.ai  
-2. Create or log in to your account  
-3. Accept the license (Licenses tab)  
-4. Copy your API key  
+1. Visit: https://ux.priorlabs.ai
+2. Create or log in to your account
+3. Accept the license (Licenses tab)
+4. Copy your API key
 5. Set environment variable:
 
 ```python

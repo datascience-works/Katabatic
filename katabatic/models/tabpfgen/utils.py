@@ -7,13 +7,11 @@ Provides simple helpers for:
 - One-time TabPFN authentication (Windows-safe)
 """
 
-from typing import Tuple
 import pandas as pd
 
 
 def infer_target_col(
-    df: pd.DataFrame,
-    preferred=("class", "target", "label", "y")
+    df: pd.DataFrame, preferred=("class", "target", "label", "y")
 ) -> str:
     """
     Infer the target column from a DataFrame.
@@ -36,10 +34,7 @@ def infer_target_col(
     return df.columns[-1]
 
 
-def split_xy(
-    df: pd.DataFrame,
-    target_col: str
-) -> Tuple[pd.DataFrame, pd.Series]:
+def split_xy(df: pd.DataFrame, target_col: str) -> tuple[pd.DataFrame, pd.Series]:
     """
     Split a DataFrame into features (X) and target (y).
 
