@@ -177,6 +177,9 @@ jobs:
             fairtabdiffusion:
               - 'katabatic/models/fairtabdiffusion/**'
               - 'tests/test_integration_fairtabdiffusion.py'
+            tvaegan:
+              - 'katabatic/models/tvaegan/**'
+              - 'tests/test_integration_tvaegan.py'
 
       - name: Build Dynamic Matrix
         id: build-matrix
@@ -196,7 +199,8 @@ jobs:
             {"model": "realtabformer", "torch": true, "heavy": true},
             {"model": "smote", "torch": false},
             {"model": "synthpop", "torch": false, "r": true},
-            {"model": "tabsyn", "torch": true, "heavy": true}
+            {"model": "tabsyn", "torch": true, "heavy": true},
+            {"model": "tvaegan", "torch": true, "heavy": true}
           ]'
 
           # Always run the full matrix for main (release pushes/PRs) so

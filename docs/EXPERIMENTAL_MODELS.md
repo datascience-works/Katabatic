@@ -21,6 +21,7 @@ Katabatic ships multiple generative model implementations. Only a subset is **of
 | REaLTabFormer | `pip install katabatic[realtabformer]` | Yes (artifact pipeline integration test) |
 | KDE | `pip install katabatic[kde]` | Yes (artifact pipeline integration test) |
 | FairTabDiffusion | `pip install katabatic[fairtabdiffusion]` | Yes (artifact pipeline integration test) |
+| TVAE-GAN | `pip install katabatic[tvaegan]` | Yes (artifact pipeline integration test) |
 
 These models are listed in `ModelRegistry` with `supported: True`, and `tests/test_model_registry.py::test_supported_models_list` pins this exact set. Use the artifact pipeline documented in [GANBLR_FLOW.md](../GANBLR_FLOW.md) and the README quick start.
 
@@ -42,7 +43,6 @@ Experimental models live in `katabatic.experimental.models` and have no guarante
 | ------- | ------- | ------- | ------- |
 | CoDi | `katabatic.experimental.models.codi.CODI` | `codi` | |
 | MedGAN | `katabatic.experimental.models.medgan.MEDGAN` | `medgan` | |
-| TVAE-GAN | `katabatic.experimental.models.tvaegan.TVAEGANModel` | *(none)* | |
 | GMM | `katabatic.experimental.models.gmm.GMMModel` | *(none)* | Does not subclass `Model`: implements its own `fit`/`sample`, with no `train`/`evaluate` |
 | TabKDE (updated) | `katabatic.experimental.models.tabkde_updated.TabKDEModel` | *(none)* | Does not subclass `Model` |
 

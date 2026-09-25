@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import asdict
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pandas as pd
 import torch
@@ -16,8 +18,13 @@ from .utils import (
     Encoder,
     TabularPreprocessor,
     TVAEGANConfig,
+    build_networks,
     train_vaegan,
 )
+
+if TYPE_CHECKING:
+    from katabatic.artifacts.base import ArtifactStore
+    from katabatic.artifacts.refs import ModelRef
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +34,8 @@ class TVAEGANModel(Model):
     Katabatic wrapper for TVAE-GAN.
 
     """
+
+    ARTIFACT_STATE_FILES = ("tvaegan_state.pt",)
 
     def __init__(
         self,
@@ -57,6 +66,7 @@ class TVAEGANModel(Model):
         self.decoder_generator: DecoderGenerator | None = None
         self.discriminator: Discriminator | None = None
         self.y_col_name_: str | None = None
+        self.data_dim_: int | None = None
         self.is_fitted = False
 
     def train(
@@ -86,6 +96,7 @@ class TVAEGANModel(Model):
             df_train, force_categorical=[self.y_col_name_]
         )
         data = self.preprocessor.encode(df_train)
+        self.data_dim_ = data.shape[1]
 
         self.encoder, self.decoder_generator, self.discriminator = train_vaegan(
             data, self.config
@@ -100,7 +111,57 @@ class TVAEGANModel(Model):
         y_synth.to_csv(synthetic_dir / "y_synth.csv", index=False)
         df_synth.to_csv(synthetic_dir / "synthetic.csv", index=False)
 
+        self._maybe_save_artifact_state(kwargs.get("artifact_state_dir"))
         return self
+
+    def _save_artifact_state(self, artifact_state_dir: str) -> None:
+        """
+        Persist fitted state so load_from_ref() can rebuild the model.
+
+        Networks are stored as state_dicts and rebuilt through the same
+        build_networks() helper train_vaegan() uses, so the reloaded
+        architecture always matches the trained one.
+        """
+        state_dir = Path(artifact_state_dir)
+        state_dir.mkdir(parents=True, exist_ok=True)
+
+        payload = {
+            "config": asdict(self.config),
+            "data_dim": self.data_dim_,
+            "y_col_name": self.y_col_name_,
+            "preprocessor": self.preprocessor,
+            "encoder": self.encoder.state_dict(),
+            "decoder_generator": self.decoder_generator.state_dict(),
+            "discriminator": self.discriminator.state_dict(),
+        }
+        torch.save(payload, state_dir / self.ARTIFACT_STATE_FILES[0])
+
+    @classmethod
+    def load_from_ref(cls, store: ArtifactStore, ref: ModelRef) -> TVAEGANModel:
+        """Rehydrate a trained TVAE-GAN from a versioned artifact."""
+        state_path = cls._require_state_file(store, ref)
+
+        # weights_only defaults to True in torch >= 2.6, but the payload also
+        # carries the fitted preprocessor (sklearn encoder and scaler).
+        payload = torch.load(state_path, map_location="cpu", weights_only=False)  # nosec B614: our own artifact
+
+        instance = cls(**payload["config"])
+        instance.data_dim_ = payload["data_dim"]
+        instance.y_col_name_ = payload["y_col_name"]
+        instance.preprocessor = payload["preprocessor"]
+
+        encoder, decoder_generator, discriminator = build_networks(
+            instance.data_dim_, instance.config
+        )
+        encoder.load_state_dict(payload["encoder"])
+        decoder_generator.load_state_dict(payload["decoder_generator"])
+        discriminator.load_state_dict(payload["discriminator"])
+
+        instance.encoder = encoder.eval()
+        instance.decoder_generator = decoder_generator.eval()
+        instance.discriminator = discriminator.eval()
+        instance.is_fitted = True
+        return instance
 
     def sample(self, n: int, seed: int | None = None, **kwargs) -> pd.DataFrame:
         if not self.is_fitted:

@@ -269,6 +269,25 @@ def _set_seed(seed: int) -> None:
     torch.manual_seed(seed)
 
 
+def build_networks(
+    data_dim: int, cfg: TVAEGANConfig
+) -> tuple[Encoder, DecoderGenerator, Discriminator]:
+    """
+    Construct the three TVAE-GAN networks for a given encoded data width.
+
+    Shared by train_vaegan() and TVAEGANModel.load_from_ref() so the
+    architecture a model is trained with and the one it is reloaded into
+    cannot drift apart.
+    """
+    encoder = Encoder(data_dim, cfg.hidden_dims, cfg.latent_dim)
+    decoder_generator = DecoderGenerator(
+        cfg.latent_dim, list(reversed(cfg.hidden_dims)), data_dim
+    )
+    disc_hidden = cfg.discriminator_hidden_dims or cfg.hidden_dims
+    discriminator = Discriminator(data_dim, disc_hidden)
+    return encoder, decoder_generator, discriminator
+
+
 def train_vaegan(
     data: np.ndarray, cfg: TVAEGANConfig
 ) -> tuple[Encoder, DecoderGenerator, Discriminator]:
@@ -288,12 +307,10 @@ def train_vaegan(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     data_dim = data.shape[1]
 
-    encoder = Encoder(data_dim, cfg.hidden_dims, cfg.latent_dim).to(device)
-    decoder_generator = DecoderGenerator(
-        cfg.latent_dim, list(reversed(cfg.hidden_dims)), data_dim
-    ).to(device)
-    disc_hidden = cfg.discriminator_hidden_dims or cfg.hidden_dims
-    discriminator = Discriminator(data_dim, disc_hidden).to(device)
+    encoder, decoder_generator, discriminator = build_networks(data_dim, cfg)
+    encoder = encoder.to(device)
+    decoder_generator = decoder_generator.to(device)
+    discriminator = discriminator.to(device)
     # Paper: single RMSProp learning rate for all networks (Section 4)
     enc_opt = torch.optim.RMSprop(encoder.parameters(), lr=cfg.lr)
     dec_opt = torch.optim.RMSprop(decoder_generator.parameters(), lr=cfg.lr)

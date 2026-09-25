@@ -46,7 +46,7 @@ All three networks train each batch, but each learns only from the loss terms th
 Runs for a fixed number of epochs (default 50). No early stopping yet, training length was found to affect result quality during testing (see Known Issues).
 
 ## Hyperparameters
-Found in `katabatic/experimental/models/tvaegan/models.py` (`TVAEGANModel.__init__`).
+Found in `katabatic/models/tvaegan/models.py` (`TVAEGANModel.__init__`).
 
 | Parameter | Default | Notes |
 |---|---|---|
@@ -108,7 +108,7 @@ Benchmark scripts for each dataset:
 - Car: [benchmarks/examples/tvaegan/run_tvaegan_car.py](../../../../benchmarks/examples/tvaegan)
 
 ```python
-from katabatic.experimental.models.tvaegan.models import TVAEGANModel
+from katabatic.models.tvaegan.models import TVAEGANModel
 
 model = TVAEGANModel()
 
