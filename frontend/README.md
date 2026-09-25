@@ -8,7 +8,7 @@ the main dashboard.
 From the repository root, install the workspace dependencies once:
 
 ```bash
-npm --prefix frontend/results-dashboard install
+npm --prefix frontend/main-dashboard install
 ```
 
 Start the workspace through the main dashboard:
