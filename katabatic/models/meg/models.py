@@ -5,15 +5,17 @@ Based on "MEG: Masked Ensemble Tabular Data Generator"
 by Zhang et al.
 """
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from pathlib import Path
 
 from katabatic.models.base_model import Model as BaseModel
-from .utils import infer_schema, encode_df, decode_df, make_spans
+
+from .utils import decode_df, encode_df, infer_schema, make_spans
 
 
 class MaskedNet(nn.Module):
@@ -133,7 +135,14 @@ class MEGModel(BaseModel):
         synth_full[self.y_col] = y_syn
         return synth_full
 
-    def train(self, output_dir, *args, categorical_cols: list = None, continuous_cols: list = None, **kwargs):
+    def train(
+        self,
+        output_dir,
+        *args,
+        categorical_cols: list = None,
+        continuous_cols: list = None,
+        **kwargs,
+    ):
         """
         Train MEG using Katabatic-formatted training data.
 
@@ -183,7 +192,11 @@ class MEGModel(BaseModel):
             for _ in range(self.ensemble_size):
                 m = MaskedNet(d, self.hidden).to(self.device)
                 models.append(m)
-                opts.append(optim.AdamW(m.parameters(), lr=self.lr, weight_decay=self.weight_decay))
+                opts.append(
+                    optim.AdamW(
+                        m.parameters(), lr=self.lr, weight_decay=self.weight_decay
+                    )
+                )
 
             for epoch in range(self.epochs):
                 perm = torch.randperm(n, device=self.device)
@@ -207,7 +220,9 @@ class MEGModel(BaseModel):
                         opt.step()
 
                 if (epoch + 1) % 20 == 0:
-                    print(f"[MEG][class={c}] Epoch {epoch+1}/{self.epochs} | Loss: {loss.item():.4f}")
+                    print(
+                        f"[MEG][class={c}] Epoch {epoch + 1}/{self.epochs} | Loss: {loss.item():.4f}"
+                    )
 
             self.models_by_class[c] = models
 
@@ -218,7 +233,7 @@ class MEGModel(BaseModel):
         """Create a binary mask over encoded feature spans."""
         mask = torch.zeros((batch_size, d), dtype=torch.float32, device=self.device)
 
-        for (s, e) in self.spans:
+        for s, e in self.spans:
             if np.random.rand() < self.mask_span_prob:
                 mask[:, s:e] = 1.0
 
@@ -246,7 +261,9 @@ class MEGModel(BaseModel):
 
         return X2
 
-    def _generate_conditional_df(self, X_train_df: pd.DataFrame, y_train: np.ndarray, n_samples: int):
+    def _generate_conditional_df(
+        self, X_train_df: pd.DataFrame, y_train: np.ndarray, n_samples: int
+    ):
         """Generate a synthetic dataframe while preserving class distribution."""
         classes, counts = np.unique(y_train, return_counts=True)
 
@@ -258,7 +275,10 @@ class MEGModel(BaseModel):
                 biggest = max(target, key=target.get)
                 target[biggest] += n_samples - total
         else:
-            target = {c: int(round(n_samples * (cnt / len(y_train)))) for c, cnt in zip(classes, counts)}
+            target = {
+                c: int(round(n_samples * (cnt / len(y_train))))
+                for c, cnt in zip(classes, counts)
+            }
             total = sum(target.values())
 
             if total != n_samples:
