@@ -2,8 +2,6 @@
 Utility classes for CTAB-GAN+ preprocessing and data transformation.
 """
 
-from typing import Optional
-
 import numpy as np
 import pandas as pd
 import torch
@@ -24,7 +22,7 @@ class DataPrep:
         non_categorical: list,
         integer: list,
         type: dict,
-        test_ratio: Optional[float],
+        test_ratio: float | None,
     ):
         self.categorical_columns = categorical
         self.log_columns = log
@@ -87,9 +85,7 @@ class DataPrep:
             if "empty" not in self.df[col].values:
                 continue
 
-            self.df[col] = self.df[col].apply(
-                lambda x: -9999999 if x == "empty" else x
-            )
+            self.df[col] = self.df[col].apply(lambda x: -9999999 if x == "empty" else x)
 
             if col in self.log_columns:
                 self.mixed_columns[col] = [-9999999]
@@ -120,9 +116,7 @@ class DataPrep:
                     )
                 else:
                     self.df[log_column] = self.df[log_column].apply(
-                        lambda x: np.log(x - lower + eps)
-                        if x != -9999999
-                        else -9999999
+                        lambda x: np.log(x - lower + eps) if x != -9999999 else -9999999
                     )
 
         for column_index, column in enumerate(self.df.columns):
@@ -133,10 +127,12 @@ class DataPrep:
                 label_encoder.fit(self.df[column])
                 self.df[column] = label_encoder.transform(self.df[column])
 
-                self.label_encoder_list.append({
-                    "column": column,
-                    "label_encoder": label_encoder,
-                })
+                self.label_encoder_list.append(
+                    {
+                        "column": column,
+                        "label_encoder": label_encoder,
+                    }
+                )
 
                 self.column_types["categorical"].append(column_index)
 
@@ -174,9 +170,11 @@ class DataPrep:
                     df_sample[column] = df_sample[column].apply(lambda x: np.exp(x))
                 elif lower == 0:
                     df_sample[column] = df_sample[column].apply(
-                        lambda x: np.ceil(np.exp(x) - eps)
-                        if (np.exp(x) - eps) < 0
-                        else (np.exp(x) - eps)
+                        lambda x: (
+                            np.ceil(np.exp(x) - eps)
+                            if (np.exp(x) - eps) < 0
+                            else (np.exp(x) - eps)
+                        )
                     )
                 else:
                     df_sample[column] = df_sample[column].apply(
@@ -226,41 +224,49 @@ class DataTransformer:
 
             if index in self.categorical_columns:
                 if index in self.non_categorical_columns:
-                    meta.append({
-                        "name": index,
-                        "type": "continuous",
-                        "min": column.min(),
-                        "max": column.max(),
-                    })
+                    meta.append(
+                        {
+                            "name": index,
+                            "type": "continuous",
+                            "min": column.min(),
+                            "max": column.max(),
+                        }
+                    )
                 else:
                     mapper = column.value_counts().index.tolist()
 
                     if len(mapper) == 0:
                         mapper = [0]
 
-                    meta.append({
-                        "name": index,
-                        "type": "categorical",
-                        "size": len(mapper),
-                        "i2s": mapper,
-                    })
+                    meta.append(
+                        {
+                            "name": index,
+                            "type": "categorical",
+                            "size": len(mapper),
+                            "i2s": mapper,
+                        }
+                    )
 
             elif index in self.mixed_columns:
-                meta.append({
-                    "name": index,
-                    "type": "mixed",
-                    "min": column.min(),
-                    "max": column.max(),
-                    "modal": self.mixed_columns[index],
-                })
+                meta.append(
+                    {
+                        "name": index,
+                        "type": "mixed",
+                        "min": column.min(),
+                        "max": column.max(),
+                        "modal": self.mixed_columns[index],
+                    }
+                )
 
             else:
-                meta.append({
-                    "name": index,
-                    "type": "continuous",
-                    "min": column.min(),
-                    "max": column.max(),
-                })
+                meta.append(
+                    {
+                        "name": index,
+                        "type": "continuous",
+                        "min": column.min(),
+                        "max": column.max(),
+                    }
+                )
 
         return meta
 
@@ -341,7 +347,9 @@ class DataTransformer:
 
                 gm1.fit(data[:, column_id].reshape(-1, 1))
 
-                filter_arr = [value not in info["modal"] for value in data[:, column_id]]
+                filter_arr = [
+                    value not in info["modal"] for value in data[:, column_id]
+                ]
                 self.filter_arr.append(filter_arr)
 
                 gm2.fit(data[:, column_id][filter_arr].reshape(-1, 1))
@@ -400,15 +408,18 @@ class DataTransformer:
                     features = features[:, self.components[column_id]]
                     probs = probs[:, self.components[column_id]]
 
-                    selected = np.array([
-                        np.random.choice(len(prob), p=(prob + 1e-6) / np.sum(prob + 1e-6))
-                        for prob in probs
-                    ])
+                    selected = np.array(
+                        [
+                            np.random.choice(
+                                len(prob), p=(prob + 1e-6) / np.sum(prob + 1e-6)
+                            )
+                            for prob in probs
+                        ]
+                    )
 
-                    features = features[
-                        np.arange(len(features)),
-                        selected
-                    ].reshape(-1, 1)
+                    features = features[np.arange(len(features)), selected].reshape(
+                        -1, 1
+                    )
 
                     features = np.clip(features, -0.99, 0.99)
 
@@ -443,15 +454,16 @@ class DataTransformer:
                 features = features[:, self.components[column_id]]
                 probs = probs[:, self.components[column_id]]
 
-                selected = np.array([
-                    np.random.choice(len(prob), p=(prob + 1e-6) / np.sum(prob + 1e-6))
-                    for prob in probs
-                ])
+                selected = np.array(
+                    [
+                        np.random.choice(
+                            len(prob), p=(prob + 1e-6) / np.sum(prob + 1e-6)
+                        )
+                        for prob in probs
+                    ]
+                )
 
-                features = features[
-                    np.arange(len(features)),
-                    selected
-                ].reshape(-1, 1)
+                features = features[np.arange(len(features)), selected].reshape(-1, 1)
 
                 features = np.clip(features, -0.99, 0.99)
 
@@ -473,7 +485,9 @@ class DataTransformer:
                         final[row_index, 1 + onehot.shape[1] + modal_idx] = 1
                     else:
                         final[row_index, 0] = features[filtered_index]
-                        final[row_index, 1:1 + onehot.shape[1]] = onehot[filtered_index]
+                        final[row_index, 1 : 1 + onehot.shape[1]] = onehot[
+                            filtered_index
+                        ]
                         filtered_index += 1
 
                 column_sum = final[:, 1:].sum(axis=0)
@@ -510,8 +524,7 @@ class DataTransformer:
                 if column_id not in self.general_columns:
                     value = data[:, start]
                     mode = data[
-                        :,
-                        start + 1:start + 1 + np.sum(self.components[column_id])
+                        :, start + 1 : start + 1 + np.sum(self.components[column_id])
                     ]
 
                     order = self.ordering[column_id]
@@ -540,8 +553,10 @@ class DataTransformer:
                 n_modal = len(info["modal"])
 
                 value = data[:, start]
-                mode_part = data[:, start + 1:start + 1 + n_components]
-                modal_part = data[:, start + 1 + n_components:start + 1 + n_components + n_modal]
+                mode_part = data[:, start + 1 : start + 1 + n_components]
+                modal_part = data[
+                    :, start + 1 + n_components : start + 1 + n_components + n_modal
+                ]
 
                 order = self.ordering[column_id]
                 mode_part = mode_part[:, np.argsort(order)]
@@ -556,7 +571,9 @@ class DataTransformer:
                 for row_idx in range(len(data)):
                     mode_idx = selected[row_idx]
                     if mode_idx >= n_components:
-                        data_t[row_idx, column_id] = info["modal"][mode_idx - n_components]
+                        data_t[row_idx, column_id] = info["modal"][
+                            mode_idx - n_components
+                        ]
                     else:
                         data_t[row_idx, column_id] = (
                             value[row_idx] * 4 * stds[mode_idx] + means[mode_idx]
@@ -565,7 +582,7 @@ class DataTransformer:
                 start += 1 + n_components + n_modal
 
             elif info["type"] == "categorical":
-                column = data[:, start:start + info["size"]]
+                column = data[:, start : start + info["size"]]
                 index = np.argmax(column, axis=1)
 
                 data_t[:, column_id] = [info["i2s"][i] for i in index]

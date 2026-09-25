@@ -5,16 +5,22 @@ Based on "CTAB-GAN+: Enhancing Tabular Data Synthesis"
 by Zhao et al. (2022) - https://arxiv.org/abs/2204.00401
 """
 
-import os
 import logging
-from typing import Dict, List, Optional
+import os
 
 import numpy as np
 import pandas as pd
 import torch
 from torch.nn import (
-    Module, Sequential, Linear, Conv2d, ConvTranspose2d,
-    LeakyReLU, ReLU, Dropout, Sigmoid
+    Conv2d,
+    ConvTranspose2d,
+    Dropout,
+    LeakyReLU,
+    Linear,
+    Module,
+    ReLU,
+    Sequential,
+    Sigmoid,
 )
 from torch.nn import functional as F
 from torch.optim import Adam
@@ -58,16 +64,12 @@ class Classifier(Module):
         target_dim = self.str_end[1] - self.str_end[0]
 
         if target_dim == 1:
-            label = input[:, self.str_end[0]:self.str_end[1]]
+            label = input[:, self.str_end[0] : self.str_end[1]]
         else:
-            label = torch.argmax(
-                input[:, self.str_end[0]:self.str_end[1]],
-                axis=-1
-            )
+            label = torch.argmax(input[:, self.str_end[0] : self.str_end[1]], axis=-1)
 
         features = torch.cat(
-            (input[:, :self.str_end[0]], input[:, self.str_end[1]:]),
-            dim=1
+            (input[:, : self.str_end[0]], input[:, self.str_end[1] :]), dim=1
         )
 
         if target_dim in [1, 2]:
@@ -194,7 +196,7 @@ class CTABGANSynthesizer:
             self.classifier = Classifier(
                 data_dim,
                 self.class_dim,
-                get_st_ed(target_index, self.transformer.output_info)
+                get_st_ed(target_index, self.transformer.output_info),
             ).to(self.device)
 
         self.opt_g = Adam(
@@ -225,7 +227,7 @@ class CTABGANSynthesizer:
             permutation = torch.randperm(len(data), device=self.device)
 
             for start in range(0, len(data), self.batch_size):
-                real = data[permutation[start:start + self.batch_size]]
+                real = data[permutation[start : start + self.batch_size]]
 
                 if len(real) == 0:
                     continue
@@ -252,7 +254,9 @@ class CTABGANSynthesizer:
                 loss_d = torch.mean(d_fake) - torch.mean(d_real)
 
                 gp_alpha = torch.rand(real_img.size(0), 1, 1, 1, device=self.device)
-                interpolated = (gp_alpha * real_img + (1 - gp_alpha) * fake_img).requires_grad_(True)
+                interpolated = (
+                    gp_alpha * real_img + (1 - gp_alpha) * fake_img
+                ).requires_grad_(True)
                 d_interp = self.discriminator(interpolated)
                 gradients = torch.autograd.grad(
                     outputs=d_interp,
@@ -269,20 +273,19 @@ class CTABGANSynthesizer:
                     fake_pred, fake_label = self.classifier(fake.detach())
                     target_dim = self.classifier.str_end[1] - self.classifier.str_end[0]
                     if target_dim == 1:
-                        loss_c = (
-                            F.binary_cross_entropy_with_logits(real_pred, real_label.squeeze().float()) +
-                            F.binary_cross_entropy_with_logits(fake_pred, fake_label.squeeze().float())
+                        loss_c = F.binary_cross_entropy_with_logits(
+                            real_pred, real_label.squeeze().float()
+                        ) + F.binary_cross_entropy_with_logits(
+                            fake_pred, fake_label.squeeze().float()
                         )
                     elif target_dim == 2:
-                        loss_c = (
-                            F.binary_cross_entropy(real_pred, real_label.float()) +
-                            F.binary_cross_entropy(fake_pred, fake_label.float())
-                        )
+                        loss_c = F.binary_cross_entropy(
+                            real_pred, real_label.float()
+                        ) + F.binary_cross_entropy(fake_pred, fake_label.float())
                     else:
-                        loss_c = (
-                            F.cross_entropy(real_pred, real_label.long()) +
-                            F.cross_entropy(fake_pred, fake_label.long())
-                        )
+                        loss_c = F.cross_entropy(
+                            real_pred, real_label.long()
+                        ) + F.cross_entropy(fake_pred, fake_label.long())
                     loss_d = loss_d + loss_c
 
                 self.opt_d.zero_grad()
@@ -302,7 +305,9 @@ class CTABGANSynthesizer:
                             fake_pred_g, fake_label_g.squeeze().float()
                         )
                     elif target_dim == 2:
-                        loss_cg = F.binary_cross_entropy(fake_pred_g, fake_label_g.float())
+                        loss_cg = F.binary_cross_entropy(
+                            fake_pred_g, fake_label_g.float()
+                        )
                     else:
                         loss_cg = F.cross_entropy(fake_pred_g, fake_label_g.long())
                     loss_g = loss_g + loss_cg
@@ -311,11 +316,7 @@ class CTABGANSynthesizer:
                 loss_g.backward()
                 self.opt_g.step()
 
-            logger.info(
-                "CTAB-GAN+ epoch %s/%s completed",
-                epoch + 1,
-                self.epochs
-            )
+            logger.info("CTAB-GAN+ epoch %s/%s completed", epoch + 1, self.epochs)
 
     def sample(self, n):
         """Generate synthetic records from the trained generator."""
@@ -401,7 +402,7 @@ class CTABGANSynthesizer:
 class CTABGANPlus(Model):
     """Katabatic-compatible CTAB-GAN+ model wrapper."""
 
-    def __init__(self, config: Optional[Dict] = None):
+    def __init__(self, config: dict | None = None):
         super().__init__()
 
         self.config = config or {}
@@ -420,9 +421,9 @@ class CTABGANPlus(Model):
     def train(
         self,
         dataset_dir: str,
-        synthetic_dir: Optional[str] = None,
-        categorical_cols: Optional[List[str]] = None,
-        continuous_cols: Optional[List[str]] = None,
+        synthetic_dir: str | None = None,
+        categorical_cols: list[str] | None = None,
+        continuous_cols: list[str] | None = None,
         **kwargs,
     ):
         """Train CTAB-GAN+ on data in dataset_dir."""

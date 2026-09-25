@@ -13,8 +13,8 @@ Within Katabatic, CTAB-GAN+ is used to generate synthetic datasets in the standa
 ---
 
 ## Research Paper
-Zhao, Z., Kunar, A., Birke, R. and Chen, L. Y. (2022)  
-CTAB-GAN+: Enhancing Tabular Data Synthesis  
+Zhao, Z., Kunar, A., Birke, R. and Chen, L. Y. (2022)
+CTAB-GAN+: Enhancing Tabular Data Synthesis
 https://arxiv.org/abs/2204.00401
 
 ---
@@ -86,11 +86,11 @@ synthetic/<dataset_name>/ctabgan_plus/
 
 ## Epoch Configuration
 
-CAR → 300 epochs  
-MAGIC → 200 epochs  
-NURSERY → 200 epochs  
-ADULT → 150 epochs  
-SHUTTLE → 150 epochs  
+CAR → 300 epochs
+MAGIC → 200 epochs
+NURSERY → 200 epochs
+ADULT → 150 epochs
+SHUTTLE → 150 epochs
 
 These values are selected based on dataset size and computational cost while maintaining convergence stability.
 
