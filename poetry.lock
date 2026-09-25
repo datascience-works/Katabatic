@@ -7883,9 +7883,10 @@ realtabformer = ["realtabformer", "torch", "transformers"]
 smote = ["imbalanced-learn"]
 synthpop = []
 tabddpm = ["category-encoders", "rtdl_revisiting_models", "torch"]
+tabebm = []
 tabsyn = ["category-encoders", "tomli", "tomli-w", "torch", "tqdm"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.12"
-content-hash = "5d8834f508135e0f17dabce9cd295cd1f899ccdbca62e5d69e99f8cd900382a7"
+content-hash = "8c786fe2ae627ecae1754f2616994fe4f4727e727a2361a93166132777d37309"

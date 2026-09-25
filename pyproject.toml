@@ -66,6 +66,7 @@ pategan = [
 ]
 privtree = []
 smote = ["imbalanced-learn==0.14.2"]
+tabebm = []
 synthpop = []
 mst = [
     "smartnoise-synth==1.0.5",
@@ -126,24 +127,25 @@ pre-commit = "^4.6.2"
 
 [tool.pytest.ini_options]
 markers = [
-    "integration: full model stack (slow)",
+    "arf: requires arf extra",
+    "artifacts_remote: requires fsspec (memory:// backend, no cloud creds needed)",
+    "ctgan: requires ctgan extra",
+    "fairtabdiffusion: requires fairtabdiffusion extra",
+    "forked: run test in an isolated forked process (pytest-forked)",
     "ganblr: requires ganblr extra",
     "great: requires great extra",
-    "ctgan: requires ctgan extra",
-    "pategan: requires pategan extra",
-    "kde: core deps only, no extra required",
-    "tabsyn: requires tabsyn extra",
-    "smote: requires smote extra",
-    "mst: requires mst extra",
-    "privtree: requires privtree extra",
-    "arf: requires arf extra",
-    "synthpop: requires synthpop extra (and R + CRAN synthpop packages)",
-    "naivebayes: requires naivebayes extra",
     "histogram: requires histogram extra",
-    "fairtabdiffusion: requires fairtabdiffusion extra",
+    "integration: full model stack (slow)",
+    "kde: core deps only, no extra required",
+    "mst: requires mst extra",
+    "naivebayes: requires naivebayes extra",
+    "pategan: requires pategan extra",
+    "privtree: requires privtree extra",
     "realtabformer: requires realtabformer extra",
-    "forked: run test in an isolated forked process (pytest-forked)",
-    "artifacts_remote: requires fsspec (memory:// backend, no cloud creds needed)",
+    "smote: requires smote extra",
+    "synthpop: requires synthpop extra (and R + CRAN synthpop packages)",
+    "tabebm: requires tabebm extra",
+    "tabsyn: requires tabsyn extra",
 ]
 
 [tool.ruff]

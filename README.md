@@ -70,6 +70,7 @@ Or install directly with Poetry / pip — useful for installing several extras a
 | SynthPop (supported, requires R) | `pip install katabatic[synthpop]` or `poetry install -E synthpop` — also needs R + CRAN `synthpop` packages, see [katabatic/models/synthpop/README.md](katabatic/models/synthpop/README.md) |
 | NaiveBayes (supported) | `pip install katabatic[naivebayes]` or `poetry install -E naivebayes` |
 | Histogram (supported) | `pip install katabatic[histogram]` or `poetry install -E histogram` |
+| TabEBM (supported) | `pip install katabatic[tabebm]` or `poetry install -E tabebm` |
 | REaLTabFormer (supported) | `pip install katabatic[realtabformer]` or `poetry install -E realtabformer` |
 | KDE (supported) | `pip install katabatic[kde]` or `poetry install -E kde` |
 | FairTabDiffusion (supported) | `pip install katabatic[fairtabdiffusion]` or `poetry install -E fairtabdiffusion` |

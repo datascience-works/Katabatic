@@ -143,6 +143,12 @@ class ModelRegistry:
             "class": "FairTabDiffusion",
             "dependencies": ["torch", "sklearn"],
             "extra": "fairtabdiffusion",
+        },
+        "tabebm": {
+            "module": "katabatic.models.tabebm.models",
+            "class": "TabEBMModel",
+            "dependencies": ["numpy", "pandas", "sklearn"],
+            "extra": "tabebm",
             "supported": True,
         },
         "smote": {
