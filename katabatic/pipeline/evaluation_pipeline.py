@@ -1,4 +1,5 @@
 import traceback
+import warnings
 
 import pandas as pd
 
@@ -168,12 +169,15 @@ class SyntheticEvaluationPipeline:
                 )
                 dimension_results[dim] = evaluator.evaluate()
             except Exception as e:
-                print(f"  [ERROR] {dim} evaluation failed: {e}")
+                # Continues evaluation on other dimensions and does not score errors.
                 traceback.print_exc()
-                dimension_results[dim] = {
-                    "error": str(e),
-                    f"{dim}_score": 0.0,
-                }
+                warnings.warn(
+                    f"{dim} evaluation failed and is excluded from the composite "
+                    f"score (see report.errors): {e}",
+                    RuntimeWarning,
+                    stacklevel=2,
+                )
+                dimension_results[dim] = {"error": str(e)}
 
         report = EvaluationReport(dimension_results, weights=self.weights)
         report.print_summary()

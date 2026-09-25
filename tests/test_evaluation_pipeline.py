@@ -159,9 +159,29 @@ def test_validate_inputs_requires_model_for_stability():
         )
 
 
-def test_dimension_exception_is_caught_and_degrades_gracefully(monkeypatch):
+def test_failed_dimension_is_reported_not_scored(monkeypatch):
     real = _frame(seed=7)
     synth = _frame(seed=8)
+    pipeline = SyntheticEvaluationPipeline(
+        dimensions=["fidelity", "diversity"],
+        categorical_cols=["cat"],
+        continuous_cols=["num"],
+    )
+
+    def _boom(self):
+        raise RuntimeError("synthetic failure")
+
+    monkeypatch.setattr(FidelityEvaluation, "evaluate", _boom)
+    with pytest.warns(RuntimeWarning, match="fidelity evaluation failed"):
+        report = pipeline.run(real, synth, target_col="label")
+
+    assert report.errors == {"fidelity": "synthetic failure"}
+    assert "fidelity" not in report.dimension_scores
+    # The composite covers only the dimension that ran.
+    assert report.composite_score == report.dimension_scores["diversity"]
+
+
+def test_composite_is_nan_when_every_dimension_fails(monkeypatch):
     pipeline = SyntheticEvaluationPipeline(
         dimensions=["fidelity"], categorical_cols=["cat"], continuous_cols=["num"]
     )
@@ -170,11 +190,10 @@ def test_dimension_exception_is_caught_and_degrades_gracefully(monkeypatch):
         raise RuntimeError("synthetic failure")
 
     monkeypatch.setattr(FidelityEvaluation, "evaluate", _boom)
-    report = pipeline.run(real, synth, target_col="label")
+    with pytest.warns(RuntimeWarning):
+        report = pipeline.run(_frame(seed=7), _frame(seed=8), target_col="label")
 
-    assert report.dimension_results["fidelity"]["error"] == "synthetic failure"
-    assert report.dimension_results["fidelity"]["fidelity_score"] == 0.0
-    assert report.composite_score == 0.0
+    assert np.isnan(report.composite_score)
 
 
 def test_build_evaluator_utility_requires_target_col_directly():

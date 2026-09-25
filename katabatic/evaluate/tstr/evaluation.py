@@ -10,7 +10,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 from sklearn.neural_network import MLPClassifier
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler
 
 try:
     from xgboost import XGBClassifier
@@ -133,10 +133,9 @@ class TSTREvaluation(Evaluation):
 
         x_train, x_test = self._encode_features(self.x_train, self.x_test)
 
-        # Calculate class imbalance ratio for XGBoost
-        num_neg = np.sum(self.y_train == 0)
-        num_pos = np.sum(self.y_train == 1)
-        scale_pos_weight = num_neg / num_pos if num_pos > 0 else 1.0
+        # Encode labels.
+        label_encoder = LabelEncoder().fit(self.y_train)
+        y_train_encoded = label_encoder.transform(self.y_train)
 
         models: dict[str, Any] = {
             "LR": LogisticRegression(),
@@ -144,7 +143,11 @@ class TSTREvaluation(Evaluation):
             "RF": RandomForestClassifier(),
         }
         if XGBClassifier is not None:
-            models["XGBoost"] = XGBClassifier(scale_pos_weight=scale_pos_weight)
+            xgb_params = {}
+            if len(label_encoder.classes_) == 2:
+                num_neg, num_pos = np.bincount(y_train_encoded)
+                xgb_params["scale_pos_weight"] = num_neg / num_pos
+            models["XGBoost"] = XGBClassifier(**xgb_params)
         else:
             warnings.warn(
                 "xgboost is not installed; TSTR will skip the XGBoost classifier. "
@@ -159,6 +162,10 @@ class TSTREvaluation(Evaluation):
                 model.fit(x_train_scaled, self.y_train)
                 y_pred = model.predict(x_test_scaled)
                 y_prob = model.predict_proba(x_test_scaled)[:, 1]
+            elif name == "XGBoost":
+                model.fit(x_train, y_train_encoded)
+                y_pred = label_encoder.inverse_transform(model.predict(x_test))
+                y_prob = model.predict_proba(x_test)[:, 1]
             else:
                 model.fit(x_train, self.y_train)
                 y_pred = model.predict(x_test)
