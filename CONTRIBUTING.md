@@ -49,7 +49,7 @@ covers the design principles relevant to contributors.
 
 ## Codebase Structure
 
-See the [Project Structure](README.md#project-structure) section of the README for the current top-level layout — it's kept accurate there rather than duplicated here. In short: `katabatic/models/<model_name>/` holds one implementation per model (no per-model `pyproject.toml`/`poetry.lock` — dependencies live in the root `pyproject.toml` as extras, see [MODEL_CONTRIBUTIONS.md](MODEL_CONTRIBUTIONS.md)), `katabatic/pipeline/` and `katabatic/evaluate/` hold pipelines and evaluations, and `katabatic/artifacts/` holds the versioned run-output store.
+See the [Project Structure](README.md#project-structure) section of the README for the current top-level layout — it's kept accurate there rather than duplicated here. In short: `katabatic/models/<model_name>/` holds one supported model each and `katabatic/experimental/models/<model_name>/` the experimental ones (no per-model `pyproject.toml`/`poetry.lock` — dependencies live in the root `pyproject.toml` as extras, see [MODEL_CONTRIBUTIONS.md](MODEL_CONTRIBUTIONS.md)), `katabatic/pipeline/` and `katabatic/evaluate/` hold pipelines and evaluations, and `katabatic/artifacts/` holds the versioned run-output store.
 
 ## Development Workflow
 
@@ -79,8 +79,9 @@ poetry env activate
    # for why the full suite must not be run in a single process)
    make test
 
-   # Exercise the change interactively
-   jupyter lab example.ipynb
+   # Exercise the change interactively (also run by tests/test_examples.py)
+   pip install jupyterlab
+   jupyter lab examples/quickstart.ipynb
    ```
 
 4. **Update Documentation**
@@ -316,6 +317,6 @@ y = pd.read_csv("y_train.csv").values.ravel()
 X = pd.read_csv("x_train.csv")
 ```
 
-For anything else: read the full stack trace, compare against `example.ipynb` or the
+For anything else: read the full stack trace, compare against the notebooks in `examples/` or the
 `tests/test_integration_*.py` files for a working reference, and isolate the issue with a
 minimal reproduction before opening an issue.

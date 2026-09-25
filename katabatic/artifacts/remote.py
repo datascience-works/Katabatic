@@ -82,6 +82,9 @@ def _locked(method):
 class FsspecArtifactStore(ArtifactStore):
     """Artifact store on any fsspec filesystem (S3, GCS, Azure, ...) via a local cache.
 
+    Experimental: not yet tested against real cloud storage, so the API may change in a
+    minor release.
+
     ``open_path()`` returns paths inside ``local_cache_dir``, as ``LocalArtifactStore``
     does, so code that reads and writes files directly keeps working. ``sync()``
     uploads files changed locally and ``pull()`` downloads files changed remotely;

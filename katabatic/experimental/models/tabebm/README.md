@@ -177,11 +177,11 @@ TrainTestSplitPipeline(model=TabEBMModel()).run(
 ```
 
 **Benchmark scripts:**
-- Adult: [`benchmarks/examples/tabebm/run_tabebm_adult.py`](benchmarks/examples/tabebm/run_tabebm_adult.py)
-- Car: [`benchmarks/examples/tabebm/run_tabebm_car.py`](benchmarks/examples/tabebm/run_tabebm_car.py)
-- Magic: [`benchmarks/examples/tabebm/run_tabebm_magic.py`](benchmarks/examples/tabebm/run_tabebm_magic.py)
-- Nursery: [`benchmarks/examples/tabebm/run_tabebm_nursery.py`](benchmarks/examples/tabebm/run_tabebm_nursery.py)
-- Shuttle: [`benchmarks/examples/tabebm/run_tabebm_shuttle.py`](benchmarks/examples/tabebm/run_tabebm_shuttle.py)
+- Adult: [`benchmarks/examples/tabebm/run_tabebm_adult.py`](../../../../benchmarks/examples/tabebm/run_tabebm_adult.py)
+- Car: [`benchmarks/examples/tabebm/run_tabebm_car.py`](../../../../benchmarks/examples/tabebm/run_tabebm_car.py)
+- Magic: [`benchmarks/examples/tabebm/run_tabebm_magic.py`](../../../../benchmarks/examples/tabebm/run_tabebm_magic.py)
+- Nursery: [`benchmarks/examples/tabebm/run_tabebm_nursery.py`](../../../../benchmarks/examples/tabebm/run_tabebm_nursery.py)
+- Shuttle: [`benchmarks/examples/tabebm/run_tabebm_shuttle.py`](../../../../benchmarks/examples/tabebm/run_tabebm_shuttle.py)
 
 ---
 
