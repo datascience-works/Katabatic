@@ -193,7 +193,7 @@ class Tabula:
             self.model,
             training_args,
             train_dataset=tabula_ds,
-            tokenizer=self.tokenizer,
+            processing_class=self.tokenizer,
             data_collator=TabulaDataCollator(self.tokenizer),
         )
 
