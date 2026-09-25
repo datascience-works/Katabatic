@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 ARG POETRY_INSTALL_ARGS="--only main"
 ARG MODEL_EXTRA=""
