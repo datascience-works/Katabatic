@@ -126,7 +126,7 @@ class GANBLR(Model):
         self.is_fitted = True
         return self
 
-    def evaluate(self, x, y, model="lr") -> float:
+    def evaluate_tstr(self, x, y, model="lr") -> float:
         """
         Perform a TSTR(Training on Synthetic data, Testing on Real data) evaluation.
 

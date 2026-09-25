@@ -46,7 +46,7 @@ Inside the `katabatic/models/` directory:
    from katabatic.models.base_model import Model
    ```
 
-   Implement the abstract interface (`train`, `evaluate`, `sample`). If the model should work with the artifact pipeline (`LocalArtifactStore` / `TrainTestSplitPipeline`), also declare a non-empty `ARTIFACT_STATE_FILES` tuple and override the paired persistence hooks so trained state can be saved and reloaded:
+   Implement the abstract interface (`train`, `sample`). If the model should work with the artifact pipeline (`LocalArtifactStore` / `TrainTestSplitPipeline`), also declare a non-empty `ARTIFACT_STATE_FILES` tuple and override the paired persistence hooks so trained state can be saved and reloaded:
 
    - `_save_artifact_state(self, artifact_state_dir)` — write your model's state under `artifact_state_dir`. Call `self._maybe_save_artifact_state(artifact_state_dir)` at the end of `train()` (it no-ops when the caller didn't request persistence) rather than checking `artifact_state_dir` yourself.
    - `load_from_ref(cls, store, ref)` — rehydrate a fitted instance from that state. Resolve the path with the base class helpers `cls._require_state_file(store, ref)` (single-file state) or `cls._require_state_dir(store, ref)` (multi-file state) instead of hand-rolling the existence check; both raise `FileNotFoundError` with a consistent message.
@@ -58,7 +58,7 @@ Inside the `katabatic/models/` directory:
    - `train(self, data_dir, *args, synthetic_dir=None, artifact_state_dir=None, **kwargs) -> Self`. `data_dir` is always the first positional parameter (never `dataset_dir`/`dataset`); `synthetic_dir` and `artifact_state_dir` are always named, keyword-only parameters, not values pulled out of `**kwargs`. Always `return self`.
    - `sample(self, n_samples=None, *args, **kwargs)`. The row-count parameter is always named `n_samples` (never `n` or `size`), and should default to `None`, falling back to the number of rows the model was trained on (store that count — e.g. `self._n_train_rows` — during `fit()`/`train()` if you need it).
    - If the model has a natural in-memory fitting step, expose it as `fit(self, X, y=None, ...) -> Self` (sklearn's shape), with `train()` doing the `data_dir` I/O and then calling `self.fit(...)`. If `y` is `None`, `X` is treated as the already-combined frame. Skip this when it doesn't make sense (e.g. TabSyn's preprocessing is inherently file-based); document why in the class docstring rather than forcing it.
-   - `evaluate()` is a lightweight, model-specific convenience, not the canonical cross-model metric — see its docstring on `Model`. If you don't have a meaningful one to offer, raise `NotImplementedError` with a message pointing at `TSTREvaluation`, rather than returning a placeholder value.
+   - Don't override `evaluate()`. `Model.evaluate(real_data, ...)` scores any fitted model on the six evaluation dimensions, so every model is comparable. It calls `sample()` in the shape above; the stability dimension also passes a `seed` keyword, so accept one if you want stability runs to be reproducible. If the model has its own diagnostic (a training loss, a model-specific TSTR), expose it under a distinct name such as `evaluate_loss()`. Users who want a different evaluation pass it as `model.evaluate(real_df, pipeline=...)` rather than subclassing.
 
 ### Step 3: Register the Model
 

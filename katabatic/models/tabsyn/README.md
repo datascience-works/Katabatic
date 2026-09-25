@@ -100,12 +100,10 @@ Generated files (when using `train()`):
 When calling `sample()` directly, output columns are generically named (`num_0`, `num_1`, ..., `cat_0`, `cat_1`, ...) and must be renamed to match the real dataset's column order before use. See `benchmarks/examples/tabsyn/run_tabsyn_car.py` for a working example of this rename logic.
 
 ## Evaluation
-`evaluate()` returns a reconstruction loss (a blend of MSE fornumeric
-columns and cross entropy for categorical columns), not accuracy or F1. Lower is better.
+`model.evaluate(real_df, target_col=..., test_data=...)`, inherited from `Model`, scores the fitted model on Katabatic's six dimensions (fidelity, utility via TSTR, diversity, privacy, consistency and stability) and returns an `EvaluationReport` (`report.dimension_scores`, `report.composite_score`).
 
-The full evaluation used for validation is `SyntheticEvaluationPipeline`
-(`katabatic/pipeline/evaluation_pipeline.py`), which reports 6 dimensions:
-fidelity, utility, diversity, privacy, consistency, and stability, combined into a single composite score.
+`evaluate_loss(data_dir=..., split="test")` returns TabSyn's reconstruction loss (a blend of MSE for
+numeric columns and cross entropy for categorical columns), not accuracy or F1; lower is better.
 
 ## Strengths
 - Handles mixed numeric and categorical columns in one unified pipeline

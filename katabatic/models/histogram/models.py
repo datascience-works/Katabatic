@@ -147,18 +147,6 @@ class HistogramModel(Model):
         n_rows = int(n_samples) if n_samples is not None else self._n_train_rows
         return self._generate(n_rows)
 
-    def evaluate(self, *args, **kwargs) -> float:
-        """
-        HistogramModel has no meaningful standalone metric to offer.
-        Use the Katabatic evaluation pipeline for cross-model metrics instead.
-        """
-        if not self.is_fitted:
-            raise RuntimeError("Call train() before evaluate().")
-        raise NotImplementedError(
-            "HistogramModel.evaluate() has no meaningful standalone metric to offer. "
-            "Use the Katabatic evaluation pipeline for cross-model metrics instead."
-        )
-
     def _save_artifact_state(self, artifact_state_dir: str) -> None:
         state = {
             "random_state": self.random_state,

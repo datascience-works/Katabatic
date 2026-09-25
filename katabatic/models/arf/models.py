@@ -548,7 +548,7 @@ class ARFModel(Model):
 
         return synthetic_df
 
-    def evaluate(
+    def evaluate_ks(
         self,
         X_real: pd.DataFrame | None = None,
         **kwargs,
@@ -559,7 +559,7 @@ class ARFModel(Model):
         Lower is better; 0 = identical marginal distributions.
         """
         if not self.is_fitted:
-            raise RuntimeError("Call train() before evaluate().")
+            raise RuntimeError("Call train() before evaluate_ks().")
 
         from scipy.stats import ks_2samp
 

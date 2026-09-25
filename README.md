@@ -274,6 +274,36 @@ Models are benchmarked against five datasets in the data catalogue — see
 
 ## Evaluation
 
+### Scoring a trained model
+
+Every model inherits `evaluate()`, which scores it on six dimensions (fidelity, utility, diversity,
+privacy, consistency and stability) plus a weighted composite, the same scoring the benchmark
+scripts use:
+
+```python
+report = model.evaluate(train_df, target_col="class", test_data=test_df)
+report.dimension_scores   # {"fidelity": 0.98, "utility": 0.91, ...}
+report.composite_score    # 0.87
+```
+
+Pass `dimensions=["utility"]` to run a subset, or `synthetic_data=...` to score data you already
+generated.
+
+To use your own evaluation, pass it as `pipeline=`, in the same way scikit-learn takes a `scoring=`
+argument. It can be any object with a `run()` method. `evaluate()` still does the sampling and
+column alignment, and passes the model along; accept `**kwargs` for the arguments you don't need:
+
+```python
+class MyEvaluation:
+    def run(self, real_data, synthetic_data, target_col=None, **kwargs):
+        return {"mean_gap": (real_data.mean(numeric_only=True)
+                             - synthetic_data.mean(numeric_only=True)).abs().mean()}
+
+model.evaluate(train_df, pipeline=MyEvaluation())
+```
+
+See `Model.evaluate()` and `EvaluationPipeline` in `katabatic/models/base_model.py` for all options.
+
 ### TSTR (Train on Synthetic, Test on Real)
 
 Katabatic includes comprehensive evaluation using the TSTR methodology:

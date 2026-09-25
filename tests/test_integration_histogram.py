@@ -9,6 +9,7 @@ import pandas as pd
 import pytest
 
 from katabatic.artifacts import LocalArtifactStore
+from katabatic.models.base_model import EVALUATION_DIMENSIONS
 from katabatic.models.histogram.models import HistogramModel
 from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
 
@@ -64,5 +65,9 @@ def test_histogram_artifact_pipeline_smoke(tmp_path, tiny_binary_csv):
 
     assert reloaded.sample(10, seed=7).equals(reloaded.sample(10, seed=7))
 
-    with pytest.raises(NotImplementedError):
-        reloaded.evaluate()
+    train_df = pd.read_csv(
+        store.open_path(f"{res['dataset_ref'].train_relpath}/train_full.csv")
+    )
+    report = reloaded.evaluate(train_df, target_col="y")
+    assert set(report.dimension_scores) == set(EVALUATION_DIMENSIONS)
+    assert all(0.0 <= v <= 1.0 for v in report.dimension_scores.values())

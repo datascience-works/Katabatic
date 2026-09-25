@@ -5,6 +5,7 @@ import pytest
 
 from katabatic.artifacts.local import LocalArtifactStore
 from katabatic.artifacts.refs import ModelRef
+from katabatic.models.base_model import EVALUATION_DIMENSIONS
 from katabatic.models.mst import MSTModel
 
 
@@ -52,12 +53,13 @@ def test_mst_sample_before_training():
 
 def test_mst_evaluate_before_training():
     model = MSTModel()
+    real = pd.DataFrame({"age": ["a"], "label": [0]})
 
     with pytest.raises(
         RuntimeError,
         match="Call train",
     ):
-        model.evaluate()
+        model.evaluate(real)
 
 
 def test_mst_infer_categorical_columns():
@@ -237,5 +239,5 @@ def test_mst_artifact_round_trip(tmp_path):
         "label",
     ]
 
-    with pytest.raises(NotImplementedError):
-        restored.evaluate()
+    report = restored.evaluate(df, target_col="label")
+    assert set(report.dimension_scores) == set(EVALUATION_DIMENSIONS)

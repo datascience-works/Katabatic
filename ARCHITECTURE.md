@@ -2,8 +2,9 @@
 
 ## Overview
 
-Katabatic is a library of tabular data generative models sharing one abstract `Model` interface
-(`train`/`sample`/`evaluate`). Two separate pipelines can run a model end to end:
+Katabatic is a library of tabular data generative models sharing one abstract `Model` interface:
+each model implements `train` and `sample`, and inherits a shared `evaluate()` (see
+[Scoring a model](#scoring-a-model)). Two separate pipelines can run a model end to end:
 
 - **`TrainTestSplitPipeline`** (`katabatic/pipeline/train_test_split/`) — the primary, tested
   path. Splits data, trains a model, scores it with **TSTR** (`katabatic/evaluate/tstr/`), and
@@ -11,7 +12,8 @@ Katabatic is a library of tabular data generative models sharing one abstract `M
   (`katabatic/artifacts/`). Every supported model's integration test exercises this path.
 - **`SyntheticEvaluationPipeline`** (`katabatic/pipeline/evaluation_pipeline.py`) — a richer,
   in-memory scorer across 6 dimensions (fidelity, utility, diversity, privacy, consistency,
-  stability), producing one weighted composite score. Used by `benchmarks/runner.py`.
+  stability), producing one weighted composite score. Used by `benchmarks/runner.py`, and the
+  default behind `Model.evaluate()`.
 
 **These two are not interchangeable by default.** `TrainTestSplitPipeline`'s evaluation slot
 expects a directory/artifact-store-based class with a `from_artifact()` classmethod (see
@@ -70,9 +72,14 @@ classDiagram
         <<abstract>>
         +train(data_dir, *args, synthetic_dir, artifact_state_dir, **kwargs) Self
         +sample(n_samples, **kwargs) DataFrame
-        +evaluate(**kwargs) float | dict
+        +evaluate(real_data, pipeline=None, **kwargs) EvaluationReport
         +load_from_ref(store, ref)$ Model
         +check_dependencies() bool
+    }
+
+    class EvaluationPipeline {
+        <<protocol>>
+        +run(real_data, synthetic_data, target_col, test_data, model, ...)
     }
 
     class Evaluation {
@@ -111,11 +118,31 @@ classDiagram
 
     SyntheticEvaluationPipeline --> Evaluation : orchestrates
     TrainTestSplitPipeline --> TSTREvaluation : uses
+    EvaluationPipeline <|.. SyntheticEvaluationPipeline : default
+    Model ..> EvaluationPipeline : evaluate(pipeline=...)
 ```
 
 `Pipeline` (`katabatic/pipeline/base_pipeline.py`) is a plain class, not `abc.ABC` — `run()` just
 raises `NotImplementedError` if not overridden. `TSTREvaluation` doesn't subclass `Evaluation`
 (see the two-convention note above).
+
+### Scoring a model
+
+`Model.evaluate(real_data, ...)` is concrete on the base class, and models don't override it.
+It checks the model is fitted, samples `len(real_data)` rows (unless `synthetic_data=` is
+given), aligns the synthetic columns to `real_data` (raising if any are missing), and hands
+everything, including the model itself, to an evaluation pipeline's `run()`:
+
+- **Default:** `SyntheticEvaluationPipeline` on all six dimensions, returning an
+  `EvaluationReport`. `dimensions=`, `categorical_cols=`, `continuous_cols=` and extra keyword
+  arguments (e.g. `weights=`) configure it.
+- **Custom:** `pipeline=` takes any object matching the `EvaluationPipeline` protocol in
+  `base_model.py`, i.e. a `run()` accepting the keyword arguments above. Its return value is
+  passed straight back. Options that only configure the default are rejected alongside
+  `pipeline=` rather than silently ignored.
+
+Model-specific diagnostics live under their own names (`evaluate_tstr()` on
+GANBLR and PATE-GAN, `evaluate_ks()` on ARF, `evaluate_loss()` on TabSyn and TabDDPM).
 
 ---
 
@@ -124,7 +151,7 @@ raises `NotImplementedError` if not overridden. `TSTREvaluation` doesn't subclas
 ```text
 katabatic/
 ├── models/
-│   ├── base_model.py       # Model ABC: train/sample/evaluate + artifact-state hooks
+│   ├── base_model.py       # Model ABC (train/sample), shared evaluate(), artifact-state hooks
 │   ├── registry.py         # ModelRegistry — declarative model lookup + install extras
 │   └── <model_name>/       # one dir per model; see docs/EXPERIMENTAL_MODELS.md for the full list
 │

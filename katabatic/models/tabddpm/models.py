@@ -56,7 +56,7 @@ class Tabddpm(Model):
         d_layers=(256, 256, 256, 256),
         dropout=0.0,
         seed=42,
-        eval_batches=50,  # how many batches to average for evaluate()
+        eval_batches=50,  # how many batches to average for evaluate_loss()
         use_ema=True,  # swap EMA weights into diffusion before sampling
     )
 
@@ -517,7 +517,7 @@ class Tabddpm(Model):
 
     # -------------------------------- evaluation ----------------------------------
 
-    def evaluate(
+    def evaluate_loss(
         self,
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
@@ -537,13 +537,15 @@ class Tabddpm(Model):
             float score (higher is better).
         """
         if not self.is_fitted or self._diffusion is None:
-            raise RuntimeError("Call train() before evaluate().")
+            raise RuntimeError("Call train() before evaluate_loss().")
 
         self._diffusion.eval()
 
         if X is None or y is None:
             if self._train_loader_infinite is None:
-                raise ValueError("No cached loader; provide X and y to evaluate().")
+                raise ValueError(
+                    "No cached loader; provide X and y to evaluate_loss()."
+                )
             loader = self._train_loader_infinite
         else:
             # build a quick loader from provided X/y
