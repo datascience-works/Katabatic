@@ -12,7 +12,7 @@ A framework for synthetic tabular data generation: 15 supported generative model
 - **Automated Pipeline**: End-to-end training, generation, and evaluation workflows
 - **Six-Dimension Evaluation**: `model.evaluate()` scores fidelity, utility (TSTR), diversity, privacy, consistency and stability, plus a weighted composite
 - **Versioned Artifacts**: datasets, trained models and evaluations stored locally or in S3, GCS or Azure
-- **Data Preprocessing**: Discretization and encoding for models that need discrete data
+- **Data Preprocessing**: `preprocess_tabular()` cleans raw CSVs before training (missing values, empty and constant columns, target last)
 - **Extensible Architecture**: Bring your own model (subclass `Model`) or evaluation (`evaluate(pipeline=...)`)
 
 ## Table of Contents
@@ -60,22 +60,22 @@ Or install directly with Poetry / pip — useful for installing several extras a
 | Use case | Command |
 | ---------- | --------- |
 | Core only | `pip install katabatic` or `poetry install` |
-| GANBLR (supported) | `pip install katabatic[ganblr]` or `poetry install -E ganblr` |
-| CTGAN (supported) | `pip install katabatic[ctgan]` or `poetry install -E ctgan` |
-| PATE-GAN (supported) | `pip install katabatic[pategan]` or `poetry install -E pategan` |
-| TabSyn (supported) | `pip install katabatic[tabsyn]` or `poetry install -E tabsyn` |
-| GReaT (supported) | `pip install katabatic[great]` or `poetry install -E great` |
-| SMOTE (supported) | `pip install katabatic[smote]` or `poetry install -E smote` |
-| MST (supported) | `pip install katabatic[mst] "private-pgm @ git+https://github.com/ryan112358/private-pgm.git@01f02f17eba440f4e76c1d06fa5ee9eed0bd2bca"` or `poetry install -E mst --with mst`: private-pgm isn't on PyPI, so it installs separately |
-| PrivTree (supported) | `pip install katabatic[privtree]` or `poetry install -E privtree` |
-| ARF (supported) | `pip install katabatic[arf]` or `poetry install -E arf` |
-| SynthPop (supported, requires R) | `pip install katabatic[synthpop]` or `poetry install -E synthpop` — also needs R + CRAN `synthpop` packages, see [katabatic/models/synthpop/README.md](https://github.com/datascience-works/Katabatic/blob/main/katabatic/models/synthpop/README.md) |
-| NaiveBayes (supported) | `pip install katabatic[naivebayes]` or `poetry install -E naivebayes` |
-| Histogram (supported) | `pip install katabatic[histogram]` or `poetry install -E histogram` |
-| REaLTabFormer (supported) | `pip install katabatic[realtabformer]` or `poetry install -E realtabformer` |
-| KDE (supported) | `pip install katabatic[kde]` or `poetry install -E kde` |
-| FairTabDiffusion (supported) | `pip install katabatic[fairtabdiffusion]` or `poetry install -E fairtabdiffusion` |
-| TSTR + XGBoost | `pip install katabatic[eval]` or `poetry install -E eval` |
+| GANBLR (supported) | `pip install "katabatic[ganblr]"` or `poetry install -E ganblr` |
+| CTGAN (supported) | `pip install "katabatic[ctgan]"` or `poetry install -E ctgan` |
+| PATE-GAN (supported) | `pip install "katabatic[pategan]"` or `poetry install -E pategan` |
+| TabSyn (supported) | `pip install "katabatic[tabsyn]"` or `poetry install -E tabsyn` |
+| GReaT (supported) | `pip install "katabatic[great]"` or `poetry install -E great` |
+| SMOTE (supported) | `pip install "katabatic[smote]"` or `poetry install -E smote` |
+| MST (supported) | `pip install "katabatic[mst]" "private-pgm @ git+https://github.com/ryan112358/private-pgm.git@01f02f17eba440f4e76c1d06fa5ee9eed0bd2bca"` or `poetry install -E mst --with mst`: private-pgm isn't on PyPI, so it installs separately |
+| PrivTree (supported) | `pip install "katabatic[privtree]"` or `poetry install -E privtree` |
+| ARF (supported) | `pip install "katabatic[arf]"` or `poetry install -E arf` |
+| SynthPop (supported, requires R) | `pip install "katabatic[synthpop]"` or `poetry install -E synthpop` — also needs R + CRAN `synthpop` packages, see [katabatic/models/synthpop/README.md](https://github.com/datascience-works/Katabatic/blob/main/katabatic/models/synthpop/README.md) |
+| NaiveBayes (supported) | `pip install "katabatic[naivebayes]"` or `poetry install -E naivebayes` |
+| Histogram (supported) | `pip install "katabatic[histogram]"` or `poetry install -E histogram` |
+| REaLTabFormer (supported) | `pip install "katabatic[realtabformer]"` or `poetry install -E realtabformer` |
+| KDE (supported) | `pip install "katabatic[kde]"` or `poetry install -E kde` |
+| FairTabDiffusion (supported) | `pip install "katabatic[fairtabdiffusion]"` or `poetry install -E fairtabdiffusion` |
+| TSTR + XGBoost | `pip install "katabatic[eval]"` or `poetry install -E eval` |
 | Several models | `pip install "katabatic[ganblr,ctgan]"` or `poetry install -E ganblr -E ctgan` |
 | Development | `poetry install --with dev` |
 
@@ -98,12 +98,15 @@ python -c "from katabatic.models.registry import ModelRegistry; print(ModelRegis
 Versioned datasets, models, and evaluations under `artifacts/`. See [GANBLR_FLOW.md](https://github.com/datascience-works/Katabatic/blob/main/GANBLR_FLOW.md) for details.
 
 ```python
+from importlib.resources import files
+
 from katabatic.artifacts import LocalArtifactStore
 from katabatic.models.ganblr.models import GANBLR
 from katabatic.pipeline import TrainTestSplitPipeline
 from katabatic.utils.preprocess import preprocess_tabular
 
-preprocess_tabular("katabatic/datasets/car.csv", "preprocessed_data/car.csv")
+# The car dataset ships with the package.
+preprocess_tabular(str(files("katabatic.datasets") / "car.csv"), "preprocessed_data/car.csv")
 
 store = LocalArtifactStore("artifacts")
 pipeline = TrainTestSplitPipeline(model=GANBLR())
@@ -122,7 +125,7 @@ To keep artifacts in S3, GCS or Azure, so a model trained on one machine can be 
 evaluated on another, pass an `FsspecArtifactStore` as `artifact_store=` instead:
 
 ```bash
-pip install katabatic[artifacts-s3]  # or artifacts-gcs, artifacts-azure; combine for several clouds
+pip install "katabatic[artifacts-s3]"  # or artifacts-gcs, artifacts-azure; combine for several clouds
 ```
 
 ```python
@@ -164,12 +167,14 @@ scripts are in [benchmarks/examples/](https://github.com/datascience-works/Katab
 
 ### Data Preprocessing
 
-Some models, such as GANBLR, need discrete data. Use the built-in preprocessing utilities to discretize numerical features and encode categorical ones:
+`preprocess_tabular()` cleans a raw CSV before training: `?` is treated as missing, empty and
+constant columns are dropped, missing numbers are filled with the column median and missing
+text with `"Missing"`, and the target moves to the last column. It doesn't encode or discretise;
+each model handles its own data representation.
 
 ```python
 from katabatic.utils.preprocess import preprocess_tabular
 
-# Discretize numerical features and encode categorical ones
 preprocess_tabular(
     file_path="raw_data/your_dataset.csv",
     output_path="preprocessed_data/your_dataset.csv",
@@ -440,4 +445,3 @@ This project is licensed under the MIT License - see the [LICENSE](https://githu
 
 - [GANBLR: A Tabular Data Generation Model (ICDM 2021)](https://ieeexplore.ieee.org/document/9679177)
 - [GReaT Repository](https://github.com/kathrinse/be_great)
-- [Synthetic Data Resources](https://github.com/synthetic-data-resources)
