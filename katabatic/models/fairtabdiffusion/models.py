@@ -313,14 +313,6 @@ class FairTabDiffusion(BaseModel):
         self._maybe_save_artifact_state(artifact_state_dir)
         return self
 
-    def evaluate(self, *args, **kwargs) -> float:
-        if not self.is_fitted:
-            raise RuntimeError("Call train() before evaluate().")
-        raise NotImplementedError(
-            "FairTabDiffusion.evaluate() has no meaningful standalone metric to offer. "
-            "Use the Katabatic evaluation pipeline for cross-model metrics instead."
-        )
-
     def sample(
         self,
         n_samples: int | None = None,

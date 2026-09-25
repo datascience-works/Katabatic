@@ -232,8 +232,7 @@ model.train(
 
 ## Evaluation
 
-MST has no meaningful standalone metric of its own, so `model.evaluate()` raises
-`NotImplementedError` pointing at `TSTREvaluation`.
+`model.evaluate(real_df, target_col=..., test_data=...)`, inherited from `Model`, scores the fitted model on Katabatic's six dimensions (fidelity, utility via TSTR, diversity, privacy, consistency and stability) and returns an `EvaluationReport` (`report.dimension_scores`, `report.composite_score`).
 
 Calling `evaluate()` before training raises a `RuntimeError`.
 
@@ -244,9 +243,10 @@ Calling `evaluate()` before training raises a `RuntimeError`.
 ```text
 train()
 sample()
-evaluate()
 get_required_dependencies()
 ```
+
+`evaluate()` is inherited from `Model` (see Evaluation above).
 
 The required Python dependencies reported by the model are:
 
@@ -290,7 +290,6 @@ The current MST integration has the following limitations:
 - Automatic categorical detection is based on pandas object, category, and boolean data types.
 - Integer-encoded categorical columns should be supplied explicitly through `categorical_columns`.
 - Model artifact persistence is not yet implemented.
-- `evaluate()` currently returns the pipeline-compatible placeholder value of `0.0`.
 - The integration currently includes an OpenDP compatibility adjustment for the tested SmartNoise Synth version.
 
 ## References

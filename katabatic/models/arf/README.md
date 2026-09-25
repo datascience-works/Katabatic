@@ -100,7 +100,9 @@ Generated files:
 ---
 
 ## Evaluation
-`evaluate()` returns the **mean column-wise KS statistic** between real and synthetic numeric features. Lower is better; 0 indicates identical marginal distributions.
+`model.evaluate(real_df, target_col=..., test_data=...)`, inherited from `Model`, scores the fitted model on Katabatic's six dimensions (fidelity, utility via TSTR, diversity, privacy, consistency and stability) and returns an `EvaluationReport` (`report.dimension_scores`, `report.composite_score`).
+
+`evaluate_ks(X_real=None)` returns the **mean column-wise KS statistic** between real and synthetic numeric features. Lower is better; 0 indicates identical marginal distributions.
 
 ---
 

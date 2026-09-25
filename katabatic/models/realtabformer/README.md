@@ -209,8 +209,6 @@ The metadata records information including the model name, target column, number
 
 - REaLTabFormer's relational data generation functionality is not currently supported by the Katabatic wrapper.
 
-- The current `evaluate()` implementation returns a placeholder value and is expected to be supplemented by Katabatic's benchmarking and evaluation pipeline.
-
 - This integration is experimental and requires further integration and benchmark testing before it can be promoted to an officially supported Katabatic model.
 
 ---

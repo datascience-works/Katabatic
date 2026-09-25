@@ -134,15 +134,6 @@ class PrivTreeModel(Model):
 
         return self
 
-    def evaluate(self, X_real=None, **kwargs) -> float:
-        if not self.is_fitted:
-            raise RuntimeError("Call train() before evaluate().")
-
-        raise NotImplementedError(
-            "PrivTreeModel.evaluate() has no meaningful standalone metric to offer."
-            "Use TSTREvaluation for cross-model metrics instead."
-        )
-
     def _save_artifact_state(self, artifact_state_dir: str) -> None:
         os.makedirs(artifact_state_dir, exist_ok=True)
 

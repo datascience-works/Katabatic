@@ -136,16 +136,28 @@ def test_sample_accepts_seed_without_forwarding_it():
 
 def test_evaluate_before_training_raises():
     model = REaLTabFormerModel()
+    real = pd.DataFrame({"a": [1], "y": [0]})
 
-    with pytest.raises(RuntimeError, match="must be trained before evaluation"):
-        model.evaluate()
+    with pytest.raises(RuntimeError, match="Call train"):
+        model.evaluate(real)
 
 
-def test_evaluate_after_training():
+def test_evaluate_after_training_scores_synthetic_data():
     model = REaLTabFormerModel()
     model.is_fitted = True
+    real = pd.DataFrame(
+        {
+            "age": [21, 31, 41, 51, 61, 71],
+            "income": [41000, 51000, 61000, 71000, 81000, 91000],
+            "class": ["A", "B", "A", "B", "A", "B"],
+        }
+    )
 
-    assert model.evaluate() == 0.0
+    report = model.evaluate(
+        real, target_col="class", synthetic_data=real.copy(), dimensions=["fidelity"]
+    )
+
+    assert set(report.dimension_scores) == {"fidelity"}
 
 
 def test_save_synthetic_data(tmp_path):

@@ -484,15 +484,6 @@ class SMOTEModel(BaseModel):
 
         return instance
 
-    def evaluate(self, *args, **kwargs) -> float:
-        if not self.is_fitted:
-            raise RuntimeError("Call train() before evaluate().")
-
-        raise NotImplementedError(
-            "SMOTEModel.evaluate() has no meaningful standalone metric to offer. "
-            "use TSTREvaluation for cross-model metrics instead."
-        )
-
     def sample(
         self,
         n_samples: int | None = None,

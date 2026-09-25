@@ -264,18 +264,6 @@ class NaiveBayesModel(BaseModel):
         ordered_cols = self.features_ + [self.target_col]
         return df_synth[ordered_cols]
 
-    def evaluate(self, *args, **kwargs) -> float:
-        """
-        NaiveBayesModel has no meaningful standalone metric to offer."
-            "Use TSTREvaluation for cross-model metrics instead."
-        """
-        if not self.is_fitted:
-            raise RuntimeError("Call train() before evaluate().")
-        raise NotImplementedError(
-            "NaiveBayesModel.evaluate() has no meaningful standalone metric to offer."
-            "Use TSTREvaluation for cross-model metrics instead."
-        )
-
     def _save_artifact_state(self, artifact_state_dir: str) -> None:
         state = {
             "laplace_alpha": self.laplace_alpha,

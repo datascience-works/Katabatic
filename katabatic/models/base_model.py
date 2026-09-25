@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Protocol
 
 import numpy as np
 import pandas as pd
@@ -11,6 +11,36 @@ if TYPE_CHECKING:
 
     from katabatic.artifacts.base import ArtifactStore
     from katabatic.artifacts.refs import ModelRef
+
+EVALUATION_DIMENSIONS = (
+    "fidelity",
+    "utility",
+    "diversity",
+    "privacy",
+    "consistency",
+    "stability",
+)
+
+
+class EvaluationPipeline(Protocol):
+    """
+    ``Model.evaluate(pipeline=...)`` accepts anything with this ``run()``.
+
+    ``SyntheticEvaluationPipeline`` is the default. A custom pipeline receives
+    every argument by keyword; accept ``**kwargs`` to ignore the ones it doesn't use.
+    """
+
+    def run(
+        self,
+        real_data: pd.DataFrame,
+        synthetic_data: pd.DataFrame,
+        target_col: str | None = None,
+        test_data: pd.DataFrame | None = None,
+        constraints: dict | None = None,
+        model: Model | None = None,
+        output_dir: str | None = None,
+        report_prefix: str = "",
+    ) -> Any: ...
 
 
 class Model(ABC):
@@ -51,10 +81,112 @@ class Model(ABC):
         """
         ...
 
-    @abstractmethod
-    def evaluate(self, *args, **kwargs) -> float | dict[str, float]:
-        """Evaluate the fitted model and return a score, or a dict of named scores."""
-        ...
+    def evaluate(
+        self,
+        real_data: pd.DataFrame,
+        *,
+        pipeline: EvaluationPipeline | None = None,
+        target_col: str | None = None,
+        test_data: pd.DataFrame | None = None,
+        synthetic_data: pd.DataFrame | None = None,
+        dimensions: list[str] | tuple[str, ...] | None = None,
+        categorical_cols: list[str] | None = None,
+        continuous_cols: list[str] | None = None,
+        constraints: dict | None = None,
+        output_dir: str | None = None,
+        report_prefix: str = "",
+        **pipeline_kwargs,
+    ) -> Any:
+        """
+        Score the fitted model's synthetic data.
+
+        By default this runs
+        :class:`katabatic.pipeline.evaluation_pipeline.SyntheticEvaluationPipeline`
+        on all six dimensions (fidelity, utility via TSTR, diversity, privacy,
+        consistency, stability), the same scoring the benchmark scripts use.
+        Pass ``pipeline=`` to score with your own evaluation instead.
+
+        Parameters
+        ----------
+        real_data : pd.DataFrame
+            Real training data, target column included.
+        pipeline : EvaluationPipeline, optional
+            Any object with a ``run()`` method matching :class:`EvaluationPipeline`.
+            Configure it before passing it in; ``dimensions``, ``categorical_cols``,
+            ``continuous_cols`` and ``**pipeline_kwargs`` only apply to the default.
+        target_col : str, optional
+            Target column; defaults to the last column of ``real_data``.
+        test_data : pd.DataFrame, optional
+            Held-out real data. When given, utility's TSTR and TRTR test on it.
+        synthetic_data : pd.DataFrame, optional
+            Data to score. Defaults to ``self.sample(len(real_data))``.
+        dimensions : list[str], optional
+            Default pipeline only: subset of dimensions to run (default: all six).
+            ``stability`` re-samples the model several times with different seeds.
+        categorical_cols, continuous_cols : list[str], optional
+            Default pipeline only: column type hints; auto-detected when omitted.
+        constraints : dict, optional
+            Per-column ``(min, max)`` bounds for the consistency dimension.
+        output_dir : str, optional
+            When given, the report is saved here.
+        **pipeline_kwargs
+            Default pipeline only: passed to ``SyntheticEvaluationPipeline``
+            (e.g. ``weights``, ``n_folds``).
+
+        Returns
+        -------
+        Whatever the pipeline's ``run()`` returns. For the default pipeline that
+        is an ``EvaluationReport`` with ``composite_score``, ``dimension_scores``
+        (one score per dimension) and ``dimension_results`` (full detail).
+        """
+        from katabatic.pipeline.evaluation_pipeline import SyntheticEvaluationPipeline
+
+        if pipeline is not None:
+            default_only = {
+                "dimensions": dimensions,
+                "categorical_cols": categorical_cols,
+                "continuous_cols": continuous_cols,
+                **pipeline_kwargs,
+            }
+            ignored = [k for k, v in default_only.items() if v is not None]
+            if ignored:
+                raise TypeError(
+                    f"{ignored} configure the default pipeline and would be ignored "
+                    "when pipeline= is given; configure your pipeline instead."
+                )
+            if not callable(getattr(pipeline, "run", None)):
+                raise TypeError("pipeline must have a run() method.")
+
+        if not self.is_fitted:
+            raise RuntimeError("Call train() before evaluate().")
+
+        if synthetic_data is None:
+            synthetic_data = self.sample(len(real_data))
+            if isinstance(synthetic_data, np.ndarray):
+                synthetic_data = pd.DataFrame(synthetic_data, columns=real_data.columns)
+
+        missing = [c for c in real_data.columns if c not in synthetic_data.columns]
+        if missing:
+            raise ValueError(f"Synthetic data is missing real columns: {missing}")
+        synthetic_data = synthetic_data[list(real_data.columns)]
+
+        if pipeline is None:
+            pipeline = SyntheticEvaluationPipeline(
+                dimensions=list(dimensions or EVALUATION_DIMENSIONS),
+                categorical_cols=categorical_cols,
+                continuous_cols=continuous_cols,
+                **pipeline_kwargs,
+            )
+        return pipeline.run(
+            real_data=real_data,
+            synthetic_data=synthetic_data,
+            target_col=target_col,
+            test_data=test_data,
+            constraints=constraints,
+            model=self,
+            output_dir=output_dir,
+            report_prefix=report_prefix,
+        )
 
     @abstractmethod
     def sample(

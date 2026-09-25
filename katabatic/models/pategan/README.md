@@ -91,6 +91,9 @@ reads `x_train.csv`/`y_train.csv` from `data_dir`, calls `fit()`, and writes
 `ModelRegistry` (`supported: True`) and reachable via `ModelRegistry.load_model("pategan")` or
 `pip install katabatic[pategan]`.
 
+`model.evaluate(real_df, target_col=..., test_data=...)`, inherited from `Model`, scores the
+trained model on Katabatic's six evaluation dimensions. PATE-GAN's own in-memory TSTR check is `evaluate_tstr(x, y, model="lr", ...)`.
+
 ## Implementation Notes
 
 Where this diverges from the ICLR 2019 paper and its released reference implementation:

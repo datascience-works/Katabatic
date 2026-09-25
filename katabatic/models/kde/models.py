@@ -203,15 +203,6 @@ class KDESynthesizer(BaseModel):
 
         return {self._feature_cols[i] for i in cat_idx if i < len(self._feature_cols)}
 
-    def evaluate(self, *args, **kwargs) -> float:
-        if not self.is_fitted:
-            raise RuntimeError("Call train() before evaluate().")
-
-        raise NotImplementedError(
-            "KDESynthesizer.evaluate() has no meaningful standalone metric "
-            "to offer. Use TSTREvaluation for cross-model metrics instead."
-        )
-
     def sample(
         self,
         n_samples: int | None = None,

@@ -336,18 +336,6 @@ class TabEBMModel(Model):
         result[self.target_col] = y_synth.to_numpy()
         return result
 
-    def evaluate(self, *args, **kwargs) -> float:
-        """
-        TabEBMModel has no meaningful standalone metric to offer.
-        Use the Katabatic evaluation pipeline for cross-model metrics instead.
-        """
-        if not self.is_fitted:
-            raise RuntimeError("Call train() before evaluate().")
-        raise NotImplementedError(
-            "TabEBMModel.evaluate() has no meaningful standalone metric to offer. "
-            "Use the Katabatic evaluation pipeline for cross-model metrics instead."
-        )
-
     def _save_artifact_state(self, artifact_state_dir: str) -> None:
         os.makedirs(artifact_state_dir, exist_ok=True)
         state = {

@@ -683,7 +683,7 @@ class PATEGAN(Model):
 
         return self
 
-    def evaluate(
+    def evaluate_tstr(
         self,
         x: pd.DataFrame,
         y: pd.Series,
