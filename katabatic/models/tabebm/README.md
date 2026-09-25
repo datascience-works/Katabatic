@@ -185,6 +185,12 @@ TrainTestSplitPipeline(model=TabEBMModel()).run(
 
 ---
 
+## Evaluation
+
+`model.evaluate(real_df, target_col=..., test_data=...)`, inherited from `Model`, scores the fitted model on Katabatic's six dimensions (fidelity, utility via TSTR, diversity, privacy, consistency and stability) and returns an `EvaluationReport` (`report.dimension_scores`, `report.composite_score`). Stability is always 1.0 for TabEBM because `sample()` reuses the configured seed (see Limitations).
+
+---
+
 ## Model Evaluation Benchmark Results
 
 | Dataset | Fidelity | Utility | Diversity | Privacy | Consistency | Stability | Composite | Runtime |

@@ -14,6 +14,7 @@ from tests.conftest import require_backend
 require_backend("torch", "save")
 
 from katabatic.artifacts import LocalArtifactStore  # noqa: E402
+from katabatic.models.base_model import EVALUATION_DIMENSIONS  # noqa: E402
 from katabatic.models.fairtabdiffusion.models import FairTabDiffusion  # noqa: E402
 from katabatic.pipeline.train_test_split.pipeline import (  # noqa: E402
     TrainTestSplitPipeline,
@@ -72,10 +73,12 @@ def test_fairtabdiffusion_artifact_pipeline_smoke(tmp_path, tiny_binary_csv):
     assert reloaded.sample(10, seed=3).equals(reloaded.sample(10, seed=3))
 
     train_csv = store.open_path(f"{res['dataset_ref'].train_relpath}/train_full.csv")
-    assert len(reloaded.sample()) == len(pd.read_csv(train_csv))
+    train_df = pd.read_csv(train_csv)
+    assert len(reloaded.sample()) == len(train_df)
 
-    with pytest.raises(NotImplementedError):
-        reloaded.evaluate()
+    report = reloaded.evaluate(train_df, target_col="y")
+    assert set(report.dimension_scores) == set(EVALUATION_DIMENSIONS)
+    assert all(0.0 <= v <= 1.0 for v in report.dimension_scores.values())
 
 
 @pytest.mark.integration
