@@ -184,7 +184,20 @@ TabKDE differs from GAN and diffusion-based models:
 
 ## Benchmark Results
 
-BENCHMARK_RESULTS_PLACEHOLDER
+Run on CPU with default parameters, using the benchmark scripts in [`benchmarks/examples/tabkde/`](../../../benchmarks/examples/tabkde/).
+
+| Dataset | Fidelity | Utility | Diversity | Privacy | Consistency | Stability | Composite | Runtime |
+|---|---|---|---|---|---|---|---|---|
+| Car | 0.9866 | 0.9038 | 0.9994 | 0.4086 | 0.7638 | 0.9895 | **0.8501** | 37 s |
+| Nursery | 0.9931 | 0.9356 | 0.9989 | 0.3833 | 0.7639 | 0.9960 | **0.8593** | 3 min |
+| Magic | 0.9861 | 0.9883 | 0.9149 | 0.5423 | 0.9369 | 0.9620 | **0.9071** | 6 min |
+| Shuttle | 0.9955 | 0.9800 | 0.9528 | 0.6182 | 0.7364 | 0.9785 | **0.9024** | 7 min |
+| Adult | 0.9747 | 0.9769 | 0.9415 | 0.7886 | 0.8330 | 0.9710 | **0.9299** | 23 min\* |
+
+\* Measured while other jobs shared the CPU; about 12 minutes on an otherwise idle machine.
+
+- **Low privacy on car and nursery is expected.** Both datasets list every possible feature combination, so any valid synthetic row matches a real one.
+- Runtime is dominated by the six-dimension evaluation; fitting and sampling take seconds.
 
 ## Troubleshooting
 
