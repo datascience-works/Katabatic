@@ -8114,10 +8114,11 @@ smote = ["imbalanced-learn"]
 synthpop = []
 tabddpm = ["category-encoders", "rtdl_revisiting_models", "torch"]
 tabebm = []
+tabkde = []
 tabsyn = ["category-encoders", "tomli", "tomli-w", "torch", "tqdm"]
 tvaegan = ["torch"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.12"
-content-hash = "6f911289dd6db60fdb711e0c1f4d7a592fd9a6586e9a46dee00696fd92980409"
+content-hash = "04f00fc1fca9d44c8c036acc6607ed61f8905a85bca8671d7cb2b4688b51884a"
