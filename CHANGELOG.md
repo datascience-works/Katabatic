@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.1.0] - 2026-09-26
 
 ### Added
 - TVAE-GAN promoted to supported: moved from `katabatic.experimental.models.tvaegan` to `katabatic.models.tvaegan`, with artifact persistence (`load_from_ref`), a `tvaegan` extra, CI integration tests and benchmark scripts for all five datasets. It now uses the shared six-dimension `evaluate()`; its reconstruction loss is available as `evaluate_loss()`.
@@ -151,6 +151,7 @@ The first stable release of Katabatic: a single interface for training, sampling
 
 First public **alpha** release on TestPyPI / PyPI.
 
+[1.1.0]: https://github.com/datascience-works/Katabatic/releases/tag/v1.1.0
 [1.0.0]: https://github.com/datascience-works/Katabatic/releases/tag/v1.0.0
 [0.3.1]: https://github.com/datascience-works/Katabatic/releases/tag/v0.3.1
 [0.3.0]: https://github.com/datascience-works/Katabatic/releases/tag/v0.3.0
