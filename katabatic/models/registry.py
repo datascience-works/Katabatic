@@ -106,6 +106,13 @@ class ModelRegistry:
             "extra": "ctgan",
             "supported": True,
         },
+        "gaussian_copula": {
+            "module": "katabatic.models.gaussian_copula.models",
+            "class": "GaussianCopulaModel",
+            "dependencies": ["sdv"],
+            "extra": "gaussian_copula",
+            "supported": False,
+        },
         "kde": {
             "module": "katabatic.models.kde.models",
             "class": "KDESynthesizer",
