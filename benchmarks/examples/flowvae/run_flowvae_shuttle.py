@@ -10,38 +10,12 @@ from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 from katabatic.models.flowvae.models import FlowVAEModel
 
 config = RunConfig(
-    dataset_name="bank_marketing",
+    dataset_name="shuttle",
     model_name="flowvae",
-    categorical_cols=[
-        "job",
-        "marital",
-        "education",
-        "default",
-        "housing",
-        "loan",
-        "contact",
-        "month",
-        "poutcome",
-    ],
-    continuous_cols=[
-        "age",
-        "balance",
-        "day",
-        "duration",
-        "campaign",
-        "pdays",
-        "previous",
-    ],
-    target_col_raw="y",
-    constraints={
-        "age": (18, 100),
-        "balance": (-8019, 102127),
-        "day": (1, 31),
-        "duration": (0, 5000),
-        "campaign": (1, 63),
-        "pdays": (-1, 999),
-        "previous": (0, 275),
-    },
+    categorical_cols=[],
+    continuous_cols=["time", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8"],
+    target_col_raw="class",
+    constraints=None,
 )
 
 train_df, test_df, target_col, paths = preprocess_and_split(config)
