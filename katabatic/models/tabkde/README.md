@@ -1,4 +1,4 @@
-# TabKDE for Katabatic Repository
+# TabKDE
 
 TabKDE implementation for synthetic tabular data generation using Kernel Density Estimation with copula transformations.
 
@@ -69,25 +69,21 @@ Official GitHub repository: https://github.com/tabkde/tabkde-main
 
 ## Installation
 
-### Requirements
-
-Install core dependencies:
-
-```
-pip install numpy pandas scikit-learn scipy
+```bash
+pip install "katabatic[tabkde]"   # or: poetry install -E tabkde
 ```
 
-No additional model-specific packages required. TabKDE runs entirely on CPU using standard scientific Python libraries.
+TabKDE needs only Katabatic's core dependencies (NumPy, pandas, scikit-learn, SciPy); the extra exists so every model installs the same way. It runs entirely on CPU.
 
 ## Quick Start
 
-### Basic Usage (Standalone Concept)
+### Basic usage
 
 1) Prepare training split data:
 - x_train.csv
 - y_train.csv
 
-2) Run generator (conceptual example):
+2) Fit and sample:
 
 ```python
 from katabatic.models.tabkde import TabKDEModel
@@ -115,7 +111,7 @@ Output:
 TabKDE is designed to plug into Katabatic's pipeline that outputs train split CSVs.
 
 Expected input structure:
-- output_dir/
+- data_dir/
   - x_train.csv
   - y_train.csv
 
@@ -128,15 +124,17 @@ Expected synthetic outputs:
 Example pipeline usage (typical Katabatic flow):
 
 ```python
+from importlib.resources import files
+
 from katabatic.artifacts import LocalArtifactStore
 from katabatic.models.tabkde import TabKDEModel
-from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
+from katabatic.pipeline import TrainTestSplitPipeline
 
 store = LocalArtifactStore("artifacts")
 
 pipeline = TrainTestSplitPipeline(model=TabKDEModel(random_state=42))
 result = pipeline.run(
-    input_csv="raw_data/adult.csv",
+    input_csv=str(files("katabatic.datasets") / "adult.csv"),
     dataset_name="adult",
     artifact_store=store,
     model_name="tabkde",
@@ -180,59 +178,17 @@ TabKDE differs from GAN and diffusion-based models:
 - Generation time is fast: sampling from GMM + inverse copula transform
 - The full pipeline (fit + sample) typically completes in under 3 minutes on standard datasets
 
-## Datasets Tested
+## Evaluation
 
-This implementation has been tested on the following datasets within the Katabatic pipeline:
-- Car
-- Magic
-- Shuttle
-- Adult
-- Nursery
+`model.evaluate(real_df, target_col=..., test_data=...)`, inherited from `Model`, scores the fitted model on Katabatic's six dimensions (fidelity, utility via TSTR, diversity, privacy, consistency and stability) and returns an `EvaluationReport` (`report.dimension_scores`, `report.composite_score`).
 
-## Recommended Workflow (Professional / Reproducible)
+## Benchmark Results
 
-1) Preprocess dataset (if Katabatic requires discretization)
-2) Run train/test split pipeline
-3) Generate synthetic training data using TabKDE
-4) Run TSTR evaluation:
-   - Train classifier on synthetic train
-   - Test on real test
-5) Log metrics:
-   - Accuracy
-   - F1-score
-   - AUC (if binary / supported)
-
-## Results Reporting (Add This To Your Repo)
-
-Create a RESULTS.md file and store:
-- Dataset name
-- Models tested (LR, MLP, RF, XGBoost)
-- Metrics (Accuracy, F1, AUC)
-- Notes (why performance improved or dropped)
-
-Example format:
-
-```
-Dataset: Adult
-- LR:  Acc=..., F1=..., AUC=...
-- MLP: Acc=..., F1=..., AUC=...
-- RF:  Acc=..., F1=..., AUC=...
-- XGB: Acc=..., F1=..., AUC=...
-```
-
-## Colab Notes (Important)
-
-If you run TabKDE in Google Colab:
-- No special installations needed beyond the core dependencies
-- No pretrained weights to download
-- CPU runtime is sufficient; GPU is not required
-
-If Colab disconnects:
-- Save outputs to Google Drive or download synthetic CSV outputs after run
+BENCHMARK_RESULTS_PLACEHOLDER
 
 ## Troubleshooting
 
-### Issue: GMM fitting fails or returns None
+### Issue: "TabKDE could not fit the distance-to-closest-record distribution"
 Solution:
 - Increase n_dcr_splits to get more DCR distance samples
 - Check that training data has no constant columns (zero variance)
@@ -248,11 +204,6 @@ Solution:
 - Check that categorical columns are object or category dtype in input CSV
 - preprocess_data encodes them as category codes; verify the original CSV is loaded correctly
 
-### Issue: Output files not saved correctly
-Solution:
-- Ensure synthetic_dir exists or is created before running
-- Check you have write permissions (Colab vs local paths)
-
 ## Citation
 
 If using this implementation in reports or publications:
@@ -262,6 +213,6 @@ If using this implementation in reports or publications:
   title={TabKDE: Simple and Scalable Tabular Data Generation with Kernel Density Estimates (Katabatic Integration)},
   author={Rema Ramesh and Team},
   year={2026},
-  url={GitHub repository URL}
+  url={https://github.com/datascience-works/Katabatic}
 }
 ```

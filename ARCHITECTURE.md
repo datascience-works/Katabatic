@@ -47,7 +47,7 @@ flowchart TD
 
 The supported models (`supported: True` in `ModelRegistry`, `katabatic/models/registry.py`) are
 `ganblr`, `ctgan`, `pategan`, `tabsyn`, `great`, `smote`, `mst`, `privtree`, `arf`, `synthpop`,
-`naivebayes`, `histogram`, `realtabformer`, `kde`, `fairtabdiffusion` and `tvaegan`. Experimental models
+`naivebayes`, `histogram`, `realtabformer`, `kde`, `tabkde`, `fairtabdiffusion` and `tvaegan`. Experimental models
 live under `katabatic/experimental/models/`, outside the semantic-versioning guarantee; see
 `docs/EXPERIMENTAL_MODELS.md`.
 
@@ -107,6 +107,7 @@ classDiagram
     Model <|-- HistogramModel
     Model <|-- REaLTabFormerModel
     Model <|-- KDESynthesizer
+    Model <|-- TabKDEModel
     Model <|-- FairTabDiffusion
     Model <|-- TVAEGANModel
 

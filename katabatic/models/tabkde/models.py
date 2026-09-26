@@ -88,7 +88,7 @@ class TabKDEModel(Model):
         x_train: pd.DataFrame,
         y_train: pd.Series | None = None,
         **kwargs,
-    ) -> None:
+    ) -> TabKDEModel:
         """
         Fit TabKDE on the full training table.
 
@@ -103,6 +103,7 @@ class TabKDEModel(Model):
         if y_train is not None:
             label_col = y_train.name if y_train.name else "target"
             df[label_col] = y_train.values
+            self._label_col = label_col
 
         self._train_df = df.copy()
         self._col_order = list(df.columns)
@@ -132,11 +133,12 @@ class TabKDEModel(Model):
         self._gmm = self._fit_dcr_gmm(self._Z)
 
         self.is_fitted = True
+        return self
 
     # Sample
 
     def sample(
-        self, n_samples: int | None = None, seed: int | None = None, **kwargs
+        self, n_samples: int | None = None, *args, seed: int | None = None, **kwargs
     ) -> pd.DataFrame:
         """
         Generate synthetic rows as a DataFrame in the original column order,
@@ -197,8 +199,9 @@ class TabKDEModel(Model):
     def train(
         self,
         data_dir: str | Path,
-        synthetic_dir: str | Path | None = None,
         *args,
+        synthetic_dir: str | Path | None = None,
+        artifact_state_dir: str | None = None,
         **kwargs,
     ) -> TabKDEModel:
         """
@@ -225,26 +228,19 @@ class TabKDEModel(Model):
 
         self.fit(x_train, y_train)
 
-        if synthetic_dir is not None:
-            synthetic_dir = Path(synthetic_dir)
-            synthetic_dir.mkdir(parents=True, exist_ok=True)
-            synth = self.sample(len(x_train))
-            synth.drop(columns=[self._label_col]).to_csv(
-                synthetic_dir / "x_synth.csv", index=False
-            )
-            synth[[self._label_col]].to_csv(synthetic_dir / "y_synth.csv", index=False)
-            synth.to_csv(synthetic_dir / "synthetic.csv", index=False)
-
-        self._maybe_save_artifact_state(kwargs.get("artifact_state_dir"))
-        return self
-
-    def evaluate(self, *args, **kwargs) -> float:
-        if not self.is_fitted:
-            raise RuntimeError("Call train() before evaluate().")
-        raise NotImplementedError(
-            "TabKDEModel.evaluate() has no meaningful standalone metric to "
-            "offer. Use TSTREvaluation for cross-model metrics instead."
+        if synthetic_dir is None:
+            synthetic_dir = Path("synthetic") / (data_dir.name or "dataset") / "tabkde"
+        synthetic_dir = Path(synthetic_dir)
+        synthetic_dir.mkdir(parents=True, exist_ok=True)
+        synth = self.sample(len(x_train))
+        synth.drop(columns=[self._label_col]).to_csv(
+            synthetic_dir / "x_synth.csv", index=False
         )
+        synth[[self._label_col]].to_csv(synthetic_dir / "y_synth.csv", index=False)
+        synth.to_csv(synthetic_dir / "synthetic.csv", index=False)
+
+        self._maybe_save_artifact_state(artifact_state_dir)
+        return self
 
     def _save_artifact_state(self, artifact_state_dir: str) -> None:
         """
@@ -332,4 +328,9 @@ class TabKDEModel(Model):
             except Exception:
                 continue
 
+        if best_gmm is None:
+            raise ValueError(
+                "TabKDE could not fit the distance-to-closest-record distribution. "
+                "Check the training data isn't empty or constant, or raise n_dcr_splits."
+            )
         return best_gmm
