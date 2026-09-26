@@ -36,9 +36,9 @@ print("STEP 3 — Train ARF")
 print("=" * 60)
 
 model = ARFModel(
-    num_trees=30,
+    num_trees=10,
     max_iters=10,
-    min_node_size=5,
+    min_node_size=2,
     seed=42,
     verbose=True,
 )

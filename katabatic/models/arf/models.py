@@ -43,10 +43,10 @@ class _ARFEngine:
 
     def __init__(
         self,
-        num_trees: int = 30,
+        num_trees: int = 10,
         max_iters: int = 10,
         delta: float = 0.0,
-        min_node_size: int = 5,
+        min_node_size: int = 2,
         verbose: bool = True,
         seed: int = 42,
         leaf_thresh: float = 0.5,
@@ -338,10 +338,10 @@ class ARFModel(Model):
     """
 
     ARTIFACT_STATE_FILES = ("arf_model.pkl",)
-    num_trees: int = 30
+    num_trees: int = 10
     max_iters: int = 10
     delta: float = 0.0
-    min_node_size: int = 5
+    min_node_size: int = 2
     verbose: bool = True
     seed: int = 42
     leaf_thresh: float = 0.5
