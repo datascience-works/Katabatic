@@ -113,6 +113,7 @@ def test_supported_models_list():
         "kde",
         "fairtabdiffusion",
         "tabkde",
+        "tvaegan",
     }
 
 

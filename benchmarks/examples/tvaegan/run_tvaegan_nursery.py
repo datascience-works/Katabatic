@@ -10,11 +10,20 @@ from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 from katabatic.models.tvaegan.models import TVAEGANModel
 
 config = RunConfig(
-    dataset_name="car",
+    dataset_name="nursery",
     model_name="tvaegan",
-    categorical_cols=["0", "1", "2", "3", "4", "5"],
+    categorical_cols=[
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+    ],
     continuous_cols=[],
-    target_col_raw="6",
+    target_col_raw="8",
     constraints=None,
 )
 

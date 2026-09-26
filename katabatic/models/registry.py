@@ -122,6 +122,13 @@ class ModelRegistry:
             "extra": "tabkde",
             "supported": True,
         },
+        "tvaegan": {
+            "module": "katabatic.models.tvaegan.models",
+            "class": "TVAEGANModel",
+            "dependencies": ["torch"],
+            "extra": "tvaegan",
+            "supported": True,
+        },
         "arf": {
             "module": "katabatic.models.arf.models",
             "class": "ARFModel",

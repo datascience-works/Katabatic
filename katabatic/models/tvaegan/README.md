@@ -46,7 +46,7 @@ All three networks train each batch, but each learns only from the loss terms th
 Runs for a fixed number of epochs (default 50). No early stopping yet, training length was found to affect result quality during testing (see Known Issues).
 
 ## Hyperparameters
-Found in `katabatic/experimental/models/tvaegan/models.py` (`TVAEGANModel.__init__`).
+Found in `katabatic/models/tvaegan/models.py` (`TVAEGANModel.__init__`).
 
 | Parameter | Default | Notes |
 |---|---|---|
@@ -83,10 +83,9 @@ Generated files (when using `train()`):
 - `synthetic.csv` (combined)
 
 ## Evaluation
-`evaluate()` returns a reconstruction loss, measured in the discriminator's feature space rather than raw data space (matching the
-paper's own similarity metric, Eq. 6-7). Lower is better.
+`model.evaluate(real_df, target_col=..., test_data=...)`, inherited from `Model`, scores the fitted model on Katabatic's six dimensions (fidelity, utility via TSTR, diversity, privacy, consistency and stability) and returns an `EvaluationReport` (`report.dimension_scores`, `report.composite_score`).
 
-The full evaluation used for validation is `SyntheticEvaluationPipeline`, which reports 6 dimensions (fidelity, utility, diversity, privacy, consistency, stability) combined into a composite score.
+`model.evaluate_loss(data_dir=..., split="test")` returns the model's own reconstruction loss on a data split, measured in the discriminator's feature space as in training (paper Eq. 6-7). Lower is better.
 
 ## Strengths
 - Learns a data-driven similarity metric instead of assuming a fixed one, which can capture relationships a simple MSE would miss
@@ -100,25 +99,25 @@ The full evaluation used for validation is `SyntheticEvaluationPipeline`, which 
 - No early stopping implemented yet
 
 ## Installation
-No extra dependencies required beyond the core project setup
-(uses `torch` and `sklearn`, already required elsewhere).
+```bash
+pip install "katabatic[tvaegan]"   # or: poetry install -E tvaegan
+```
 
 ## Usage
-Benchmark scripts for each dataset:
-- Car: [benchmarks/examples/tvaegan/run_tvaegan_car.py](../../../../benchmarks/examples/tvaegan)
-
 ```python
-from katabatic.experimental.models.tvaegan.models import TVAEGANModel
+from katabatic.models.tvaegan.models import TVAEGANModel
 
 model = TVAEGANModel()
-
-model.train(
-    dataset_dir="path_to_data",
-    synthetic_dir="path_to_save"
-)
-
-synthetic_df = model.sample(1000)
+model.train("path/to/data_dir", synthetic_dir="path/to/output")  # x_train.csv + y_train.csv
+synthetic_df = model.sample(1000)  # features + target; defaults to the training row count
 ```
+
+Benchmark scripts for each dataset:
+- Adult: [run_tvaegan_adult.py](../../../benchmarks/examples/tvaegan/run_tvaegan_adult.py)
+- Car: [run_tvaegan_car.py](../../../benchmarks/examples/tvaegan/run_tvaegan_car.py)
+- Magic: [run_tvaegan_magic.py](../../../benchmarks/examples/tvaegan/run_tvaegan_magic.py)
+- Nursery: [run_tvaegan_nursery.py](../../../benchmarks/examples/tvaegan/run_tvaegan_nursery.py)
+- Shuttle: [run_tvaegan_shuttle.py](../../../benchmarks/examples/tvaegan/run_tvaegan_shuttle.py)
 
 ## Model Evaluation Benchmarks Results
 
@@ -134,5 +133,31 @@ Dimension scores:
 - consistency    0.2201, flagged as a known issue
 - stability      0.9725
 
+#### Nursery Dataset (default configuration)
+
+Composite score: 0.7005
+
+Dimension scores:
+- fidelity       0.8324
+- utility        0.7163
+- diversity      0.9023
+- privacy        0.4287
+- consistency    0.3752
+- stability      0.9920
+
+#### Magic Dataset (default configuration)
+
+Composite score: 0.6982
+
+Dimension scores:
+- fidelity       0.9104
+- utility        0.7885
+- diversity      0.6980
+- privacy        0.3859
+- consistency    0.1810, flagged as a known issue
+- stability      0.9760
+
+Adult and Shuttle (200 epochs with a smaller discriminator) have not been benchmarked yet.
+
 ## Model Performance Benchmarks Results
-Training and inference timing not yet measured for this model.
+Full benchmark script runtime (training, sampling and evaluation) on CPU: Nursery 172s, Magic 347s.
