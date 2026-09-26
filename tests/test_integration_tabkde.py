@@ -160,3 +160,15 @@ def test_tabkde_load_from_ref_missing_state(tmp_path):
     )
     with pytest.raises(FileNotFoundError):
         TabKDEModel.load_from_ref(store, ref)
+
+
+@pytest.mark.integration
+@pytest.mark.tabkde
+def test_tabkde_fit_keeps_integer_class_labels():
+    """fit(x, y) must treat y as classes: integer labels (e.g. shuttle's 1..7) came back as fractions."""
+    rng = np.random.default_rng(0)
+    x = pd.DataFrame({"a": rng.normal(size=300), "b": rng.normal(size=300)})
+    y = pd.Series(rng.integers(1, 8, size=300), name="class")
+
+    labels = TabKDEModel(random_state=0).fit(x, y).sample(500, seed=0)["class"]
+    assert set(labels.unique()) <= set(range(1, 8)), sorted(labels.unique())[:10]

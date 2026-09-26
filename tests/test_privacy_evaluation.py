@@ -125,3 +125,12 @@ def test_text_columns_are_compared_as_categories(column_types):
     results = PrivacyEvaluation(real, synth, **kwargs).evaluate()
 
     assert results["exact_duplicate_rate"] == 0.5
+
+
+def test_integer_and_float_categories_compare_by_value():
+    """A synthetic 13.0 must match a real 13; mixing them used to raise 'unseen labels'."""
+    real = pd.DataFrame({"level": [9, 10, 13, 14]})
+    synth = pd.DataFrame({"level": [13.0, 14.0, 12.5, 15.5]})
+    results = PrivacyEvaluation(real, synth, categorical_cols=["level"]).evaluate()
+
+    assert results["exact_duplicate_rate"] == 0.5

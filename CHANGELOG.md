@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TabKDE promoted to supported: `katabatic.experimental.models.tabkde_updated` renamed and moved to `katabatic.models.tabkde`, now subclassing `Model` with artifact persistence (`load_from_ref`) and CI integration tests.
 
 ### Fixed
-- TabKDE: numeric class labels were returned as interpolated fractions (e.g. 0.37); labels now round-trip exactly.
+- The privacy dimension failed when a categorical column held integers in the real data and floats in the synthetic data (e.g. `education-num` on adult); values now compare by number, so 13 and 13.0 match.
+- TabKDE: numeric class labels were returned as interpolated fractions (e.g. 0.37) by both `train()` and `fit(x, y)`; labels now round-trip exactly.
 - TabKDE: `seed` did not reach the GMM radius draw, so seeded draws were not reproducible and a fixed `random_state` returned identical rows on every `sample()` call.
 
 ## [1.0.0] - 2026-09-25
