@@ -102,7 +102,9 @@ class TabKDEModel(Model):
         df = x_train.copy()
         if y_train is not None:
             label_col = y_train.name if y_train.name else "target"
-            df[label_col] = y_train.values
+            # Labels are classes: the categorical path restores them exactly,
+            # where the numeric path would interpolate e.g. 1..7 into fractions.
+            df[label_col] = pd.Categorical(np.asarray(y_train))
             self._label_col = label_col
 
         self._train_df = df.copy()

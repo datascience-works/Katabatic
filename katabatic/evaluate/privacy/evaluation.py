@@ -137,10 +137,10 @@ class PrivacyEvaluation(Evaluation):
                 # Encode to integer codes for equality comparison in Gower
                 cat_mask[i] = True
                 le = LabelEncoder()
-                combined = pd.concat([real[col], synth[col]]).astype(str)
-                le.fit(combined)
-                real_out[:, i] = le.transform(real[col].astype(str)).astype(float)
-                synth_out[:, i] = le.transform(synth[col].astype(str)).astype(float)
+                real_keys, synth_keys = self._category_keys(real[col], synth[col])
+                le.fit(pd.concat([real_keys, synth_keys]))
+                real_out[:, i] = le.transform(real_keys).astype(float)
+                synth_out[:, i] = le.transform(synth_keys).astype(float)
             else:
                 # Continuous: min-max scale to [0, 1] using real data range
                 real_num = pd.to_numeric(real[col], errors="coerce")
@@ -158,6 +158,19 @@ class PrivacyEvaluation(Evaluation):
                 # else constant column — stays 0
 
         return real_out, synth_out, cat_mask
+
+    @staticmethod
+    def _category_keys(real_col: pd.Series, synth_col: pd.Series):
+        """String keys for comparing two columns as categories.
+
+        Numeric columns compare by value, so a real 13 and a synthetic 13.0 are
+        the same category.
+        """
+        if is_numerical(real_col) and is_numerical(synth_col):
+            return real_col.astype(float).astype(str), synth_col.astype(float).astype(
+                str
+            )
+        return real_col.astype(str), synth_col.astype(str)
 
     @staticmethod
     def _gower_matrix(A, B, cat_mask, batch_size=500):

@@ -114,7 +114,7 @@ print("STEP 3 - Train TabKDE - Car")
 print("=" * 60)
 
 model = TabKDEModel()
-model.fit(train_df)
+model.fit(train_df.drop(columns=[target_col]), train_df[target_col])
 
 print("\nTabKDE training complete.")
 
