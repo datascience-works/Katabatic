@@ -47,7 +47,7 @@ flowchart TD
 
 The supported models (`supported: True` in `ModelRegistry`, `katabatic/models/registry.py`) are
 `ganblr`, `ctgan`, `pategan`, `tabsyn`, `great`, `smote`, `mst`, `privtree`, `arf`, `synthpop`,
-`naivebayes`, `histogram`, `realtabformer`, `kde` and `fairtabdiffusion`. Experimental models
+`naivebayes`, `histogram`, `realtabformer`, `kde`, `tabkde`, `fairtabdiffusion` and `tvaegan`. Experimental models
 live under `katabatic/experimental/models/`, outside the semantic-versioning guarantee; see
 `docs/EXPERIMENTAL_MODELS.md`.
 
@@ -107,7 +107,9 @@ classDiagram
     Model <|-- HistogramModel
     Model <|-- REaLTabFormerModel
     Model <|-- KDESynthesizer
+    Model <|-- TabKDEModel
     Model <|-- FairTabDiffusion
+    Model <|-- TVAEGANModel
 
     Evaluation <|-- FidelityEvaluation
     Evaluation <|-- UtilityEvaluation
@@ -145,7 +147,7 @@ everything, including the model itself, to an evaluation pipeline's `run()`:
   `pipeline=` rather than silently ignored.
 
 Model-specific diagnostics live under their own names (`evaluate_tstr()` on
-GANBLR and PATE-GAN, `evaluate_ks()` on ARF, `evaluate_loss()` on TabSyn and TabDDPM).
+GANBLR and PATE-GAN, `evaluate_ks()` on ARF, `evaluate_loss()` on TabSyn, TVAE-GAN and TabDDPM).
 
 ---
 

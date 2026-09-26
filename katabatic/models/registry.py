@@ -114,6 +114,21 @@ class ModelRegistry:
             "extra": "kde",
             "supported": True,
         },
+        "tabkde": {
+            "module": "katabatic.models.tabkde.models",
+            "class": "TabKDEModel",
+            # numpy, pandas, scipy and scikit-learn are all core dependencies.
+            "dependencies": ["sklearn", "scipy"],
+            "extra": "tabkde",
+            "supported": True,
+        },
+        "tvaegan": {
+            "module": "katabatic.models.tvaegan.models",
+            "class": "TVAEGANModel",
+            "dependencies": ["torch"],
+            "extra": "tvaegan",
+            "supported": True,
+        },
         "arf": {
             "module": "katabatic.models.arf.models",
             "class": "ARFModel",

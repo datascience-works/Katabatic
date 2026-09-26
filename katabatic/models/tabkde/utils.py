@@ -11,6 +11,7 @@ Provides helpers for:
 
 from __future__ import annotations
 
+import copy
 from dataclasses import dataclass
 
 import numpy as np
@@ -186,7 +187,7 @@ def sample_points_via_dcp_distribution(
     n_samples: int,
     gmm_model,
     noise_std: float = 0.01,
-    random_state: int | None = None,
+    random_state: int | np.random.Generator | None = None,
 ) -> np.ndarray:
     """
     Core TabKDE sampler:
@@ -219,8 +220,13 @@ def sample_points_via_dcp_distribution(
     norms = np.where(norms == 0, 1.0, norms)
     directions = directions / norms
 
-    # Radii sampled from fitted GMM over DCR distances
-    distances, _ = gmm_model.sample(n_samples)
+    # Radii sampled from fitted GMM over DCR distances. GaussianMixture.sample()
+    # draws from the estimator's own random_state (fixed at fit time), which would
+    # either ignore this call's seed or repeat the same radii on every call, so
+    # sample from a copy seeded from this call's generator instead.
+    radius_model = copy.copy(gmm_model)
+    radius_model.random_state = int(rng.integers(0, 2**31 - 1))
+    distances, _ = radius_model.sample(n_samples)
     distances = np.abs(np.asarray(distances)).reshape(n_samples, 1)
 
     # Small Gaussian noise for diversity
