@@ -10,11 +10,21 @@ from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 from katabatic.models.tvaegan.models import TVAEGANModel
 
 config = RunConfig(
-    dataset_name="car",
+    dataset_name="shuttle",
     model_name="tvaegan",
-    categorical_cols=["0", "1", "2", "3", "4", "5"],
-    continuous_cols=[],
-    target_col_raw="6",
+    categorical_cols=[],
+    continuous_cols=[
+        "time",
+        "a1",
+        "a2",
+        "a3",
+        "a4",
+        "a5",
+        "a6",
+        "a7",
+        "a8",
+    ],
+    target_col_raw="class",
     constraints=None,
 )
 
@@ -23,7 +33,9 @@ train_df, test_df, target_col, paths = preprocess_and_split(config)
 print("\n" + "=" * 60)
 print("STEP 3 : Train TVAE-GAN")
 print("=" * 60)
-model = TVAEGANModel()
+# Shuttle is heavily imbalanced (~80% one class): the smaller discriminator and
+# longer training used for Adult avoid class collapse (see the model README).
+model = TVAEGANModel(epochs=200, discriminator_hidden_dims=[32, 16])
 model.train(paths["split_dir"], synthetic_dir=paths["synthetic_dir"])
 print("\nTVAE-GAN training complete.")
 
