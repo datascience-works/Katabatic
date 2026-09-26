@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- TVAE-GAN promoted to supported: moved from `katabatic.experimental.models.tvaegan` to `katabatic.models.tvaegan`, with artifact persistence (`load_from_ref`), a `tvaegan` extra and CI integration tests.
+- TVAE-GAN promoted to supported: moved from `katabatic.experimental.models.tvaegan` to `katabatic.models.tvaegan`, with artifact persistence (`load_from_ref`), a `tvaegan` extra, CI integration tests and benchmark scripts for all five datasets. It now uses the shared six-dimension `evaluate()`; its reconstruction loss is available as `evaluate_loss()`.
 
 ## [1.0.0] - 2026-09-25
 

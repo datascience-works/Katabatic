@@ -40,7 +40,7 @@ print("\n" + "=" * 60)
 print("STEP 3 : Train TVAE-GAN")
 print("=" * 60)
 model = TVAEGANModel(epochs=200, discriminator_hidden_dims=[32, 16])
-model.train(paths["split_dir"], paths["synthetic_dir"])
+model.train(paths["split_dir"], synthetic_dir=paths["synthetic_dir"])
 print("\nTVAE-GAN training complete.")
 
 print("\n" + "=" * 60)

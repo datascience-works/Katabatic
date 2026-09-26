@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Poetry](https://img.shields.io/badge/dependency-poetry-blue)](https://python-poetry.org/)
 
-A framework for synthetic tabular data generation: 15 supported generative models behind one interface, a six-dimension evaluation, and versioned artifacts that can live on local disk or in cloud storage.
+A framework for synthetic tabular data generation: 16 supported generative models behind one interface, a six-dimension evaluation, and versioned artifacts that can live on local disk or in cloud storage.
 
 ## Features
 

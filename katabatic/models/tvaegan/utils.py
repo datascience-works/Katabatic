@@ -101,9 +101,12 @@ class TabularPreprocessor:
             elif col in self.numeric_cols and np.issubdtype(dtype, np.floating):
                 out[col] = out[col].astype(dtype)
             else:
-                out[col] = pd.to_numeric(out[col], errors="ignore").astype(
-                    dtype, errors="ignore"
-                )
+                # Categories decode as strings; restore numeric ones (e.g. an
+                # integer target) to their original dtype.
+                try:
+                    out[col] = pd.to_numeric(out[col]).astype(dtype)
+                except (ValueError, TypeError):
+                    pass
         return out
 
 

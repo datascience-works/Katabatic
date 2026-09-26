@@ -19,6 +19,8 @@ from .utils import (
     TabularPreprocessor,
     TVAEGANConfig,
     build_networks,
+    discriminator_feature_loss,
+    reparameterize,
     train_vaegan,
 )
 
@@ -47,9 +49,8 @@ class TVAEGANModel(Model):
         lr: float = 3e-4,
         gamma: float = 1.0,
         seed: int = 42,
-        **kwargs,
     ) -> None:
-        super().__init__(**kwargs)
+        super().__init__()
         self.config = TVAEGANConfig(
             latent_dim=latent_dim,
             hidden_dims=hidden_dims or [128, 64],
@@ -67,17 +68,24 @@ class TVAEGANModel(Model):
         self.discriminator: Discriminator | None = None
         self.y_col_name_: str | None = None
         self.data_dim_: int | None = None
-        self.is_fitted = False
+        self._n_train_rows: int | None = None
 
     def train(
-        self, dataset_dir: str | Path, synthetic_dir: str | Path, **kwargs
+        self,
+        data_dir: str | Path,
+        *args,
+        synthetic_dir: str | Path | None = None,
+        artifact_state_dir: str | None = None,
+        **kwargs,
     ) -> TVAEGANModel:
-        dataset_dir = Path(dataset_dir)
+        data_dir = Path(data_dir)
+        if synthetic_dir is None:
+            synthetic_dir = Path("synthetic") / (data_dir.name or "dataset") / "tvaegan"
         synthetic_dir = Path(synthetic_dir)
         synthetic_dir.mkdir(parents=True, exist_ok=True)
 
-        x_train_path = dataset_dir / "x_train.csv"
-        y_train_path = dataset_dir / "y_train.csv"
+        x_train_path = data_dir / "x_train.csv"
+        y_train_path = data_dir / "y_train.csv"
         if not x_train_path.exists():
             raise FileNotFoundError(f"x_train.csv not found at {x_train_path}")
         if not y_train_path.exists():
@@ -97,6 +105,7 @@ class TVAEGANModel(Model):
         )
         data = self.preprocessor.encode(df_train)
         self.data_dim_ = data.shape[1]
+        self._n_train_rows = len(df_train)
 
         self.encoder, self.decoder_generator, self.discriminator = train_vaegan(
             data, self.config
@@ -111,7 +120,7 @@ class TVAEGANModel(Model):
         y_synth.to_csv(synthetic_dir / "y_synth.csv", index=False)
         df_synth.to_csv(synthetic_dir / "synthetic.csv", index=False)
 
-        self._maybe_save_artifact_state(kwargs.get("artifact_state_dir"))
+        self._maybe_save_artifact_state(artifact_state_dir)
         return self
 
     def _save_artifact_state(self, artifact_state_dir: str) -> None:
@@ -128,6 +137,7 @@ class TVAEGANModel(Model):
         payload = {
             "config": asdict(self.config),
             "data_dim": self.data_dim_,
+            "n_train_rows": self._n_train_rows,
             "y_col_name": self.y_col_name_,
             "preprocessor": self.preprocessor,
             "encoder": self.encoder.state_dict(),
@@ -147,6 +157,7 @@ class TVAEGANModel(Model):
 
         instance = cls(**payload["config"])
         instance.data_dim_ = payload["data_dim"]
+        instance._n_train_rows = payload.get("n_train_rows")
         instance.y_col_name_ = payload["y_col_name"]
         instance.preprocessor = payload["preprocessor"]
 
@@ -163,9 +174,17 @@ class TVAEGANModel(Model):
         instance.is_fitted = True
         return instance
 
-    def sample(self, n: int, seed: int | None = None, **kwargs) -> pd.DataFrame:
+    def sample(
+        self, n_samples: int | None = None, *args, seed: int | None = None, **kwargs
+    ) -> pd.DataFrame:
+        """Generate rows (features plus target); defaults to the training row count."""
         if not self.is_fitted:
             raise RuntimeError("TVAEGANModel must be trained before calling sample().")
+        n = n_samples if n_samples is not None else self._n_train_rows
+        if n is None:
+            raise ValueError(
+                "Pass n_samples: this model doesn't record its training size."
+            )
 
         device = next(self.decoder_generator.parameters()).device
         if seed is not None:
@@ -177,22 +196,16 @@ class TVAEGANModel(Model):
 
         return self.preprocessor.decode(x_gen)
 
-    def evaluate(self, *, data_dir: str, split: str = "test", **kwargs) -> float:
+    def evaluate_loss(self, *, data_dir: str, split: str = "test") -> float:
         """
-        Returns a reconstruction loss (lower is better), consistent with
-        other Katabatic models. Uses the discriminator-feature reconstruction
-        loss from training (paper Eq. 6-7), applied to the given split.
+        Reconstruction loss on a data split (lower is better), measured in the
+        discriminator's feature space as in training (paper Eq. 6-7). For the
+        six-dimension evaluation shared by all models, use evaluate().
         """
         if not self.is_fitted:
             raise RuntimeError(
-                "TVAEGANModel must be trained before calling evaluate()."
+                "TVAEGANModel must be trained before calling evaluate_loss()."
             )
-
-        from pathlib import Path
-
-        import pandas as pd
-
-        from .utils import discriminator_feature_loss, reparameterize
 
         data_dir = Path(data_dir)
         x_path = data_dir / f"x_{split}.csv"

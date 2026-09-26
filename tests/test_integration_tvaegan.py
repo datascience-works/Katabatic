@@ -14,6 +14,7 @@ from tests.conftest import require_backend
 require_backend("torch", "save")
 
 from katabatic.artifacts import LocalArtifactStore  # noqa: E402
+from katabatic.models.base_model import EVALUATION_DIMENSIONS  # noqa: E402
 from katabatic.models.registry import ModelRegistry  # noqa: E402
 from katabatic.models.tvaegan.models import TVAEGANModel  # noqa: E402
 from katabatic.pipeline.train_test_split.pipeline import (  # noqa: E402
@@ -70,19 +71,28 @@ def test_tvaegan_artifact_pipeline_smoke(tmp_path, tiny_binary_csv):
     reloaded = TVAEGANModel.load_from_ref(store, mr)
     assert reloaded.is_fitted, "reloaded model is not marked fitted"
 
-    out = reloaded.sample(10)
+    out = reloaded.sample(n_samples=10)
     assert len(out) == 10
     assert list(out.columns) == ["f0", "f1", "y"]
+
+    train_df = pd.read_csv(
+        store.open_path(f"{res['dataset_ref'].train_relpath}/train_full.csv")
+    )
+    assert len(reloaded.sample()) == len(train_df)
 
     # The reloaded weights must be identical, not merely loadable: with the
     # same seed the reloaded decoder must reproduce the trained model's output.
     pd.testing.assert_frame_equal(model.sample(10, seed=7), reloaded.sample(10, seed=7))
 
-    # sample() only exercises the decoder. evaluate() runs the encoder and
+    # sample() only exercises the decoder. evaluate_loss() runs the encoder and
     # discriminator too, so it proves all three networks were restored.
     test_dir = store.open_path(res["dataset_ref"].test_relpath)
-    loss = reloaded.evaluate(data_dir=str(test_dir), split="test")
+    loss = reloaded.evaluate_loss(data_dir=str(test_dir), split="test")
     assert math.isfinite(loss)
+
+    report = reloaded.evaluate(train_df, target_col="y")
+    assert set(report.dimension_scores) == set(EVALUATION_DIMENSIONS)
+    assert all(0.0 <= v <= 1.0 for v in report.dimension_scores.values())
 
 
 @pytest.mark.integration
