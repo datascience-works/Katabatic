@@ -98,7 +98,7 @@ class GANBLR(Model):
         self._warmup_run(warmup_epochs, verbose=verbose)
         sample_size = min(2000, d.data_size)
         # print("Datasize and min" , d.data_size)
-        syn_data = self._sample(size=sample_size, verbose=0)
+        syn_data = self._sample(n_samples=sample_size, verbose=0)
         discriminator_label = np.hstack([np.ones(d.data_size), np.zeros(sample_size)])
         # [np.ones(d.data_size), np.zeros(d.data_size)])
         # build discriminator once before each epoch run.
@@ -116,7 +116,7 @@ class GANBLR(Model):
             # ls = np.mean(-np.log(np.subtract(1, prob_fake)))
             ls = np.mean(-np.log(np.clip(1 - prob_fake, epsilon, 1)))
             g_history = self._run_generator(loss=ls).history
-            syn_data = self._sample(size=sample_size, verbose=0)
+            syn_data = self._sample(n_samples=sample_size, verbose=0)
 
             if verbose:
                 print(
@@ -181,14 +181,14 @@ class GANBLR(Model):
         pred = pipline.predict(x_test)
         return accuracy_score(y_test, pred)
 
-    def sample(self, size=None, verbose=1, seed=None) -> pd.DataFrame:
+    def sample(self, n_samples=None, verbose=1, seed=None) -> pd.DataFrame:
         """
         Generate synthetic data.
 
         Parameters
         ----------
-        size : int or None
-            Size of the data to be generated. set to `None` to make the size equal to the size of the training set.
+        n_samples : int or None
+            Number of rows to generate. set to `None` to make it equal to the size of the training set.
 
         verbose : int, default=1
             Whether to output the log. Use 1 for log output and 0 for complete silence.
@@ -202,7 +202,7 @@ class GANBLR(Model):
         synthetic_samples : pd.DataFrame
             Generated synthetic data, with the same column names used at fit time.
         """
-        ordinal_data = self._sample(size, verbose, seed=seed)
+        ordinal_data = self._sample(n_samples, verbose, seed=seed)
         origin_x = self._ordinal_encoder.inverse_transform(ordinal_data[:, :-1])
         origin_y = self._label_encoder.inverse_transform(ordinal_data[:, -1]).reshape(
             -1, 1
@@ -212,7 +212,7 @@ class GANBLR(Model):
         ) + [self._target_name or "target"]
         return pd.DataFrame(np.hstack([origin_x, origin_y]), columns=columns)
 
-    def _sample(self, size=None, verbose=1, seed=None) -> np.ndarray:
+    def _sample(self, n_samples=None, verbose=1, seed=None) -> np.ndarray:
         """
         Generate synthetic data in ordinal encoding format
         """
@@ -274,7 +274,7 @@ class GANBLR(Model):
         # create kDB model, then sample the data
         model = DiscreteBayesianNetwork(edge_names)
         model.add_cpds(y_cpd, *feature_cpds)
-        sample_size = d.data_size if size is None else size
+        sample_size = d.data_size if n_samples is None else n_samples
         result = BayesianModelSampling(model).forward_sample(
             size=sample_size, show_progress=verbose > 0
         )
@@ -326,31 +326,47 @@ class GANBLR(Model):
         )
         return model
 
-    def train(self, dataset, size_category="small", *args, **kwargs):
-        # parser = argparse.ArgumentParser(
-        #     description="Train GANBLR and generate synthetic data")
-        # parser.add_argument('--dataset', type=str, required=True,
-        #                     help='Name of the dataset (e.g., adult)')
-        # parser.add_argument('--size_category', type=str, required=True, choices=[
-        #                     'small', 'medium', 'large'], help='Dataset size category (small/medium/large)')
-        # args = parser.parse_args()
+    def train(
+        self,
+        data_dir: str,
+        *args,
+        synthetic_dir: str | None = None,
+        artifact_state_dir: str | None = None,
+        size_category: str = "small",
+        **kwargs,
+    ) -> "GANBLR":
+        """
+        Train GANBLR using Katabatic-standard x_train.csv and y_train.csv, then
+        generate and persist synthetic data (and artifact state, if requested).
 
+        Parameters
+        ----------
+        data_dir : str
+            Directory containing x_train.csv and y_train.csv.
+        synthetic_dir : str, optional
+            Directory to write the generated x_synth.csv / y_synth.csv to.
+            Defaults to synthetic/<dataset_name>/ganblr.
+        artifact_state_dir : str, optional
+            When provided, the fitted model state is persisted here for
+            later retrieval via load_from_ref().
+        size_category : {"small", "medium", "large"}, default="small"
+            Coarse dataset-size hint used to pick a default epoch count when
+            neither `train_epochs` nor `epochs` is passed in kwargs.
+
+        Returns
+        -------
+        GANBLR
+            Trained model instance.
+        """
         epochs = kwargs.get(
             "train_epochs",
             kwargs.get("epochs", 150 if size_category == "large" else 100),
         )
 
-        model_name = "ganblr"
-        dataset_name = dataset
-        data_dir = f"{dataset_name}"
-
-        # Honor explicit synthetic_dir if provided (pipeline passes this)
-        explicit_synth_dir = kwargs.get("synthetic_dir")
-        if explicit_synth_dir and isinstance(explicit_synth_dir, str):
-            save_dir = explicit_synth_dir
-        else:
-            save_dir = os.path.join("synthetic", dataset_name, model_name)
-        os.makedirs(save_dir, exist_ok=True)
+        dataset_name = os.path.basename(os.path.normpath(data_dir)) or "dataset"
+        if not synthetic_dir:
+            synthetic_dir = os.path.join("synthetic", dataset_name, "ganblr")
+        os.makedirs(synthetic_dir, exist_ok=True)
 
         x_train_path = os.path.join(data_dir, "x_train.csv")
         y_train_path = os.path.join(data_dir, "y_train.csv")
@@ -374,14 +390,15 @@ class GANBLR(Model):
         x_synth = df_synth.iloc[:, :-1]
         y_synth = df_synth.iloc[:, -1]
 
-        x_synth.to_csv(os.path.join(save_dir, "x_synth.csv"), index=False)
-        y_synth.to_csv(os.path.join(save_dir, "y_synth.csv"), index=False, header=True)
-        print(f"\n Synthetic data saved to: {save_dir}")
+        x_synth.to_csv(os.path.join(synthetic_dir, "x_synth.csv"), index=False)
+        y_synth.to_csv(
+            os.path.join(synthetic_dir, "y_synth.csv"), index=False, header=True
+        )
+        print(f"\n Synthetic data saved to: {synthetic_dir}")
 
-        # persist model state for artifact reload
-        artifact_state_dir = kwargs.get("artifact_state_dir")
-        if artifact_state_dir:
-            self._save_artifact_state(artifact_state_dir)
+        self._maybe_save_artifact_state(artifact_state_dir)
+
+        return self
 
     def _save_artifact_state(self, artifact_state_dir: str) -> None:
         """
@@ -403,14 +420,7 @@ class GANBLR(Model):
         train() pickles the whole fitted instance, so reloading is a plain
         unpickle rather than the attribute/weight split CTGAN needs.
         """
-        state_file = cls.ARTIFACT_STATE_FILES[0]
-        state_path = store.open_path(f"{ref.state_relpath}/{state_file}")
-
-        if not state_path.is_file():
-            raise FileNotFoundError(
-                f"No GANBLR state at {state_path}. The model must be trained "
-                f"through a pipeline that passes artifact_state_dir."
-            )
+        state_path = cls._require_state_file(store, ref)
 
         with open(state_path, "rb") as fh:
             # loading our own saved model artifact

@@ -53,9 +53,9 @@ The Python wrapper has been adapted into Katabatic's required 3-file model struc
 
 - models.py
   Katabatic wrapper class that:
-  - accepts input CSV path (full training data, X + y)
+  - loads training data from a data directory (train_full.csv, or x_train.csv + y_train.csv)
   - writes and executes an R script via subprocess
-  - saves synthetic output CSV to the specified path
+  - saves synthetic output (synthetic.csv, x_synth.csv, y_synth.csv) to the specified directory
 
 - utils.py
   Helper functions for:
@@ -104,59 +104,60 @@ subprocess.run(["Rscript", "-e", "install.packages('synthpop', repos='https://cl
 
 ## Quick Start
 
-### Basic Usage (Standalone Concept)
-
-1) Prepare training split data:
-- x_train.csv
-- y_train.csv
-
-2) Run generator (conceptual example):
-
 ```python
-from katabatic.models.synthpop import SynthPop
-import pandas as pd
+from katabatic.models.synthpop.models import SynthPop
 
 model = SynthPop(seed=42)
 
 model.train(
-    dataset_path="path/to/train_full.csv",
-    synthetic_path="path/to/synthetic_full.csv"
+    "path/to/data_dir",           # contains train_full.csv, or x_train.csv + y_train.csv
+    synthetic_dir="path/to/synthetic_dir",
 )
+
+synthetic_df = model.sample(n_samples=1000)
 ```
 
-Output:
-- synthetic_full.csv: full synthetic table in original column order
+`n_samples` defaults to the number of training rows when omitted. When more data is generated
+than training rows, `sample()` resamples with replacement.
+
+To persist fitted state for later reload via `SynthPop.load_from_ref()`, pass
+`artifact_state_dir=...` to `train()`.
 
 ## Integration With Katabatic Pipeline
 
-SynthPop is designed to plug into Katabatic's pipeline that outputs train split CSVs.
+SynthPop plugs into `katabatic.models.base_model.Model`'s `train()`/`sample()`
+contract.
 
-Expected input structure:
-- output_dir/
-  - x_train.csv
-  - y_train.csv
+Expected input structure (`data_dir`):
+- train_full.csv, **or**
+- x_train.csv + y_train.csv
 
-Expected synthetic outputs:
-- synthetic_dir/
-  - synthetic.csv
-  - x_synth.csv
-  - y_synth.csv
+Expected synthetic outputs (`synthetic_dir`):
+- synthpop_input.csv, run_synthpop.R (intermediate files passed to/from R)
+- synthetic.csv (full R output)
+- x_synth.csv / y_synth.csv (split by the last column, matching every other Katabatic model)
 
-The adapter merges x_train and y_train before passing to SynthPop, then splits the synthetic output back into x_synth and y_synth.
-
-Example pipeline usage (typical Katabatic flow):
+Example pipeline usage:
 
 ```python
-from katabatic.models.synthpop.adapter import SynthPopAdapter
+from katabatic.artifacts import LocalArtifactStore
+from katabatic.models.synthpop.models import SynthPop
+from katabatic.pipeline.train_test_split.pipeline import TrainTestSplitPipeline
 
-adapter = SynthPopAdapter(seed=42)
-
-adapter.train(
-    dataset_dir="sample_data/adult",
-    synthetic_dir="synthetic/adult/synthpop",
-    label_col="income"
+store = LocalArtifactStore("artifacts")
+pipe = TrainTestSplitPipeline(model=SynthPop())
+res = pipe.run(
+    input_csv="sample_data/adult.csv",
+    dataset_name="adult",
+    artifact_store=store,
+    model_name="synthpop",
 )
 ```
+
+## Evaluation
+
+`SynthPop.evaluate()` raises `NotImplementedError` as evaluation is done through
+the `TSTREvaluation`/`SyntheticEvaluationPipeline`.
 
 ## Parameter Guide
 
@@ -252,7 +253,7 @@ Solution:
 Solution:
 - Check for constant columns (zero variance) in the training data
 - Check for columns with only NA values
-- Ensure the label column name matches what is passed to the adapter
+- The target column is assumed to be the last column of `train_full.csv`.
 
 ### Issue: Output files not saved correctly
 Solution:

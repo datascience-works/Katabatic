@@ -206,10 +206,8 @@ class TrainTestSplitPipeline(Pipeline):
         os.makedirs(state_dir, exist_ok=True)
 
         _m = type(current_model)
-        if getattr(_m, "ARTIFACT_STATE_FILES", ()) and not _is_tabsyn(current_model):
+        if getattr(_m, "ARTIFACT_STATE_FILES", ()):
             train_kw.setdefault("artifact_state_dir", state_dir)
-        if _is_tabsyn(current_model):
-            train_kw.setdefault("save_dir", state_dir)
 
         current_model.train(output_dir, *args, **train_kw)
 
@@ -322,10 +320,8 @@ class TrainTestSplitPipeline(Pipeline):
         state_path = str(store.open_path(mr.state_relpath))
 
         _m = type(current_model)
-        if getattr(_m, "ARTIFACT_STATE_FILES", ()) and not _is_tabsyn(current_model):
+        if getattr(_m, "ARTIFACT_STATE_FILES", ()):
             train_kw.setdefault("artifact_state_dir", state_path)
-        if _is_tabsyn(current_model):
-            train_kw.setdefault("save_dir", state_path)
 
         current_model.train(dataset_dir, *args, **train_kw)
 

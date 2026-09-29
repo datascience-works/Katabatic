@@ -38,10 +38,17 @@ model.train(
     continuous_cols=[],
 )
 
-synthetic_df = model.sample(n=1000)
+synthetic_df = model.sample(n_samples=1000)
 ```
 
-A random seed can be provided to make synthetic data generation reproducible.
+A random seed can be provided to make synthetic data generation reproducible. `n_samples` defaults to the number of training rows when omitted.
+
+To persist fitted state for later reload via `NaiveBayesModel.load_from_ref()`, pass `artifact_state_dir=...` to `train()`.
+
+## Evaluation
+
+`NaiveBayesModel.evaluate()` raises `NotImplementedError` as it doesn't have a meaningful metric. Benchmark scores come from external
+`TSTREvaluation`/`SyntheticEvaluationPipeline`.
 
 ## Benchmark Results
 

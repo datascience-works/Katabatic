@@ -1,145 +1,160 @@
-# TaBuLa
+# TabuLa Model
 
-**TaBuLa** is a hybrid generative model for tabular data that combines **latent-variable modeling with diffusion-style refinement**. It is designed to capture complex feature dependencies but comes with **high computational and memory requirements**, particularly for medium-to-large datasets.
-
-In this project, TaBuLa was explored as a **representative VAE–diffusion hybrid model** within the Katabatic generative benchmarking framework.
-
-***
-
-## Overview
-
-TaBuLa aims to improve tabular data synthesis by:
-- Learning a latent representation of tabular data
-- Applying diffusion-inspired transformations to refine samples
-- Preserving complex feature interactions beyond standard GAN-based approaches
-
-While theoretically powerful, TaBuLa is **computationally intensive** and sensitive to implementation and hardware constraints.
-
-***
-
-## Implementation Journey and Challenges
-
-### Initial Self-Implementation Attempt
-
-A significant amount of time was spent attempting to **implement TaBuLa from scratch**, following the original paper and public descriptions.
-
-During this phase:
-- Core architectural components were implemented manually
-- Multiple training configurations were tested
-- The model consistently failed to converge or produced unstable outputs
-
-After extensive debugging and validation attempts, it was concluded that the self-implemented version was **not behaving reliably** and could not be trusted for fair evaluation.
-
-As a result, the self-implemented code was **intentionally removed** to avoid introducing incorrect or misleading results into the project.
+## Model Overview
+TabuLa (Tabular Language) is a language model-based synthetic tabular data generator that treats each table row as a natural language sequence and fine-tunes a compact GPT-2 variant to generate new rows autoregressively.
 
 ---
 
-### Pivot to Official Repository Implementation
-
-To ensure correctness and alignment with the original method, the approach was revised to **utilize the official TaBuLa class from the authors’ repository**.
-
-This decision was made to:
-- Avoid deviating from the reference implementation
-- Ensure algorithmic correctness
-- Focus evaluation on model behavior rather than implementation errors
-
-The reused components were integrated into the Katabatic pipeline where possible, while preserving attribution to the original authors.
+### Key Idea
+TabuLa applies autoregressive language modelling to tabular data. Each row is serialized into a text string (e.g., `"age 35, income 52000, education bachelors, ..."`) with column order randomly shuffled per row to prevent the model from learning spurious positional dependencies. A distilGPT-2 model with randomly initialized weights (no pretrained knowledge) is then fine-tuned on these sequences. At generation time, new rows are sampled token-by-token and parsed back into structured tabular form.
 
 ---
 
-### Hardware and Scalability Constraints
+### Research Paper
+Zhao, Z., Birke, R., & Chen, L. (2023). *TabuLa: Harnessing Language Models for Tabular Data Synthesis*. arXiv:2310.12746.
 
-Despite using the official implementation, TaBuLa proved to be **computationally heavys** under the available hardware constraints.
+**Parameters kept the same (per paper, Table 2):**
+- Model architecture: distilGPT-2 with randomly initialized weights
+- Column order: shuffled randomly per row during both training and generation
+- Generation strategy: `do_sample=True`, `temperature=0.8`, `k=16` rows per round
+- Epochs: 50 for large datasets, 100 for small datasets
+- `max_length` scaled to the width of each dataset's serialized rows
 
-Specifically:
-- Training time increased sharply with dataset size
-- Memory usage exceeded practical limits on several datasets
-- Full multi-dataset evaluation was not feasible within project timelines
+**Parameters changed / inferred:**
+- `max_rounds` (not specified in paper): set to 100–150 depending on dataset size to ensure sufficient valid rows are collected
+- `n_samples` (not specified): set to 1000 to match the evaluation pipeline standard
+- For large datasets (Adult, Bank Marketing, Credit Card, Covertype), a subsampling block of 50–200 rows per class is used for CPU/MPS validation runs — this must be removed for full GPU training to reproduce paper results
 
-As a result:
-- TaBuLa was **successfully executed only on the Car dataset**
-- Experiments on larger datasets were intentionally discontinued
+**Parts not specified in the paper:**
+- Exact tokenizer padding and truncation behaviour — inferred from the GReaT implementation (Borisov et al., 2023), which TabuLa builds upon
+- Row validity checking logic (constraint ranges, type coercion) — implemented in the Katabatic evaluation pipeline
 
-This limitation is explicitly acknowledged and factored into result interpretation.
+---
 
-***
+## Approach
+TabuLa's pipeline consists of three stages: serialization, fine-tuning, and generation with filtering.
 
-## Experimental Scope
+1. Each training row is converted to a free-text string with column–value pairs in random order.
+2. A distilGPT-2 model (randomly initialized) is fine-tuned on these strings using a standard causal language modelling objective.
+3. At inference, the model generates text sequences which are parsed back into column–value dictionaries, validated against expected types and constraint ranges, and collected until `n_samples` valid rows are obtained.
 
-- **Datasets evaluated**: Car only
-- **Evaluation method**: TSTR (Train on Synthetic, Test on Real)
-- **Role in project**: Demonstrates trade-offs between model expressiveness and computational feasibility
+### Training Details
+The model is fine-tuned using the Hugging Face `Trainer` API with a causal language modelling loss. Each token is predicted conditioned on all preceding tokens in the serialized row. Rows are padded/truncated to `max_length` tokens. The training data is the real tabular dataset (or a subsampled version for CPU/MPS runs).
 
-TaBuLa results are included for **qualitative and methodological comparison**, not as a fully competitive baseline across all datasets.
+### Convergence Criteria
+Training runs for a fixed number of epochs (`epochs=50` for large datasets, `epochs=100` for small datasets) as specified in the paper. There is no early stopping.
 
-***
+---
 
-## Deviations from the Original Paper
+## Hyperparameters
 
-Relative to the original TaBuLa paper, this implementation differs in the following ways:
+| Hyperparameter | Value | Source |
+|---|---|---|
+| `epochs` | 50 (large datasets), 100 (small) | Zhao et al. (2023), Table 2 |
+| `k` | 16 | Zhao et al. (2023), Section 4.2 — generation batch size per round |
+| `temperature` | 0.8 | Zhao et al. (2023) |
+| `do_sample` | True | Zhao et al. (2023) |
+| `max_length` | 256–512 (dataset-dependent) | Scaled to serialized row width |
+| `n_samples` | 1000 | Katabatic pipeline standard |
+| `max_rounds` | 100–150 | Inferred; ensures sufficient valid rows |
 
-1. **Partial dataset coverage** due to hardware limitations
-2. **No architectural modifications**, relying on the official implementation
-3. **Controlled experimental scope**, limited to feasibility testing
-4. **Pipeline-level integration only**, without extensive hyperparameter tuning
+---
 
-These deviations were necessary to maintain experimental integrity under real-world constraints.
+## Input
+- `X`: Tabular feature matrix
+- `y`: Target labels
 
-***
+### Expected Files
+- `x_train.csv`
+- `y_train.csv`
 
-## References
+---
 
-- Reference paper: https://arxiv.org/abs/1604.04960
-- Reference repository: https://github.com/zhao-zilong/Tabula
+## Preprocessing
+No additional preprocessing beyond the standard Katabatic pipeline. Column order is shuffled randomly per row at serialization time (inside the model).
 
-***
+### Numerical Features
+Numerical values are serialized as plain decimal strings (e.g., `"age 35"`). No normalization or binning is applied before serialization.
 
-## Source Code Reuse and Attribution
+### Categorical Features
+Categorical values are serialized as their string labels (e.g., `"education bachelors"`). No encoding is applied; the language model learns the category vocabulary directly from the text.
 
-This implementation makes **direct use of the TaBuLa class and supporting modules from the official repository**.
+---
 
-All reused code:
-- Remains attributed to the original authors
-- Is used in accordance with the repository license
-- Was not reimplemented unnecessarily to avoid introducing deviations
+## Label Handling
+The target label is included as a column in the serialized row (with random position) during training. At generation time, the model produces rows that include the label column, which is then separated into `y_synth.csv`.
 
-The author’s contribution focuses on **evaluation design, pipeline integration, and experimental analysis**.
+---
 
-***
+## Output
+Generated files:
 
-## Generative AI Acknowledgement
+- `x_synth.csv`
+- `y_synth.csv`
+- `metadata.json`
 
-**ChatGPT (OpenAI)** was used to assist with interpreting the TaBuLa paper and repository, and to support reasoning about implementation and experimental design.
+---
 
-All generated guidance was **manually verified** against the original sources. The final decisions regarding implementation scope, code reuse, and result inclusion were made independently by the author.
-# TabuLa
+## Evaluation
+`evaluate()` returns the standard Katabatic 6-dimension evaluation report:
+- **Fidelity** — statistical similarity between real and synthetic distributions
+- **Utility** — downstream ML performance on synthetic vs. real data
+- **Diversity** — coverage of the real data's feature space
+- **Privacy** — resistance to membership inference and attribute disclosure
+- **Consistency** — internal logical coherence of synthetic rows
+- **Stability** — variance of fidelity and diversity across multiple generation seeds
 
-**TabuLa** is a language-model-based approach for synthetic tabular data
-generation. It represents tabular rows as text, trains a causal language model
-on the resulting token sequences, and generates synthetic rows that are parsed
-back into tabular data.
+---
 
-## Overview
+## Strengths
+- Handles mixed-type data (categorical and numerical) natively through text serialization — no separate encoding pipelines needed.
+- Random column shuffling prevents the model from learning spurious positional correlations, improving generalization.
+- Lightweight architecture (distilGPT-2) trains faster than full GPT-2 while maintaining competitive quality.
+- Works well on datasets with rich categorical structure where statistical models struggle to capture complex interactions.
 
-The TabuLa workflow is:
+---
 
-1. Convert tabular rows into textual representations.
-2. Randomise column order during training.
-3. Tokenise the textual rows.
-4. Train a causal language model.
-5. Generate new textual rows.
-6. Parse the generated text back into tabular data.
+## Limitations
+- Valid row rate is typically low on CPU/MPS with subsampled training data; full GPU training is required to reproduce paper-quality results.
+- Very wide datasets (e.g., Covertype with 54 columns) produce long serialized rows that require large `max_length` values and significantly increase generation time.
+- Generation is slow compared to non-LLM models — each round generates only `k=16` candidate rows, so reaching `n_samples=1000` valid rows may require many rounds.
+- Purely numerical datasets with many continuous features may see lower fidelity, as the model must learn numeric value distributions from text tokens.
 
-The Katabatic integration preserves the original TabuLa implementation as much
-as possible while adapting it to Katabatic's model interface.
+---
 
-## Implementation
+## Installation
 
-The implementation is integrated into:
+```bash
+poetry install --extras tabula
+```
 
-```text
-katabatic/models/tabula/
-├── __init__.py
-├── models.py
-├── utils.py
-└── README.md
+---
+
+## Usage
+
+Benchmark scripts for each dataset:
+- Adult: [benchmarks/examples/tabula/run_tabula_adult.py](benchmarks/examples/tabula/run_tabula_adult.py)
+- Bank Marketing: [benchmarks/examples/tabula/run_tabula_bank_marketing.py](benchmarks/examples/tabula/run_tabula_bank_marketing.py)
+- Car: [benchmarks/examples/tabula/run_tabula_car.py](benchmarks/examples/tabula/run_tabula_car.py)
+- Credit Card: [benchmarks/examples/tabula/run_tabula_creditcard.py](benchmarks/examples/tabula/run_tabula_creditcard.py)
+- Covertype: [benchmarks/examples/tabula/run_tabula_covtype.py](benchmarks/examples/tabula/run_tabula_covtype.py)
+
+```python
+from katabatic.models.tabula.models import TABULA
+
+model = TABULA(
+    categorical_columns=["job", "education", "marital"],
+    epochs=50,
+)
+
+model.train(
+    dataset_dir="path/to/split_dir",
+    synthetic_dir="path/to/synthetic_dir",
+    device="cuda",   # or "mps" / "cpu"
+    n_samples=1000,
+    k=16,
+    max_length=256,
+    max_rounds=100,
+)
+```
+

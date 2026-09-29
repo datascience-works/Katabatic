@@ -1,5 +1,10 @@
 import os
+import platform
 import sys
+import warnings
+from time import perf_counter
+
+import psutil
 
 sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -7,7 +12,82 @@ sys.path.insert(
 
 from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
-from katabatic.models.pategan.models import PATEGAN
+from katabatic.models.pategan.models import PATEGAN  # noqa: E402
+
+warnings.filterwarnings("ignore")
+start_time = perf_counter()
+
+
+def get_runtime_summary(
+    time_diff,
+    start_time,
+    end_time,
+    model_name,
+    dataset_name,
+) -> None:
+    """
+    Print a formatted runtime summary report.
+
+    The report includes the start time, end time, and total duration for a
+    given model and a specific dataset.
+
+    Args:
+        time_diff (timedelta): Total elapsed time of the run.
+        start_time (datetime): Start timestamp of the run.
+        end_time (datetime): End timestamp of the run.
+        model_name (str): Name of the model used.
+        dataset_name (str): Name of the dataset used.
+    """
+    print("======================================================================")
+    print("⏰ Evaluation Runtime Report 🧾")
+    print("======================================================================")
+    print("Start time:", start_time)
+    print("End time:", end_time)
+    print(
+        model_name
+        + " has taken "
+        + str(time_diff)
+        + " seconds to run the "
+        + dataset_name
+        + " dataset."
+    )
+
+
+def get_system_run_details() -> None:
+    """
+    Print a summary of the hardware used to run the evaluations.
+
+    This report outlines the OS, CPU, GPU details, and RAM states.
+    It is compatible with any device or OS.
+    """
+    results = platform.uname()
+    ram = psutil.virtual_memory()
+
+    gpu_info = "No GPU has been detected."
+    try:
+        import tensorflow as tf
+
+        gpus = tf.config.list_physical_devices("GPU")
+        if gpus:
+            details = tf.config.experimental.get_device_details(gpus[0])
+            gpu_info = details.get("device_name", "Unknown")
+    except Exception:
+        gpu_info = "No GPU or Tensorflow install has been detected."
+
+    print("======================================================================")
+    print("💻 Computation Hardware Summary 🧾")
+    print("======================================================================")
+    print(f"  🖥️  System:     {results.system}")
+    print(f"  🏠  Node:       {results.node}")
+    print(f"  📦  Release:    {results.release}")
+    print(f"  🔢  Version:    {results.version}")
+    print(f"  🔧  Processor:  {results.processor}")
+    print(f"  🎮  GPU:        {gpu_info}")
+    print(f"  📟  Total RAM:  {round(ram.total / 1e9, 4)} GB")
+    print(f"  💾  Free RAM:   {round(ram.available / 1e9, 4)} GB")
+    print(f"  ⚡  Used RAM:   {round(ram.used / 1e9, 4)} GB")
+    print("======================================================================")
+
 
 config = RunConfig(
     dataset_name="adult",
@@ -15,16 +95,16 @@ config = RunConfig(
     categorical_cols=[
         "workclass",
         "education",
-        "educational-num",
+        "education-num",
         "marital-status",
         "occupation",
         "relationship",
         "race",
-        "gender",
+        "sex",
         "native-country",
     ],
     continuous_cols=["age", "fnlwgt", "capital-gain", "capital-loss", "hours-per-week"],
-    target_col_raw="income",
+    target_col_raw="class",
     constraints={
         "age": (17, 90),
         "fnlwgt": (12285, 1490400),
@@ -63,3 +143,10 @@ synthetic_df = save_synthetic(
 )
 
 evaluate(model, config, train_df, synthetic_df, target_col, paths, test_df)
+
+end_time = perf_counter()
+time_diff = end_time - start_time
+get_runtime_summary(
+    time_diff, start_time, end_time, config.model_name, config.dataset_name
+)
+get_system_run_details()

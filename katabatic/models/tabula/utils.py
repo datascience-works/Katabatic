@@ -324,7 +324,7 @@ class TabulaDataset(Dataset):
 
         shuffled_text = ", ".join(
             [
-                f"{row.column_names[i]} {str(row.columns[i]).strip()}"
+                f"{row.column_names[i]} {str(row.columns[i][0]).strip()}"
                 for i in shuffle_idx
             ]
         )

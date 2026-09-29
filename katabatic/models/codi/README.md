@@ -20,6 +20,16 @@ Lee et al., ICML 2023
 
 **Repository**: Adapted from https://github.com/ChaejeongLee/CoDi
 
+## References
+
+**CoDi: Co-evolving Contrastive Diffusion Models for Mixed-type Tabular Synthesis**
+Chaejeong Lee, Jayoung Kim, Noseong Park
+*Proceedings of the 40th International Conference on Machine Learning (ICML 2023), PMLR 202:18940–18956*
+Paper: <https://proceedings.mlr.press/v202/lee23i.html>
+Preprint: <https://arxiv.org/abs/2304.12654>
+Code: <https://github.com/ChaejeongLee/CoDi>
+
+
 ## Installation
 
 ```bash
@@ -50,18 +60,73 @@ See `examples/codi.ipynb` for more examples.
 - 🔄 Preserves complex feature dependencies
 - 📊 Excellent utility for downstream ML tasks
 
+***
 
-## References
+---
 
-**CoDi: Co-evolving Contrastive Diffusion Models for Mixed-type Tabular Synthesis**
-Chaejeong Lee, Jayoung Kim, Noseong Park
-*Proceedings of the 40th International Conference on Machine Learning (ICML 2023), PMLR 202:18940–18956*
-Paper: <https://proceedings.mlr.press/v202/lee23i.html>
-Preprint: <https://arxiv.org/abs/2304.12654>
-Code: <https://github.com/ChaejeongLee/CoDi>
+## Usage
+Evaluation pipeline Benchmark Scripts for each dataset:
+- Adult [benchmarks/examples/codi/run_codi_adult](benchmarks/examples/codi)
+- Shuttle [benchmarks/examples/codi/run_codi_shuttle](benchmarks/examples/codi)
+- Car [benchmarks/examples/codi/run_codi_car](benchmarks/examples/codi)
+- Magic [benchmarks/examples/codi/run_codi_magic](benchmarks/examples/codi)
+- Nursery [benchmarks/examples/codi/run_codi_nursery](benchmarks/examples/codi)
 
-## Generative AI Acknowledgement
+```python
 
-**ChatGPT (OpenAI)** was used to assist with interpreting and structuring the CoDI algorithm based on the **original research paper and official repository**.
+config = RunConfig(
+    dataset_name="car",
+    model_name="ganblr",
+    categorical_cols=["buying", "maint", "doors", "persons", "lug_boot", "safety"],
+    continuous_cols=[],
+    target_col_raw="class",
+    constraints=None,
+)
 
-All generated content was **manually verified, modified, and extended**, including debugging, architectural changes for tabular data, and full experimental integration. The final implementation reflects the author’s independent work.
+train_df, test_df, target_col, paths = preprocess_and_split(config)
+
+model = CODI(n_steps=50, epochs=100, batch_size=256)
+model.train(
+    paths["split_dir"],
+    paths["synthetic_dir"],
+    categorical_cols=config.categorical_cols,
+    continuous_cols=config.continuous_cols,
+)
+
+```
+
+---
+
+## Model Evaluation Benchmarks Results
+
+#### FINAL RESULTS - Cars Dataset
+Composite score : 0.7250
+Dimension scores:
+  fidelity       0.8638
+  utility        0.8131
+  diversity      0.9721
+  privacy        0.4057
+  consistency    0.1785
+  stability      0.9720
+
+---
+
+## Model Performance Benchmarks Results
+
+#### ⏰ Evaluation Runtime Report 🧾
+Start time: 114932.215904212
+End time: 114948.459338917
+CODI has taken 16.243434705000254 seconds to run the car dataset.
+
+#### 💻 Computation Hardware Summary 🧾
+  🖥️  System:     Linux
+  🏠  Node:       GPU
+  📦  Release:    6.6.87.2-microsoft-standard-WSL2
+  🔢  Version:    #1 SMP PREEMPT_DYNAMIC Thu Jun  5 18:30:46 UTC 2025
+  🔧  Processor:  x86_64
+  🎮  GPU:        NVIDIA GeForce RTX 3060
+  📟  Total RAM:  50.5164 GB
+  💾  Free RAM:   48.2754 GB
+  ⚡  Used RAM:   1.6924 GB
+
+---

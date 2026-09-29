@@ -613,7 +613,6 @@ def train_tabsyn(
     *,
     data_dir: str,
     cfg: TabSynConfig,
-    save_dir: str | None = None,
     extra_info: dict[str, Any] = {},
 ) -> TabSynState:
     _seed_all(cfg.seed)
@@ -787,17 +786,6 @@ def train_tabsyn(
         device=device,
         train_rows=z_tr.shape[0],
     )
-
-    # Optional: save snapshots (single pickle-based bundle for artifact store)
-    if save_dir is not None:
-        os.makedirs(save_dir, exist_ok=True)
-        bundle = {
-            "denoise_fn": state.denoise_fn.state_dict(),
-            "tokenizer": state.tokenizer_state,
-            "encoder": state.encoder_state,
-            "decoder": state.decoder_state,
-        }
-        torch.save(bundle, os.path.join(save_dir, "tabsyn_state.pkl"))
 
     return state
 

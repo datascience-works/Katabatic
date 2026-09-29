@@ -4,7 +4,7 @@
 # @laxminarsimha01 (Laxmi Narsimha Reddy Nalla)
 
 # Default fallback
-*                    @Talos-1 @janudi0531-debug @laxminarsimha01
+*                    @Talos-1 @janudi0531-debug @laxminarsimha01 @ndamaj @zachariahchristie
 
 # Shared build managed by Dev/MLOps Leads
 /.github/            @Talos-1 @janudi0531-debug @laxminarsimha01
@@ -15,13 +15,13 @@
 /tests/              @Talos-1 @janudi0531-debug @laxminarsimha01
 /*.py                @Talos-1 @janudi0531-debug @laxminarsimha01
 
-# Model Development Leads (+ Alex for support)
-/katabatic/models/   @ndamaj @PriyanshiDavid @Talos-1
+# Model Development Leads (+ DevOps for support)
+/katabatic/models/   @ndamaj @PriyanshiDavid @Talos-1 @janudi0531-debug @laxminarsimha01
 
-# Benchmarking & Evaluation Leads (+ Alex for support)
-/examples/           @royal2510 @zachariahchristie @InuriN @savindeehasara @Talos-1
-/benchmarks/         @royal2510 @zachariahchristie @InuriN @savindeehasara @Talos-1
-/katabatic/evaluate/ @royal2510 @zachariahchristie @InuriN @savindeehasara @Talos-1
+# Benchmarking & Evaluation Leads (+ DevOps for support)
+/examples/           @royal2510 @zachariahchristie @InuriN @savindeehasara @Talos-1 @janudi0531-debug @laxminarsimha01
+/benchmarks/         @royal2510 @zachariahchristie @InuriN @savindeehasara @Talos-1 @janudi0531-debug @laxminarsimha01
+/katabatic/evaluate/ @royal2510 @zachariahchristie @InuriN @savindeehasara @Talos-1 @janudi0531-debug @laxminarsimha01
 
 # Dashboard & UI Leads (+ Alex for support)
 /frontend/           @s223991203 @Dipsan49 @Talos-1
