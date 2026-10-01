@@ -106,12 +106,12 @@ include = ["CHANGELOG.md"]
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^2.3.1"
-ruff = "^0.16.8"
+ruff = "^0.16.9"
 # Development / test tooling
 ipykernel = "^7.3.0"
 pytest = "^9.1.1"
 pytest-cov = "^7.1.0"
-pytest-mock = "^3.15.1"
+pytest-mock = "^3.16.0"
 pytest-forked = "^1.7.5"
 # Executes examples/*.ipynb in tests/test_examples.py
 nbclient = "^0.11.0"
