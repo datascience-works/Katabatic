@@ -64,12 +64,12 @@ poetry install --extras tabdiff
 
 ## Usage
 
-Benchmark scripts for each dataset (added in pull request [#268](https://github.com/datascience-works/Katabatic/pull/268) against `development`, where the benchmark runner they use lives):
-- Adult [benchmarks/examples/tabdiff/run_tabdiff_adult.py](../../../benchmarks/examples/tabdiff/run_tabdiff_adult.py)
-- Shuttle [benchmarks/examples/tabdiff/run_tabdiff_shuttle.py](../../../benchmarks/examples/tabdiff/run_tabdiff_shuttle.py)
-- Car [benchmarks/examples/tabdiff/run_tabdiff_car.py](../../../benchmarks/examples/tabdiff/run_tabdiff_car.py)
-- Magic [benchmarks/examples/tabdiff/run_tabdiff_magic.py](../../../benchmarks/examples/tabdiff/run_tabdiff_magic.py)
-- Nursery [benchmarks/examples/tabdiff/run_tabdiff_nursery.py](../../../benchmarks/examples/tabdiff/run_tabdiff_nursery.py)
+Benchmark scripts for each dataset (also proposed for `development` in pull request [#268](https://github.com/datascience-works/Katabatic/pull/268), where they live under `benchmarks/examples/tabdiff/`):
+- Adult [benchmarks/examples/tabdiff/run_tabdiff_adult.py](../../../benchmarks/tabdiff/run_tabdiff_adult.py)
+- Shuttle [benchmarks/examples/tabdiff/run_tabdiff_shuttle.py](../../../benchmarks/tabdiff/run_tabdiff_shuttle.py)
+- Car [benchmarks/examples/tabdiff/run_tabdiff_car.py](../../../benchmarks/tabdiff/run_tabdiff_car.py)
+- Magic [benchmarks/examples/tabdiff/run_tabdiff_magic.py](../../../benchmarks/tabdiff/run_tabdiff_magic.py)
+- Nursery [benchmarks/examples/tabdiff/run_tabdiff_nursery.py](../../../benchmarks/tabdiff/run_tabdiff_nursery.py)
 
 ```python
 from katabatic.models.tabdiff import Tabdiff
