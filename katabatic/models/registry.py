@@ -171,6 +171,13 @@ class ModelRegistry:
             "extra": "fairtabdiffusion",
             "supported": True,
         },
+        "tabdiff": {
+            "module": "katabatic.experimental.models.tabdiff.models",
+            "class": "Tabdiff",
+            "dependencies": ["torch", "sklearn"],
+            "extra": "tabdiff",
+            "supported": False,
+        },
         "tabebm": {
             "module": "katabatic.experimental.models.tabebm.models",
             "class": "TabEBMModel",

@@ -54,6 +54,7 @@ great = [
 ]
 histogram = []
 fairtabdiffusion = ["torch>=2.14.0,<3.0.0"]
+tabdiff = ["torch>=2.14.0,<3.0.0"]
 realtabformer = [
     "realtabformer==0.2.4",
     "transformers>=5.0.0,<6.0.0",
@@ -148,6 +149,7 @@ markers = [
     "pategan: requires pategan extra",
     "privtree: requires privtree extra",
     "realtabformer: requires realtabformer extra",
+    "tabdiff: requires tabdiff extra",
     "tvaegan: requires tvaegan extra",
     "smote: requires smote extra",
     "synthpop: requires synthpop extra (and R + CRAN synthpop packages)",
