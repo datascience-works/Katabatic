@@ -9,11 +9,11 @@ concatenated into one continuous vector, and a single Gaussian diffusion runs
 over the whole thing. Categorical blocks are recovered with argmax at decode
 time.
 """
+
 from __future__ import annotations
 
 import json
 import os
-from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -21,7 +21,9 @@ import torch
 import torch.nn as nn
 
 
-def load_column_roles(dataset_dir: str, df: pd.DataFrame) -> Tuple[List[str], List[str]]:
+def load_column_roles(
+    dataset_dir: str, df: pd.DataFrame
+) -> tuple[list[str], list[str]]:
     info_path = os.path.join(dataset_dir, "info.json")
     if os.path.exists(info_path):
         with open(info_path) as f:
@@ -32,7 +34,9 @@ def load_column_roles(dataset_dir: str, df: pd.DataFrame) -> Tuple[List[str], Li
         listed = set(cat_cols) | set(num_cols)
         for c in cols:
             if c not in listed:
-                (num_cols if pd.api.types.is_numeric_dtype(df[c]) else cat_cols).append(c)
+                (num_cols if pd.api.types.is_numeric_dtype(df[c]) else cat_cols).append(
+                    c
+                )
         return cat_cols, num_cols
     cat_cols = [c for c in df.columns if not pd.api.types.is_numeric_dtype(df[c])]
     num_cols = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
@@ -42,13 +46,16 @@ def load_column_roles(dataset_dir: str, df: pd.DataFrame) -> Tuple[List[str], Li
 class JointEncoder:
     """z-scores numeric columns, one-hots categorical columns, concatenates."""
 
-    def __init__(self, cat_cols: List[str], num_cols: List[str]):
+    def __init__(self, cat_cols: list[str], num_cols: list[str]):
         self.cat_cols = cat_cols
         self.num_cols = num_cols
-        self._cat_categories: Dict[str, List] = {}
+        self._cat_categories: dict[str, list] = {}
         self._num_mean: np.ndarray = np.array([])
         self._num_std: np.ndarray = np.array([])
-        self._cat_slices: Dict[str, Tuple[int, int]] = {}
+        self._num_min: np.ndarray = np.array([])
+        self._num_max: np.ndarray = np.array([])
+        self._num_is_int: np.ndarray = np.array([], dtype=bool)
+        self._cat_slices: dict[str, tuple[int, int]] = {}
         self.dim = 0
 
     def fit_transform(self, df: pd.DataFrame) -> np.ndarray:
@@ -57,13 +64,18 @@ class JointEncoder:
             num = df[self.num_cols].to_numpy(dtype=float)
             self._num_mean = num.mean(axis=0)
             self._num_std = num.std(axis=0) + 1e-6
+            self._num_min = num.min(axis=0)
+            self._num_max = num.max(axis=0)
+            self._num_is_int = np.all(np.isclose(num, np.round(num)), axis=0)
             blocks.append((num - self._num_mean) / self._num_std)
 
         offset = len(self.num_cols)
         for c in self.cat_cols:
             cats = sorted(df[c].astype(str).unique().tolist())
             self._cat_categories[c] = cats
-            onehot = pd.get_dummies(df[c].astype(str)).reindex(columns=cats, fill_value=0)
+            onehot = pd.get_dummies(df[c].astype(str)).reindex(
+                columns=cats, fill_value=0
+            )
             self._cat_slices[c] = (offset, offset + len(cats))
             offset += len(cats)
             blocks.append(onehot.to_numpy(dtype=float))
@@ -77,6 +89,10 @@ class JointEncoder:
         n_num = len(self.num_cols)
         if n_num:
             num = matrix[:, :n_num] * self._num_std + self._num_mean
+            # The sampler is unbounded, so keep values inside the observed range
+            # and restore integer-valued columns (e.g. binned/ordinal codes).
+            num = np.clip(num, self._num_min, self._num_max)
+            num = np.where(self._num_is_int, np.round(num), num)
             for i, c in enumerate(self.num_cols):
                 out[c] = num[:, i]
         for c in self.cat_cols:
@@ -103,7 +119,9 @@ class DenoiserMLP(nn.Module):
             nn.Linear(hidden, dim),
         )
 
-    def forward(self, x: torch.Tensor, t: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self, x: torch.Tensor, t: torch.Tensor, y: torch.Tensor
+    ) -> torch.Tensor:
         t_emb = self.time_embed(t.float().unsqueeze(-1) / 1000.0)
         y_emb = self.class_embed(y)
         cond = t_emb + y_emb

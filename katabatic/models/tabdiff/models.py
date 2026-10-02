@@ -14,10 +14,10 @@ simplified version of the paper (the paper additionally learns per-feature-type
 adaptive noise schedules and uses a more elaborate transformer denoiser) — see
 README.md "Status" for the gap between this and the full paper method.
 """
+
 from __future__ import annotations
 
 import os
-from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -26,7 +26,8 @@ import torch.nn.functional as F
 from sklearn.preprocessing import LabelEncoder
 
 from katabatic.models.base_model import Model
-from .utils import JointEncoder, DenoiserMLP, cosine_beta_schedule, load_column_roles
+
+from .utils import DenoiserMLP, JointEncoder, cosine_beta_schedule, load_column_roles
 
 
 class Tabdiff(Model):
@@ -39,15 +40,15 @@ class Tabdiff(Model):
         seed=42,
     )
 
-    def __init__(self, config: Optional[dict] = None):
+    def __init__(self, config: dict | None = None):
         super().__init__()
         self.cfg = {**self._defaults, **(config or {})}
         self.device = torch.device("cpu")
-        self._encoder: Optional[JointEncoder] = None
-        self._net: Optional[DenoiserMLP] = None
-        self._betas: Optional[torch.Tensor] = None
-        self._y_encoder: Optional[LabelEncoder] = None
-        self._y_col: Optional[str] = None
+        self._encoder: JointEncoder | None = None
+        self._net: DenoiserMLP | None = None
+        self._betas: torch.Tensor | None = None
+        self._y_encoder: LabelEncoder | None = None
+        self._y_col: str | None = None
 
     @classmethod
     def get_required_dependencies(cls) -> list[str]:
@@ -56,11 +57,11 @@ class Tabdiff(Model):
     def train(
         self,
         dataset_dir: str,
-        synthetic_dir: Optional[str] = None,
-        config: Optional[dict] = None,
+        synthetic_dir: str | None = None,
+        config: dict | None = None,
         *args,
         **kwargs,
-    ) -> "Tabdiff":
+    ) -> Tabdiff:
         if config:
             self.cfg.update(config)
         torch.manual_seed(self.cfg["seed"])
@@ -69,7 +70,14 @@ class Tabdiff(Model):
         y = pd.read_csv(os.path.join(dataset_dir, "y_train.csv"))
         self._y_col = y.columns[0]
 
-        cat_cols, num_cols = load_column_roles(dataset_dir, X)
+        if self.cfg.get("categorical_cols") is not None:
+            # Explicit column roles from the caller (benchmark scripts pass the
+            # dataset's metadata) so integer-coded categoricals are not
+            # mistaken for continuous columns.
+            cat_cols = [c for c in X.columns if c in self.cfg["categorical_cols"]]
+            num_cols = [c for c in X.columns if c not in cat_cols]
+        else:
+            cat_cols, num_cols = load_column_roles(dataset_dir, X)
         self._encoder = JointEncoder(cat_cols, num_cols)
         matrix = self._encoder.fit_transform(X)
         x0 = torch.tensor(matrix, dtype=torch.float32, device=self.device)
@@ -111,7 +119,9 @@ class Tabdiff(Model):
             opt.step()
 
             if (step + 1) % max(1, self.cfg["steps"] // 5) == 0:
-                print(f"[tabdiff] step {step + 1}/{self.cfg['steps']} loss={loss.item():.4f}")
+                print(
+                    f"[tabdiff] step {step + 1}/{self.cfg['steps']} loss={loss.item():.4f}"
+                )
 
         self._n_classes = n_classes
         self._class_probs = torch.bincount(y_idx, minlength=n_classes).float()
@@ -134,7 +144,7 @@ class Tabdiff(Model):
         return 0.0
 
     @torch.no_grad()
-    def sample(self, n: int, *args, **kwargs) -> Union[np.ndarray, pd.DataFrame]:
+    def sample(self, n: int, *args, **kwargs) -> np.ndarray | pd.DataFrame:
         if not self.is_fitted:
             raise RuntimeError("Call train() before sample().")
 
