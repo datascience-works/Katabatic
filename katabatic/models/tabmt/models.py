@@ -13,10 +13,10 @@ continuous-feature embedding, and reveals one column at a time in a single
 shared random order per batch rather than a fully per-row order. See
 README.md "Status" for the gap to the full paper method.
 """
+
 from __future__ import annotations
 
 import os
-from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -24,6 +24,7 @@ import torch
 import torch.nn.functional as F
 
 from katabatic.models.base_model import Model
+
 from .utils import ColumnTokenizer, MaskedTabularTransformer, load_column_roles
 
 
@@ -41,13 +42,13 @@ class Tabmt(Model):
         seed=42,
     )
 
-    def __init__(self, config: Optional[dict] = None):
+    def __init__(self, config: dict | None = None):
         super().__init__()
         self.cfg = {**self._defaults, **(config or {})}
         self.device = torch.device("cpu")
-        self._tokenizer: Optional[ColumnTokenizer] = None
-        self._net: Optional[MaskedTabularTransformer] = None
-        self._y_col: Optional[str] = None
+        self._tokenizer: ColumnTokenizer | None = None
+        self._net: MaskedTabularTransformer | None = None
+        self._y_col: str | None = None
 
     @classmethod
     def get_required_dependencies(cls) -> list[str]:
@@ -56,11 +57,11 @@ class Tabmt(Model):
     def train(
         self,
         dataset_dir: str,
-        synthetic_dir: Optional[str] = None,
-        config: Optional[dict] = None,
+        synthetic_dir: str | None = None,
+        config: dict | None = None,
         *args,
         **kwargs,
-    ) -> "Tabmt":
+    ) -> Tabmt:
         if config:
             self.cfg.update(config)
         torch.manual_seed(self.cfg["seed"])
@@ -70,19 +71,29 @@ class Tabmt(Model):
         self._y_col = y.columns[0]
         full = pd.concat([X, y[self._y_col]], axis=1)
 
-        cat_cols, num_cols = load_column_roles(dataset_dir, X)
+        if self.cfg.get("categorical_cols") is not None:
+            # Explicit column roles from the caller (benchmark scripts pass the
+            # dataset's metadata) so integer-coded categoricals are not
+            # mistaken for continuous columns.
+            cat_cols = [c for c in X.columns if c in self.cfg["categorical_cols"]]
+            num_cols = [c for c in X.columns if c not in cat_cols]
+        else:
+            cat_cols, num_cols = load_column_roles(dataset_dir, X)
         cat_cols = cat_cols + [self._y_col]  # model target jointly, as a column
 
         self._tokenizer = ColumnTokenizer(cat_cols, num_cols, n_bins=self.cfg["n_bins"])
         tokens = self._tokenizer.fit_transform(full).to(self.device)
         vocab_sizes = [self._tokenizer.vocab_sizes[c] for c in self._tokenizer.columns]
         mask_ids = torch.tensor(
-            [self._tokenizer.mask_ids[c] for c in self._tokenizer.columns], device=self.device
+            [self._tokenizer.mask_ids[c] for c in self._tokenizer.columns],
+            device=self.device,
         )
 
         self._net = MaskedTabularTransformer(
-            vocab_sizes, d_model=self.cfg["d_model"],
-            n_layers=self.cfg["n_layers"], n_heads=self.cfg["n_heads"],
+            vocab_sizes,
+            d_model=self.cfg["d_model"],
+            n_layers=self.cfg["n_layers"],
+            n_heads=self.cfg["n_heads"],
         ).to(self.device)
         opt = torch.optim.Adam(self._net.parameters(), lr=self.cfg["lr"])
 
@@ -92,7 +103,9 @@ class Tabmt(Model):
             idx = torch.randint(0, n, (bsz,))
             batch = tokens[idx].clone()
 
-            ratio = np.random.uniform(self.cfg["min_mask_ratio"], self.cfg["max_mask_ratio"])
+            ratio = np.random.uniform(
+                self.cfg["min_mask_ratio"], self.cfg["max_mask_ratio"]
+            )
             mask = torch.rand(bsz, n_cols) < ratio
             masked_batch = batch.clone()
             masked_batch[mask] = mask_ids.unsqueeze(0).expand(bsz, -1)[mask]
@@ -114,7 +127,9 @@ class Tabmt(Model):
             opt.step()
 
             if (step + 1) % max(1, self.cfg["steps"] // 5) == 0:
-                print(f"[tabmt] step {step + 1}/{self.cfg['steps']} loss={loss.item():.4f}")
+                print(
+                    f"[tabmt] step {step + 1}/{self.cfg['steps']} loss={loss.item():.4f}"
+                )
 
         self._mask_ids = mask_ids
         self.is_fitted = True
@@ -123,8 +138,12 @@ class Tabmt(Model):
             df_synth = self.sample(n)
             os.makedirs(synthetic_dir, exist_ok=True)
             feature_cols = [c for c in self._tokenizer.columns if c != self._y_col]
-            df_synth[feature_cols].to_csv(os.path.join(synthetic_dir, "x_synth.csv"), index=False)
-            df_synth[[self._y_col]].to_csv(os.path.join(synthetic_dir, "y_synth.csv"), index=False)
+            df_synth[feature_cols].to_csv(
+                os.path.join(synthetic_dir, "x_synth.csv"), index=False
+            )
+            df_synth[[self._y_col]].to_csv(
+                os.path.join(synthetic_dir, "y_synth.csv"), index=False
+            )
 
         return self
 
@@ -134,7 +153,7 @@ class Tabmt(Model):
         return 0.0
 
     @torch.no_grad()
-    def sample(self, n: int, *args, **kwargs) -> Union[np.ndarray, pd.DataFrame]:
+    def sample(self, n: int, *args, **kwargs) -> np.ndarray | pd.DataFrame:
         if not self.is_fitted:
             raise RuntimeError("Call train() before sample().")
 

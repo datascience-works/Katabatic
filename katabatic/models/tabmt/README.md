@@ -31,8 +31,8 @@ reproduction of the paper. What's simplified, honestly:
   discrete vocabulary (same tokenization idea used by `bayesian_network`'s
   discretizer) so one shared embedding/output-head mechanism covers both
   column types uniformly. This bounds numeric precision by `n_bins`.
-- Sampling reveals columns in one shared random order per batch, not a fully
-  independent random order per row.
+- Sampling reveals columns in one shared random order per `sample()` call, not a
+  fully independent random order per row.
 - No sample-time confidence-based reordering (the paper's "always reveal the
   most-confident remaining column next" refinement); this always follows a
   fixed random permutation.
@@ -69,7 +69,7 @@ katabatic/models/tabmt/
 
 ## Dependencies
 
-`torch` only — already a Katabatic dependency, no new packages required.
+`torch` only, already a Katabatic dependency, no new packages required.
 
 ```bash
 pip install katabatic[tabmt]
@@ -77,35 +77,78 @@ pip install katabatic[tabmt]
 
 ---
 
-## Dataset Format (Input) / Output Format (Generated)
+## Hyperparameter Comparison
 
-Same as the other models: `sample_data/<dataset>/{x,y}_{train,test}.csv` in,
-`synthetic/<dataset>/tabmt/{x,y}_synth.csv` out.
+| Parameter | Class default (`Tabmt._defaults`) | **Benchmark scripts** |
+|---|---|---|
+| steps | 300 | **3000** |
+| batch_size | 128 | **256** |
+| d_model | 64 | **128** |
+| n_layers | 2 | **3** |
+| n_heads | 4 | **4** |
+| n_bins | 12 | **12** |
+| lr | 1e-3 | **1e-3** |
+| mask ratio (min / max) | 0.15 / 0.9 | **0.15 / 0.9** |
+| seed | 42 | **42** |
+| categorical_cols | inferred from dtype / `info.json` | **passed explicitly from the dataset metadata** |
 
-## Datasets Used
+Passing `categorical_cols` matters: the benchmark runner gives every model integer-coded columns, so inferring roles from dtype would treat categorical codes as numeric. Numeric columns that are integer-valued in training are rounded after decoding (bin midpoints are otherwise fractional).
 
-- CAR, MAGIC, NURSERY, ADULT, SHUTTLE
+---
 
-## Running the Model (Example)
+## Usage
 
 ```python
 from katabatic.models.tabmt.models import Tabmt
 
-model = Tabmt(config=dict(steps=300))
-model.train("sample_data/car", synthetic_dir="synthetic/car/tabmt")
+model = Tabmt(config={"steps": 3000, "d_model": 128, "n_layers": 3,
+                      "categorical_cols": ["workclass", "education"]})  # optional
+model.train("path/to/split_dir", synthetic_dir="path/to/synthetic_dir")
+synthetic_df = model.sample(len(real_df))
 ```
 
-Or via the batch runner:
+`train()` reads `x_train.csv` and `y_train.csv` and writes `x_synth.csv` / `y_synth.csv`.
 
-```bash
-MODEL=tabmt bash scripts/run_new_models.sh
-```
+---
 
-## Status: run history
+## Model Evaluation Benchmark Results
 
-Ran end-to-end (train → sample → TSTR evaluate) on all 5 datasets using a
-lightweight smoke config (`steps=150`). Results in
-`Results/<dataset>/tabmt_tstr.csv`. Masked-transformer training needs more
-steps than the GAN/diffusion models here to converge (mask reconstruction is
-a harder objective at low step counts) — that's the next step, not a
-correctness bug.
+Evaluated with the Katabatic evaluation pipeline (six dimensions, seed 42). Results below are the runs completed so far; Shuttle is still to be added.
+
+| Dataset | Composite | Fidelity | Utility | Diversity | Privacy | Consistency | Stability |
+|---|---|---|---|---|---|---|---|
+| Car | 0.8951 | 0.9728 | 0.9894 | 0.9988 | 0.4496 | 0.8998 | 0.9670 |
+| Nursery | 0.8863 | 0.9874 | 0.9788 | 0.9990 | 0.4540 | 0.7922 | 0.9925 |
+| Magic | 0.8562 | 0.9202 | 0.8949 | 0.6834 | 0.9682 | 0.5016 | 0.9850 |
+| Adult | 0.8511 | 0.8815 | 0.8738 | 0.7522 | 0.9669 | 0.5509 | 0.9905 |
+| Shuttle | pending | | | | | | |
+
+---
+
+## Model Performance
+
+> **Hardware and runtime:** CPU only. Runtime covers preprocessing, training, sampling and all six evaluation dimensions.
+
+| Dataset | Runtime (s) |
+|---|---|
+| Car | 102.5 |
+| Nursery | 213.2 |
+| Magic | 311.3 |
+| Adult | 793.1 |
+| Shuttle | pending |
+
+Hardware: macOS (Darwin 25.6.0), Apple Silicon (arm64), 17.2 GB RAM, no CUDA GPU.
+
+---
+
+## Strengths
+- Handles numeric and categorical columns uniformly through one token vocabulary per column.
+- Very high fidelity, utility and diversity on the small categorical datasets (Car, Nursery).
+- Trains from scratch with no pretrained weights.
+
+## Limitations
+- Simplified relative to the paper; see Status above.
+- **Consistency is weak on the larger numeric datasets** (about 0.50 on Magic, 0.55 on Adult).
+- **Privacy is low on the small categorical datasets** (about 0.45 on Car and Nursery). The cause was not investigated.
+- Numeric precision is bounded by `n_bins` (12 by default).
+- Single seed and a fixed step budget; not tuned per dataset.

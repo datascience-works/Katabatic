@@ -10,6 +10,9 @@ distribution. Generation works directly on the raw data — there is no pretrain
 model hub dependency and no external service call, which keeps the model fully
 self-contained inside the Katabatic framework.
 
+(This describes the published method; see Status for what the local fallback
+currently implements.)
+
 Within Katabatic, TabDDPM is used to generate synthetic datasets in the standard
 format required for benchmarking and evaluation using the Train Synthetic Test Real
 (TSTR) protocol.
@@ -135,11 +138,33 @@ bash scripts/run_tabddpm.sh
 
 ## Status
 
-**In progress.** Core model code already existed in `main`/registry but had no
-README, no per-dataset run scripts, and no evaluation runs — this submission adds
-all three plus a first end-to-end smoke pass. Full benchmark-quality runs (production
-`steps`/`num_timesteps` config, not the lightweight smoke config) are the next step,
-tracked in `scripts/run_tabddpm.sh`.
+**In progress. No benchmark results yet.** The core model code already existed in
+`main` / the registry but had no README, no per-dataset run scripts and no
+evaluation runs; this submission adds the README and an initial smoke pass.
+
+### Known issue: the local fallback is not a diffusion model
+
+When the external `tabddpm` package is not installed (the default, and it is not a
+declared dependency), `models.py` uses the local `GaussianMultinomialDiffusion` in
+`utils.py`. Reading that code shows it is a lightweight stand-in, not TabDDPM:
+
+- training has no forward noising and no timestep: the loss is a reconstruction loss
+  of the denoiser on its own input;
+- sampling is a single pass of random noise through the denoiser;
+- `num_timesteps` and `scheduler` are stored but never used.
+
+The "Model Overview" above describes the TabDDPM method as published, not what the
+local fallback currently computes. Results from this fallback must not be reported as
+TabDDPM results. Benchmark results will be added once a faithful implementation
+(forward noising, timestep schedule, Gaussian + multinomial reverse process) is in
+place and evaluated on all five datasets.
+
+### Other things to know
+
+- In pipeline mode (`train(dataset_dir, ...)`) with no `config`, the model silently
+  falls back to a light 200-step configuration. Pass a `config` explicitly.
+- `train()` forwards `categorical_cols` / `cat_cols` so integer-coded categorical
+  columns are not inferred as numeric.
 
 ## Important Notes
 

@@ -8,11 +8,11 @@ head operate uniformly over mixed-type rows, which is the simplification this
 implementation makes relative to the TabMT paper's distribution-aware
 continuous-feature embedding (see README.md "Status").
 """
+
 from __future__ import annotations
 
 import json
 import os
-from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -20,7 +20,9 @@ import torch
 import torch.nn as nn
 
 
-def load_column_roles(dataset_dir: str, df: pd.DataFrame) -> Tuple[List[str], List[str]]:
+def load_column_roles(
+    dataset_dir: str, df: pd.DataFrame
+) -> tuple[list[str], list[str]]:
     info_path = os.path.join(dataset_dir, "info.json")
     if os.path.exists(info_path):
         with open(info_path) as f:
@@ -31,7 +33,9 @@ def load_column_roles(dataset_dir: str, df: pd.DataFrame) -> Tuple[List[str], Li
         listed = set(cat_cols) | set(num_cols)
         for c in cols:
             if c not in listed:
-                (num_cols if pd.api.types.is_numeric_dtype(df[c]) else cat_cols).append(c)
+                (num_cols if pd.api.types.is_numeric_dtype(df[c]) else cat_cols).append(
+                    c
+                )
         return cat_cols, num_cols
     cat_cols = [c for c in df.columns if not pd.api.types.is_numeric_dtype(df[c])]
     num_cols = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
@@ -43,21 +47,25 @@ class ColumnTokenizer:
     vocabulary space, one vocabulary per column, with an extra MASK id.
     """
 
-    def __init__(self, cat_cols: List[str], num_cols: List[str], n_bins: int = 12):
+    def __init__(self, cat_cols: list[str], num_cols: list[str], n_bins: int = 12):
         self.cat_cols = cat_cols
         self.num_cols = num_cols
         self.columns = num_cols + cat_cols
         self.n_bins = n_bins
-        self._categories: Dict[str, List[str]] = {}
-        self._bin_edges: Dict[str, np.ndarray] = {}
-        self._bin_mids: Dict[str, np.ndarray] = {}
-        self.vocab_sizes: Dict[str, int] = {}
-        self.mask_ids: Dict[str, int] = {}
+        self._categories: dict[str, list[str]] = {}
+        self._bin_edges: dict[str, np.ndarray] = {}
+        self._bin_mids: dict[str, np.ndarray] = {}
+        self._num_is_int: dict[str, bool] = {}
+        self.vocab_sizes: dict[str, int] = {}
+        self.mask_ids: dict[str, int] = {}
 
     def fit_transform(self, df: pd.DataFrame) -> torch.Tensor:
         token_cols = []
         for c in self.num_cols:
-            binned, edges = pd.qcut(df[c], q=self.n_bins, duplicates="drop", retbins=True)
+            self._num_is_int[c] = bool(np.all(np.isclose(df[c], np.round(df[c]))))
+            binned, edges = pd.qcut(
+                df[c], q=self.n_bins, duplicates="drop", retbins=True
+            )
             codes = binned.cat.codes.replace(-1, 0).to_numpy()
             self._bin_edges[c] = edges
             self._bin_mids[c] = (edges[:-1] + edges[1:]) / 2
@@ -83,7 +91,9 @@ class ColumnTokenizer:
         for i, c in enumerate(self.num_cols):
             mids = self._bin_mids[c]
             idx = np.clip(tokens[:, i], 0, len(mids) - 1)
-            out[c] = mids[idx]
+            vals = mids[idx]
+            # Bin midpoints are fractional; restore integer-valued columns.
+            out[c] = np.round(vals) if self._num_is_int.get(c) else vals
         offset = len(self.num_cols)
         for j, c in enumerate(self.cat_cols):
             cats = np.array(self._categories[c])
@@ -97,7 +107,13 @@ class MaskedTabularTransformer(nn.Module):
     (vocab + 1 mask token) and a per-column output head.
     """
 
-    def __init__(self, vocab_sizes: List[int], d_model: int = 64, n_layers: int = 2, n_heads: int = 4):
+    def __init__(
+        self,
+        vocab_sizes: list[int],
+        d_model: int = 64,
+        n_layers: int = 2,
+        n_heads: int = 4,
+    ):
         super().__init__()
         self.n_cols = len(vocab_sizes)
         self.embeds = nn.ModuleList(
@@ -105,15 +121,16 @@ class MaskedTabularTransformer(nn.Module):
         )
         self.col_pos = nn.Embedding(self.n_cols, d_model)
         encoder_layer = nn.TransformerEncoderLayer(
-            d_model=d_model, nhead=n_heads, dim_feedforward=d_model * 2,
-            batch_first=True, dropout=0.1,
+            d_model=d_model,
+            nhead=n_heads,
+            dim_feedforward=d_model * 2,
+            batch_first=True,
+            dropout=0.1,
         )
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=n_layers)
-        self.heads = nn.ModuleList(
-            [nn.Linear(d_model, v) for v in vocab_sizes]
-        )
+        self.heads = nn.ModuleList([nn.Linear(d_model, v) for v in vocab_sizes])
 
-    def forward(self, tokens: torch.Tensor) -> List[torch.Tensor]:
+    def forward(self, tokens: torch.Tensor) -> list[torch.Tensor]:
         # tokens: (batch, n_cols) integer ids, MASK id where masked
         pos = torch.arange(self.n_cols, device=tokens.device)
         embedded = torch.stack(

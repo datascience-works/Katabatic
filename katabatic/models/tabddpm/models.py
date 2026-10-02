@@ -213,7 +213,10 @@ class Tabddpm(Model):
                 y_train = y_train.iloc[:, 0]
 
             # Train using array mode
-            self.train(X_train, y_train, config=config)
+            # Forward explicit column roles; otherwise categoricals that arrive
+            # integer-coded (as in the benchmark runner) are inferred as numeric.
+            cat_cols = kwargs.get("categorical_cols", kwargs.get("cat_cols"))
+            self.train(X_train, y_train, config=config, cat_cols=cat_cols)
 
             # Generate synthetic data and write CSVs for TSTR
             n_rows = len(X_train)
