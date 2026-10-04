@@ -1,5 +1,6 @@
 import csv
 import json
+import math
 import os
 
 # Score key returned by each evaluator's result dict
@@ -30,6 +31,8 @@ class EvaluationReport:
     The composite score is a weighted average of whichever dimensions were
     actually run. Weights are re-normalised against the active dimensions so
     the score is always in [0, 1] even when some dimensions are skipped.
+    Dimensions that failed are listed in ``errors`` and left out of the
+    composite; if none succeeded, the composite is NaN.
 
     Parameters
     ----------
@@ -44,6 +47,11 @@ class EvaluationReport:
         self.weights = {**DEFAULT_WEIGHTS, **(weights or {})}
 
         self.dimension_scores = self._extract_scores()
+        self.errors = {
+            dim: result["error"]
+            for dim, result in dimension_results.items()
+            if "error" in result
+        }
         self.composite_score = self._compute_composite()
 
     def _extract_scores(self) -> dict:
@@ -58,7 +66,7 @@ class EvaluationReport:
         active = {d: self.weights.get(d, 0.0) for d in self.dimension_scores}
         total_weight = sum(active.values())
         if total_weight == 0:
-            return 0.0
+            return float("nan") if self.errors else 0.0
         composite = sum(
             self.dimension_scores[d] * active[d] / total_weight
             for d in self.dimension_scores
@@ -91,6 +99,7 @@ class EvaluationReport:
             "composite_score": self.composite_score,
             "dimension_scores": self.dimension_scores,
             "weights_used": normalised_weights,
+            "errors": self.errors,
             "full_results": self._serialisable(self.dimension_results),
         }
         path = os.path.join(output_dir, f"{prefix}evaluation_report.json")
@@ -112,6 +121,8 @@ class EvaluationReport:
                 writer.writerow(
                     [dim, score, normalised_w, round(score * normalised_w, 4)]
                 )
+            for dim in self.errors:
+                writer.writerow([dim, "failed", "", ""])
             writer.writerow([])
             writer.writerow(["composite_score", self.composite_score, "", ""])
 
@@ -132,9 +143,15 @@ class EvaluationReport:
             filled = int(score * bar_width)
             bar = "#" * filled + "-" * (bar_width - filled)
             print(f"  {dim:<12} [{bar}] {score:.4f}  (weight {norm_w:.0%})")
+        for dim in self.errors:
+            print(f"  {dim:<12} FAILED, excluded from the composite")
 
         print("-" * 52)
-        filled = int(self.composite_score * bar_width)
+        filled = (
+            0
+            if math.isnan(self.composite_score)
+            else int(self.composite_score * bar_width)
+        )
         bar = "#" * filled + "-" * (bar_width - filled)
         print(f"  {'COMPOSITE':<12} [{bar}] {self.composite_score:.4f}")
         print("=" * 52)

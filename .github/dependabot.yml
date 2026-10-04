@@ -5,8 +5,8 @@ updates:
     directory: "/"
     target-branch: "development"
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 3
+      interval: "daily"
+    open-pull-requests-limit: 10
     groups:
       dev-tooling:
         patterns:
@@ -25,10 +25,36 @@ updates:
           - "keras*"
           - "accelerate"
           - "datasets"
+          - "huggingface-hub"
+          - "fsspec"
           - "pgmpy"
           - "xgboost"
+      privacy-stack:
+        patterns:
+          - "smartnoise-synth"
+          - "opendp"
+          - "private-pgm"
+      core:
+        patterns:
+          - "pandas"
+          - "numpy"
+          - "scipy"
+          - "scikit-learn"
+          - "psutil"
+      # Catches everything not claimed by a group above.
+      misc:
+        patterns:
+          - "*"
     commit-message:
       prefix: "chore(deps)"
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    target-branch: "development"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(docker)"
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -42,3 +68,11 @@ updates:
           - "*"
     commit-message:
       prefix: "chore(ci)"
+
+  - package-ecosystem: "pre-commit"
+    directory: "/"
+    target-branch: "development"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"

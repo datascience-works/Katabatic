@@ -7,7 +7,7 @@ sys.path.insert(
 
 from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
-from katabatic.models.tabddpm.models import Tabddpm
+from katabatic.experimental.models.tabddpm.models import Tabddpm
 
 config = RunConfig(
     dataset_name="adult",

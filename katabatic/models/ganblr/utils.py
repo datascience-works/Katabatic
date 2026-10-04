@@ -1,6 +1,8 @@
 import numpy as np
 import tensorflow as tf
 from pandas import read_csv
+from sklearn.mixture import BayesianGaussianMixture
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 
 class softmax_weight(tf.keras.constraints.Constraint):
@@ -135,3 +137,91 @@ def get_demo_data(name="adult"):
     """
     assert name in DEMO_DATASETS.keys()
     return read_csv(DEMO_DATASETS[name]["link"], **DEMO_DATASETS[name]["params"])
+
+
+class DMMDiscretizer:
+    """Discretize numerical columns using Bayesian Gaussian mixtures."""
+
+    def __init__(self, random_state=None):
+        self.random_state = random_state
+        self.scaler = StandardScaler()
+        self.models = []
+        self.encoders = []
+        self.means = []
+        self.stds = []
+
+    def fit_transform(self, x):
+        """Fit the numerical discretizer and return discrete component IDs."""
+        x = np.asarray(x, dtype=float)
+
+        if x.ndim != 2:
+            raise ValueError("x must be a two-dimensional array")
+
+        x_scaled = self.scaler.fit_transform(x)
+
+        self.models.clear()
+        self.encoders.clear()
+        self.means.clear()
+        self.stds.clear()
+
+        transformed = np.zeros_like(x_scaled, dtype=int)
+
+        for column_index in range(x_scaled.shape[1]):
+            column = x_scaled[:, column_index : column_index + 1]
+
+            model = BayesianGaussianMixture(
+                n_components=8,
+                random_state=self.random_state,
+            )
+
+            components = model.fit_predict(column)
+
+            encoder = LabelEncoder()
+            labels = encoder.fit_transform(components)
+
+            transformed[:, column_index] = labels
+
+            component_ids = encoder.classes_
+            means = model.means_.reshape(-1)[component_ids]
+            stds = np.sqrt(model.covariances_.reshape(-1)[component_ids])
+
+            self.models.append(model)
+            self.encoders.append(encoder)
+            self.means.append(means)
+            self.stds.append(stds)
+
+        return transformed
+
+    def inverse_transform(self, x):
+        """Convert discrete component IDs back to numerical values."""
+        x = np.asarray(x)
+
+        if x.ndim != 2:
+            raise ValueError("x must be a two-dimensional array")
+
+        restored = np.zeros_like(x, dtype=float)
+
+        for column_index in range(x.shape[1]):
+            labels = x[:, column_index].astype(int)
+            means = self.means[column_index]
+            stds = self.stds[column_index]
+
+            sampled = np.zeros(len(labels), dtype=float)
+
+            for label in np.unique(labels):
+                mask = labels == label
+                mean = means[label]
+                std = stds[label]
+
+                if std <= 0:
+                    sampled[mask] = mean
+                else:
+                    sampled[mask] = np.random.normal(
+                        loc=mean,
+                        scale=std,
+                        size=np.sum(mask),
+                    )
+
+            restored[:, column_index] = sampled
+
+        return self.scaler.inverse_transform(restored)

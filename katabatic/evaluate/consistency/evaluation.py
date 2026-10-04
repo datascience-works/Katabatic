@@ -20,8 +20,8 @@ class ConsistencyEvaluation(Evaluation):
       If the classifier cannot do better than ~50% accuracy, the synthetic
       data is statistically indistinguishable from real. Accuracy above 70%
       is a red flag — the model is generating obviously fake data.
-      Score = max(0, 1 - (accuracy - 0.5) * 2), so 0.5 accuracy -> score 1.0,
-      1.0 accuracy -> score 0.0.
+      Score = max(0, 1 - abs(accuracy - 0.5) * 2), so 0.5 accuracy -> score 1.0,
+      1.0 accuracy -> score 0.0, and 0.0 accuracy -> score 0.0.
 
     - Constraint Violation Rate: checks user-defined per-column bounds
       (min, max) against the synthetic data. None means unbounded on that

@@ -13,7 +13,7 @@ It supports both **categorical and continuous features**. Categorical features u
 
 ## Project Structure
 
-* `models.py` — Contains `NaiveBayesModel` and the `train()`, `evaluate()`, and `sample()` functionality.
+* `models.py` — Contains `NaiveBayesModel` and its `train()` and `sample()` functionality (`evaluate()` is inherited from `Model`).
 * `utils.py` — Helper functions for feature-type detection and feature processing.
 * `__init__.py` — Exports the Naive Bayes model.
 
@@ -38,10 +38,16 @@ model.train(
     continuous_cols=[],
 )
 
-synthetic_df = model.sample(n=1000)
+synthetic_df = model.sample(n_samples=1000)
 ```
 
-A random seed can be provided to make synthetic data generation reproducible.
+A random seed can be provided to make synthetic data generation reproducible. `n_samples` defaults to the number of training rows when omitted.
+
+To persist fitted state for later reload via `NaiveBayesModel.load_from_ref()`, pass `artifact_state_dir=...` to `train()`.
+
+## Evaluation
+
+`model.evaluate(real_df, target_col=..., test_data=...)`, inherited from `Model`, scores the fitted model on Katabatic's six dimensions (fidelity, utility via TSTR, diversity, privacy, consistency and stability) and returns an `EvaluationReport` (`report.dimension_scores`, `report.composite_score`).
 
 ## Benchmark Results
 

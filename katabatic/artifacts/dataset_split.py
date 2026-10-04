@@ -69,6 +69,7 @@ def _persist_frames_to_store(
     shutil.copy2(test_dir / "y_test.csv", extra_dir / "y_test.csv")
 
     _copy_extra_assets(extra_source_dir, extra_dir)
+    store.sync(ref.root_relpath)  # no-op for local-backed stores
     return y_train, y_test
 
 

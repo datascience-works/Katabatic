@@ -206,10 +206,8 @@ class TrainTestSplitPipeline(Pipeline):
         os.makedirs(state_dir, exist_ok=True)
 
         _m = type(current_model)
-        if getattr(_m, "ARTIFACT_STATE_FILES", ()) and not _is_tabsyn(current_model):
+        if getattr(_m, "ARTIFACT_STATE_FILES", ()):
             train_kw.setdefault("artifact_state_dir", state_dir)
-        if _is_tabsyn(current_model):
-            train_kw.setdefault("save_dir", state_dir)
 
         current_model.train(output_dir, *args, **train_kw)
 
@@ -322,12 +320,11 @@ class TrainTestSplitPipeline(Pipeline):
         state_path = str(store.open_path(mr.state_relpath))
 
         _m = type(current_model)
-        if getattr(_m, "ARTIFACT_STATE_FILES", ()) and not _is_tabsyn(current_model):
+        if getattr(_m, "ARTIFACT_STATE_FILES", ()):
             train_kw.setdefault("artifact_state_dir", state_path)
-        if _is_tabsyn(current_model):
-            train_kw.setdefault("save_dir", state_path)
 
         current_model.train(dataset_dir, *args, **train_kw)
+        store.sync(mr.root_relpath)  # no-op for local-backed stores
 
         config = train_kw.get("config")
         if config is not None:
@@ -355,6 +352,8 @@ class TrainTestSplitPipeline(Pipeline):
             per = _per_evaluation_kw(evaluation_kwargs, evaluation)
             merged = {**eval_merged_base, **per}
             ref = _run_single_evaluation_artifact(evaluation, store, mr, ds_ref, merged)
+            if ref is not None:
+                store.sync(ref.root_relpath)  # no-op for local-backed stores
             evaluation_refs.append(ref)
 
         self.last_model = current_model

@@ -34,7 +34,7 @@ suppressMessages(library(synthpop))
 
 set.seed({seed})
 
-data <- read.csv("{input_csv.as_posix()}")
+data <- read.csv("{input_csv.as_posix()}", check.names = FALSE)
 
 syn_data <- syn(
     data,

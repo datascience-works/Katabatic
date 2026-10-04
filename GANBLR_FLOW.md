@@ -85,7 +85,7 @@ sequenceDiagram
   G->>Store: read pickle bytes
   Store-->>G: bytes
   G-->>User: fitted GANBLR instance
-  User->>G: sample(n) or evaluate(x, y)
+  User->>G: sample(n), evaluate(real_df) or evaluate_tstr(x, y)
   Note over G,User: Encoders and _d are inside the pickle; no retrain
 ```
 

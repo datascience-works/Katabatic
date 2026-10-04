@@ -3,6 +3,7 @@ import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 
 from katabatic.evaluate.base_evaluation import Evaluation
+from katabatic.utils.column_types import get_column_types, is_numerical
 
 
 class PrivacyEvaluation(Evaluation):
@@ -43,7 +44,8 @@ class PrivacyEvaluation(Evaluation):
         If set, limits NNDR computation to a random sample of synthetic rows
         to keep runtime manageable for large datasets (default: 2000).
     categorical_cols : list[str], optional
-        Columns to treat as categorical for Gower distance.
+        Columns to treat as categorical for Gower distance. Auto-detected from
+        dtypes if neither list is given; non-numeric columns are always categorical.
     continuous_cols : list[str], optional
         Columns to treat as continuous for Gower distance.
     """
@@ -60,6 +62,10 @@ class PrivacyEvaluation(Evaluation):
         super().__init__(real_data, synthetic_data)
         self.near_dup_threshold = near_dup_threshold
         self.sample_size = sample_size
+        if categorical_cols is None and continuous_cols is None:
+            categorical_cols, continuous_cols = get_column_types(
+                self.real_data, exclude_last=False
+            )
         self.categorical_cols = categorical_cols or []
         self.continuous_cols = continuous_cols or []
 
@@ -126,14 +132,15 @@ class PrivacyEvaluation(Evaluation):
         cat_mask = np.zeros(len(shared_cols), dtype=bool)
 
         for i, col in enumerate(shared_cols):
-            if col in self.categorical_cols:
+            # A non-numeric column can't be min-max scaled, so compare it as a category.
+            if col in self.categorical_cols or not is_numerical(real[col]):
                 # Encode to integer codes for equality comparison in Gower
                 cat_mask[i] = True
                 le = LabelEncoder()
-                combined = pd.concat([real[col], synth[col]]).astype(str)
-                le.fit(combined)
-                real_out[:, i] = le.transform(real[col].astype(str)).astype(float)
-                synth_out[:, i] = le.transform(synth[col].astype(str)).astype(float)
+                real_keys, synth_keys = self._category_keys(real[col], synth[col])
+                le.fit(pd.concat([real_keys, synth_keys]))
+                real_out[:, i] = le.transform(real_keys).astype(float)
+                synth_out[:, i] = le.transform(synth_keys).astype(float)
             else:
                 # Continuous: min-max scale to [0, 1] using real data range
                 real_num = pd.to_numeric(real[col], errors="coerce")
@@ -142,13 +149,28 @@ class PrivacyEvaluation(Evaluation):
                 col_max = float(real_num.max())
                 col_range = col_max - col_min
                 if col_range > 0:
-                    real_out[:, i] = (real_num.values - col_min) / col_range
+                    real_out[:, i] = (
+                        real_num.fillna(col_min).values - col_min
+                    ) / col_range
                     synth_out[:, i] = (
                         synth_num.fillna(col_min).values - col_min
                     ) / col_range
                 # else constant column — stays 0
 
         return real_out, synth_out, cat_mask
+
+    @staticmethod
+    def _category_keys(real_col: pd.Series, synth_col: pd.Series):
+        """String keys for comparing two columns as categories.
+
+        Numeric columns compare by value, so a real 13 and a synthetic 13.0 are
+        the same category.
+        """
+        if is_numerical(real_col) and is_numerical(synth_col):
+            return real_col.astype(float).astype(str), synth_col.astype(float).astype(
+                str
+            )
+        return real_col.astype(str), synth_col.astype(str)
 
     @staticmethod
     def _gower_matrix(A, B, cat_mask, batch_size=500):

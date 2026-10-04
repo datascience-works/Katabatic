@@ -2,16 +2,17 @@
 
 # Local pipeline outputs (not for version control)
 artifacts/
+!katabatic/artifacts/
 benchmarks/processed/
 benchmarks/results/
 benchmarks/splits/
-katabatic/datasets/*
-!katabatic/datasets/README.md
 raw_data/
 preprocessed_data/
 sample_data/
 synthetic/
 Results/
+
+.python-version
 
 
 # GReaT trainer artifacts
@@ -241,4 +242,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
 .DS_Store
+*:Zone.Identifier

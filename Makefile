@@ -1,28 +1,26 @@
-.PHONY: clear-cache install-core install-model install-all setup-dev help ci lint format security test test-all build integration hooks contract
+.PHONY: clear-cache install-core install-model setup-dev help ci lint format security test build integration hooks contract
+
+# mst's private-pgm dependency is in an optional Poetry group, since PyPI rejects Git dependencies.
+mst-group = $(if $(filter mst,$(MODEL)),--with mst)
+
+# Fails a target that needs MODEL when none was given.
+require-model = @if [ -z "$(MODEL)" ]; then echo "Error: specify a model, e.g. make $@ MODEL=ganblr"; exit 1; fi
 
 # Core installation (minimal dependencies)
 install-core:
 	@echo "Installing core Katabatic dependencies..."
 	poetry install
 
-# Install specified model
+# Install one or more models, e.g. MODEL="ganblr ctgan"
 install-model:
-	@if [ -z "$(MODEL)" ]; then \
-		echo "Error: specify a model, e.g. make install-model MODEL=ganblr"; \
-		exit 1; \
-	fi
+	$(require-model)
 	@echo "Installing $(MODEL) model dependencies..."
-	poetry install -E $(MODEL)
+	poetry install $(addprefix -E ,$(MODEL)) $(mst-group)
 
-# Install all model dependencies
-install-all:
-	@echo "Installing all model dependencies..."
-	poetry install -E all
-
-# Setup full development environment
+# Setup development environment, plus any models given in MODEL
 setup-dev:
-	@echo "Setting up full development environment..."
-	poetry install --with dev -E all
+	@echo "Setting up development environment..."
+	poetry install --with dev $(addprefix -E ,$(MODEL)) $(mst-group)
 	poetry run pre-commit install
 
 clear-cache:
@@ -34,14 +32,17 @@ clear-cache:
 
 # Quality checks (mirrors CI lint-and-test job)
 # Run the fast CI checks locally before pushing / opening a PR
-ci: format security test build
+ci: lint security test build
 	@echo "All local CI checks passed."
+
+lint:
+	@echo "Running pre-commit hooks (ruff check, format, etc.)..."
+	poetry run pre-commit run --all-files
 
 format:
 	@echo "Auto-formatting with ruff..."
 	poetry run ruff format katabatic tests
 	poetry run ruff check --fix katabatic tests
-	poetry run pre-commit run --all-files
 
 security:
 	@echo "Running bandit security scan..."
@@ -49,40 +50,33 @@ security:
 
 test:
 	@echo "Running fast tests with coverage..."
-	poetry run pytest -q --ignore=tests/test_model_registry.py --cov=katabatic --cov-report=term-missing
+	poetry run pytest -q --deselect tests/test_model_registry.py::test_model_promotion_contract --cov=katabatic --cov-report=term-missing
+	@echo "Checking core coverage floor (mirrors CI's lint-and-test 'Core coverage floor' step)..."
+	poetry run coverage report --include="katabatic/pipeline/*,katabatic/utils/*,katabatic/datasets/*,katabatic/artifacts/*,katabatic/evaluate/*,katabatic/models/registry.py,katabatic/models/base_model.py" --fail-under=70
 
 build:
 	@echo "Building wheel..."
 	poetry build
 
-# Run a model promotion contract test
+# Run the model promotion contract for a specific model (mirrors CI).
 contract:
-	@echo "Running model promotion contract test..."
-	poetry run pip install "torch>=2.13.0,<3.0.0" --index-url https://download.pytorch.org/whl/cpu
-	poetry install --with dev -E all
-	poetry run pytest tests/test_model_registry.py -v
+	$(require-model)
+	@echo "Running model promotion contract test for $(MODEL)..."
+	poetry install --with dev -E $(MODEL) $(mst-group)
+	poetry run pytest tests/test_model_registry.py -k "$(MODEL)" -v
 
 # Run an integration test for a specific model.
 integration:
+	$(require-model)
 	@echo "Running integration tests for $(MODEL)..."
-	poetry install --with dev -E $(MODEL)
+	poetry install --with dev -E $(MODEL) $(mst-group)
 	poetry run pytest -m "integration and $(MODEL)" -q
-
-test-all:
-	@echo "Running full tests..."
-	@for f in tests/test_*.py; do \
-		echo ""; \
-		echo "=== $$f ==="; \
-		poetry run pytest "$$f" -q; status=$$?; \
-		if [ $$status -ne 0 ] && [ $$status -ne 5 ]; then exit $$status; fi; \
-	done
-	@echo ""
-	@echo "Full suite passed."
 
 # Install and activate pre-commit hooks.
 hooks:
 	@echo "Installing pre-commit hooks..."
 	poetry run pre-commit install
+	poetry run pre-commit install --hook-type commit-msg
 	poetry run pre-commit run --all-files
 
 # Show help
@@ -91,11 +85,10 @@ help:
 	@echo ""
 	@echo "Installation:"
 	@echo "  make install-core       Install core dependencies only"
-	@echo "  make install-model MODEL=x   Install a specific model's deps (e.g. MODEL=ctgan)"
-	@echo "  make install-all             Install all model dependencies"
+	@echo "  make install-model MODEL=x   Install model deps (e.g. MODEL=ctgan or MODEL=\"ganblr ctgan\")"
 	@echo ""
 	@echo "Development Setup:"
-	@echo "  make setup-dev          Setup full development environment (all extras + hooks)"
+	@echo "  make setup-dev          Setup dev environment + hooks (add MODEL=... for model extras)"
 	@echo "  make hooks              Install and run pre-commit hooks"
 	@echo ""
 	@echo "Maintenance:"
@@ -106,6 +99,6 @@ help:
 	@echo "  make ci                 Run all local CI checks (lint, security, test, build)"
 	@echo "  make format             Auto-fix formatting and lint issues"
 	@echo "  make test               Run fast tests with coverage"
-	@echo "  make test-all           Run pytest on all supported models"
 	@echo "  make integration MODEL=ctgan   Run integration tests for a model"
+	@echo "  make contract MODEL=ctgan      Run the model promotion contract for a model"
 	@echo "  make hooks              Install pre-commit hooks"

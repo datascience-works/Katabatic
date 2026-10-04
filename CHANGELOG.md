@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-09-26
+
+### Added
+- TVAE-GAN promoted to supported: moved from `katabatic.experimental.models.tvaegan` to `katabatic.models.tvaegan`, with artifact persistence (`load_from_ref`), a `tvaegan` extra, CI integration tests and benchmark scripts for all five datasets. It now uses the shared six-dimension `evaluate()`; its reconstruction loss is available as `evaluate_loss()`.
+- TabKDE promoted to supported: `katabatic.experimental.models.tabkde_updated` renamed and moved to `katabatic.models.tabkde`, now subclassing `Model` with artifact persistence (`load_from_ref`) and CI integration tests.
+
+### Fixed
+- The privacy dimension failed when a categorical column held integers in the real data and floats in the synthetic data (e.g. `education-num` on adult); values now compare by number, so 13 and 13.0 match.
+- TabKDE: numeric class labels were returned as interpolated fractions (e.g. 0.37) by both `train()` and `fit(x, y)`; labels now round-trip exactly.
+- TabKDE: `seed` did not reach the GMM radius draw, so seeded draws were not reproducible and a fixed `random_state` returned identical rows on every `sample()` call.
+
+## [1.0.0] - 2026-09-25
+
+The first stable release of Katabatic: a single interface for training, sampling, evaluating, and versioning synthetic tabular data models.
+
+### Highlights
+
+- **15 supported generative models behind one interface.** GAN-based (GANBLR, CTGAN, PATE-GAN), diffusion (TabSyn, FairTabDiffusion), language-model (GReaT, REaLTabFormer), differentially private (MST, PrivTree, PATE-GAN) and statistical baselines (ARF, KDE, Histogram, NaiveBayes, SMOTE, SynthPop). Every model trains with `train(data_dir)`, generates rows with `sample(n_samples)` and reloads a trained model from its artifacts with `load_from_ref()`, and each has an integration test run in CI.
+- **Models by name.** `get_model("ctgan")` and `list_supported_models()` find models through `ModelRegistry`. Each model installs as its own extra, e.g. `pip install "katabatic[ganblr,ctgan]"`, and a missing dependency raises an error naming what to install. MST also needs Private-PGM, which installs separately because it isn't on PyPI.
+- **Six-dimension evaluation.** `model.evaluate(real_df)` scores fidelity, utility (train on synthetic, test on real), diversity, privacy, consistency and stability, and combines them into a weighted composite. Run a subset with `dimensions=`, or pass your own evaluation as `pipeline=`, as scikit-learn takes `scoring=`. A dimension that fails is reported in `report.errors` rather than scored.
+- **End-to-end pipeline with versioned artifacts.** `TrainTestSplitPipeline` splits a CSV, trains a model, generates synthetic data and evaluates it, recording the dataset split, trained model and evaluations in an artifact store so any run can be reloaded or re-evaluated. `LocalArtifactStore` keeps them on disk.
+- **Cloud artifact storage (experimental).** `FsspecArtifactStore` keeps artifacts in S3, GCS or Azure through a local cache, so a model trained on one machine can be evaluated on another. A write that would overwrite a newer change from another machine raises `ArtifactConflictError` instead. Install with the `artifacts-s3`, `artifacts-gcs` or `artifacts-azure` extra.
+- **Datasets.** Five benchmark datasets ship with the package (adult, car, magic, nursery and shuttle). `DatasetRegistry` profiles any CSV and can check it against a model's requirements, and `preprocess_tabular()` cleans raw CSVs before training.
+- **Examples and benchmarks.** Notebooks for the quickstart, evaluation and cloud storage run in CI, and per-model benchmark scripts cover the five datasets.
+- **Experimental models** (TabEBM, TabDDPM, GANBLR++, CoDi, MedGAN, TVAE-GAN, GMM and TabKDE) live in `katabatic.experimental.models`, outside the stability guarantee. A model is promoted to supported once it passes the promotion contract, which the test suite enforces.
+- **Tooling.** Python 3.11 with Poetry, a Dockerfile, Makefile targets that mirror CI, and pre-commit hooks for Ruff and conventional commits.
+
+### Upgrading from 0.3.1
+
+- Experimental models moved to `katabatic.experimental.models.<name>`.
+- The `all` extra is gone: install the extras for the models you use.
+- `evaluate()` now runs the six-dimension evaluation on every model. Model-specific scores moved to `evaluate_tstr()` (GANBLR, PATE-GAN), `evaluate_ks()` (ARF) and `evaluate_loss()` (TabSyn, TabDDPM).
+
+## [0.3.1] - 2026-09-12
+
+### Fixed
+
+- `publish-pypi.yml` triggered on both `release: published` and `push: tags: v*`, so publishing a GitHub Release from a fresh tag fired both events and started two runs against the same version; only the first could succeed since PyPI rejects re-uploading an existing version/filename, even from a legitimate rebuild. Removed the redundant tag-push trigger, leaving `release: published` (and manual dispatch) as the only ways to publish.
+- `publish-pypi.yml` unconditionally passed `password: ${{ secrets.PYPI_API_TOKEN }}`, which disables PyPI Trusted Publishing even when configured. Reverted to Trusted Publishing (the workflow already carries the required `id-token: write` permission) and added `skip-existing: true` as a safety net against future duplicate-publish attempts.
+- Ruff import-order violation in `katabatic/models/great/great_dataset.py`.
+
 ## [0.3.0] - 2026-09-12
 
 ### Added
@@ -78,11 +119,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stale per-model `pyproject.toml` and `poetry.lock` files.
 - `dev_deps.py`, repo-root `main.py` and `utils.py`, and `katabatic/models/ganblr/kdb.py`.
 
-
-## [0.1.0a1] - 2026-05-22
-
-First public **alpha** release on TestPyPI / PyPI.
-
 ## [0.1.0] - 2026-05-22
 
 ### Added
@@ -111,5 +147,14 @@ First public **alpha** release on TestPyPI / PyPI.
 - Repo-root `utils` module (use `katabatic.utils.preprocess`).
 - `python main.py` entry point (use `katabatic` CLI).
 
-[0.1.0a1]: https://github.com/datascience-works/Katabatic/releases/tag/v0.1.0a1
+## [0.1.0a1] - 2026-05-22
+
+First public **alpha** release on TestPyPI / PyPI.
+
+[1.1.0]: https://github.com/datascience-works/Katabatic/releases/tag/v1.1.0
+[1.0.0]: https://github.com/datascience-works/Katabatic/releases/tag/v1.0.0
+[0.3.1]: https://github.com/datascience-works/Katabatic/releases/tag/v0.3.1
+[0.3.0]: https://github.com/datascience-works/Katabatic/releases/tag/v0.3.0
+[0.2.0]: https://github.com/datascience-works/Katabatic/releases/tag/v0.2.0
 [0.1.0]: https://github.com/datascience-works/Katabatic/releases/tag/v0.1.0
+[0.1.0a1]: https://github.com/datascience-works/Katabatic/releases/tag/v0.1.0a1

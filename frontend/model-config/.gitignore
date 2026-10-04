@@ -1,0 +1,6 @@
+# Generated files and local configuration
+/node_modules/
+/.next/
+/out/
+/.env*.local
+/npm-debug.log*

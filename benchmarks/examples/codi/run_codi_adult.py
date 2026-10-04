@@ -20,7 +20,7 @@ from runner import (
     save_synthetic,
 )
 
-from katabatic.models.codi.models import CODI  # noqa: E402
+from katabatic.experimental.models.codi.models import CODI  # noqa: E402
 
 # run in cpu mode(if GPU is limited)
 # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
