@@ -4,6 +4,7 @@ import sys
 from dataclasses import dataclass, field
 
 import pandas as pd
+import runtime
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if REPO_ROOT not in sys.path:
@@ -114,7 +115,11 @@ def preprocess_and_split(config: RunConfig):
     Returns (train_df, test_df, target_col, paths).
     """
 
+    runtime.start_run(config.model_name, config.dataset_name)
+    runtime.current().begin("preprocess")
+
     paths = build_paths(config)
+    runtime.current().output_dir = paths["results_dir"]
 
     if not os.path.exists(paths["raw_data"]):
         raise FileNotFoundError(
@@ -296,6 +301,8 @@ def preprocess_and_split(config: RunConfig):
         index=False,
     )
 
+    runtime.current().end("preprocess")
+
     return (
         train_df,
         test_df,
@@ -368,6 +375,10 @@ def evaluate(
     print("STEP 5 — Evaluate synthetic data")
     print("=" * 60)
 
+    if runtime.current() is None:
+        runtime.start_run(config.model_name, config.dataset_name)
+    runtime.current().begin("evaluate")
+
     pipeline = SyntheticEvaluationPipeline(
         dimensions=config.dimensions,
         categorical_cols=config.categorical_cols,
@@ -395,5 +406,8 @@ def evaluate(
 
     for dim, score in report.dimension_scores.items():
         print(f"  {dim:<14} {score:.4f}")
+
+    runtime.current().end("evaluate")
+    runtime.finish_run(paths["results_dir"])
 
     return report
