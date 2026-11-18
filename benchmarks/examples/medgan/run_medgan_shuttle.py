@@ -45,7 +45,9 @@ def sample_dataframe(n, seed=None):
     if seed is not None:
         torch.manual_seed(seed)
     frame = pd.DataFrame(model.sample(n), columns=train_df.columns)
-    nearest = np.abs(frame[target_col].to_numpy()[:, None] - target_values).argmin(axis=1)
+    nearest = np.abs(frame[target_col].to_numpy()[:, None] - target_values).argmin(
+        axis=1
+    )
     frame[target_col] = target_values[nearest]
     return frame
 

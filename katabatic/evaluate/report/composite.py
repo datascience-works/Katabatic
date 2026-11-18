@@ -58,7 +58,8 @@ class EvaluationReport:
 
         self.failed_dimensions = list(self.errors)
         self.skipped_dimensions = [
-            dim for dim in SCORE_KEYS
+            dim
+            for dim in SCORE_KEYS
             if dim not in self.dimension_scores and dim not in self.errors
         ]
 
@@ -150,10 +151,7 @@ class EvaluationReport:
         print("  SYNTHETIC DATA EVALUATION REPORT")
         print("=" * 52)
 
-        active_weights = {
-            d: self.weights.get(d, 0.0)
-            for d in self.dimension_scores
-        }
+        active_weights = {d: self.weights.get(d, 0.0) for d in self.dimension_scores}
         total_weight = sum(active_weights.values())
 
         for dim, score in self.dimension_scores.items():
@@ -171,15 +169,9 @@ class EvaluationReport:
             f"  Dimensions successful: "
             f"{self.successful_dimension_count}/{self.total_dimensions}"
         )
-        print(
-            f"  Successful: {', '.join(self.successful_dimensions) or 'None'}"
-        )
-        print(
-            f"  Failed: {', '.join(self.failed_dimensions) or 'None'}"
-        )
-        print(
-            f"  Skipped: {', '.join(self.skipped_dimensions) or 'None'}"
-        )
+        print(f"  Successful: {', '.join(self.successful_dimensions) or 'None'}")
+        print(f"  Failed: {', '.join(self.failed_dimensions) or 'None'}")
+        print(f"  Skipped: {', '.join(self.skipped_dimensions) or 'None'}")
 
         print("-" * 52)
         filled = (
@@ -226,8 +218,7 @@ def warn_if_dimension_sets_differ(reports: dict):
         return False
 
     dimension_sets = {
-        model: set(report.successful_dimensions)
-        for model, report in reports.items()
+        model: set(report.successful_dimensions) for model, report in reports.items()
     }
 
     reference_model = next(iter(dimension_sets))

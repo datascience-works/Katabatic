@@ -1,4 +1,5 @@
 """Print a model x dataset grid of which benchmark scripts exist."""
+
 from pathlib import Path
 
 DATASETS = ["adult", "shuttle", "car", "magic", "nursery"]
@@ -14,4 +15,6 @@ for m in models:
         missing += not ok
     total_missing += missing
     print(f"{m:<16}" + "".join(f"{c:<9}" for c in cells) + str(missing))
-print(f"\n{len(models)} models, {len(models) * len(DATASETS)} cells, {total_missing} missing")
+print(
+    f"\n{len(models)} models, {len(models) * len(DATASETS)} cells, {total_missing} missing"
+)

@@ -12,6 +12,7 @@ from katabatic.evaluate.report.composite import (
     warn_if_dimension_sets_differ,
 )
 
+
 def _results(**scores):
     """Build a dimension_results dict keyed like SyntheticEvaluationPipeline does."""
     key_by_dim = {
@@ -95,8 +96,7 @@ def test_save_writes_json_and_csv(tmp_path):
         "privacy",
         "consistency",
         "stability",
-     ]
-
+    ]
 
     with open(csv_path, newline="") as f:
         rows = list(csv.reader(f))
@@ -145,14 +145,11 @@ def test_print_summary_handles_zero_total_weight(capsys):
     captured = capsys.readouterr()
     assert "fidelity" in captured.out
 
+
 def test_warns_when_models_have_different_dimension_sets(capsys):
     reports = {
-        "Model A": EvaluationReport(
-            _results(fidelity=0.8, utility=0.6)
-        ),
-        "Model B": EvaluationReport(
-            _results(fidelity=0.7, privacy=0.9)
-        ),
+        "Model A": EvaluationReport(_results(fidelity=0.8, utility=0.6)),
+        "Model B": EvaluationReport(_results(fidelity=0.7, privacy=0.9)),
     }
 
     result = warn_if_dimension_sets_differ(reports)
@@ -167,12 +164,8 @@ def test_warns_when_models_have_different_dimension_sets(capsys):
 
 def test_no_warning_when_models_have_same_dimension_sets(capsys):
     reports = {
-        "Model A": EvaluationReport(
-            _results(fidelity=0.8, utility=0.6)
-        ),
-        "Model B": EvaluationReport(
-            _results(fidelity=0.7, utility=0.9)
-        ),
+        "Model A": EvaluationReport(_results(fidelity=0.8, utility=0.6)),
+        "Model B": EvaluationReport(_results(fidelity=0.7, utility=0.9)),
     }
 
     result = warn_if_dimension_sets_differ(reports)
@@ -183,9 +176,7 @@ def test_no_warning_when_models_have_same_dimension_sets(capsys):
 
 
 def test_no_warning_when_only_one_model_report(capsys):
-    reports = {
-        "Model A": EvaluationReport(_results(fidelity=0.8))
-    }
+    reports = {"Model A": EvaluationReport(_results(fidelity=0.8))}
 
     result = warn_if_dimension_sets_differ(reports)
 

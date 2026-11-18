@@ -31,7 +31,9 @@ train_df, test_df, target_col, paths = preprocess_and_split(config)
 encoded_train = train_df.copy()
 categories = {}
 for column in config.categorical_cols + [target_col]:
-    encoded_train[column], categories[column] = pd.factorize(train_df[column], sort=True)
+    encoded_train[column], categories[column] = pd.factorize(
+        train_df[column], sort=True
+    )
 
 print("\n" + "=" * 60)
 print("STEP 3 — Train MedGAN")

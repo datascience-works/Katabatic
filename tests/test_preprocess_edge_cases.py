@@ -1,4 +1,3 @@
-
 """Edge-case tests for katabatic/utils/preprocess.py."""
 
 import pandas as pd
