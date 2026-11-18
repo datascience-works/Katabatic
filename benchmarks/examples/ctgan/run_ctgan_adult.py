@@ -5,6 +5,7 @@ sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 
+from protocol import SEED, epochs_for
 from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
 from katabatic.models.ctgan.models import CTGANModel
@@ -39,7 +40,7 @@ train_df, test_df, target_col, paths = preprocess_and_split(config)
 print("\n" + "=" * 60)
 print("STEP 3 — Train CTGAN")
 print("=" * 60)
-model = CTGANModel(epochs=100, batch_size=512, seed=42)
+model = CTGANModel(epochs=epochs_for("adult"), batch_size=512, seed=SEED)
 model.train(
     paths["split_dir"],
     categorical_cols=config.categorical_cols,

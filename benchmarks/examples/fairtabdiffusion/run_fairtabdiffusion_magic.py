@@ -5,6 +5,7 @@ sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 
+from protocol import SEED, epochs_for
 from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
 from katabatic.models.fairtabdiffusion.models import FairTabDiffusion
@@ -49,10 +50,10 @@ print("=" * 60)
 # features specifically or was something else about Adult's schema.
 model = FairTabDiffusion(
     sensitive_col=None,
-    epochs=200,
+    epochs=epochs_for("magic"),
     timesteps=100,
     batch_size=256,
-    seed=42,
+    seed=SEED,
 )
 
 model.train(

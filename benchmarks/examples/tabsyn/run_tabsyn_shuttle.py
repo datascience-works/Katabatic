@@ -6,6 +6,7 @@ sys.path.insert(
 )
 
 from prepare_npy import prepare_npy_for_tabsyn
+from protocol import SEED
 from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
 from katabatic.models.tabsyn.models import TabSyn
@@ -38,7 +39,7 @@ prepare_npy_for_tabsyn(
 print("\n" + "=" * 60)
 print("STEP 3 : Train TabSyn")
 print("=" * 60)
-model = TabSyn()
+model = TabSyn(seed=SEED)
 model.train(paths["split_dir"], paths["synthetic_dir"])
 print("\nTabSyn training complete.")
 

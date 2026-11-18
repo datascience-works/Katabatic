@@ -32,9 +32,10 @@ dependencies = [
 codi = ["torch>=2.14.0,<3.0.0"]
 arf = []
 # Remote artifact stores: combine extras for several clouds, e.g. [artifacts-s3,artifacts-gcs].
-artifacts-s3 = ["fsspec>=2023.5.0,<=2026.2.0", "s3fs>=2023.5.0,<=2026.2.0"]
-artifacts-gcs = ["fsspec>=2023.5.0,<=2026.2.0", "gcsfs>=2023.5.0,<=2026.2.0"]
-artifacts-azure = ["fsspec>=2023.5.0,<=2026.2.0", "adlfs>=2023.5.0,<=2026.2.0"]
+# The patched fsspec release must also satisfy GReaT's datasets dependency.
+artifacts-s3 = ["fsspec==2026.6.0", "s3fs==2026.6.0"]
+artifacts-gcs = ["fsspec==2026.6.0", "gcsfs==2026.6.0"]
+artifacts-azure = ["fsspec==2026.6.0", "adlfs>=2023.5.0,<=2026.2.0"]
 kde = []
 tabkde = []
 ctgan = ["torch>=2.14.0,<3.0.0"]
@@ -50,7 +51,7 @@ great = [
     "torch>=2.14.0,<3.0.0",
     "datasets>=5.0.1,<6.0.0",
     "accelerate>=1.15.0",
-    "fsspec>=2023.5.0,<=2026.2.0",
+    "fsspec==2026.6.0",
 ]
 histogram = []
 fairtabdiffusion = ["torch>=2.14.0,<3.0.0"]
@@ -116,7 +117,7 @@ pytest-forked = "^1.7.5"
 # Executes examples/*.ipynb in tests/test_examples.py
 nbclient = "^0.11.0"
 nbformat = "^5.11.1"
-fsspec = ">=2023.5.0,<=2026.2.0"
+fsspec = "==2026.6.0"
 # Security tools
 bandit = "^1.9.4"
 pip-audit = "^2.10.1"

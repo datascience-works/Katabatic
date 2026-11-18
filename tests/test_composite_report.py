@@ -6,7 +6,11 @@ import json
 import numpy as np
 import pytest
 
-from katabatic.evaluate.report.composite import DEFAULT_WEIGHTS, EvaluationReport
+from katabatic.evaluate.report.composite import (
+    DEFAULT_WEIGHTS,
+    EvaluationReport,
+    warn_if_dimension_sets_differ,
+)
 
 
 def _results(**scores):
@@ -83,6 +87,16 @@ def test_save_writes_json_and_csv(tmp_path):
     assert payload["composite_score"] == report.composite_score
     assert payload["dimension_scores"] == {"fidelity": 0.8, "utility": 0.6}
     assert pytest.approx(sum(payload["weights_used"].values())) == 1.0
+    assert payload["successful_dimensions"] == ["fidelity", "utility"]
+    assert payload["successful_dimension_count"] == 2
+    assert payload["total_dimensions"] == 6
+    assert payload["failed_dimensions"] == []
+    assert payload["skipped_dimensions"] == [
+        "diversity",
+        "privacy",
+        "consistency",
+        "stability",
+    ]
 
     with open(csv_path, newline="") as f:
         rows = list(csv.reader(f))
@@ -130,3 +144,42 @@ def test_print_summary_handles_zero_total_weight(capsys):
     report.print_summary()
     captured = capsys.readouterr()
     assert "fidelity" in captured.out
+
+
+def test_warns_when_models_have_different_dimension_sets(capsys):
+    reports = {
+        "Model A": EvaluationReport(_results(fidelity=0.8, utility=0.6)),
+        "Model B": EvaluationReport(_results(fidelity=0.7, privacy=0.9)),
+    }
+
+    result = warn_if_dimension_sets_differ(reports)
+
+    captured = capsys.readouterr()
+    assert result is True
+    assert "WARNING" in captured.out
+    assert "Model B" in captured.out
+    assert "utility" in captured.out
+    assert "privacy" in captured.out
+
+
+def test_no_warning_when_models_have_same_dimension_sets(capsys):
+    reports = {
+        "Model A": EvaluationReport(_results(fidelity=0.8, utility=0.6)),
+        "Model B": EvaluationReport(_results(fidelity=0.7, utility=0.9)),
+    }
+
+    result = warn_if_dimension_sets_differ(reports)
+
+    captured = capsys.readouterr()
+    assert result is False
+    assert "WARNING" not in captured.out
+
+
+def test_no_warning_when_only_one_model_report(capsys):
+    reports = {"Model A": EvaluationReport(_results(fidelity=0.8))}
+
+    result = warn_if_dimension_sets_differ(reports)
+
+    captured = capsys.readouterr()
+    assert result is False
+    assert captured.out == ""
