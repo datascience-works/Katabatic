@@ -46,6 +46,7 @@ class ModelSpec:
     budget_default: int | None = None  # value used when a script sets none
     seed_params: tuple = ()  # keyword names that set the random seed
     seed_default: int | None = None  # seed used when a script passes none
+    seed_supported: bool = True  # False if the model has no seed argument
     note: str = ""
 
 
@@ -54,24 +55,30 @@ MODEL_SPECS = {
     "codi": ModelSpec(
         STANDARD,
         budget_params=("epochs",),
-        note="No seed argument found in scripts; check the model code.",
+        seed_params=("random_state",),
+        seed_default=42,
     ),
     "ctgan": ModelSpec(STANDARD, ("epochs",), seed_params=("seed",)),
     "fairtabdiffusion": ModelSpec(
-        STANDARD, ("epochs",), seed_params=("seed",), note="Uses 200 epochs today."
+        STANDARD,
+        ("epochs",),
+        seed_params=("seed",),
+        note="Was 200 epochs; now follows the standard.",
     ),
     "ganblr": ModelSpec(
         STANDARD,
         ("epochs",),
         150,
-        note="300 epochs on Car and Nursery today; no seed argument.",
+        seed_params=("seed",),
+        note="Seed applies to sampling only; training has no seed argument.",
     ),
     "gmm": ModelSpec(FIXED, seed_params=("seed", "random_state")),
     "great": ModelSpec(
         SPECIFIC,
         ("epochs", "EPOCHS"),
         100,
-        note="Adult 310 vs 2 elsewhere; decided in deliverable 13.",
+        seed_params=("seed",),
+        note="Seed applies to sampling. Adult 310 vs 2 epochs elsewhere (deliverable 13).",
     ),
     "histogram": ModelSpec(FIXED, seed_params=("seed", "random_state")),
     "kde": ModelSpec(FIXED, seed_params=("seed",)),
@@ -81,7 +88,7 @@ MODEL_SPECS = {
         seed_params=("random_state",),
         note="Two stages: 100 pre-train, 1000 GAN.",
     ),
-    "mst": ModelSpec(FIXED, note="No seed argument found in scripts."),
+    "mst": ModelSpec(FIXED, seed_supported=False, note="Model has no seed argument."),
     "naivebayes": ModelSpec(FIXED, seed_params=("seed",)),
     "pategan": ModelSpec(
         SPECIFIC,
@@ -96,12 +103,16 @@ MODEL_SPECS = {
         100,
         seed_params=("random_state",),
         seed_default=1029,
-        note="Model default seed is 1029, not 42.",
+        note="Seed set to 42; the model default is 1029.",
     ),
     "smote": ModelSpec(FIXED, seed_params=("random_state",)),
     "synthpop": ModelSpec(FIXED, seed_params=("seed",)),
     "tabddpm": ModelSpec(
-        SPECIFIC, ("steps",), seed_params=("seed",), note="Training steps, not epochs."
+        SPECIFIC,
+        ("steps",),
+        seed_params=("seed",),
+        seed_default=42,
+        note="Training steps, not epochs. Model default seed is 42.",
     ),
     "tabebm": ModelSpec(
         SPECIFIC, ("sgld_steps",), seed_params=("seed",), note="Sampling steps."
@@ -109,12 +120,14 @@ MODEL_SPECS = {
     "tabkde": ModelSpec(
         FIXED,
         seed_params=("random_state",),
-        note="Model supports random_state but default is None.",
+        note="Seed is now passed; the model default is no seed.",
     ),
     "tabsyn": ModelSpec(
         SPECIFIC,
         ("diffusion_epochs",),
         500,
+        seed_params=("seed",),
+        seed_default=42,
         note="Scripts use model defaults (50 decoder, 500 diffusion epochs).",
     ),
     "tvaegan": ModelSpec(
@@ -123,7 +136,7 @@ MODEL_SPECS = {
         50,
         seed_params=("seed",),
         seed_default=42,
-        note="Model default is 50 epochs; only Adult and Shuttle set 200.",
+        note="Was 50 epochs by default and 200 on two datasets; now standard.",
     ),
 }
 

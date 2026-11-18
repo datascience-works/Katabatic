@@ -13,6 +13,7 @@ sys.path.insert(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
 )
 
+from protocol import SEED
 from runner import (  # noqa: E402
     RunConfig,
     evaluate,
@@ -113,7 +114,7 @@ print("\n" + "=" * 60)
 print("STEP 3 - Train TabKDE - Car")
 print("=" * 60)
 
-model = TabKDEModel()
+model = TabKDEModel(random_state=SEED)
 model.fit(train_df.drop(columns=[target_col]), train_df[target_col])
 
 print("\nTabKDE training complete.")

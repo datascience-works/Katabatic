@@ -1,6 +1,6 @@
 # Benchmark protocol
 
-Status: DRAFT v2, written by the Benchmarking & Evaluation stream. Items marked
+Status: DRAFT v3 (rolled out to the scripts), written by the Benchmarking & Evaluation stream. Items marked
 "to confirm" need approval from the stream lead before any script is changed.
 
 The goal is that every model is trained and scored under the same conditions so
@@ -63,44 +63,44 @@ action.
 | Model | Policy | Seed | Budget | Note |
 | --- | --- | --- | --- | --- |
 | arf | fixed | 5 OK | 5 N/A |  |
-| codi | standard | 5 REVIEW | 2 DIFF, 3 OK | No seed argument found in scripts; check the model code. |
-| ctgan | standard | 5 OK | 2 DIFF, 3 OK |  |
-| fairtabdiffusion | standard | 5 OK | 5 DIFF | Uses 200 epochs today. |
-| ganblr | standard | 5 REVIEW | 3 DIFF, 2 OK | 300 epochs on Car and Nursery today; no seed argument. |
+| codi | standard | 5 OK | 5 OK |  |
+| ctgan | standard | 5 OK | 5 OK |  |
+| fairtabdiffusion | standard | 5 OK | 5 OK | Was 200 epochs; now follows the standard. |
+| ganblr | standard | 5 OK | 5 OK | Seed applies to sampling only; training has no seed argument. |
 | gmm | fixed | 5 OK | 5 N/A |  |
-| great | specific | 5 REVIEW | 5 INFO | Adult 310 vs 2 elsewhere; decided in deliverable 13. |
+| great | specific | 5 OK | 5 INFO | Seed applies to sampling. Adult 310 vs 2 epochs elsewhere (deliverable 13). |
 | histogram | fixed | 5 OK | 5 N/A |  |
 | kde | fixed | 5 OK | 5 N/A |  |
 | medgan | specific | 5 OK | 5 INFO | Two stages: 100 pre-train, 1000 GAN. |
-| mst | fixed | 5 N/A | 5 N/A | No seed argument found in scripts. |
+| mst | fixed | 5 N/A | 5 N/A | Model has no seed argument. |
 | naivebayes | fixed | 5 OK | 5 N/A |  |
 | pategan | specific | 5 OK | 5 INFO | Iterations, not epochs. |
 | privtree | fixed | 5 OK | 5 N/A |  |
-| realtabformer | specific | 5 DIFF | 5 INFO | Model default seed is 1029, not 42. |
+| realtabformer | specific | 5 OK | 5 INFO | Seed set to 42; the model default is 1029. |
 | smote | fixed | 5 OK | 5 N/A |  |
 | synthpop | fixed | 5 OK | 5 N/A |  |
-| tabddpm | specific | 1 MISSING, 4 REVIEW | 5 INFO | Training steps, not epochs. |
+| tabddpm | specific | 5 OK | 5 INFO | Training steps, not epochs. Model default seed is 42. |
 | tabebm | specific | 5 OK | 5 INFO | Sampling steps. |
-| tabkde | fixed | 5 MISSING | 5 N/A | Model supports random_state but default is None. |
-| tabsyn | specific | 5 REVIEW | 5 INFO | Scripts use model defaults (50 decoder, 500 diffusion epochs). |
-| tvaegan | standard | 5 OK | 5 DIFF | Model default is 50 epochs; only Adult and Shuttle set 200. |
+| tabkde | fixed | 5 OK | 5 N/A | Seed is now passed; the model default is no seed. |
+| tabsyn | specific | 5 OK | 5 INFO | Scripts use model defaults (50 decoder, 500 diffusion epochs). |
+| tvaegan | standard | 5 OK | 5 OK | Was 50 epochs by default and 200 on two datasets; now standard. |
 
-110 scripts checked, 28 DIFF or MISSING findings
+## 7. Rollout result (18 Nov 2026)
 
-## 7. Current findings
+The first check found 28 problems in 110 scripts. They were fixed in one change:
 
-The checker reports 28 findings across the 110 scripts:
+- **Seeds.** Every script whose model accepts a seed now sets 42, through `SEED`
+  imported from `benchmarks/protocol.py` (TabDDPM relies on its own default of 42). TabKDE and TabSyn now pass their seed, and
+  RealTabFormer uses 42 instead of its default 1029. GANBLR and GReaT accept a
+  seed for sampling only. MST has no seed argument, so it is marked N/A.
+- **Epochs.** CoDi, CTGAN, FairTabDiffusion, GANBLR and TVAE-GAN now take their
+  epochs from `epochs_for(dataset)`. This changes training time and results for
+  those five models, so earlier runs of them are not comparable.
+- **Models on their own budget** (GReaT, MedGAN, PATE-GAN, RealTabFormer,
+  TabDDPM, TabEBM, TabSyn) are unchanged. See section 4.
 
-- **Seeds.** TabKDE sets no seed (model default is None, so runs are not
-  repeatable) and TabDDPM Adult sets none. RealTabFormer uses its default 1029
-  instead of 42. CoDi, GANBLR, GReaT, MST and TabSyn pass no seed and need a
-  code review to see whether they accept one.
-- **TVAE-GAN.** Car, Magic and Nursery use the model default of 50 epochs;
-  Adult and Shuttle use 200.
-- **FairTabDiffusion.** All five scripts use 200 epochs.
-- **GANBLR.** 300 epochs on Car and Nursery, 150 on the others.
-- **CoDi and CTGAN.** 100 epochs on Adult and Shuttle where the proposal is 150.
-- **GReaT.** 310 epochs on Adult, 2 on the other datasets (deliverable 13).
+`python benchmarks/check_protocol.py` now reports 0 DIFF or MISSING findings,
+and a test (`test_all_scripts_follow_the_protocol`) keeps it that way.
 
 ## 8. How to check
 
@@ -114,13 +114,12 @@ The checker only reads the scripts. It never trains a model.
 
 ## 9. Rollout plan
 
-1. The team reads this file and the lead confirms sections 3 and 4.
-2. Update `MODEL_SPECS` if a decision changes a rule, then re-run the checker.
-3. Fix the scripts one model folder at a time, one pull request per folder.
-   Seeds first (cheap), then epochs (changes results, so the model must be
-   re-run).
-4. When the checker reports no DIFF or MISSING for a model, that model is
-   ready for the full run (deliverable 11).
+1. The lead confirms sections 3 and 4.
+2. If a decision changes a rule, edit `benchmarks/protocol.py` (for example
+   `EPOCHS_BY_SIZE`). The scripts follow it automatically for the five standard
+   models, and the checker and test confirm it.
+3. A new or changed script must pass `python benchmarks/check_protocol.py`.
+4. Models that pass are ready for the full run (deliverable 11).
 
 ## 10. Decisions to confirm
 

@@ -83,3 +83,25 @@ def test_strict_mode_returns_nonzero_on_findings(monkeypatch):
     monkeypatch.setattr(check_protocol, "scan", lambda: rows)
     assert check_protocol.main(["--strict"]) == 1
     assert check_protocol.main([]) == 0
+
+
+def test_all_scripts_follow_the_protocol():
+    findings = [
+        (row["model"], row["dataset"], row["seed_status"], row["budget_status"])
+        for row in check_protocol.scan()
+        if {row["seed_status"], row["budget_status"]} & {"DIFF", "MISSING"}
+    ]
+    assert findings == []
+
+
+def test_check_script_resolves_protocol_helpers(tmp_path):
+    body = "from protocol import SEED, epochs_for\nm = M(epochs=epochs_for('car'), seed=SEED)\n"
+    row = check_protocol.check_script(_script(tmp_path, body), "ctgan", "car")
+    assert row["seed_status"] == "OK"
+    assert row["budget_status"] == "OK"
+
+
+def test_model_without_seed_argument_is_not_applicable(tmp_path):
+    path = tmp_path / "run_mst_car.py"
+    path.write_text("m = MSTModel()\n")
+    assert check_protocol.check_script(path, "mst", "car")["seed_status"] == "N/A"

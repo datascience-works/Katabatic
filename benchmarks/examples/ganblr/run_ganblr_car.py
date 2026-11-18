@@ -12,6 +12,7 @@ sys.path.insert(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
 )
 
+from protocol import SEED, epochs_for
 from runner import (
     RunConfig,
     evaluate,
@@ -120,7 +121,7 @@ model.train(
     paths["split_dir"],
     categorical_cols=config.categorical_cols,
     continuous_cols=config.continuous_cols,
-    epochs=300,
+    epochs=epochs_for("car"),
     batch_size=32,
     k=0,
     warmup_epochs=1,
@@ -130,7 +131,7 @@ print("\nGANBLR training complete.")
 print("\n" + "=" * 60)
 print("STEP 4 — Generate synthetic data")
 print("=" * 60)
-synthetic_df = model.sample(len(train_df))
+synthetic_df = model.sample(len(train_df), seed=SEED)
 synthetic_df = save_synthetic(
     synthetic_df,
     train_df,

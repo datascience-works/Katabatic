@@ -5,6 +5,7 @@ sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 
+from protocol import SEED, epochs_for
 from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
 from katabatic.models.tvaegan.models import TVAEGANModel
@@ -35,7 +36,9 @@ print("STEP 3 : Train TVAE-GAN")
 print("=" * 60)
 # Shuttle is heavily imbalanced (~80% one class): the smaller discriminator and
 # longer training used for Adult avoid class collapse (see the model README).
-model = TVAEGANModel(epochs=200, discriminator_hidden_dims=[32, 16])
+model = TVAEGANModel(
+    epochs=epochs_for("shuttle"), seed=SEED, discriminator_hidden_dims=[32, 16]
+)
 model.train(paths["split_dir"], synthetic_dir=paths["synthetic_dir"])
 print("\nTVAE-GAN training complete.")
 

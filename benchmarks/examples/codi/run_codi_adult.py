@@ -13,6 +13,7 @@ sys.path.insert(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
 )
 
+from protocol import SEED, epochs_for
 from runner import (
     RunConfig,
     evaluate,
@@ -140,7 +141,7 @@ train_df, test_df, target_col, paths = preprocess_and_split(config)
 print("\n" + "=" * 60)
 print("STEP 3 — Train CODI")
 print("=" * 60)
-model = CODI(n_steps=50, epochs=100, batch_size=256)
+model = CODI(n_steps=50, epochs=epochs_for("adult"), batch_size=256, random_state=SEED)
 model.train(
     paths["split_dir"],
     paths["synthetic_dir"],

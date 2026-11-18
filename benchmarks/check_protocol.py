@@ -27,14 +27,41 @@ import protocol  # noqa: E402
 EXAMPLES = Path(__file__).resolve().parent / "examples"
 
 
+_PROTOCOL_NAMES = {"SEED": protocol.SEED}
+
+
+def _eval(node, constants):
+    """Evaluate a simple expression, or return "non-constant"."""
+    if isinstance(node, ast.Constant):
+        return node.value
+    if isinstance(node, ast.Name):
+        if node.id in constants:
+            return constants[node.id]
+        return _PROTOCOL_NAMES.get(node.id, "non-constant")
+    if isinstance(node, ast.Attribute) and node.attr == "seed":
+        # config.seed: RunConfig default seed is protocol.SEED
+        return protocol.SEED
+    if (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "epochs_for"
+        and len(node.args) == 1
+        and isinstance(node.args[0], ast.Constant)
+    ):
+        return protocol.epochs_for(node.args[0].value)
+    return "non-constant"
+
+
 def _constants(tree: ast.Module) -> dict:
-    """Module-level NAME = <number> assignments."""
+    """Module-level NAME = <simple value> assignments."""
     found = {}
     for node in tree.body:
-        if isinstance(node, ast.Assign) and isinstance(node.value, ast.Constant):
-            for target in node.targets:
-                if isinstance(target, ast.Name):
-                    found[target.id] = node.value.value
+        if isinstance(node, ast.Assign):
+            value = _eval(node.value, found)
+            if value != "non-constant":
+                for target in node.targets:
+                    if isinstance(target, ast.Name):
+                        found[target.id] = value
     return found
 
 
@@ -45,11 +72,7 @@ def _find_value(tree: ast.Module, names: tuple):
         if isinstance(node, ast.Call):
             for kw in node.keywords:
                 if kw.arg in names:
-                    if isinstance(kw.value, ast.Constant):
-                        return True, kw.value.value
-                    if isinstance(kw.value, ast.Name) and kw.value.id in constants:
-                        return True, constants[kw.value.id]
-                    return True, "non-constant"
+                    return True, _eval(kw.value, constants)
     for name in names:
         if name in constants:
             return True, constants[name]
@@ -62,7 +85,9 @@ def check_script(path: Path, model: str, dataset: str) -> dict:
     tree = ast.parse(path.read_text())
 
     # Seed
-    if spec.seed_params:
+    if not spec.seed_supported:
+        seed, seed_status = None, "N/A"
+    elif spec.seed_params:
         found, seed = _find_value(tree, spec.seed_params)
         if not found:
             seed = spec.seed_default

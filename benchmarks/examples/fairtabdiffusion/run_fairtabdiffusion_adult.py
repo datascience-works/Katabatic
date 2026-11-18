@@ -5,6 +5,7 @@ sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 
+from protocol import SEED, epochs_for
 from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
 from katabatic.models.fairtabdiffusion.models import FairTabDiffusion
@@ -48,10 +49,10 @@ print("=" * 60)
 # Car had no sensitive attribute and ran with sensitive_col=None.
 model = FairTabDiffusion(
     sensitive_col="sex",
-    epochs=200,
+    epochs=epochs_for("adult"),
     timesteps=100,
     batch_size=256,
-    seed=42,
+    seed=SEED,
 )
 
 model.train(

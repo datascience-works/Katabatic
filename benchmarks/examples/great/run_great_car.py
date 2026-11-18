@@ -18,6 +18,7 @@ sys.path.insert(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
 )
 
+from protocol import SEED
 from runner import (
     RunConfig,
     evaluate,
@@ -160,7 +161,7 @@ print("\nGReat training complete.")
 print("\n" + "=" * 60)
 print("STEP 4 — Generate synthetic data")
 print("=" * 60)
-synthetic_df = model.sample(len(train_df), device=DEVICE)
+synthetic_df = model.sample(len(train_df), device=DEVICE, seed=SEED)
 synthetic_df = save_synthetic(
     synthetic_df,
     train_df,
