@@ -104,7 +104,7 @@ def get_system_run_details() -> None:
 
 config = RunConfig(
     dataset_name="magic",
-    model_name="ganblr",
+    model_name="codi",
     categorical_cols=[
         "fLength",
         "fWidth",
