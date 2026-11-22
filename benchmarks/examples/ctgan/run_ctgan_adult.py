@@ -56,4 +56,17 @@ synthetic_df = save_synthetic(
     synthetic_df, train_df, paths, categorical_cols=config.categorical_cols
 )
 
-evaluate(model, config, train_df, synthetic_df, target_col, paths, test_df)
+evaluate(
+    model,
+    config,
+    train_df,
+    synthetic_df,
+    target_col,
+    paths,
+    test_df,
+    model_settings={
+        "epochs": epochs_for("adult"),
+        "batch_size": 512,
+        "seed": SEED,
+    },
+)

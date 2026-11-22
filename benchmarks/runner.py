@@ -3,6 +3,7 @@ import os
 import sys
 from dataclasses import dataclass, field
 
+import metadata
 import pandas as pd
 import runtime
 
@@ -366,6 +367,7 @@ def evaluate(
     target_col: str,
     paths: dict,
     test_df: pd.DataFrame = None,
+    model_settings: dict | None = None,
 ):
     """Run the evaluation pipeline and print the final summary.
     Returns EvaluationReport.
@@ -378,6 +380,14 @@ def evaluate(
     if runtime.current() is None:
         runtime.start_run(config.model_name, config.dataset_name)
     runtime.current().begin("evaluate")
+
+    metadata_path = metadata.save_experiment_metadata(
+        results_dir=paths["results_dir"],
+        config=config,
+        raw_data_path=paths["raw_data"],
+        model_settings=model_settings,
+    )
+    print(f"Experiment metadata saved to: {metadata_path}")
 
     pipeline = SyntheticEvaluationPipeline(
         dimensions=config.dimensions,
