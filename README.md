@@ -425,6 +425,8 @@ for adding or promoting a model. In short:
    [Conventional Commits](https://www.conventionalcommits.org/) — enforced by pre-commit)
 4. **Push** to the branch and **open** a Pull Request into `development`
 
+Maintainers publishing a release: follow the release gate and process in [docs/RELEASE.md](https://github.com/datascience-works/Katabatic/blob/main/docs/RELEASE.md).
+
 Formatting, linting, and security scans run via `pre-commit` (`ruff format`, `ruff check`, plus
 the hooks in [.pre-commit-config.yaml](https://github.com/datascience-works/Katabatic/blob/main/.pre-commit-config.yaml)):
 
