@@ -10,6 +10,7 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
+from benchmarks.validation import validate_column_names  # noqa: E402
 from katabatic.pipeline.evaluation_pipeline import (  # noqa: E402
     SyntheticEvaluationPipeline,
 )
@@ -174,6 +175,14 @@ def preprocess_and_split(config: RunConfig):
     processed_df = pd.read_csv(paths["processed_data"])
 
     target_col = processed_df.columns[-1]
+
+    validate_column_names(
+        available_columns=processed_df.columns,
+        categorical_cols=config.categorical_cols,
+        continuous_cols=config.continuous_cols,
+        target_col=target_col,
+    )
+
     n_features = processed_df.shape[1] - 1
 
     print(f"\nProcessed shape : {processed_df.shape}")
