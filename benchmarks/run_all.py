@@ -26,6 +26,8 @@ How it works
 import argparse
 import json
 import os
+import re
+import signal
 import subprocess
 import sys
 import time
@@ -148,6 +150,37 @@ def tail(path: Path, lines: int = 12) -> str:
     return "\n".join(text.strip().splitlines()[-lines:])
 
 
+def explain_failure(return_code: int | None, log_path: Path) -> str:
+    """Say why a job died: the last real error, or the signal that killed it."""
+    text = ""
+    try:
+        text = log_path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        pass
+    errors = [
+        line.strip()
+        for line in text.splitlines()
+        if re.match(r"^\s*(\w+\.)*\w*(Error|Exception)\b", line)
+    ]
+    if errors:
+        return errors[-1]
+    if return_code is not None and return_code < 0:
+        try:
+            name = signal.Signals(-return_code).name
+        except ValueError:
+            name = f"signal {-return_code}"
+        return (
+            f"process crashed with {name} (exit code {return_code}); "
+            "usually a torch or native-library crash, see the log"
+        )
+    last = tail(log_path, 1)
+    return (
+        f"exit code {return_code}; last log line: {last}"
+        if last
+        else (f"exit code {return_code}")
+    )
+
+
 def run_job(
     model: str,
     dataset: str,
@@ -198,10 +231,8 @@ def run_job(
     if status != TIMEOUT:
         if return_code != 0:
             status = FAILED
-            error = (
-                (runtime or {}).get("error")
-                or tail(log_path)
-                or (f"exit code {return_code}")
+            error = (runtime or {}).get("error") or explain_failure(
+                return_code, log_path
             )
         elif runtime and runtime.get("status") in ("failed", "incomplete"):
             status = FAILED

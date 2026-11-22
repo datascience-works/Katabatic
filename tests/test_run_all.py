@@ -244,3 +244,42 @@ def test_every_real_script_is_found():
     jobs = run_all.build_jobs()
 
     assert len(jobs) == 110
+
+
+def test_explain_failure_prefers_last_error_line(tmp_path):
+    log = tmp_path / "x.log"
+    log.write_text("Training...\nTraceback (most recent call last):\nKeyError: 'age'\n")
+
+    assert run_all.explain_failure(1, log) == "KeyError: 'age'"
+
+
+def test_explain_failure_names_the_crash_signal(tmp_path):
+    log = tmp_path / "x.log"
+    log.write_text("Training for 100 epochs...\n")
+
+    text = run_all.explain_failure(-11, log)
+
+    assert "SIGSEGV" in text
+    assert "Training for 100 epochs" not in text
+
+
+def test_explain_failure_falls_back_to_last_line(tmp_path):
+    log = tmp_path / "x.log"
+    log.write_text("starting\nfinished badly\n")
+
+    assert "finished badly" in run_all.explain_failure(3, log)
+
+
+def test_run_job_reports_a_crashed_process(dirs):
+    examples, results = dirs
+    script = examples / "alpha" / "run_alpha_car.py"
+    script.write_text(
+        "import os, signal\nprint('Training for 100 epochs...', flush=True)\n"
+        "os.kill(os.getpid(), signal.SIGSEGV)\n"
+    )
+
+    record = run_all.run_job("alpha", "car", 30, examples, results)
+
+    assert record["status"] == run_all.FAILED
+    assert "SIGSEGV" in record["error"]
+    assert "Training for 100 epochs" not in record["error"]
