@@ -53,6 +53,11 @@ updates:
     target-branch: "development"
     schedule:
       interval: "weekly"
+    ignore:
+      # Katabatic supports Python 3.11 only (requires-python ">=3.11,<3.12").
+      # Keep the base image on python:3.11-*; allow patch updates only.
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
     commit-message:
       prefix: "chore(docker)"
 
