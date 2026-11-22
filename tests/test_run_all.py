@@ -283,3 +283,49 @@ def test_run_job_reports_a_crashed_process(dirs):
     assert record["status"] == run_all.FAILED
     assert "SIGSEGV" in record["error"]
     assert "Training for 100 epochs" not in record["error"]
+
+
+def test_mac_fix_only_on_macos():
+    mac = run_all.job_environment(platform="darwin", base={})
+    linux = run_all.job_environment(platform="linux", base={})
+
+    assert mac["KMP_DUPLICATE_LIB_OK"] == "TRUE"
+    assert mac["OMP_NUM_THREADS"] == "1"
+    assert "KMP_DUPLICATE_LIB_OK" not in linux
+
+
+def test_mac_fix_never_overrides_your_own_setting():
+    env = run_all.job_environment(platform="darwin", base={"OMP_NUM_THREADS": "8"})
+
+    assert env["OMP_NUM_THREADS"] == "8"
+
+
+def test_mac_fix_can_be_switched_off_and_extra_wins():
+    off = run_all.job_environment(platform="darwin", mac_fix=False, base={})
+    extra = run_all.job_environment(
+        {"OMP_NUM_THREADS": "4"}, platform="darwin", base={}
+    )
+
+    assert "OMP_NUM_THREADS" not in off
+    assert extra["OMP_NUM_THREADS"] == "4"
+
+
+def test_parse_env():
+    assert run_all.parse_env(["A=1", "B=x=y"]) == {"A": "1", "B": "x=y"}
+    assert run_all.parse_env(None) == {}
+    with pytest.raises(ValueError, match="KEY=VALUE"):
+        run_all.parse_env(["nope"])
+
+
+def test_run_job_passes_the_environment_to_the_script(dirs):
+    examples, results = dirs
+    script = examples / "alpha" / "run_alpha_car.py"
+    script.write_text(
+        "import os, sys\nsys.exit(0 if os.environ.get('MY_FLAG') == 'yes' else 3)\n"
+    )
+
+    ok = run_all.run_job("alpha", "car", 30, examples, results, env={"MY_FLAG": "yes"})
+    bad = run_all.run_job("alpha", "car", 30, examples, results, env={})
+
+    assert ok["status"] == run_all.DONE
+    assert bad["status"] == run_all.FAILED

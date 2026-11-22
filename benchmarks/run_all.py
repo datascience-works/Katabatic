@@ -181,6 +181,40 @@ def explain_failure(return_code: int | None, log_path: Path) -> str:
     )
 
 
+# On macOS two copies of the OpenMP library (torch and numpy or scikit-learn)
+# crash many torch models with a segmentation fault. These settings avoid it.
+MAC_FIX = {"KMP_DUPLICATE_LIB_OK": "TRUE", "OMP_NUM_THREADS": "1"}
+
+
+def job_environment(
+    extra: dict | None = None,
+    platform: str = sys.platform,
+    mac_fix: bool = True,
+    base: dict | None = None,
+) -> dict:
+    """Environment for one job: the current one, the macOS fix, then ``extra``.
+
+    A variable you already set yourself is never replaced by the macOS fix.
+    """
+    env = dict(os.environ if base is None else base)
+    if mac_fix and platform == "darwin":
+        for key, value in MAC_FIX.items():
+            env.setdefault(key, value)
+    env.update(extra or {})
+    return env
+
+
+def parse_env(items: list[str] | None) -> dict:
+    """Turn ``["A=1", "B=2"]`` into ``{"A": "1", "B": "2"}``."""
+    values = {}
+    for item in items or []:
+        key, separator, value = item.partition("=")
+        if not separator or not key:
+            raise ValueError(f"--env needs KEY=VALUE, got '{item}'")
+        values[key] = value
+    return values
+
+
 def run_job(
     model: str,
     dataset: str,
@@ -189,6 +223,7 @@ def run_job(
     results_dir: Path = RESULTS_DIR,
     logs_dir: Path | None = None,
     python: str = sys.executable,
+    env: dict | None = None,
 ) -> dict:
     """Run one benchmark script in its own process and describe what happened."""
     logs_dir = logs_dir or results_dir / "run_all" / "logs"
@@ -210,6 +245,7 @@ def run_job(
             completed = subprocess.run(
                 [python, str(script)],
                 cwd=REPO_ROOT,
+                env=env if env is not None else job_environment(),
                 stdout=log,
                 stderr=subprocess.STDOUT,
                 timeout=timeout,
@@ -339,6 +375,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="seconds before a job is stopped (default: 7200 = 2 hours)",
     )
     parser.add_argument(
+        "--env",
+        action="append",
+        metavar="KEY=VALUE",
+        help="extra environment variable for every job (can be repeated)",
+    )
+    parser.add_argument(
+        "--no-mac-fix",
+        action="store_true",
+        help="do not set the macOS OpenMP settings (KMP_DUPLICATE_LIB_OK, "
+        "OMP_NUM_THREADS=1)",
+    )
+    parser.add_argument(
         "--report",
         action="store_true",
         help="print the summary of the last run and exit",
@@ -365,6 +413,12 @@ def main(argv: list[str] | None = None) -> int:
             split_names(args.datasets),
             split_names(args.exclude),
         )
+    except ValueError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+
+    try:
+        env = job_environment(parse_env(args.env), mac_fix=not args.no_mac_fix)
     except ValueError as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
@@ -406,7 +460,7 @@ def main(argv: list[str] | None = None) -> int:
             )
             continue
         print(f"[{index}/{len(plan)}] {model} on {dataset} ...", flush=True)
-        record = run_job(model, dataset, args.timeout)
+        record = run_job(model, dataset, args.timeout, env=env)
         records.append(record)
         print(f"    {record['status']} in {record['seconds']} s", flush=True)
         write_status(merge_records(old, records), out_dir)
