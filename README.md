@@ -310,6 +310,26 @@ Pass `dimensions=["utility"]` to run a subset, or `synthetic_data=...` to score 
 generated. If a dimension fails, `evaluate()` warns, leaves it out of the composite and records
 the error in `report.errors`; the other dimensions still run.
 
+Utility reports accuracy, weighted F1 (`f1`), macro-F1 (`macro_f1`), binary AUC
+when available, and `per_class_recall` keyed by the original class labels as strings.
+TSTR and TRTR results include a mean and standard deviation across folds, plus
+TRTR minus TSTR deltas for every metric and class. Macro-F1 gives each class equal
+weight, making poor minority-class performance visible alongside weighted F1.
+
+The utility score is `1 - mean(TRTR - TSTR)` across classifiers and the available
+accuracy, weighted F1, macro-F1 and AUC metrics, clipped to `[0, 1]`. Per-class
+recall is diagnostic and does not affect this weighting. Macro-F1 and recall use
+one fixed set of labels from real, synthetic and held-out data across all folds;
+undefined class scores are zero. Full metric details are included in saved JSON
+reports:
+
+```python
+utility = report.dimension_results["utility"]
+utility["tstr"]["LR"]["macro_f1"]            # {"mean": ..., "std": ...}
+utility["tstr"]["LR"]["per_class_recall"]    # {"class label": {"mean": ..., "std": ...}}
+utility["delta"]["LR"]["per_class_recall"]   # {"class label": TRTR minus TSTR}
+```
+
 To use your own evaluation, pass it as `pipeline=`, in the same way scikit-learn takes a `scoring=`
 argument. It can be any object with a `run()` method. `evaluate()` still does the sampling and
 column alignment, and passes the model along; accept `**kwargs` for the arguments you don't need:
@@ -352,8 +372,16 @@ results = evaluator.evaluate()
 **Metrics:**
 
 - Accuracy
-- F1 Score
+- Weighted F1 (`F1 Score`)
+- Macro-F1 (`Macro F1 Score`)
+- Per-class recall (`Per-Class Recall`, keyed by original class labels as strings)
 - AUC-ROC (for binary classification)
+
+Standalone TSTR includes the new metrics in its returned results and artifact
+JSON. Console output and CSV reports list each class as `Recall (class=<label>)`,
+keeping the existing `Model,Metric,Value` CSV columns. Macro-F1 and recall use the
+union of synthetic-training and real-test classes, with undefined class scores
+set to zero.
 
 **Statistical fidelity** (categorical JSD, continuous Wasserstein distance, correlation
 preservation, and DCR — distance to closest record) is available via
