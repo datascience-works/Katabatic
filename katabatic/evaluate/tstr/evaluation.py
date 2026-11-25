@@ -1,5 +1,6 @@
 import csv
 import os
+import sys
 import warnings
 from typing import Any
 
@@ -8,7 +9,7 @@ import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
+from sklearn.metrics import accuracy_score, f1_score, recall_score, roc_auc_score
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler
 
@@ -136,6 +137,12 @@ class TSTREvaluation(Evaluation):
         # Encode labels.
         label_encoder = LabelEncoder().fit(self.y_train)
         y_train_encoded = label_encoder.transform(self.y_train)
+        # Keep the same class set for every classifier, including real classes
+        # absent from synthetic training data.
+        metric_labels = np.unique(np.concatenate([self.y_train, self.y_test]))
+        # Numeric synthetic labels can round-trip through CSV as floats. Prefer
+        # the real test labels' spelling for readable, stable recall keys.
+        label_names = {label: str(label) for label in np.unique(self.y_test)}
 
         models: dict[str, Any] = {
             "LR": LogisticRegression(),
@@ -173,7 +180,29 @@ class TSTREvaluation(Evaluation):
 
             metrics = {
                 "Accuracy": accuracy_score(self.y_test, y_pred),
-                "F1 Score": f1_score(self.y_test, y_pred, average="weighted"),
+                "F1 Score": f1_score(
+                    self.y_test, y_pred, average="weighted", zero_division=0
+                ),
+                "Macro F1 Score": f1_score(
+                    self.y_test,
+                    y_pred,
+                    labels=metric_labels,
+                    average="macro",
+                    zero_division=0,
+                ),
+                "Per-Class Recall": {
+                    label_names.get(label, str(label)): float(recall)
+                    for label, recall in zip(
+                        metric_labels,
+                        recall_score(
+                            self.y_test,
+                            y_pred,
+                            labels=metric_labels,
+                            average=None,
+                            zero_division=0,
+                        ),
+                    )
+                },
             }
 
             # Add AUC for binary classification
@@ -194,25 +223,49 @@ class TSTREvaluation(Evaluation):
         print("\nTSTR Evaluation Results:")
         for model_name, metrics in results.items():
             print(f"\n{model_name}:")
-            for metric_name, value in metrics.items():
-                print(f"{metric_name}: {value:.4f}")
+            for metric_name, value in self._metric_items(metrics):
+                line = f"{metric_name}: {value:.4f}"
+                encoding = getattr(sys.stdout, "encoding", None)
+                if encoding:
+                    line = line.encode(encoding, errors="backslashreplace").decode(
+                        encoding
+                    )
+                print(line)
 
         return results
 
-    def _save_results_artifact(self, results: dict[str, dict[str, float]]) -> None:
+    @staticmethod
+    def _metric_items(metrics):
+        """Flatten class recall into labelled rows for console and CSV output."""
+        for metric_name, value in metrics.items():
+            if metric_name == "Per-Class Recall":
+                for label, recall in value.items():
+                    yield f"Recall (class={label})", recall
+            else:
+                yield metric_name, value
+
+    def _save_results_artifact(self, results: dict[str, dict[str, Any]]) -> None:
         store = self._artifact_store
         ref = self._evaluation_ref
         assert store is not None and ref is not None
 
         serializable: dict[str, Any] = {
-            k: {m: float(v) for m, v in d.items()} for k, d in results.items()
+            k: {
+                m: (
+                    {label: float(recall) for label, recall in v.items()}
+                    if isinstance(v, dict)
+                    else float(v)
+                )
+                for m, v in d.items()
+            }
+            for k, d in results.items()
         }
         store.save_json(ref.metrics_relpath, serializable)
 
         report_path = self._artifact_report_relpath
         lines = []
         for model_name, metrics in results.items():
-            for metric_name, value in metrics.items():
+            for metric_name, value in self._metric_items(metrics):
                 lines.append((model_name, metric_name, round(float(value), 4)))
 
         p = store.open_path(report_path)
@@ -234,11 +287,11 @@ class TSTREvaluation(Evaluation):
         os.makedirs(results_dir, exist_ok=True)
         output_path = os.path.join(results_dir, f"{model_name}_tstr.csv")
 
-        with open(output_path, mode="w", newline="") as file:
+        with open(output_path, mode="w", newline="", encoding="utf-8") as file:
             writer = csv.writer(file)
             writer.writerow(["Model", "Metric", "Value"])
             for model_name, metrics in results.items():
-                for metric_name, value in metrics.items():
+                for metric_name, value in TSTREvaluation._metric_items(metrics):
                     writer.writerow([model_name, metric_name, round(value, 4)])
 
         print(f"\nResults saved to: {output_path}")
