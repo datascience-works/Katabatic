@@ -1,4 +1,4 @@
-.PHONY: clear-cache install-core install-model setup-dev help ci lint format security test build integration hooks contract
+.PHONY: clear-cache install-core install-model setup-dev help ci lint format security test build integration hooks contract release-smoke
 
 # mst's private-pgm dependency is in an optional Poetry group, since PyPI rejects Git dependencies.
 mst-group = $(if $(filter mst,$(MODEL)),--with mst)
@@ -65,6 +65,19 @@ contract:
 	poetry install --with dev -E $(MODEL) $(mst-group)
 	poetry run pytest tests/test_model_registry.py -k "$(MODEL)" -v
 
+# Release smoke test (docs/RELEASE.md, TestPyPI dry run): install katabatic into a
+# clean Python 3.11 venv and train/sample/evaluate a lightweight model.
+#   make release-smoke                                   build and test the local wheel
+#   make release-smoke SOURCE=testpypi VERSION=1.2.0rc1   test a published release candidate
+PYTHON311 ?= python3.11
+release-smoke:
+ifdef SOURCE
+	$(PYTHON311) scripts/release_smoke_test.py --source $(SOURCE) --version $(VERSION) $(addprefix --extra ,$(EXTRA))
+else
+	rm -rf dist && poetry build
+	$(PYTHON311) scripts/release_smoke_test.py --wheel $$(ls dist/*.whl) --version $$(poetry version --short) $(addprefix --extra ,$(EXTRA))
+endif
+
 # Run an integration test for a specific model.
 integration:
 	$(require-model)
@@ -101,4 +114,6 @@ help:
 	@echo "  make test               Run fast tests with coverage"
 	@echo "  make integration MODEL=ctgan   Run integration tests for a model"
 	@echo "  make contract MODEL=ctgan      Run the model promotion contract for a model"
+	@echo "  make release-smoke      Build the wheel and smoke-test it in a clean venv"
+	@echo "  make release-smoke SOURCE=testpypi VERSION=1.2.0rc1   Smoke-test a published release"
 	@echo "  make hooks              Install pre-commit hooks"
