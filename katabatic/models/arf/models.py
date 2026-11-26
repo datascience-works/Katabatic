@@ -401,7 +401,12 @@ class ARFModel(Model):
             leaf_thresh=self.leaf_thresh,
         )
 
-        arf.fit(X)
+        # Fit on features and label together so the label keeps its dependence
+        # on the features. Sampling the label separately would make it
+        # independent of every feature.
+        train_table = X.copy()
+        train_table[label_col] = y.to_numpy()
+        arf.fit(train_table)
         arf.forde()
 
         self._arf = arf
@@ -533,20 +538,9 @@ class ARFModel(Model):
         if n_samples is None:
             n_samples = len(self._y_train) if self._y_train is not None else 100
 
-        X_synth = self._arf.forge(n=n_samples)
-
-        y_synth = self._y_train.sample(
-            n=n_samples,
-            replace=True,
-            random_state=self.seed,
-        ).reset_index(drop=True)
-
-        label_col = self._label_col or "label"
-
-        synthetic_df = X_synth.copy()
-        synthetic_df[label_col] = y_synth.to_numpy()
-
-        return synthetic_df
+        # The engine models the label as one more column, so it is generated
+        # jointly with the features and the label column comes last.
+        return self._arf.forge(n=n_samples)
 
     def evaluate_ks(
         self,

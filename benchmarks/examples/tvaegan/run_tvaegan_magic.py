@@ -5,6 +5,7 @@ sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 
+from protocol import SEED, epochs_for
 from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
 from katabatic.models.tvaegan.models import TVAEGANModel
@@ -45,7 +46,7 @@ train_df, test_df, target_col, paths = preprocess_and_split(config)
 print("\n" + "=" * 60)
 print("STEP 3 : Train TVAE-GAN")
 print("=" * 60)
-model = TVAEGANModel()
+model = TVAEGANModel(epochs=epochs_for("magic"), seed=SEED)
 model.train(paths["split_dir"], synthetic_dir=paths["synthetic_dir"])
 print("\nTVAE-GAN training complete.")
 

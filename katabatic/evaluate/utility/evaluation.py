@@ -1,10 +1,12 @@
+import sys
+
 import numpy as np
 import pandas as pd
 import sklearn.base as skbase
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
+from sklearn.metrics import accuracy_score, f1_score, recall_score, roc_auc_score
 from sklearn.model_selection import StratifiedKFold
 from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline as SklearnPipeline
@@ -64,8 +66,17 @@ class UtilityEvaluation(Evaluation):
     making the TRTR - TSTR delta a clean apples-to-apples comparison. Without
     test_data both fall back to evaluating on folds of real_data.
 
-    The utility score is 1 - average(TRTR - TSTR delta). A score of 1.0
-    means synthetic data performs identically to real data.
+    Reports accuracy, weighted F1 (``f1``), macro-F1 (``macro_f1``), binary
+    AUC when available, and ``per_class_recall`` keyed by original class names.
+    Each metric has a mean and population standard deviation across folds.
+    Macro-F1 and recall use the same classes across both protocols and all
+    folds; undefined class scores are zero.
+
+    The utility score is 1 - average(TRTR - TSTR delta) across accuracy,
+    weighted F1, macro-F1 and available AUC, clipped to [0, 1]. Per-class
+    recall deltas are diagnostic and do not change the score's weighting.
+    A score of 1.0 means synthetic data matches or exceeds real performance
+    on average.
 
     Parameters
     ----------
@@ -94,6 +105,8 @@ class UtilityEvaluation(Evaluation):
         self.target_col = target_col
         self.test_data = test_data
         self.n_folds = n_folds
+        self._labels = None
+        self._class_names = None
 
     def evaluate(self) -> dict:
         X_synth = self._encode(
@@ -122,6 +135,15 @@ class UtilityEvaluation(Evaluation):
             y_real = le.transform(y_real_raw.astype(str))
             y_synth = le.transform(y_synth_raw.astype(str))
             y_test = le.transform(y_test_raw.astype(str))
+
+        self._labels = np.unique(np.concatenate([y_real, y_synth, y_test]))
+        if pd.api.types.is_numeric_dtype(y_real_raw):
+            real_class_names = {label: str(label) for label in y_real_raw.unique()}
+            self._class_names = [
+                real_class_names.get(label, str(label)) for label in self._labels
+            ]
+        else:
+            self._class_names = le.inverse_transform(self._labels).tolist()
 
         if self.test_data is not None:
             X_test = self._encode(self.test_data.drop(columns=[self.target_col])).values
@@ -172,7 +194,7 @@ class UtilityEvaluation(Evaluation):
 
     def _tstr(self, clf, X_synth, y_synth, X_test, y_test, cv, is_binary):
         """Train on each synthetic CV fold, test on the held-out test set."""
-        fold_metrics = {"accuracy": [], "f1": [], "auc": []}
+        fold_metrics = {}
         skipped = 0
 
         for train_idx, _ in cv.split(X_synth, y_synth):
@@ -182,8 +204,7 @@ class UtilityEvaluation(Evaluation):
             clf_copy = skbase.clone(clf)
             clf_copy.fit(X_synth[train_idx], y_synth[train_idx])
             scores = self._score(clf_copy, X_test, y_test, is_binary)
-            for k, v in scores.items():
-                fold_metrics[k].append(v)
+            self._append_fold_scores(fold_metrics, scores)
 
         if skipped == self.n_folds:
             raise ValueError(
@@ -195,7 +216,7 @@ class UtilityEvaluation(Evaluation):
 
     def _trtr(self, clf, X_real, y_real, X_test, y_test, cv, is_binary):
         """Train on real CV folds, test on the held-out test set."""
-        fold_metrics = {"accuracy": [], "f1": [], "auc": []}
+        fold_metrics = {}
 
         use_held_out = self.test_data is not None
         for train_idx, test_idx in cv.split(X_real, y_real):
@@ -205,16 +226,26 @@ class UtilityEvaluation(Evaluation):
             X_eval = X_test if use_held_out else X_real[test_idx]
             y_eval = y_test if use_held_out else y_real[test_idx]
             scores = self._score(clf_copy, X_eval, y_eval, is_binary)
-            for k, v in scores.items():
-                fold_metrics[k].append(v)
+            self._append_fold_scores(fold_metrics, scores)
 
         return self._aggregate(fold_metrics)
 
     def _score(self, clf, X, y, is_binary):
         metrics = {}
         y_pred = clf.predict(X)
+        labels = self._labels
+        if labels is None:
+            labels = np.unique(np.concatenate([y, clf.classes_]))
+        class_names = self._class_names
+        if class_names is None:
+            class_names = [str(label) for label in labels]
         metrics["accuracy"] = accuracy_score(y, y_pred)
         metrics["f1"] = f1_score(y, y_pred, average="weighted", zero_division=0)
+        metrics["macro_f1"] = f1_score(
+            y, y_pred, labels=labels, average="macro", zero_division=0
+        )
+        recalls = recall_score(y, y_pred, labels=labels, average=None, zero_division=0)
+        metrics["per_class_recall"] = dict(zip(class_names, map(float, recalls)))
         if is_binary:
             try:
                 y_prob = clf.predict_proba(X)[:, 1]
@@ -223,9 +254,21 @@ class UtilityEvaluation(Evaluation):
                 print(f"  [WARNING] AUC could not be computed: {e}")
         return metrics
 
+    @staticmethod
+    def _append_fold_scores(fold_metrics, scores):
+        for metric, value in scores.items():
+            if metric == "per_class_recall":
+                per_class = fold_metrics.setdefault(metric, {})
+                for label, recall in value.items():
+                    per_class.setdefault(label, []).append(recall)
+            else:
+                fold_metrics.setdefault(metric, []).append(value)
+
     def _aggregate(self, fold_metrics):
         return {
-            metric: {
+            metric: self._aggregate(vals)
+            if isinstance(vals, dict)
+            else {
                 "mean": round(float(np.mean(vals)), 4),
                 "std": round(float(np.std(vals)), 4),
             }
@@ -239,6 +282,19 @@ class UtilityEvaluation(Evaluation):
             delta[clf_name] = {}
             for metric in tstr_results[clf_name]:
                 if metric in trtr_results.get(clf_name, {}):
+                    if metric == "per_class_recall":
+                        tstr_recalls = tstr_results[clf_name][metric]
+                        trtr_recalls = trtr_results[clf_name][metric]
+                        delta[clf_name][metric] = {
+                            label: round(
+                                trtr_recalls[label]["mean"]
+                                - tstr_recalls[label]["mean"],
+                                4,
+                            )
+                            for label in tstr_recalls
+                            if label in trtr_recalls
+                        }
+                        continue
                     gap = (
                         trtr_results[clf_name][metric]["mean"]
                         - tstr_results[clf_name][metric]["mean"]
@@ -247,7 +303,13 @@ class UtilityEvaluation(Evaluation):
         return delta
 
     def _compute_score(self, delta):
-        all_deltas = [v for clf_d in delta.values() for v in clf_d.values()]
+        score_metrics = {"accuracy", "f1", "macro_f1", "auc"}
+        all_deltas = [
+            value
+            for clf_delta in delta.values()
+            for metric, value in clf_delta.items()
+            if metric in score_metrics
+        ]
         if not all_deltas:
             return 0.0
         avg_delta = float(np.mean(all_deltas))
@@ -257,12 +319,26 @@ class UtilityEvaluation(Evaluation):
         print("\n=== Utility Evaluation ===")
         print(f"Overall utility score: {results['utility_score']:.4f}")
         print(
-            f"\n{'Classifier':<12} {'Metric':<10} {'TSTR mean':<12} {'TRTR mean':<12} {'Delta':<8}"
+            f"\n{'Classifier':<12} {'Metric':<24} {'TSTR mean':<12} {'TRTR mean':<12} {'Delta':<8}"
         )
-        print("-" * 56)
+        print("-" * 70)
         for clf in results["tstr"]:
             for metric in results["tstr"][clf]:
+                if metric == "per_class_recall":
+                    for label, stats in results["tstr"][clf][metric].items():
+                        tstr_m = stats["mean"]
+                        trtr_m = results["trtr"][clf][metric][label]["mean"]
+                        d = results["delta"][clf][metric][label]
+                        name = f"recall (class={label})"
+                        encoding = getattr(sys.stdout, "encoding", None) or "utf-8"
+                        name = name.encode(encoding, errors="backslashreplace").decode(
+                            encoding
+                        )
+                        print(
+                            f"{clf:<12} {name:<24} {tstr_m:<12.4f} {trtr_m:<12.4f} {d}"
+                        )
+                    continue
                 tstr_m = results["tstr"][clf][metric]["mean"]
                 trtr_m = results["trtr"][clf][metric]["mean"]
                 d = results["delta"][clf].get(metric, "-")
-                print(f"{clf:<12} {metric:<10} {tstr_m:<12.4f} {trtr_m:<12.4f} {d}")
+                print(f"{clf:<12} {metric:<24} {tstr_m:<12.4f} {trtr_m:<12.4f} {d}")

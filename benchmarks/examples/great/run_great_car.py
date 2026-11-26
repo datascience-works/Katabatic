@@ -9,6 +9,7 @@ import platform
 import sys
 import warnings
 from time import perf_counter
+from types import SimpleNamespace
 
 import psutil
 import torch
@@ -18,6 +19,9 @@ sys.path.insert(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
 )
 
+import runtime
+from great_sampling import sample_in_chunks
+from protocol import SEED
 from runner import (
     RunConfig,
     evaluate,
@@ -109,7 +113,7 @@ def get_system_run_details() -> None:
 LLM = "gpt2"  # HuggingFace model checkpoint
 EPOCHS = 2  # fine-tuning epochs (keep low for eval; raise for quality)
 BATCH_SIZE = 2  # per-device training batch size
-EXPERIMENT_DIR = "trainer_great_adult"  # output dir for HuggingFace Trainer checkpoints
+EXPERIMENT_DIR = "trainer_great_car"  # one checkpoint folder per dataset
 EFFICIENT_FINETUNING = ""  # "" = full fine-tune; "lora" = LoRA (requires peft)
 FLOAT_PRECISION = None  # decimal places for floats in text encoding; None = full
 
@@ -150,17 +154,34 @@ model = GReaT(
     float_precision=FLOAT_PRECISION,
 )
 
-model.train(
-    paths["split_dir"],
-    categorical_cols=config.categorical_cols,
-    continuous_cols=config.continuous_cols,
-)
-print("\nGReat training complete.")
+# fit() trains only. GReaT.train() would also sample every training row once on
+# the CPU with a tiny batch, a hidden second sampling pass before our own.
+with runtime.phase("train"):
+    model.fit(train_df)
+print("\nGReaT training complete.")
+
+
+def sample_for_evaluation(n, seed=None):
+    """Sample in chunks on DEVICE with a time limit.
+
+    The stability evaluation calls model.sample(n, seed=...) five more times.
+    The model's own default device is the CPU, so it is routed through here.
+    """
+    with runtime.phase("sample_total"):
+        return sample_in_chunks(
+            model,
+            n,
+            device=DEVICE,
+            seed=SEED if seed is None else seed,
+            columns=train_df.columns,
+        )
+
 
 print("\n" + "=" * 60)
 print("STEP 4 — Generate synthetic data")
 print("=" * 60)
-synthetic_df = model.sample(len(train_df), device=DEVICE)
+with runtime.phase("sample"):
+    synthetic_df = sample_for_evaluation(len(train_df), seed=SEED)
 synthetic_df = save_synthetic(
     synthetic_df,
     train_df,
@@ -169,7 +190,7 @@ synthetic_df = save_synthetic(
 )
 
 evaluate(
-    model,
+    SimpleNamespace(sample=sample_for_evaluation),
     config,
     train_df,
     synthetic_df,

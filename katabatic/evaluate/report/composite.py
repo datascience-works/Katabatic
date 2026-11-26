@@ -47,11 +47,22 @@ class EvaluationReport:
         self.weights = {**DEFAULT_WEIGHTS, **(weights or {})}
 
         self.dimension_scores = self._extract_scores()
+        self.successful_dimensions = list(self.dimension_scores.keys())
+        self.successful_dimension_count = len(self.successful_dimensions)
+        self.total_dimensions = len(SCORE_KEYS)
         self.errors = {
             dim: result["error"]
             for dim, result in dimension_results.items()
             if "error" in result
         }
+
+        self.failed_dimensions = list(self.errors)
+        self.skipped_dimensions = [
+            dim
+            for dim in SCORE_KEYS
+            if dim not in self.dimension_scores and dim not in self.errors
+        ]
+
         self.composite_score = self._compute_composite()
 
     def _extract_scores(self) -> dict:
@@ -98,6 +109,11 @@ class EvaluationReport:
         payload = {
             "composite_score": self.composite_score,
             "dimension_scores": self.dimension_scores,
+            "successful_dimensions": self.successful_dimensions,
+            "successful_dimension_count": self.successful_dimension_count,
+            "total_dimensions": self.total_dimensions,
+            "failed_dimensions": self.failed_dimensions,
+            "skipped_dimensions": self.skipped_dimensions,
             "weights_used": normalised_weights,
             "errors": self.errors,
             "full_results": self._serialisable(self.dimension_results),
@@ -123,6 +139,7 @@ class EvaluationReport:
                 )
             for dim in self.errors:
                 writer.writerow([dim, "failed", "", ""])
+
             writer.writerow([])
             writer.writerow(["composite_score", self.composite_score, "", ""])
 
@@ -143,8 +160,18 @@ class EvaluationReport:
             filled = int(score * bar_width)
             bar = "#" * filled + "-" * (bar_width - filled)
             print(f"  {dim:<12} [{bar}] {score:.4f}  (weight {norm_w:.0%})")
+
         for dim in self.errors:
             print(f"  {dim:<12} FAILED, excluded from the composite")
+
+        print("-" * 52)
+        print(
+            f"  Dimensions successful: "
+            f"{self.successful_dimension_count}/{self.total_dimensions}"
+        )
+        print(f"  Successful: {', '.join(self.successful_dimensions) or 'None'}")
+        print(f"  Failed: {', '.join(self.failed_dimensions) or 'None'}")
+        print(f"  Skipped: {', '.join(self.skipped_dimensions) or 'None'}")
 
         print("-" * 52)
         filled = (
@@ -171,3 +198,45 @@ class EvaluationReport:
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         return obj
+
+
+def warn_if_dimension_sets_differ(reports: dict):
+    """
+    Warn when models have different successful evaluation dimensions.
+
+    Parameters
+    ----------
+    reports : dict[str, EvaluationReport]
+        Mapping of model names to their evaluation reports.
+
+    Returns
+    -------
+    bool
+        True if dimension sets differ, otherwise False.
+    """
+    if len(reports) < 2:
+        return False
+
+    dimension_sets = {
+        model: set(report.successful_dimensions) for model, report in reports.items()
+    }
+
+    reference_model = next(iter(dimension_sets))
+    reference_dimensions = dimension_sets[reference_model]
+
+    differences_found = False
+
+    for model, dimensions in dimension_sets.items():
+        if dimensions != reference_dimensions:
+            differences_found = True
+            missing = sorted(reference_dimensions - dimensions)
+            additional = sorted(dimensions - reference_dimensions)
+
+            print(
+                f"WARNING: {model} was evaluated using a different "
+                f"dimension set than {reference_model}."
+            )
+            print(f"  Missing dimensions: {missing or 'None'}")
+            print(f"  Additional dimensions: {additional or 'None'}")
+
+    return differences_found

@@ -13,6 +13,7 @@ sys.path.insert(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
 )
 
+from protocol import SEED, epochs_for
 from runner import (
     RunConfig,
     evaluate,
@@ -104,10 +105,10 @@ def get_system_run_details() -> None:
 
 config = RunConfig(
     dataset_name="car",
-    model_name="ganblr",
-    categorical_cols=["buying", "maint", "doors", "persons", "lug_boot", "safety"],
+    model_name="codi",
+    categorical_cols=["0", "1", "2", "3", "4", "5"],
     continuous_cols=[],
-    target_col_raw="class",
+    target_col_raw="6",
     constraints=None,
 )
 
@@ -116,7 +117,7 @@ train_df, test_df, target_col, paths = preprocess_and_split(config)
 print("\n" + "=" * 60)
 print("STEP 3 — Train CODI")
 print("=" * 60)
-model = CODI(n_steps=50, epochs=100, batch_size=256)
+model = CODI(n_steps=50, epochs=epochs_for("car"), batch_size=256, random_state=SEED)
 model.train(
     paths["split_dir"],
     paths["synthetic_dir"],

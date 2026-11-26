@@ -3,12 +3,15 @@ import os
 import sys
 from dataclasses import dataclass, field
 
+import metadata
 import pandas as pd
+import runtime
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
+from benchmarks.validation import validate_column_names  # noqa: E402
 from katabatic.pipeline.evaluation_pipeline import (  # noqa: E402
     SyntheticEvaluationPipeline,
 )
@@ -114,7 +117,11 @@ def preprocess_and_split(config: RunConfig):
     Returns (train_df, test_df, target_col, paths).
     """
 
+    runtime.start_run(config.model_name, config.dataset_name)
+    runtime.current().begin("preprocess")
+
     paths = build_paths(config)
+    runtime.current().output_dir = paths["results_dir"]
 
     if not os.path.exists(paths["raw_data"]):
         raise FileNotFoundError(
@@ -169,6 +176,14 @@ def preprocess_and_split(config: RunConfig):
     processed_df = pd.read_csv(paths["processed_data"])
 
     target_col = processed_df.columns[-1]
+
+    validate_column_names(
+        available_columns=processed_df.columns,
+        categorical_cols=config.categorical_cols,
+        continuous_cols=config.continuous_cols,
+        target_col=target_col,
+    )
+
     n_features = processed_df.shape[1] - 1
 
     print(f"\nProcessed shape : {processed_df.shape}")
@@ -296,6 +311,8 @@ def preprocess_and_split(config: RunConfig):
         index=False,
     )
 
+    runtime.current().end("preprocess")
+
     return (
         train_df,
         test_df,
@@ -359,6 +376,7 @@ def evaluate(
     target_col: str,
     paths: dict,
     test_df: pd.DataFrame = None,
+    model_settings: dict | None = None,
 ):
     """Run the evaluation pipeline and print the final summary.
     Returns EvaluationReport.
@@ -367,6 +385,18 @@ def evaluate(
     print("\n" + "=" * 60)
     print("STEP 5 — Evaluate synthetic data")
     print("=" * 60)
+
+    if runtime.current() is None:
+        runtime.start_run(config.model_name, config.dataset_name)
+    runtime.current().begin("evaluate")
+
+    metadata_path = metadata.save_experiment_metadata(
+        results_dir=paths["results_dir"],
+        config=config,
+        raw_data_path=paths["raw_data"],
+        model_settings=model_settings,
+    )
+    print(f"Experiment metadata saved to: {metadata_path}")
 
     pipeline = SyntheticEvaluationPipeline(
         dimensions=config.dimensions,
@@ -395,5 +425,8 @@ def evaluate(
 
     for dim, score in report.dimension_scores.items():
         print(f"  {dim:<14} {score:.4f}")
+
+    runtime.current().end("evaluate")
+    runtime.finish_run(paths["results_dir"])
 
     return report

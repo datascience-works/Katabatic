@@ -13,6 +13,7 @@ sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 )
 
+from protocol import SEED
 from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
 from katabatic.models.realtabformer.models import REaLTabFormerModel
@@ -49,7 +50,7 @@ train_df, test_df, target_col, paths = preprocess_and_split(config)
 # the largest dataset in the fleet, so this is also the slowest of the five.
 EPOCHS = 5
 BATCH_SIZE = 8
-RANDOM_STATE = 1029
+RANDOM_STATE = SEED
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"  # auto-detect GPU
 N_CRITIC = 5
 
