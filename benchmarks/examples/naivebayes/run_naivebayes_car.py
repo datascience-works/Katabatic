@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 
@@ -8,6 +9,10 @@ sys.path.insert(
 from runner import RunConfig, evaluate, preprocess_and_split, save_synthetic
 
 from katabatic.models.naivebayes.models import NaiveBayesModel
+
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+)
 
 config = RunConfig(
     dataset_name="car",

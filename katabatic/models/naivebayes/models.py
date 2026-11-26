@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 import pickle
 from typing import TYPE_CHECKING
@@ -9,7 +10,9 @@ import pandas as pd
 
 from katabatic.models.base_model import Model as BaseModel
 
-from .utils import infer_feature_types
+from .utils import infer_feature_types, is_integer_valued
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from katabatic.artifacts.base import ArtifactStore
@@ -44,6 +47,7 @@ class NaiveBayesModel(BaseModel):
         self.class_probs_ = None
         self.features_ = None
         self.feature_types_ = {}
+        self._cont_bounds_ = {}
         self._continuous_is_int_ = {}
 
         self._cat_probs_ = {}
@@ -63,12 +67,25 @@ class NaiveBayesModel(BaseModel):
 
     def _fit_categorical_feature(self, df: pd.DataFrame, feature: str):
         self._cat_probs_.setdefault(feature, {})
-        all_values = sorted(df[feature].dropna().unique().tolist())
+
+        col = df[feature]
+        if pd.api.types.is_float_dtype(col) and is_integer_valued(col):
+            col = col.astype("Int64")
+
+        all_values = sorted(col.dropna().unique().tolist(), key=str)
         num_values = len(all_values)
+        if num_values == 0:
+            raise ValueError(f"Categorical column '{feature}' has no values.")
+
+        n_missing = int(col.isna().sum())
+        if n_missing:
+            logger.warning(
+                "Column '%s': %d missing values ignored during fit.", feature, n_missing
+            )
 
         for cls in self.classes_:
-            df_c = df[df[self.target_col] == cls]
-            counts = df_c[feature].value_counts().reindex(all_values, fill_value=0)
+            col_c = col[df[self.target_col] == cls]
+            counts = col_c.value_counts().reindex(all_values, fill_value=0)
             N = counts.sum()
             alpha = self.laplace_alpha
             probs = (counts + alpha) / (N + alpha * num_values)
@@ -77,30 +94,50 @@ class NaiveBayesModel(BaseModel):
     def _fit_continuous_feature(self, df: pd.DataFrame, feature: str):
         self._cont_stats_.setdefault(feature, {})
 
+        all_vals = (
+            pd.to_numeric(df[feature], errors="coerce").dropna().to_numpy(dtype=float)
+        )
+        if all_vals.size == 0:
+            raise ValueError(f"Continuous column '{feature}' has no numeric values.")
+        n_missing = len(df) - all_vals.size
+        if n_missing:
+            logger.warning(
+                "Column '%s': %d missing/non-numeric values ignored during fit.",
+                feature,
+                n_missing,
+            )
+        self._cont_bounds_[feature] = (float(all_vals.min()), float(all_vals.max()))
+
         for cls in self.classes_:
-            df_c = df[df[self.target_col] == cls]
-            vals = df_c[feature].astype(float).to_numpy()
+            mask = df[self.target_col] == cls
+            vals = (
+                pd.to_numeric(df.loc[mask, feature], errors="coerce")
+                .dropna()
+                .to_numpy(dtype=float)
+            )
 
-            if len(vals) == 0:
-                vals = df[feature].astype(float).to_numpy()
+            if vals.size == 0:
+                logger.warning(
+                    "Column '%s': no values for class %r, using all rows.", feature, cls
+                )
+                vals = all_vals
 
-            mean = float(np.mean(vals))
-            std = float(np.std(vals))
-            if std == 0.0:
+            mean = float(vals.mean())
+            std = float(vals.std())
+            if not np.isfinite(std) or std == 0.0:
                 std = 1e-6
 
             self._cont_stats_[feature][cls] = (mean, std)
 
-    def _compute_class_counts(self, n_rows: int):
+    def _compute_class_counts(self, n_rows: int) -> np.ndarray:
         raw_counts = self.class_probs_ * n_rows
         base_counts = np.floor(raw_counts).astype(int)
-        remainder = n_rows - base_counts.sum()
+        remainder = int(n_rows - base_counts.sum())
 
-        idx = 0
-        while remainder > 0:
-            base_counts[idx % len(base_counts)] += 1
-            remainder -= 1
-            idx += 1
+        if remainder > 0:
+            fractional = raw_counts - base_counts
+            top_up = np.argsort(-fractional, kind="stable")[:remainder]
+            base_counts[top_up] += 1
 
         return base_counts
 
@@ -111,7 +148,7 @@ class NaiveBayesModel(BaseModel):
             df, self.features_, categorical_cols, continuous_cols
         )
         self._continuous_is_int_ = {
-            c: np.issubdtype(df[c].dtype, np.integer)
+            c: is_integer_valued(df[c])
             for c, t in self.feature_types_.items()
             if t == "continuous"
         }
@@ -120,6 +157,7 @@ class NaiveBayesModel(BaseModel):
 
         self._cat_probs_.clear()
         self._cont_stats_.clear()
+        self._cont_bounds_.clear()
 
         for feature in self.features_:
             if self.feature_types_[feature] == "categorical":
@@ -129,6 +167,12 @@ class NaiveBayesModel(BaseModel):
 
         self.is_fitted = True
         self._n_train_rows = len(df)
+        logger.info(
+            "NaiveBayes fitted on %d rows, %d features, %d classes.",
+            len(df),
+            len(self.features_),
+            len(self.classes_),
+        )
         return self
 
     def _generate(self, n_rows: int) -> pd.DataFrame:
@@ -137,58 +181,45 @@ class NaiveBayesModel(BaseModel):
             raise RuntimeError("Call train() before sampling.")
 
         class_counts = self._compute_class_counts(n_rows)
-        rows = []
+        parts = []
 
         for cls, n_c in zip(self.classes_, class_counts):
+            n_c = int(n_c)
             if n_c <= 0:
                 continue
 
-            data_cls = {col: [] for col in self.features_}
-
-            for _ in range(int(n_c)):
-                for feature in self.features_:
-                    ftype = self.feature_types_[feature]
-
-                    if ftype == "categorical":
-                        probs_dict = self._cat_probs_[feature][cls]
-                        values = list(probs_dict.keys())
-                        probs = np.array(list(probs_dict.values()), dtype=float)
-                        probs = probs / probs.sum()
-
-                        idx = self._rng.choice(len(values), p=probs)
-                        data_cls[feature].append(values[idx])
-                    else:
-                        mean, std = self._cont_stats_[feature][cls]
-                        val = self._rng.normal(loc=mean, scale=std)
-
-                        if self._continuous_is_int_.get(feature, False):
-                            val = int(round(val))
-
-                        data_cls[feature].append(val)
+            data_cls = {}
+            for feature in self.features_:
+                if self.feature_types_[feature] == "categorical":
+                    probs_dict = self._cat_probs_[feature][cls]
+                    values = pd.Series(list(probs_dict.keys())).to_numpy()
+                    probs = np.fromiter(probs_dict.values(), dtype=float)
+                    probs = probs / probs.sum()
+                    idx = self._rng.choice(len(values), size=n_c, p=probs)
+                    data_cls[feature] = values[idx]
+                else:
+                    mean, std = self._cont_stats_[feature][cls]
+                    vals = self._rng.normal(loc=mean, scale=std, size=n_c)
+                    bounds = self._cont_bounds_.get(feature)
+                    if bounds is not None:
+                        vals = np.clip(vals, bounds[0], bounds[1])
+                    if self._continuous_is_int_.get(feature, False):
+                        vals = np.rint(vals).astype(np.int64)
+                    data_cls[feature] = vals
 
             df_cls = pd.DataFrame(data_cls)
             df_cls[self.target_col] = cls
-            rows.append(df_cls)
+            parts.append(df_cls)
 
-        if not rows:
+        if not parts:
             raise RuntimeError(
                 "No synthetic rows generated. Check fit and class distribution."
             )
 
-        df_synth = pd.concat(rows, ignore_index=True)
-
-        if len(df_synth) > n_rows:
-            df_synth = df_synth.sample(n=n_rows, random_state=self.seed).reset_index(
-                drop=True
-            )
-        elif len(df_synth) < n_rows:
-            extra = n_rows - len(df_synth)
-            extra_rows = df_synth.sample(
-                n=extra, replace=True, random_state=self.seed + 1
-            )
-            df_synth = pd.concat([df_synth, extra_rows], ignore_index=True)
-
-        return df_synth
+        df_synth = pd.concat(parts, ignore_index=True)
+        order = self._rng.permutation(len(df_synth))
+        logger.debug("Generated %d synthetic rows.", len(df_synth))
+        return df_synth.iloc[order].reset_index(drop=True)
 
     # ----------------- required Model interface (matches CTGANModel exactly) -----------------
 
@@ -247,7 +278,7 @@ class NaiveBayesModel(BaseModel):
         x_synth.to_csv(os.path.join(synth_dir, "x_synth.csv"), index=False)
         y_synth.to_csv(os.path.join(synth_dir, "y_synth.csv"), index=False, header=True)
 
-        print(f"[NaiveBayes] Synthetic data saved to: {synth_dir}")
+        logger.info("NaiveBayes synthetic data saved to: %s", synth_dir)
         self._maybe_save_artifact_state(artifact_state_dir)
         return self
 
@@ -276,12 +307,14 @@ class NaiveBayesModel(BaseModel):
             "_continuous_is_int_": self._continuous_is_int_,
             "_cat_probs_": self._cat_probs_,
             "_cont_stats_": self._cont_stats_,
+            "_cont_bounds_": self._cont_bounds_,
             "n_train_rows": self._n_train_rows,
         }
         os.makedirs(artifact_state_dir, exist_ok=True)
         state_path = os.path.join(artifact_state_dir, self.ARTIFACT_STATE_FILES[0])
         with open(state_path, "wb") as f:
             pickle.dump(state, f)
+        logger.info("NaiveBayes state saved to: %s", state_path)
 
     @classmethod
     def load_from_ref(cls, store: ArtifactStore, ref: ModelRef) -> NaiveBayesModel:
@@ -298,6 +331,7 @@ class NaiveBayesModel(BaseModel):
         instance._continuous_is_int_ = state["_continuous_is_int_"]
         instance._cat_probs_ = state["_cat_probs_"]
         instance._cont_stats_ = state["_cont_stats_"]
+        instance._cont_bounds_ = state.get("_cont_bounds_", {})
         instance._n_train_rows = state.get("n_train_rows")
         instance.is_fitted = True
         return instance
